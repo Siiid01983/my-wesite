@@ -5809,6 +5809,25 @@ const CL_TYPE = {
   fix:     { label:'バグ修正', bg:'rgba(239,68,68,.08)', color:'#b91c1c',  border:'rgba(239,68,68,.18)' },
 };
 
+const CHANGELOG_NEXT = [
+  { priority:'high',   text:'メール通知：新規予約・見積り受信時に管理者へ自動メール送信' },
+  { priority:'high',   text:'LINE通知連携：予約確定・ステータス変更時のLINEメッセージ送信' },
+  { priority:'high',   text:'PDF直接出力：印刷ビューをPDFファイルとして直接ダウンロード' },
+  { priority:'medium', text:'Google カレンダー同期：予約を Google カレンダーに自動追加' },
+  { priority:'medium', text:'一括操作：予約・見積りの複数選択とまとめてステータス変更' },
+  { priority:'medium', text:'ダッシュボードカスタマイズ：表示するウィジェットを自由に並び替え' },
+  { priority:'medium', text:'英語管理画面対応：管理UIの日英切替サポート' },
+  { priority:'low',    text:'自動フォローアップ：引越し完了後の顧客へ自動レビュー依頼メール' },
+  { priority:'low',    text:'スタッフ管理：複数管理者アカウントと権限レベルの設定' },
+  { priority:'low',    text:'PWA対応：ホーム画面へのインストールとオフライン閲覧' },
+];
+
+const CL_PRIORITY = {
+  high:   { label:'優先度：高', bg:'rgba(239,68,68,.08)',  color:'#b91c1c', border:'rgba(239,68,68,.18)'  },
+  medium: { label:'優先度：中', bg:'rgba(245,158,11,.1)',  color:'#b45309', border:'rgba(245,158,11,.25)' },
+  low:    { label:'優先度：低', bg:'rgba(107,114,128,.1)', color:'#4b5563', border:'rgba(107,114,128,.2)' },
+};
+
 function renderChangelog() {
   const el = document.getElementById('changelogContent');
   if (!el) return;
@@ -5819,6 +5838,37 @@ function renderChangelog() {
       <span style="font-size:11px;color:var(--gray-2)">${CHANGELOG.length}バージョン · ${CHANGELOG.reduce((s,v)=>s+v.entries.length,0)}件の変更</span>
     </div>
   </div>`;
+
+  /* ── What's Next panel ── */
+  const highCount   = CHANGELOG_NEXT.filter(i=>i.priority==='high').length;
+  const mediumCount = CHANGELOG_NEXT.filter(i=>i.priority==='medium').length;
+  const lowCount    = CHANGELOG_NEXT.filter(i=>i.priority==='low').length;
+
+  h += `<div class="panel" style="margin-bottom:20px;border-color:rgba(139,92,246,.25)">
+    <div class="panel-head" style="background:rgba(139,92,246,.04)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <svg viewBox="0 0 24 24" width="16" height="16" style="color:#7c3aed;flex-shrink:0"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+        <span class="panel-title" style="color:#7c3aed">次のバージョン予定</span>
+        <span style="font-size:11px;color:var(--gray-2)">${CHANGELOG_NEXT.length}件</span>
+      </div>
+      <div style="display:flex;gap:6px;font-size:11px;flex-wrap:wrap">
+        <span style="color:#b91c1c;font-weight:600">高 ${highCount}</span>
+        <span style="color:#b45309;font-weight:600">中 ${mediumCount}</span>
+        <span style="color:#6b7280;font-weight:600">低 ${lowCount}</span>
+      </div>
+    </div>
+    <div class="panel-body" style="padding:8px 16px">
+      ${CHANGELOG_NEXT.map(item => {
+        const p = CL_PRIORITY[item.priority];
+        return `<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-2)">
+          <span style="flex-shrink:0;margin-top:1px;display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:${p.bg};color:${p.color};border:1px solid ${p.border};white-space:nowrap">${p.label}</span>
+          <span style="font-size:13px;color:var(--ink);line-height:1.55">${esc(item.text)}</span>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>
+
+  <div style="font-size:11px;font-weight:700;color:var(--gray-1);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">リリース済み</div>`;
 
   CHANGELOG.forEach((ver, vi) => {
     const isLatest = vi === 0;
