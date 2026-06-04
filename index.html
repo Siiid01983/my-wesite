@@ -2293,11 +2293,11 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
 <section class="section faq" id="faq">
   <div class="container faq-container">
     <header class="section-head">
-      <span class="eyebrow">FAQ</span>
-      <h2 class="section-title">よくあるご質問</h2>
-      <p class="section-lead">ご不明な点がございましたら、お気軽にお問い合わせください。</p>
+      <span class="eyebrow" id="faqEyebrowEl">FAQ</span>
+      <h2 class="section-title" id="faqTitleEl">よくあるご質問</h2>
+      <p class="section-lead" id="faqLeadEl">ご不明な点がございましたら、お気軽にお問い合わせください。</p>
     </header>
-    <div class="faq-list">
+    <div class="faq-list" id="faqListEl">
       <details class="faq-item"><summary>お見積りは無料ですか?</summary><p>はい、お見積りは完全無料です。訪問でのお見積り、オンラインでのお見積り、どちらにも対応しております。</p></details>
       <details class="faq-item"><summary>当日のご依頼でも対応していただけますか?</summary><p>スケジュール状況により対応可能な場合がございます。お急ぎの際は、LINEまたはチャットにてご連絡くださいませ。</p></details>
       <details class="faq-item"><summary>英語での対応は可能ですか?</summary><p>はい、日本語・英語の両方に対応しております。Yes, our team can assist you in English. ご遠慮なくご相談ください。</p></details>
@@ -2309,6 +2309,38 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
     </div>
   </div>
 </section>
+<script>
+/* FAQ content loader — applies admin-saved content from localStorage */
+(function(){
+  try {
+    var rawMeta  = localStorage.getItem('hm_faq_section');
+    var rawItems = localStorage.getItem('hm_faq');
+    var el  = function(id){ return document.getElementById(id); };
+    var set = function(id, val){ var e = el(id); if (e && val) e.textContent = val; };
+    if (rawMeta) {
+      var mt = JSON.parse(rawMeta);
+      set('faqEyebrowEl', mt.eyebrow);
+      set('faqTitleEl',   mt.title);
+      set('faqLeadEl',    mt.lead);
+    }
+    if (rawItems) {
+      var items = JSON.parse(rawItems);
+      if (items && items.length) {
+        var list = el('faqListEl');
+        if (list) {
+          list.innerHTML = items.map(function(f) {
+            return '<details class="faq-item"><summary>' +
+              (f.question || '').replace(/[<>&"]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]; }) +
+              '</summary><p>' +
+              (f.answer || '').replace(/[<>&"]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]; }) +
+              '</p></details>';
+          }).join('');
+        }
+      }
+    }
+  } catch(e) {}
+})();
+</script>
 
 <!-- ============== COMPANY INFO ============== -->
 <section class="section company" id="company">

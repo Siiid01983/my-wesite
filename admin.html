@@ -372,6 +372,13 @@ html.dark .rev-tab-cnt{color:#f59e0b}
 .rev-prev-gmb-score{font-size:17px;font-weight:700;color:var(--ink);line-height:1}
 .rev-prev-gmb-stars{color:#f59e0b;font-size:11px}
 .rev-prev-gmb-meta{font-size:9px;color:var(--gray-2)}
+/* ── FAQ Editor ── */
+.faq-save-ind{font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;margin-left:6px;font-weight:500}
+.faq-prev-wrap{background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;padding:18px;min-height:260px;max-height:580px;overflow-y:auto}
+.faq-prev-item{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:7px}
+.faq-prev-item:last-child{margin-bottom:0}
+.faq-prev-q{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:4px;line-height:1.4}
+.faq-prev-a{font-size:10px;color:var(--gray-2);line-height:1.55}
 /* ── Backup Center ── */
 .import-msg{font-size:11px;margin-top:5px;font-weight:500;min-height:14px}
 .import-ok{color:var(--green)}
@@ -566,6 +573,9 @@ html.dark .rev-tab-cnt{color:#f59e0b}
         </button>
         <button class="sb-link" data-view="services" onclick="go('services')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>サービス管理
+        </button>
+        <button class="sb-link" data-view="faq" onclick="go('faq')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>FAQ編集
         </button>
         <button class="sb-link" data-view="hero" onclick="go('hero')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M3 5h2V3c-1.1 0-2 .9-2 2zm0 8h2v-2H3v2zm4 8h2v-2H7v2zm-4-4h2v-2H3v2zm0-8h2V7H3v2zm4-8H7v2h2V1zm8 0h-2v2h2V1zm-4 0H9v2h2V1zM5 21v-2H3c0 1.1.9 2 2 2zm-2-4h2v-2H3v2zM21 3h-2v2h2V3zm0 4h-2v2h2V7zm0 14c1.1 0 2-.9 2-2h-2v2zm0-8h-2v2h2v-2zm-4 8h2v-2h-2v2zm0-16h2V1h-2v2zm-4 16h2v-2h-2v2zm-4 0h2v-2H9v2z"/></svg>ヒーロー編集
@@ -898,6 +908,79 @@ html.dark .rev-tab-cnt{color:#f59e0b}
                 <div id="svcPrevTitle" class="svc-prev-title"></div>
                 <div id="svcPrevLead" class="svc-prev-lead"></div>
                 <div id="svcPrevCards"></div>
+              </div>
+              <div style="font-size:11px;color:var(--gray-2);margin-top:8px;line-height:1.5">
+                「変更を保存」でサイトに反映されます。
+              </div>
+            </div><!-- /right -->
+
+          </div>
+        </div>
+
+        <!-- FAQ EDITOR -->
+        <div id="view-faq" class="view">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="saveFaqAll()">
+              <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+              変更を保存
+            </button>
+            <span class="faq-save-ind" id="faqSaveInd">サイトに保存しました ✓</span>
+          </div>
+          <div class="hero-layout">
+
+            <!-- Left: panels -->
+            <div style="display:flex;flex-direction:column;gap:16px">
+
+              <!-- Section Header -->
+              <div class="panel">
+                <div class="panel-head"><span class="panel-title">セクションヘッダー</span></div>
+                <div class="panel-body">
+                  <div class="m-row" style="margin-bottom:12px">
+                    <div class="m-field">
+                      <label class="m-label">Eyebrow</label>
+                      <input class="m-input" id="faqMetaEyebrow" oninput="liveFaqPreview()" />
+                    </div>
+                    <div class="m-field">
+                      <label class="m-label">タイトル</label>
+                      <input class="m-input" id="faqMetaTitle" oninput="liveFaqPreview()" />
+                    </div>
+                  </div>
+                  <div class="m-field" style="margin-bottom:0">
+                    <label class="m-label">リードテキスト</label>
+                    <input class="m-input" id="faqMetaLead" oninput="liveFaqPreview()" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- FAQ Items List -->
+              <div class="panel">
+                <div class="panel-head">
+                  <span class="panel-title">FAQ一覧</span>
+                  <button class="btn btn-primary btn-sm" onclick="openFaqModal()">
+                    <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>FAQを追加
+                  </button>
+                </div>
+                <div class="table-wrap" id="faqListWrap"></div>
+              </div>
+
+              <!-- Version History -->
+              <div class="panel">
+                <div class="panel-head"><span class="panel-title">バージョン履歴</span></div>
+                <div class="panel-body" id="faqHistoryList">
+                  <div class="empty" style="padding:16px 0"><p>まだバージョンがありません</p></div>
+                </div>
+              </div>
+
+            </div><!-- /left -->
+
+            <!-- Right: live preview -->
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--gray-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">ライブプレビュー</div>
+              <div class="faq-prev-wrap">
+                <div id="faqPrevEyebrow" class="svc-prev-eyebrow"></div>
+                <div id="faqPrevTitle" class="svc-prev-title"></div>
+                <div id="faqPrevLead" class="svc-prev-lead"></div>
+                <div id="faqPrevItems"></div>
               </div>
               <div style="font-size:11px;color:var(--gray-2);margin-top:8px;line-height:1.5">
                 「変更を保存」でサイトに反映されます。
@@ -1380,6 +1463,32 @@ html.dark .rev-tab-cnt{color:#f59e0b}
   </div>
 </div>
 
+<!-- FAQ Add/Edit Modal -->
+<div class="overlay" id="faqModal">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-title" id="faqModalTitle">FAQ を追加</div>
+    <div class="m-field">
+      <label class="m-label">質問 *</label>
+      <input class="m-input" id="faqQ" placeholder="お見積りは無料ですか?" oninput="updateFaqModalPrev()" />
+    </div>
+    <div class="m-field">
+      <label class="m-label">回答 *</label>
+      <textarea class="m-ta" id="faqA" rows="4" placeholder="はい、..." oninput="updateFaqModalPrev()"></textarea>
+    </div>
+    <div class="rev-preview" style="margin-top:14px">
+      <div class="rev-preview-lbl">プレビュー</div>
+      <div class="faq-prev-item" style="margin-bottom:0">
+        <div id="faqPrevModalQ" class="faq-prev-q">（質問）</div>
+        <div id="faqPrevModalA" class="faq-prev-a"></div>
+      </div>
+    </div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closeFaqModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveFaqItem()">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- Service Add/Edit Modal -->
 <div class="overlay" id="svcModal">
   <div class="modal" style="max-width:540px">
@@ -1698,6 +1807,33 @@ const Adapter = (() => {
       try { localStorage.setItem('hm_rev_history', JSON.stringify(hist.slice(0, 10))); } catch(e) {}
     },
 
+    /* FAQ */
+    getFaq() {
+      const defaults = [
+        {id:'FAQ-1',question:'お見積りは無料ですか?',answer:'はい、お見積りは完全無料です。訪問でのお見積り、オンラインでのお見積り、どちらにも対応しております。'},
+        {id:'FAQ-2',question:'当日のご依頼でも対応していただけますか?',answer:'スケジュール状況により対応可能な場合がございます。お急ぎの際は、LINEまたはチャットにてご連絡くださいませ。'},
+        {id:'FAQ-3',question:'英語での対応は可能ですか?',answer:'はい、日本語・英語の両方に対応しております。Yes, our team can assist you in English. ご遠慮なくご相談ください。'},
+        {id:'FAQ-4',question:'お支払い方法を教えてください',answer:'現金、銀行振込、主要クレジットカードに対応しております。法人のお客様には、請求書でのお支払いも承っております。'},
+        {id:'FAQ-5',question:'家具の組立・分解だけのご依頼も可能ですか?',answer:'はい、家具の組立・分解のみのご依頼も承っております。お見積りの際にご相談くださいませ。'},
+        {id:'FAQ-6',question:'キャンセル料はかかりますか?',answer:'引越し日の3日前までは無料でキャンセルいただけます。それ以降は、国土交通省が定める標準引越運送約款に基づきキャンセル料を頂戴いたします。'},
+        {id:'FAQ-7',question:'万が一、お荷物が破損した場合はどうなりますか?',answer:'当社は損害補償保険に加入しております。万が一作業中の事故が発生した場合は、速やかに状況をご確認のうえ、誠実にご対応させていただきます。'},
+        {id:'FAQ-8',question:'梱包資材は用意してもらえますか?',answer:'はい、ダンボール・ガムテープ・緩衝材などをご用意しております。プランにより無料でご提供できる場合もございますので、お見積り時にご相談ください。'},
+      ];
+      const v = ls('hm_faq', null);
+      if (v) return v;
+      save('hm_faq', defaults);
+      return defaults;
+    },
+    saveFaq: (v) => save('hm_faq', v),
+    getFaqMeta: () => ls('hm_faq_section', { eyebrow:'FAQ', title:'よくあるご質問', lead:'ご不明な点がございましたら、お気軽にお問い合わせください。' }),
+    saveFaqMeta: (v) => save('hm_faq_section', v),
+    getFaqHistory: () => { try { return JSON.parse(localStorage.getItem('hm_faq_history') || '[]'); } catch(e) { return []; } },
+    pushFaqHistory(snap) {
+      const hist = this.getFaqHistory();
+      hist.unshift({ ts: Date.now(), meta: snap.meta, items: snap.items });
+      try { localStorage.setItem('hm_faq_history', JSON.stringify(hist.slice(0, 10))); } catch(e) {}
+    },
+
     /* Disposal categories */
     getDisposal: () => ls(K.disposal, {
       'ベッド・マットレス': {enabled: true, price: 5000},
@@ -1793,7 +1929,7 @@ function calcStats() {
    ════════════════════════════════════════════════════════ */
 const VIEW_TITLES = {
   dashboard:'ダッシュボード', bookings:'予約管理', quotes:'見積り管理',
-  reviews:'レビュー管理', services:'サービス管理', hero:'ヒーロー編集', calendar:'カレンダー管理', analytics:'分析',
+  reviews:'レビュー管理', services:'サービス管理', faq:'FAQ編集', hero:'ヒーロー編集', calendar:'カレンダー管理', analytics:'分析',
   capacity:'容量設定', pricing:'料金管理', disposal:'不用品管理', actions:'クイック操作',
   backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理'
 };
@@ -1817,6 +1953,7 @@ function go(view) {
   if (view==='quotes') renderQuotes();
   if (view==='reviews') renderReviews();
   if (view==='services') renderServices();
+  if (view==='faq') renderFaq();
   if (view==='hero') renderHero();
   if (view==='backup') renderBackup();
   if (view==='media') renderMedia();
@@ -3043,6 +3180,175 @@ function restoreRevVersion(idx) {
   Adapter.pushRevHistory({ meta: Adapter.getRevMeta() });
   Adapter.saveRevMeta(hist[idx].meta);
   renderReviews();
+  toast('バージョンを復元しました');
+}
+
+/* ════════════════════════════════════════════════════════
+   FAQ MANAGEMENT
+   ════════════════════════════════════════════════════════ */
+let _faqId = null;
+
+function renderFaq() {
+  const meta = Adapter.getFaqMeta();
+  document.getElementById('faqMetaEyebrow').value = meta.eyebrow || '';
+  document.getElementById('faqMetaTitle').value   = meta.title   || '';
+  document.getElementById('faqMetaLead').value    = meta.lead    || '';
+  const items = Adapter.getFaq();
+  if (!items.length) {
+    document.getElementById('faqListWrap').innerHTML = emptyHTML('FAQがありません');
+  } else {
+    const rows = items.map((f, i) => `<tr>
+      <td style="text-align:center;font-weight:700;color:var(--gray-2);width:36px">${i+1}</td>
+      <td class="td-truncate" style="max-width:240px"><strong>${esc(f.question||'—')}</strong></td>
+      <td class="td-truncate td-sm" style="max-width:240px">${esc(f.answer||'—')}</td>
+      <td>
+        <div style="display:flex;gap:4px;align-items:center">
+          <button class="btn btn-ghost btn-sm btn-icon" onclick="moveFaqItem('${esc(f.id)}',-1)" ${i===0?'disabled':''} title="上へ">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+          </button>
+          <button class="btn btn-ghost btn-sm btn-icon" onclick="moveFaqItem('${esc(f.id)}',1)" ${i===items.length-1?'disabled':''} title="下へ">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="openFaqEdit('${esc(f.id)}')">編集</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="delFaqItem('${esc(f.id)}')" title="削除">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>`).join('');
+    document.getElementById('faqListWrap').innerHTML = `
+      <table><thead><tr>
+        <th style="width:36px">#</th><th>質問</th><th>回答</th><th>操作</th>
+      </tr></thead><tbody>${rows}</tbody></table>`;
+  }
+  liveFaqPreview();
+  renderFaqHistory();
+}
+
+function liveFaqPreview() {
+  const get = id => document.getElementById(id);
+  get('faqPrevEyebrow').textContent = get('faqMetaEyebrow').value;
+  get('faqPrevTitle').textContent   = get('faqMetaTitle').value;
+  get('faqPrevLead').textContent    = get('faqMetaLead').value;
+  const items = Adapter.getFaq();
+  get('faqPrevItems').innerHTML = items.length
+    ? items.map(f =>
+        `<div class="faq-prev-item">
+           <div class="faq-prev-q">${esc(f.question||'—')}</div>
+           <div class="faq-prev-a">${esc(f.answer||'')}</div>
+         </div>`
+      ).join('')
+    : '<div style="font-size:11px;color:var(--gray-2);padding:8px 0">FAQがありません。</div>';
+}
+
+function moveFaqItem(id, dir) {
+  const items = Adapter.getFaq();
+  const idx   = items.findIndex(f => f.id === id);
+  if (idx < 0) return;
+  const next = idx + dir;
+  if (next < 0 || next >= items.length) return;
+  [items[idx], items[next]] = [items[next], items[idx]];
+  Adapter.saveFaq(items);
+  renderFaq();
+}
+
+function openFaqModal() {
+  _faqId = null;
+  document.getElementById('faqModalTitle').textContent = 'FAQ を追加';
+  document.getElementById('faqQ').value = '';
+  document.getElementById('faqA').value = '';
+  updateFaqModalPrev();
+  document.getElementById('faqModal').classList.add('open');
+}
+
+function openFaqEdit(id) {
+  const f = Adapter.getFaq().find(f => f.id === id); if (!f) return;
+  _faqId = id;
+  document.getElementById('faqModalTitle').textContent = 'FAQ を編集';
+  document.getElementById('faqQ').value = f.question || '';
+  document.getElementById('faqA').value = f.answer   || '';
+  updateFaqModalPrev();
+  document.getElementById('faqModal').classList.add('open');
+}
+
+function closeFaqModal() { document.getElementById('faqModal').classList.remove('open'); }
+
+function updateFaqModalPrev() {
+  document.getElementById('faqPrevModalQ').textContent = document.getElementById('faqQ').value || '（質問）';
+  document.getElementById('faqPrevModalA').textContent = document.getElementById('faqA').value || '';
+}
+
+function saveFaqItem() {
+  const question = document.getElementById('faqQ').value.trim();
+  const answer   = document.getElementById('faqA').value.trim();
+  if (!question) { alert('質問を入力してください'); return; }
+  if (!answer)   { alert('回答を入力してください'); return; }
+  const items = Adapter.getFaq();
+  if (_faqId) {
+    const idx = items.findIndex(f => f.id === _faqId);
+    if (idx >= 0) items[idx] = { ...items[idx], question, answer };
+    Adapter.saveFaq(items);
+    toast('FAQを更新しました');
+  } else {
+    items.push({ id: 'FAQ-' + Date.now(), question, answer });
+    Adapter.saveFaq(items);
+    toast('FAQを追加しました');
+  }
+  closeFaqModal();
+  renderFaq();
+}
+
+function delFaqItem(id) {
+  if (!confirm('このFAQを削除しますか？')) return;
+  Adapter.saveFaq(Adapter.getFaq().filter(f => f.id !== id));
+  toast('削除しました');
+  renderFaq();
+}
+
+function saveFaqAll() {
+  const meta = {
+    eyebrow: document.getElementById('faqMetaEyebrow').value.trim(),
+    title:   document.getElementById('faqMetaTitle').value.trim(),
+    lead:    document.getElementById('faqMetaLead').value.trim()
+  };
+  Adapter.pushFaqHistory({ meta: Adapter.getFaqMeta(), items: Adapter.getFaq() });
+  Adapter.saveFaqMeta(meta);
+  renderFaqHistory();
+  const ind = document.getElementById('faqSaveInd');
+  ind.style.opacity = '1';
+  clearTimeout(ind._t);
+  ind._t = setTimeout(() => { ind.style.opacity = '0'; }, 2400);
+}
+
+function renderFaqHistory() {
+  const hist = Adapter.getFaqHistory();
+  const el   = document.getElementById('faqHistoryList');
+  if (!hist.length) {
+    el.innerHTML = '<div class="empty" style="padding:16px 0"><p>まだバージョンがありません</p></div>';
+    return;
+  }
+  el.innerHTML = hist.map((entry, i) => {
+    const d  = new Date(entry.ts);
+    const ts = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const snap = (entry.meta && entry.meta.title) || '（タイトルなし）';
+    return `<div class="hhist-item">
+      <div class="hhist-meta">
+        <div class="hhist-time">${ts}</div>
+        <div class="hhist-snap">${esc(snap)} — ${(entry.items||[]).length}件</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="restoreFaqVersion(${i})">復元</button>
+    </div>`;
+  }).join('');
+}
+
+function restoreFaqVersion(idx) {
+  if (!confirm('このバージョンを復元しますか？\n現在の内容はバージョン履歴に保存されます。')) return;
+  const hist = Adapter.getFaqHistory();
+  if (!hist[idx]) return;
+  Adapter.pushFaqHistory({ meta: Adapter.getFaqMeta(), items: Adapter.getFaq() });
+  Adapter.saveFaqMeta(hist[idx].meta);
+  Adapter.saveFaq(hist[idx].items);
+  renderFaq();
   toast('バージョンを復元しました');
 }
 
