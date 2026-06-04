@@ -358,6 +358,20 @@ html.dark .rev-tab-cnt{color:#f59e0b}
 .svc-prev-card-feat .svc-prev-card-title{color:#fff}
 .svc-prev-card-feat .svc-prev-card-desc{color:rgba(255,255,255,.65)}
 .svc-save-ind{font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;margin-left:6px;font-weight:500}
+/* ── Reviews Editor ── */
+.rev-save-ind{font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;margin-left:6px;font-weight:500}
+.rev-prev-wrap{background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;padding:18px;min-height:260px;max-height:580px;overflow-y:auto}
+.rev-prev-rcard{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:7px}
+.rev-prev-rcard:last-child{margin-bottom:0}
+.rev-prev-stars{color:#f59e0b;font-size:11px;letter-spacing:1px;margin-bottom:4px}
+.rev-prev-headline{font-size:11px;font-weight:700;color:var(--ink);margin-bottom:3px;line-height:1.4}
+.rev-prev-text{font-size:10px;color:var(--gray-2);line-height:1.5;margin-bottom:5px;font-style:italic}
+.rev-prev-footer{font-size:10px;font-weight:600;color:var(--gray-1)}
+.rev-prev-gmb{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:8px;margin-bottom:12px}
+.rev-prev-gmb-g{width:22px;height:22px;border-radius:5px;background:#4285f4;color:#fff;font-size:13px;font-weight:900;font-family:Georgia,serif;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rev-prev-gmb-score{font-size:17px;font-weight:700;color:var(--ink);line-height:1}
+.rev-prev-gmb-stars{color:#f59e0b;font-size:11px}
+.rev-prev-gmb-meta{font-size:9px;color:var(--gray-2)}
 /* ── Backup Center ── */
 .import-msg{font-size:11px;margin-top:5px;font-weight:500;min-height:14px}
 .import-ok{color:var(--green)}
@@ -1053,27 +1067,109 @@ html.dark .rev-tab-cnt{color:#f59e0b}
 
         <!-- REVIEWS -->
         <div id="view-reviews" class="view">
-          <div class="panel">
-            <div class="panel-head">
-              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-                <span class="panel-title">レビュー管理</span>
-                <div class="media-tabs" style="margin-bottom:0;border-bottom:none">
-                  <button class="media-tab active" id="revTabPending"  onclick="switchRevTab('pending')">保留中 <span id="revCntPending"  class="rev-tab-cnt"></span></button>
-                  <button class="media-tab"         id="revTabApproved" onclick="switchRevTab('approved')">承認済み <span id="revCntApproved" class="rev-tab-cnt"></span></button>
-                  <button class="media-tab"         id="revTabRejected" onclick="switchRevTab('rejected')">却下 <span id="revCntRejected" class="rev-tab-cnt"></span></button>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="saveReviewsAll()">
+              <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+              変更を保存
+            </button>
+            <span class="rev-save-ind" id="revSaveInd">サイトに保存しました ✓</span>
+          </div>
+          <div class="hero-layout">
+
+            <!-- Left: panels -->
+            <div style="display:flex;flex-direction:column;gap:16px">
+
+              <!-- Section Header -->
+              <div class="panel">
+                <div class="panel-head"><span class="panel-title">セクションヘッダー</span></div>
+                <div class="panel-body">
+                  <div class="m-row" style="margin-bottom:12px">
+                    <div class="m-field">
+                      <label class="m-label">Eyebrow</label>
+                      <input class="m-input" id="revMetaEyebrow" oninput="liveRevPreview()" />
+                    </div>
+                    <div class="m-field">
+                      <label class="m-label">タイトル</label>
+                      <input class="m-input" id="revMetaTitle" oninput="liveRevPreview()" />
+                    </div>
+                  </div>
+                  <div class="m-field">
+                    <label class="m-label">リードテキスト</label>
+                    <input class="m-input" id="revMetaLead" oninput="liveRevPreview()" />
+                  </div>
+                  <div style="font-size:11px;font-weight:700;color:var(--gray-1);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 8px">Google 口コミバッジ</div>
+                  <div class="m-row" style="margin-bottom:0">
+                    <div class="m-field" style="margin-bottom:0">
+                      <label class="m-label">スコア（例: 4.9）</label>
+                      <input class="m-input" id="revMetaGmbScore" oninput="liveRevPreview()" />
+                    </div>
+                    <div class="m-field" style="margin-bottom:0">
+                      <label class="m-label">件数テキスト</label>
+                      <input class="m-input" id="revMetaGmbCount" placeholder="38件の口コミ" oninput="liveRevPreview()" />
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-                <button class="btn btn-ghost btn-sm" onclick="copyRevFormLink()" title="顧客投稿リンクをコピー">
-                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>投稿リンク
-                </button>
-                <button class="btn btn-primary btn-sm" onclick="openRevModal()">
-                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>レビューを追加
-                </button>
+
+              <!-- Review List -->
+              <div class="panel">
+                <div class="panel-head">
+                  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                    <span class="panel-title">レビュー管理</span>
+                    <div class="media-tabs" style="margin-bottom:0;border-bottom:none">
+                      <button class="media-tab active" id="revTabPending"  onclick="switchRevTab('pending')">保留中 <span id="revCntPending"  class="rev-tab-cnt"></span></button>
+                      <button class="media-tab"        id="revTabApproved" onclick="switchRevTab('approved')">承認済み <span id="revCntApproved" class="rev-tab-cnt"></span></button>
+                      <button class="media-tab"        id="revTabRejected" onclick="switchRevTab('rejected')">却下 <span id="revCntRejected" class="rev-tab-cnt"></span></button>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                    <button class="btn btn-ghost btn-sm" onclick="copyRevFormLink()" title="顧客投稿リンクをコピー">
+                      <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>投稿リンク
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="openRevModal()">
+                      <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>レビューを追加
+                    </button>
+                  </div>
+                </div>
+                <div class="rev-stats-bar" id="revStatsBar"></div>
+                <div class="table-wrap" id="reviewsWrap"></div>
               </div>
-            </div>
-            <div class="rev-stats-bar" id="revStatsBar"></div>
-            <div class="table-wrap" id="reviewsWrap"></div>
+
+              <!-- Version History -->
+              <div class="panel">
+                <div class="panel-head"><span class="panel-title">バージョン履歴</span></div>
+                <div class="panel-body" id="revHistoryList">
+                  <div class="empty" style="padding:16px 0"><p>まだバージョンがありません</p></div>
+                </div>
+              </div>
+
+            </div><!-- /left -->
+
+            <!-- Right: live preview -->
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--gray-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">ライブプレビュー</div>
+              <div class="rev-prev-wrap" id="revPrevWrap">
+                <div id="revPrevEyebrow" class="svc-prev-eyebrow"></div>
+                <div id="revPrevTitle" class="svc-prev-title"></div>
+                <div id="revPrevLead" class="svc-prev-lead"></div>
+                <div class="rev-prev-gmb" id="revPrevGmb">
+                  <div class="rev-prev-gmb-g">G</div>
+                  <div>
+                    <div class="rev-prev-gmb-stars">★★★★★</div>
+                    <div style="display:flex;align-items:baseline;gap:4px">
+                      <span id="revPrevGmbScore" class="rev-prev-gmb-score"></span>
+                      <span style="font-size:10px;color:var(--gray-2)">/ 5</span>
+                    </div>
+                    <div id="revPrevGmbCount" class="rev-prev-gmb-meta"></div>
+                  </div>
+                </div>
+                <div id="revPrevCards"></div>
+              </div>
+              <div style="font-size:11px;color:var(--gray-2);margin-top:8px;line-height:1.5">
+                公開中のレビューが表示されます。「変更を保存」でサイトに反映。
+              </div>
+            </div><!-- /right -->
+
           </div>
         </div>
 
@@ -1324,7 +1420,7 @@ html.dark .rev-tab-cnt{color:#f59e0b}
 
 <!-- Review Add/Edit Modal -->
 <div class="overlay" id="revModal">
-  <div class="modal">
+  <div class="modal" style="max-width:560px">
     <div class="modal-title" id="revModalTitle">レビューを追加</div>
     <div class="m-row">
       <div class="m-field">
@@ -1347,14 +1443,36 @@ html.dark .rev-tab-cnt{color:#f59e0b}
       </div>
     </div>
     <div class="m-field">
+      <label class="m-label">見出し <span style="font-weight:400;color:var(--gray-2)">（任意 — 省略時はレビュー本文から自動生成）</span></label>
+      <input class="m-input" id="rHeadline" placeholder="とても丁寧で、安心しておまかせできました" oninput="updateRevPreview()" />
+    </div>
+    <div class="m-field">
       <label class="m-label">レビュー内容 *</label>
       <textarea class="m-ta" id="rText" rows="3" placeholder="サービスについてのご感想..." oninput="updateRevPreview()"></textarea>
     </div>
+    <div class="m-row">
+      <div class="m-field">
+        <label class="m-label">サービス種別</label>
+        <input class="m-input" id="rService" placeholder="単身引越し" oninput="updateRevPreview()" />
+      </div>
+      <div class="m-field">
+        <label class="m-label">ご利用日</label>
+        <input class="m-input" id="rDateLabel" placeholder="2026年5月" oninput="updateRevPreview()" />
+      </div>
+    </div>
+    <div class="m-field">
+      <label class="m-label">お住まい / 詳細 <span style="font-weight:400;color:var(--gray-2)">（任意）</span></label>
+      <input class="m-input" id="rLocation" placeholder="東京都・単身引越し" oninput="updateRevPreview()" />
+    </div>
     <div class="rev-preview">
       <div class="rev-preview-lbl">プレビュー</div>
-      <div class="rev-card-stars" id="previewStars"><span style="color:#f59e0b">★★★★★</span></div>
-      <div class="rev-card-text" id="previewText">レビュー内容がここに表示されます...</div>
-      <div class="rev-card-name" id="previewName">— お客様名</div>
+      <div class="rev-prev-rcard" style="margin-bottom:0">
+        <div class="rev-prev-stars" id="previewStars">★★★★★</div>
+        <div id="revModalMetaLine" style="font-size:9px;color:var(--gray-2);margin-bottom:5px"></div>
+        <div class="rev-prev-headline" id="previewHeadline"></div>
+        <div class="rev-prev-text" id="previewText"></div>
+        <div class="rev-prev-footer" id="previewName"></div>
+      </div>
     </div>
     <div class="m-actions">
       <button class="btn btn-ghost" onclick="closeRevModal()">キャンセル</button>
@@ -1571,6 +1689,14 @@ const Adapter = (() => {
     addReview(r) { const a = this.getReviews(); a.unshift(r); save('hm_reviews', a); },
     updateReview(id, patch) { save('hm_reviews', this.getReviews().map(r => r.id === id ? {...r, ...patch} : r)); },
     deleteReview(id) { save('hm_reviews', this.getReviews().filter(r => r.id !== id)); },
+    getRevMeta: () => ls('hm_reviews_section', { eyebrow:'Customer Voices', title:'お客様からの、お声', lead:'これまでにご利用いただいたお客様より頂戴したご感想を、一部ご紹介いたします。', gmb_score:'4.9', gmb_count:'38件の口コミ' }),
+    saveRevMeta: (v) => save('hm_reviews_section', v),
+    getRevHistory: () => { try { return JSON.parse(localStorage.getItem('hm_rev_history') || '[]'); } catch(e) { return []; } },
+    pushRevHistory(snap) {
+      const hist = this.getRevHistory();
+      hist.unshift({ ts: Date.now(), meta: snap.meta });
+      try { localStorage.setItem('hm_rev_history', JSON.stringify(hist.slice(0, 10))); } catch(e) {}
+    },
 
     /* Disposal categories */
     getDisposal: () => ls(K.disposal, {
@@ -2646,18 +2772,23 @@ function switchRevTab(tab) {
 }
 
 function renderReviews() {
-  const all      = Adapter.getReviews();
-  const pending  = all.filter(r => r.status === 'pending');
-  const approved = all.filter(r => r.status === 'approved');
-  const rejected = all.filter(r => r.status === 'rejected');
+  const meta = Adapter.getRevMeta();
+  document.getElementById('revMetaEyebrow').value   = meta.eyebrow   || '';
+  document.getElementById('revMetaTitle').value     = meta.title     || '';
+  document.getElementById('revMetaLead').value      = meta.lead      || '';
+  document.getElementById('revMetaGmbScore').value  = meta.gmb_score || '';
+  document.getElementById('revMetaGmbCount').value  = meta.gmb_count || '';
+
+  const all       = Adapter.getReviews();
+  const pending   = all.filter(r => r.status === 'pending');
+  const approved  = all.filter(r => r.status === 'approved');
+  const rejected  = all.filter(r => r.status === 'rejected');
   const published = approved.filter(r => r.published);
 
-  // Tab counts
   document.getElementById('revCntPending').textContent  = pending.length  || '';
   document.getElementById('revCntApproved').textContent = approved.length || '';
   document.getElementById('revCntRejected').textContent = rejected.length || '';
 
-  // Stats bar
   document.getElementById('revStatsBar').innerHTML =
     `<span>保留中 <strong class="${pending.length?'warn':''}">${pending.length}</strong></span>` +
     `<span>承認済み <strong>${approved.length}</strong></span>` +
@@ -2671,6 +2802,8 @@ function renderReviews() {
       _revTab==='pending' ? '保留中のレビューはありません' :
       _revTab==='approved' ? '承認済みのレビューはありません' : '却下されたレビューはありません'
     );
+    liveRevPreview();
+    renderRevHistory();
     return;
   }
 
@@ -2698,10 +2831,10 @@ function renderReviews() {
         <button class="btn ${r.published?'btn-ghost':'btn-primary'} btn-sm" onclick="publishRev('${r.id}',${!r.published})">
           <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="${r.published?'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z':'M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z'}"/></svg>${r.published?'非公開にする':'公開する'}
         </button>
+        <button class="btn btn-ghost btn-sm" onclick="openRevEdit('${r.id}')">編集</button>
         <button class="btn btn-ghost btn-sm" style="border-color:rgba(239,68,68,.3);color:var(--red)" onclick="rejectRev('${r.id}')">却下</button>`;
     } else {
-      actions = `
-        <button class="btn btn-ghost btn-sm" onclick="approveRev('${r.id}')">承認に戻す</button>`;
+      actions = `<button class="btn btn-ghost btn-sm" onclick="approveRev('${r.id}')">承認に戻す</button>`;
     }
     actions += `
       <button class="btn btn-danger btn-sm btn-icon" onclick="delRev('${r.id}')" title="削除">
@@ -2714,8 +2847,8 @@ function renderReviews() {
         <div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap">${srcBadge}${pubBadge}</div>
       </td>
       <td style="font-size:14px;letter-spacing:1px;white-space:nowrap">${_starH(r.rating||5)}</td>
-      <td class="td-truncate" style="max-width:220px">${esc(r.text||'—')}</td>
-      <td class="td-mono td-sm">${esc(r.bookingId||'—')}</td>
+      <td class="td-truncate" style="max-width:180px">${esc(r.headline || r.text||'—')}</td>
+      <td class="td-truncate td-sm" style="max-width:140px">${esc(r.text||'—')}</td>
       <td class="td-mono td-sm">${fmtDT(r.createdAt)}</td>
       <td><div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">${actions}</div></td>
     </tr>`;
@@ -2723,8 +2856,10 @@ function renderReviews() {
 
   document.getElementById('reviewsWrap').innerHTML = `
     <table><thead><tr>
-      <th>お客様名</th><th>評価</th><th>レビュー内容</th><th>予約ID</th><th>投稿日時</th><th>操作</th>
+      <th>お客様名</th><th>評価</th><th>見出し</th><th>本文</th><th>投稿日時</th><th>操作</th>
     </tr></thead><tbody>${rows}</tbody></table>`;
+  liveRevPreview();
+  renderRevHistory();
 }
 
 function approveRev(id) {
@@ -2748,9 +2883,9 @@ function publishRev(id, pub) {
 function openRevModal() {
   _revId = null; _revRating = 5;
   document.getElementById('revModalTitle').textContent = 'レビューを追加（管理者）';
-  document.getElementById('rName').value = '';
-  document.getElementById('rText').value = '';
-  document.getElementById('rBookingId').value = '';
+  ['rName','rText','rBookingId','rHeadline','rService','rDateLabel','rLocation'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
   setRevStars(5);
   document.getElementById('revModal').classList.add('open');
 }
@@ -2758,10 +2893,14 @@ function openRevModal() {
 function openRevEdit(id) {
   const r = Adapter.getReviews().find(r => r.id === id); if (!r) return;
   _revId = id; _revRating = r.rating || 5;
-  document.getElementById('revModalTitle').textContent = 'レビューを編集';
-  document.getElementById('rName').value = r.name || '';
-  document.getElementById('rText').value = r.text || '';
-  document.getElementById('rBookingId').value = r.bookingId || '';
+  document.getElementById('revModalTitle').textContent  = 'レビューを編集';
+  document.getElementById('rName').value      = r.name       || '';
+  document.getElementById('rText').value      = r.text       || '';
+  document.getElementById('rBookingId').value = r.bookingId  || '';
+  document.getElementById('rHeadline').value  = r.headline   || '';
+  document.getElementById('rService').value   = r.service    || '';
+  document.getElementById('rDateLabel').value = r.date_label || '';
+  document.getElementById('rLocation').value  = r.location   || '';
   setRevStars(r.rating || 5);
   document.getElementById('revModal').classList.add('open');
 }
@@ -2775,26 +2914,36 @@ function setRevStars(n) {
 }
 
 function updateRevPreview() {
-  const name = document.getElementById('rName').value.trim() || 'お客様名';
-  const text = document.getElementById('rText').value.trim() || 'レビュー内容がここに表示されます...';
-  document.getElementById('previewStars').innerHTML =
-    `<span style="color:#f59e0b">${'★'.repeat(_revRating)}</span><span style="color:var(--gray-2)">${'★'.repeat(5-_revRating)}</span>`;
-  document.getElementById('previewText').textContent = text;
-  document.getElementById('previewName').textContent = '— ' + name;
+  const name      = document.getElementById('rName').value.trim()     || 'お客様名';
+  const text      = document.getElementById('rText').value.trim()     || 'レビュー内容がここに表示されます...';
+  const headline  = document.getElementById('rHeadline').value.trim() || text.substring(0, 28) + (text.length > 28 ? '…' : '');
+  const service   = document.getElementById('rService').value.trim();
+  const dateLabel = document.getElementById('rDateLabel').value.trim();
+  const location  = document.getElementById('rLocation').value.trim();
+  const stars = '★'.repeat(_revRating) + '★'.repeat(5 - _revRating);
+  const metaParts = [service, dateLabel ? 'ご利用日：' + dateLabel : ''].filter(Boolean).join(' • ');
+  document.getElementById('previewStars').textContent     = stars;
+  document.getElementById('revModalMetaLine').textContent = metaParts;
+  document.getElementById('previewHeadline').textContent  = headline;
+  document.getElementById('previewText').textContent      = text;
+  document.getElementById('previewName').textContent      = '— ' + name + (location ? ' / ' + location : '');
 }
 
 function saveReview() {
-  const name = document.getElementById('rName').value.trim();
-  const text = document.getElementById('rText').value.trim();
+  const name       = document.getElementById('rName').value.trim();
+  const text       = document.getElementById('rText').value.trim();
   if (!name) { alert('お客様名を入力してください'); return; }
   if (!text) { alert('レビュー内容を入力してください'); return; }
-  const bookingId = document.getElementById('rBookingId').value.trim();
-  const existing  = _revId ? Adapter.getReviews().find(r => r.id === _revId) : null;
+  const existing = _revId ? Adapter.getReviews().find(r => r.id === _revId) : null;
   const r = {
-    id: _revId || ('REV-' + Date.now()),
-    name, rating: _revRating, text,
-    bookingId: bookingId || null,
-    status: 'approved', published: false, source: 'admin',
+    id:         _revId || ('REV-' + Date.now()),
+    name,       rating:     _revRating,  text,
+    headline:   document.getElementById('rHeadline').value.trim(),
+    service:    document.getElementById('rService').value.trim(),
+    date_label: document.getElementById('rDateLabel').value.trim(),
+    location:   document.getElementById('rLocation').value.trim(),
+    bookingId:  document.getElementById('rBookingId').value.trim() || null,
+    status: 'approved', published: existing?.published || false, source: 'admin',
     createdAt: existing?.createdAt || new Date().toISOString()
   };
   if (_revId) { Adapter.updateReview(_revId, r); toast('レビューを更新しました'); }
@@ -2822,6 +2971,79 @@ function copyRevFormLink() {
     try { document.execCommand('copy'); toast('投稿リンクをコピーしました'); } catch(e) {}
     document.body.removeChild(ta);
   }
+}
+
+function liveRevPreview() {
+  const get = id => document.getElementById(id);
+  get('revPrevEyebrow').textContent   = get('revMetaEyebrow').value;
+  get('revPrevTitle').textContent     = get('revMetaTitle').value;
+  get('revPrevLead').textContent      = get('revMetaLead').value;
+  get('revPrevGmbScore').textContent  = get('revMetaGmbScore').value;
+  get('revPrevGmbCount').textContent  = get('revMetaGmbCount').value;
+  const published = Adapter.getReviews().filter(r => r.status === 'approved' && r.published);
+  get('revPrevCards').innerHTML = published.length
+    ? published.slice(0, 4).map(r => {
+        const hl  = r.headline || r.text.substring(0, 28) + (r.text.length > 28 ? '…' : '');
+        const meta = [r.service, r.date_label ? 'ご利用日：' + r.date_label : ''].filter(Boolean).join(' • ');
+        const avtr = (r.name || '?').charAt(0);
+        const footer = r.name + (r.location ? ' — ' + r.location : '');
+        return `<div class="rev-prev-rcard">
+          <div class="rev-prev-stars">${'★'.repeat(r.rating||5)}</div>
+          ${meta ? `<div style="font-size:9px;color:var(--gray-2);margin-bottom:4px">${esc(meta)}</div>` : ''}
+          <div class="rev-prev-headline">${esc(hl)}</div>
+          <div class="rev-prev-text">${esc(r.text)}</div>
+          <div class="rev-prev-footer">${esc(footer)}</div>
+        </div>`;
+      }).join('')
+    : '<div style="font-size:11px;color:var(--gray-2);padding:8px 0">公開中のレビューがありません。承認済みのレビューを「公開する」に設定すると表示されます。</div>';
+}
+
+function saveReviewsAll() {
+  const meta = {
+    eyebrow:   document.getElementById('revMetaEyebrow').value.trim(),
+    title:     document.getElementById('revMetaTitle').value.trim(),
+    lead:      document.getElementById('revMetaLead').value.trim(),
+    gmb_score: document.getElementById('revMetaGmbScore').value.trim(),
+    gmb_count: document.getElementById('revMetaGmbCount').value.trim()
+  };
+  Adapter.pushRevHistory({ meta: Adapter.getRevMeta() });
+  Adapter.saveRevMeta(meta);
+  renderRevHistory();
+  const ind = document.getElementById('revSaveInd');
+  ind.style.opacity = '1';
+  clearTimeout(ind._t);
+  ind._t = setTimeout(() => { ind.style.opacity = '0'; }, 2400);
+}
+
+function renderRevHistory() {
+  const hist = Adapter.getRevHistory();
+  const el   = document.getElementById('revHistoryList');
+  if (!hist.length) {
+    el.innerHTML = '<div class="empty" style="padding:16px 0"><p>まだバージョンがありません</p></div>';
+    return;
+  }
+  el.innerHTML = hist.map((entry, i) => {
+    const d  = new Date(entry.ts);
+    const ts = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const snap = (entry.meta && entry.meta.title) || '（タイトルなし）';
+    return `<div class="hhist-item">
+      <div class="hhist-meta">
+        <div class="hhist-time">${ts}</div>
+        <div class="hhist-snap">${esc(snap)}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="restoreRevVersion(${i})">復元</button>
+    </div>`;
+  }).join('');
+}
+
+function restoreRevVersion(idx) {
+  if (!confirm('このバージョンを復元しますか？\n現在の内容はバージョン履歴に保存されます。')) return;
+  const hist = Adapter.getRevHistory();
+  if (!hist[idx]) return;
+  Adapter.pushRevHistory({ meta: Adapter.getRevMeta() });
+  Adapter.saveRevMeta(hist[idx].meta);
+  renderReviews();
+  toast('バージョンを復元しました');
 }
 
 /* ── Public review form ── */

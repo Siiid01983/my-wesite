@@ -2157,24 +2157,24 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
 <section class="section reviews" id="reviews">
   <div class="container">
     <header class="section-head">
-      <span class="eyebrow">Customer Voices</span>
-      <h2 class="section-title">お客様からの、お声</h2>
-      <p class="section-lead">これまでにご利用いただいたお客様より頂戴したご感想を、一部ご紹介いたします。</p>
+      <span class="eyebrow" id="revEyebrowEl">Customer Voices</span>
+      <h2 class="section-title" id="revTitleEl">お客様からの、お声</h2>
+      <p class="section-lead" id="revLeadEl">これまでにご利用いただいたお客様より頂戴したご感想を、一部ご紹介いたします。</p>
       <div class="gmb-badge" role="figure" aria-label="Google マップ口コミ評価">
         <div class="gmb-g" aria-hidden="true">G</div>
         <div>
           <div class="gmb-stars" aria-label="5つ星中4.9">★★★★★</div>
           <div style="display:flex;align-items:baseline;gap:6px;margin-top:2px">
-            <span class="gmb-score">4.9</span>
+            <span class="gmb-score" id="revGmbScore">4.9</span>
             <span style="font-size:14px;color:var(--gray-2);font-weight:500">/ 5</span>
           </div>
-          <div class="gmb-meta">38件の口コミ</div>
+          <div class="gmb-meta" id="revGmbCount">38件の口コミ</div>
         </div>
         <div class="gmb-divider" aria-hidden="true"></div>
         <div class="gmb-platform">Google マップ口コミ</div>
       </div>
     </header>
-    <div class="review-grid">
+    <div class="review-grid" id="revGridEl">
       <article class="review-card">
         <div class="review-meta-line"><span class="review-stars">★★★★★</span><span>カップル・ご夫婦引越し • ご利用日：2026年5月</span></div>
         <h3>とても丁寧で、安心しておまかせできました</h3>
@@ -2217,6 +2217,50 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
     </div>
   </div>
 </section>
+<script>
+/* Reviews content loader — applies admin-saved content from localStorage */
+(function(){
+  try {
+    var rawMeta = localStorage.getItem('hm_reviews_section');
+    var rawRevs = localStorage.getItem('hm_reviews');
+    var el  = function(id){ return document.getElementById(id); };
+    var set = function(id, val){ var e = el(id); if (e && val) e.textContent = val; };
+    if (rawMeta) {
+      var mt = JSON.parse(rawMeta);
+      set('revEyebrowEl', mt.eyebrow);
+      set('revTitleEl',   mt.title);
+      set('revLeadEl',    mt.lead);
+      set('revGmbScore',  mt.gmb_score);
+      set('revGmbCount',  mt.gmb_count);
+    }
+    if (rawRevs) {
+      var all = JSON.parse(rawRevs);
+      var published = all.filter(function(r){ return r.status === 'approved' && r.published; });
+      if (published.length) {
+        var grid = el('revGridEl');
+        if (grid) {
+          grid.innerHTML = published.map(function(r) {
+            var stars    = '★'.repeat(r.rating || 5) + '☆'.repeat(5 - (r.rating || 5));
+            var headline = r.headline || (r.text || '').substring(0, 30) + ((r.text || '').length > 30 ? '…' : '');
+            var metaParts = [r.service, r.date_label ? 'ご利用日：' + r.date_label : ''].filter(Boolean).join(' • ');
+            var avatar   = (r.name || '?').charAt(0);
+            var footerEm = r.location || r.service || '';
+            return '<article class="review-card">' +
+              '<div class="review-meta-line"><span class="review-stars">' + stars + '</span>' +
+              (metaParts ? '<span>' + metaParts + '</span>' : '') + '</div>' +
+              '<h3>' + (headline || '').replace(/[<>]/g,'') + '</h3>' +
+              '<p>' + (r.text || '').replace(/[<>]/g,'') + '</p>' +
+              '<footer><span class="avatar" aria-hidden="true">' + avatar + '</span>' +
+              '<span class="meta"><strong>' + (r.name || '').replace(/[<>]/g,'') + '</strong>' +
+              (footerEm ? '<em>' + footerEm.replace(/[<>]/g,'') + '</em>' : '') + '</span></footer>' +
+              '</article>';
+          }).join('');
+        }
+      }
+    }
+  } catch(e) {}
+})();
+</script>
 
 <!-- ============== MID-PAGE CTA ============== -->
 <div class="midpage-cta">
