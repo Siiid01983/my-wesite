@@ -379,6 +379,13 @@ html.dark .rev-tab-cnt{color:#f59e0b}
 .faq-prev-item:last-child{margin-bottom:0}
 .faq-prev-q{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:4px;line-height:1.4}
 .faq-prev-a{font-size:10px;color:var(--gray-2);line-height:1.55}
+/* ── Company Editor ── */
+.company-save-ind{font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;margin-left:6px;font-weight:500}
+.comp-prev-wrap{background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;padding:18px;min-height:260px;max-height:580px;overflow-y:auto}
+.comp-prev-row{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-2);align-items:flex-start}
+.comp-prev-row:last-child{border-bottom:none;padding-bottom:0}
+.comp-prev-dt{font-size:11px;font-weight:600;color:var(--gray-1);width:90px;flex-shrink:0;padding-top:1px;text-transform:uppercase;letter-spacing:.04em}
+.comp-prev-dd{font-size:12px;color:var(--ink);flex:1;line-height:1.5}
 /* ── Backup Center ── */
 .import-msg{font-size:11px;margin-top:5px;font-weight:500;min-height:14px}
 .import-ok{color:var(--green)}
@@ -576,6 +583,9 @@ html.dark .rev-tab-cnt{color:#f59e0b}
         </button>
         <button class="sb-link" data-view="faq" onclick="go('faq')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>FAQ編集
+        </button>
+        <button class="sb-link" data-view="company" onclick="go('company')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>会社情報編集
         </button>
         <button class="sb-link" data-view="hero" onclick="go('hero')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M3 5h2V3c-1.1 0-2 .9-2 2zm0 8h2v-2H3v2zm4 8h2v-2H7v2zm-4-4h2v-2H3v2zm0-8h2V7H3v2zm4-8H7v2h2V1zm8 0h-2v2h2V1zm-4 0H9v2h2V1zM5 21v-2H3c0 1.1.9 2 2 2zm-2-4h2v-2H3v2zM21 3h-2v2h2V3zm0 4h-2v2h2V7zm0 14c1.1 0 2-.9 2-2h-2v2zm0-8h-2v2h2v-2zm-4 8h2v-2h-2v2zm0-16h2V1h-2v2zm-4 16h2v-2h-2v2zm-4 0h2v-2H9v2z"/></svg>ヒーロー編集
@@ -908,6 +918,74 @@ html.dark .rev-tab-cnt{color:#f59e0b}
                 <div id="svcPrevTitle" class="svc-prev-title"></div>
                 <div id="svcPrevLead" class="svc-prev-lead"></div>
                 <div id="svcPrevCards"></div>
+              </div>
+              <div style="font-size:11px;color:var(--gray-2);margin-top:8px;line-height:1.5">
+                「変更を保存」でサイトに反映されます。
+              </div>
+            </div><!-- /right -->
+
+          </div>
+        </div>
+
+        <!-- COMPANY INFO EDITOR -->
+        <div id="view-company" class="view">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="saveCompanyAll()">
+              <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+              変更を保存
+            </button>
+            <span class="company-save-ind" id="companySaveInd">サイトに保存しました ✓</span>
+          </div>
+          <div class="hero-layout">
+
+            <!-- Left -->
+            <div style="display:flex;flex-direction:column;gap:16px">
+
+              <!-- Section Header -->
+              <div class="panel">
+                <div class="panel-head"><span class="panel-title">セクションヘッダー</span></div>
+                <div class="panel-body">
+                  <div class="m-row" style="margin-bottom:0">
+                    <div class="m-field" style="margin-bottom:0">
+                      <label class="m-label">Eyebrow</label>
+                      <input class="m-input" id="compMetaEyebrow" oninput="liveCompanyPreview()" />
+                    </div>
+                    <div class="m-field" style="margin-bottom:0">
+                      <label class="m-label">タイトル</label>
+                      <input class="m-input" id="compMetaTitle" oninput="liveCompanyPreview()" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Rows Table -->
+              <div class="panel">
+                <div class="panel-head">
+                  <span class="panel-title">会社情報テーブル</span>
+                  <button class="btn btn-primary btn-sm" onclick="openCompanyModal()">
+                    <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>行を追加
+                  </button>
+                </div>
+                <div class="table-wrap" id="companyRowsWrap"></div>
+              </div>
+
+              <!-- Version History -->
+              <div class="panel">
+                <div class="panel-head"><span class="panel-title">バージョン履歴</span></div>
+                <div class="panel-body" id="companyHistoryList">
+                  <div class="empty" style="padding:16px 0"><p>まだバージョンがありません</p></div>
+                </div>
+              </div>
+
+            </div><!-- /left -->
+
+            <!-- Right: live preview -->
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--gray-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">ライブプレビュー</div>
+              <div class="comp-prev-wrap">
+                <div id="compPrevEyebrow" class="svc-prev-eyebrow"></div>
+                <div id="compPrevTitle" class="svc-prev-title" style="margin-bottom:12px"></div>
+                <div id="compPrevRows"></div>
               </div>
               <div style="font-size:11px;color:var(--gray-2);margin-top:8px;line-height:1.5">
                 「変更を保存」でサイトに反映されます。
@@ -1463,6 +1541,34 @@ html.dark .rev-tab-cnt{color:#f59e0b}
   </div>
 </div>
 
+<!-- Company Row Add/Edit Modal -->
+<div class="overlay" id="companyModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title" id="companyModalTitle">行を追加</div>
+    <div class="m-row">
+      <div class="m-field">
+        <label class="m-label">項目名 *</label>
+        <input class="m-input" id="compRowLabel" placeholder="会社名" oninput="updateCompanyModalPrev()" />
+      </div>
+    </div>
+    <div class="m-field">
+      <label class="m-label">内容 *</label>
+      <textarea class="m-ta" id="compRowValue" rows="3" placeholder="Hello Moving" oninput="updateCompanyModalPrev()"></textarea>
+    </div>
+    <div class="rev-preview" style="margin-top:14px">
+      <div class="rev-preview-lbl">プレビュー</div>
+      <div class="comp-prev-row" style="padding:8px 0">
+        <div id="compPrevModalLabel" class="comp-prev-dt">（項目名）</div>
+        <div id="compPrevModalValue" class="comp-prev-dd"></div>
+      </div>
+    </div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closeCompanyModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveCompanyRow()">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- FAQ Add/Edit Modal -->
 <div class="overlay" id="faqModal">
   <div class="modal" style="max-width:540px">
@@ -1834,6 +1940,35 @@ const Adapter = (() => {
       try { localStorage.setItem('hm_faq_history', JSON.stringify(hist.slice(0, 10))); } catch(e) {}
     },
 
+    /* Company Info */
+    getCompanyRows() {
+      const defaults = [
+        {id:'CR-1', label:'会社名',     value:'Hello Moving'},
+        {id:'CR-2', label:'創業',       value:'2012年'},
+        {id:'CR-3', label:'事業内容',   value:'引越し運送業（単身・カップル・学生・当日対応）／家具組立・設置'},
+        {id:'CR-4', label:'所在地',     value:'東京都'},
+        {id:'CR-5', label:'対応エリア', value:'東京・神奈川・埼玉・千葉を中心に、日本全国'},
+        {id:'CR-6', label:'営業時間',   value:'8:00 – 20:00（年中無休）'},
+        {id:'CR-7', label:'許認可',     value:'国土交通省 認可運送事業者 — 第 431320058126 号'},
+        {id:'CR-8', label:'保険',       value:'引越業者向け 損害補償保険 加入済'},
+        {id:'CR-9', label:'対応言語',   value:'日本語 ／ English'},
+        {id:'CR-10',label:'お支払い',   value:'現金 ／ 銀行振込 ／ クレジットカード ／ 請求書払い（法人）'},
+      ];
+      const v = ls('hm_company_rows', null);
+      if (v) return v;
+      save('hm_company_rows', defaults);
+      return defaults;
+    },
+    saveCompanyRows: (v) => save('hm_company_rows', v),
+    getCompanyMeta: () => ls('hm_company_section', { eyebrow:'Company', title:'会社情報' }),
+    saveCompanyMeta: (v) => save('hm_company_section', v),
+    getCompanyHistory: () => { try { return JSON.parse(localStorage.getItem('hm_company_history') || '[]'); } catch(e) { return []; } },
+    pushCompanyHistory(snap) {
+      const hist = this.getCompanyHistory();
+      hist.unshift({ ts: Date.now(), meta: snap.meta, rows: snap.rows });
+      try { localStorage.setItem('hm_company_history', JSON.stringify(hist.slice(0, 10))); } catch(e) {}
+    },
+
     /* Disposal categories */
     getDisposal: () => ls(K.disposal, {
       'ベッド・マットレス': {enabled: true, price: 5000},
@@ -1929,7 +2064,7 @@ function calcStats() {
    ════════════════════════════════════════════════════════ */
 const VIEW_TITLES = {
   dashboard:'ダッシュボード', bookings:'予約管理', quotes:'見積り管理',
-  reviews:'レビュー管理', services:'サービス管理', faq:'FAQ編集', hero:'ヒーロー編集', calendar:'カレンダー管理', analytics:'分析',
+  reviews:'レビュー管理', services:'サービス管理', faq:'FAQ編集', company:'会社情報編集', hero:'ヒーロー編集', calendar:'カレンダー管理', analytics:'分析',
   capacity:'容量設定', pricing:'料金管理', disposal:'不用品管理', actions:'クイック操作',
   backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理'
 };
@@ -1954,6 +2089,7 @@ function go(view) {
   if (view==='reviews') renderReviews();
   if (view==='services') renderServices();
   if (view==='faq') renderFaq();
+  if (view==='company') renderCompany();
   if (view==='hero') renderHero();
   if (view==='backup') renderBackup();
   if (view==='media') renderMedia();
@@ -3180,6 +3316,172 @@ function restoreRevVersion(idx) {
   Adapter.pushRevHistory({ meta: Adapter.getRevMeta() });
   Adapter.saveRevMeta(hist[idx].meta);
   renderReviews();
+  toast('バージョンを復元しました');
+}
+
+/* ════════════════════════════════════════════════════════
+   COMPANY INFO MANAGEMENT
+   ════════════════════════════════════════════════════════ */
+let _compRowId = null;
+
+function renderCompany() {
+  const meta = Adapter.getCompanyMeta();
+  document.getElementById('compMetaEyebrow').value = meta.eyebrow || '';
+  document.getElementById('compMetaTitle').value   = meta.title   || '';
+  const rows = Adapter.getCompanyRows();
+  if (!rows.length) {
+    document.getElementById('companyRowsWrap').innerHTML = emptyHTML('行がありません');
+  } else {
+    const trs = rows.map((r, i) => `<tr>
+      <td style="text-align:center;font-weight:700;color:var(--gray-2);width:36px">${i+1}</td>
+      <td style="white-space:nowrap;font-weight:600">${esc(r.label||'—')}</td>
+      <td class="td-truncate td-sm" style="max-width:260px">${esc(r.value||'—')}</td>
+      <td>
+        <div style="display:flex;gap:4px;align-items:center">
+          <button class="btn btn-ghost btn-sm btn-icon" onclick="moveCompanyRow('${esc(r.id)}',-1)" ${i===0?'disabled':''} title="上へ">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+          </button>
+          <button class="btn btn-ghost btn-sm btn-icon" onclick="moveCompanyRow('${esc(r.id)}',1)" ${i===rows.length-1?'disabled':''} title="下へ">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="openCompanyEdit('${esc(r.id)}')">編集</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="delCompanyRow('${esc(r.id)}')" title="削除">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>`).join('');
+    document.getElementById('companyRowsWrap').innerHTML = `
+      <table><thead><tr>
+        <th style="width:36px">#</th><th>項目名</th><th>内容</th><th>操作</th>
+      </tr></thead><tbody>${trs}</tbody></table>`;
+  }
+  liveCompanyPreview();
+  renderCompanyHistory();
+}
+
+function liveCompanyPreview() {
+  const get = id => document.getElementById(id);
+  get('compPrevEyebrow').textContent = get('compMetaEyebrow').value;
+  get('compPrevTitle').textContent   = get('compMetaTitle').value;
+  const rows = Adapter.getCompanyRows();
+  get('compPrevRows').innerHTML = rows.length
+    ? rows.map(r =>
+        `<div class="comp-prev-row">
+           <div class="comp-prev-dt">${esc(r.label||'')}</div>
+           <div class="comp-prev-dd">${esc(r.value||'')}</div>
+         </div>`
+      ).join('')
+    : '<div style="font-size:11px;color:var(--gray-2);padding:8px 0">行がありません。</div>';
+}
+
+function moveCompanyRow(id, dir) {
+  const rows = Adapter.getCompanyRows();
+  const idx  = rows.findIndex(r => r.id === id);
+  if (idx < 0) return;
+  const next = idx + dir;
+  if (next < 0 || next >= rows.length) return;
+  [rows[idx], rows[next]] = [rows[next], rows[idx]];
+  Adapter.saveCompanyRows(rows);
+  renderCompany();
+}
+
+function openCompanyModal() {
+  _compRowId = null;
+  document.getElementById('companyModalTitle').textContent = '行を追加';
+  document.getElementById('compRowLabel').value = '';
+  document.getElementById('compRowValue').value = '';
+  updateCompanyModalPrev();
+  document.getElementById('companyModal').classList.add('open');
+}
+
+function openCompanyEdit(id) {
+  const r = Adapter.getCompanyRows().find(r => r.id === id); if (!r) return;
+  _compRowId = id;
+  document.getElementById('companyModalTitle').textContent = '行を編集';
+  document.getElementById('compRowLabel').value = r.label || '';
+  document.getElementById('compRowValue').value = r.value || '';
+  updateCompanyModalPrev();
+  document.getElementById('companyModal').classList.add('open');
+}
+
+function closeCompanyModal() { document.getElementById('companyModal').classList.remove('open'); }
+
+function updateCompanyModalPrev() {
+  document.getElementById('compPrevModalLabel').textContent = document.getElementById('compRowLabel').value || '（項目名）';
+  document.getElementById('compPrevModalValue').textContent = document.getElementById('compRowValue').value || '';
+}
+
+function saveCompanyRow() {
+  const label = document.getElementById('compRowLabel').value.trim();
+  const value = document.getElementById('compRowValue').value.trim();
+  if (!label) { alert('項目名を入力してください'); return; }
+  if (!value) { alert('内容を入力してください'); return; }
+  const rows = Adapter.getCompanyRows();
+  if (_compRowId) {
+    const idx = rows.findIndex(r => r.id === _compRowId);
+    if (idx >= 0) rows[idx] = { ...rows[idx], label, value };
+    Adapter.saveCompanyRows(rows);
+    toast('行を更新しました');
+  } else {
+    rows.push({ id: 'CR-' + Date.now(), label, value });
+    Adapter.saveCompanyRows(rows);
+    toast('行を追加しました');
+  }
+  closeCompanyModal();
+  renderCompany();
+}
+
+function delCompanyRow(id) {
+  if (!confirm('この行を削除しますか？')) return;
+  Adapter.saveCompanyRows(Adapter.getCompanyRows().filter(r => r.id !== id));
+  toast('削除しました');
+  renderCompany();
+}
+
+function saveCompanyAll() {
+  const meta = {
+    eyebrow: document.getElementById('compMetaEyebrow').value.trim(),
+    title:   document.getElementById('compMetaTitle').value.trim()
+  };
+  Adapter.pushCompanyHistory({ meta: Adapter.getCompanyMeta(), rows: Adapter.getCompanyRows() });
+  Adapter.saveCompanyMeta(meta);
+  renderCompanyHistory();
+  const ind = document.getElementById('companySaveInd');
+  ind.style.opacity = '1';
+  clearTimeout(ind._t);
+  ind._t = setTimeout(() => { ind.style.opacity = '0'; }, 2400);
+}
+
+function renderCompanyHistory() {
+  const hist = Adapter.getCompanyHistory();
+  const el   = document.getElementById('companyHistoryList');
+  if (!hist.length) {
+    el.innerHTML = '<div class="empty" style="padding:16px 0"><p>まだバージョンがありません</p></div>';
+    return;
+  }
+  el.innerHTML = hist.map((entry, i) => {
+    const d  = new Date(entry.ts);
+    const ts = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const snap = (entry.meta && entry.meta.title) || '（タイトルなし）';
+    return `<div class="hhist-item">
+      <div class="hhist-meta">
+        <div class="hhist-time">${ts}</div>
+        <div class="hhist-snap">${esc(snap)} — ${(entry.rows||[]).length}行</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="restoreCompanyVersion(${i})">復元</button>
+    </div>`;
+  }).join('');
+}
+
+function restoreCompanyVersion(idx) {
+  if (!confirm('このバージョンを復元しますか？\n現在の内容はバージョン履歴に保存されます。')) return;
+  const hist = Adapter.getCompanyHistory();
+  if (!hist[idx]) return;
+  Adapter.pushCompanyHistory({ meta: Adapter.getCompanyMeta(), rows: Adapter.getCompanyRows() });
+  Adapter.saveCompanyMeta(hist[idx].meta);
+  Adapter.saveCompanyRows(hist[idx].rows);
+  renderCompany();
   toast('バージョンを復元しました');
 }
 

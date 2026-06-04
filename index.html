@@ -2346,10 +2346,10 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
 <section class="section company" id="company">
   <div class="container">
     <header class="section-head">
-      <span class="eyebrow">Company</span>
-      <h2 class="section-title">会社情報</h2>
+      <span class="eyebrow" id="compEyebrowEl">Company</span>
+      <h2 class="section-title" id="compTitleEl">会社情報</h2>
     </header>
-    <dl class="company-table">
+    <dl class="company-table" id="companyTableEl">
       <div class="company-row"><dt>会社名</dt><dd>Hello Moving</dd></div>
       <div class="company-row"><dt>創業</dt><dd>2012年</dd></div>
       <div class="company-row"><dt>事業内容</dt><dd>引越し運送業（単身・カップル・学生・当日対応）／家具組立・設置</dd></div>
@@ -2363,6 +2363,34 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
     </dl>
   </div>
 </section>
+<script>
+/* Company info loader — applies admin-saved content from localStorage */
+(function(){
+  try {
+    var rawMeta = localStorage.getItem('hm_company_section');
+    var rawRows = localStorage.getItem('hm_company_rows');
+    var el  = function(id){ return document.getElementById(id); };
+    var set = function(id, val){ var e = el(id); if (e && val) e.textContent = val; };
+    if (rawMeta) {
+      var mt = JSON.parse(rawMeta);
+      set('compEyebrowEl', mt.eyebrow);
+      set('compTitleEl',   mt.title);
+    }
+    if (rawRows) {
+      var rows = JSON.parse(rawRows);
+      if (rows && rows.length) {
+        var tbl = el('companyTableEl');
+        if (tbl) {
+          var esc = function(s){ return String(s).replace(/[<>&"]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]; }); };
+          tbl.innerHTML = rows.map(function(r) {
+            return '<div class="company-row"><dt>' + esc(r.label) + '</dt><dd>' + esc(r.value) + '</dd></div>';
+          }).join('');
+        }
+      }
+    }
+  } catch(e) {}
+})();
+</script>
 
 <!-- ============== BOOKING CALENDAR ============== -->
 <section class="booking-calendar-section" id="bookingCalendar">
