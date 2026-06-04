@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Review Admin — Hello Moving</title>
+<meta name="robots" content="noindex,nofollow"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --navy:#0a1f44;--ink:#0b0f17;--gray-1:#3a4150;--gray-2:#6b7280;--gray-3:#9aa1ad;
+  --line:#e6e8ec;--line-2:#eef0f3;--bg:#fff;--bg-soft:#f7f8fa;--bg-soft-2:#fafbfc;
+  --green:#10b981;--blue:#2563eb;--red:#ef4444;--amber:#f59e0b;
+  --radius:12px;--radius-sm:8px;
+  --font-jp:"Noto Sans JP",sans-serif;--font-en:"Inter",sans-serif;
+  --easing:cubic-bezier(.2,.7,.2,1)
+}
+html.dark{color-scheme:dark;
+  --bg:#0d1117;--bg-soft:#161b22;--bg-soft-2:#1c2128;--ink:#e6edf3;
+  --gray-1:#8b949e;--gray-2:#6e7681;--gray-3:#484f58;
+  --line:rgba(255,255,255,.08);--line-2:rgba(255,255,255,.06)}
+*,*::before,*::after{box-sizing:border-box}*{margin:0;padding:0}
+body{font-family:var(--font-jp);color:var(--ink);background:var(--bg-soft);
+  -webkit-font-smoothing:antialiased;min-height:100vh}
+html.dark body{background:#0a0f1a}
+
+/* ── Login screen ── */
+#adLogin{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.ad-login-card{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);
+  padding:40px;max-width:360px;width:100%;text-align:center}
+html.dark .ad-login-card{background:var(--bg-soft);border-color:rgba(255,255,255,.08)}
+.ad-login-logo{width:44px;height:44px;border-radius:10px;background:var(--ink);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:20px;font-family:var(--font-en);margin:0 auto 16px}
+.ad-login-title{font-size:18px;font-weight:600;margin-bottom:6px;color:var(--ink);letter-spacing:.04em}
+.ad-login-sub{font-size:13px;color:var(--gray-2);margin-bottom:24px}
+.ad-input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:var(--radius-sm);
+  font-size:14px;font-family:var(--font-jp);color:var(--ink);background:var(--bg);margin-bottom:14px}
+.ad-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+html.dark .ad-input{background:var(--bg-soft-2);border-color:rgba(255,255,255,.1);color:var(--ink)}
+.ad-login-err{font-size:12.5px;color:var(--red);margin-bottom:12px;display:none}
+.ad-btn-primary{width:100%;padding:12px;border:none;border-radius:var(--radius-sm);
+  font-size:14px;font-weight:600;cursor:pointer;background:var(--ink);color:#fff;
+  font-family:var(--font-jp);letter-spacing:.04em;transition:background .2s}
+.ad-btn-primary:hover{background:var(--navy)}
+
+/* ── Dashboard layout ── */
+#adDash{display:none}
+.ad-header{background:var(--ink);color:#fff;padding:0 24px;
+  display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+html.dark .ad-header{background:var(--bg-soft);border-bottom:1px solid rgba(255,255,255,.08)}
+.ad-header-brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:14px;letter-spacing:.06em}
+.ad-header-mark{width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.15);
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-family:var(--font-en)}
+.ad-header-tag{font-size:10px;font-weight:500;letter-spacing:.12em;opacity:.6;
+  background:rgba(255,255,255,.1);padding:2px 8px;border-radius:20px}
+.ad-header-right{display:flex;align-items:center;gap:12px}
+.ad-logout{background:none;border:1px solid rgba(255,255,255,.25);color:#fff;
+  border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:var(--font-jp)}
+.ad-logout:hover{background:rgba(255,255,255,.1)}
+.ad-darkbtn{background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;
+  font-size:18px;padding:4px;line-height:1}
+html.dark .ad-darkbtn{color:var(--gray-1)}
+
+/* ── Main content ── */
+.ad-main{max-width:1100px;margin:0 auto;padding:32px 24px}
+
+/* ── Stats row ── */
+.ad-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.ad-stat{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px 20px}
+html.dark .ad-stat{background:var(--bg-soft);border-color:rgba(255,255,255,.08)}
+.ad-stat-num{font-size:28px;font-weight:700;color:var(--ink);font-family:var(--font-en);line-height:1}
+.ad-stat-lbl{font-size:11.5px;color:var(--gray-2);margin-top:5px;letter-spacing:.05em}
+.ad-stat-pending .ad-stat-num{color:#f59e0b}
+.ad-stat-approved .ad-stat-num{color:#10b981}
+.ad-stat-rejected .ad-stat-num{color:#ef4444}
+
+/* ── Section cards ── */
+.ad-section{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);
+  margin-bottom:22px;overflow:hidden}
+html.dark .ad-section{background:var(--bg-soft);border-color:rgba(255,255,255,.08)}
+.ad-section-head{padding:16px 20px;border-bottom:1px solid var(--line-2);
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+html.dark .ad-section-head{border-color:rgba(255,255,255,.06)}
+.ad-section-title{font-size:14px;font-weight:600;color:var(--ink);letter-spacing:.05em}
+.ad-section-body{padding:20px}
+
+/* ── Token generator ── */
+.ad-token-form{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.ad-token-field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:140px}
+.ad-token-label{font-size:12px;font-weight:600;color:var(--gray-1);letter-spacing:.06em}
+.ad-token-input,.ad-token-select{padding:10px 12px;border:1px solid var(--line);
+  border-radius:var(--radius-sm);font-size:13.5px;font-family:var(--font-jp);
+  color:var(--ink);background:var(--bg);min-width:0}
+.ad-token-input:focus,.ad-token-select:focus{outline:none;border-color:var(--blue);
+  box-shadow:0 0 0 2px rgba(37,99,235,.1)}
+html.dark .ad-token-input,html.dark .ad-token-select{
+  background:var(--bg-soft-2);border-color:rgba(255,255,255,.1);color:var(--ink)}
+html.dark .ad-token-select option{background:var(--bg-soft)}
+.ad-btn-gen{padding:10px 20px;border:none;border-radius:var(--radius-sm);
+  font-size:13.5px;font-weight:600;cursor:pointer;background:var(--ink);color:#fff;
+  font-family:var(--font-jp);white-space:nowrap;transition:background .2s;align-self:flex-end}
+.ad-btn-gen:hover{background:var(--navy)}
+.ad-token-result{margin-top:14px;display:none}
+.ad-token-link-wrap{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ad-token-link{flex:1;padding:10px 13px;background:var(--bg-soft);border:1px solid var(--line);
+  border-radius:var(--radius-sm);font-size:12.5px;font-family:var(--font-en);
+  color:var(--blue);word-break:break-all;min-width:0}
+html.dark .ad-token-link{background:var(--bg-soft-2);border-color:rgba(255,255,255,.08);color:#60a5fa}
+.ad-btn-copy{padding:10px 16px;border:1px solid var(--line);border-radius:var(--radius-sm);
+  font-size:13px;font-weight:500;cursor:pointer;background:var(--bg-soft);
+  color:var(--ink);font-family:var(--font-jp);white-space:nowrap;transition:all .2s}
+.ad-btn-copy:hover{border-color:var(--ink)}
+.ad-btn-copy.copied{background:#d1fae5;border-color:#10b981;color:#059669}
+
+/* ── Tabs ── */
+.ad-tabs{display:flex;gap:0;border-bottom:1px solid var(--line-2)}
+html.dark .ad-tabs{border-color:rgba(255,255,255,.06)}
+.ad-tab{padding:12px 20px;font-size:13px;font-weight:500;cursor:pointer;
+  color:var(--gray-2);border-bottom:2px solid transparent;
+  transition:color .2s,border-color .2s;background:none;border-top:none;
+  border-left:none;border-right:none;font-family:var(--font-jp);letter-spacing:.03em}
+.ad-tab.active{color:var(--ink);border-bottom-color:var(--ink)}
+html.dark .ad-tab.active{color:var(--ink);border-bottom-color:var(--ink)}
+.ad-tab-badge{display:inline-flex;align-items:center;justify-content:center;
+  min-width:18px;height:18px;border-radius:20px;font-size:10px;font-weight:700;
+  background:rgba(245,158,11,.15);color:#d97706;padding:0 5px;margin-left:5px}
+html.dark .ad-tab-badge{background:rgba(245,158,11,.12);color:#fbbf24}
+
+/* ── Review list ── */
+.ad-review-list{display:flex;flex-direction:column;gap:12px;padding:16px}
+.ad-review-item{border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:16px;transition:border-color .15s}
+html.dark .ad-review-item{border-color:rgba(255,255,255,.08);background:var(--bg-soft-2)}
+.ad-review-item.pending{border-left:3px solid #f59e0b}
+.ad-review-item.approved{border-left:3px solid #10b981}
+.ad-review-item.rejected{border-left:3px solid #ef4444;opacity:.7}
+.ad-review-item.featured{border-left:3px solid #2563eb}
+.ad-rev-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px}
+.ad-rev-name{font-weight:600;font-size:14px;color:var(--ink)}
+.ad-rev-stars{color:#f59e0b;font-size:13px;letter-spacing:.03em}
+.ad-rev-pill{display:inline-block;font-size:10.5px;font-weight:500;padding:2px 8px;
+  border-radius:20px;background:var(--bg-soft);border:1px solid var(--line);
+  color:var(--gray-1);letter-spacing:.03em}
+html.dark .ad-rev-pill{background:var(--bg-soft-2);border-color:rgba(255,255,255,.08);color:var(--gray-1)}
+.ad-rev-status-badge{display:inline-flex;align-items:center;gap:3px;
+  font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.06em}
+.ad-rev-status-badge.pending{background:rgba(245,158,11,.12);color:#d97706}
+.ad-rev-status-badge.approved{background:rgba(16,185,129,.1);color:#059669}
+.ad-rev-status-badge.rejected{background:rgba(239,68,68,.08);color:#ef4444}
+.ad-rev-status-badge.featured{background:rgba(37,99,235,.1);color:#2563eb}
+html.dark .ad-rev-status-badge.pending{color:#fbbf24}
+html.dark .ad-rev-status-badge.approved{color:#34d399}
+html.dark .ad-rev-status-badge.rejected{color:#f87171}
+html.dark .ad-rev-status-badge.featured{color:#60a5fa}
+.ad-rev-text{font-size:13.5px;color:var(--gray-1);line-height:1.7;margin-bottom:12px}
+.ad-rev-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.ad-rev-date{font-size:11.5px;color:var(--gray-2);font-family:var(--font-en)}
+.ad-rev-actions{display:flex;gap:6px;flex-wrap:wrap}
+.ad-rev-actions button{padding:6px 12px;border-radius:6px;font-size:12px;font-weight:500;
+  cursor:pointer;font-family:var(--font-jp);transition:all .15s;letter-spacing:.03em}
+.ad-btn-approve{background:rgba(16,185,129,.1);color:#059669;border:1px solid rgba(16,185,129,.25)}
+.ad-btn-approve:hover{background:rgba(16,185,129,.2)}
+.ad-btn-reject{background:rgba(239,68,68,.08);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
+.ad-btn-reject:hover{background:rgba(239,68,68,.15)}
+.ad-btn-feature{background:rgba(37,99,235,.08);color:#2563eb;border:1px solid rgba(37,99,235,.2)}
+.ad-btn-feature:hover{background:rgba(37,99,235,.15)}
+.ad-btn-unfeature{background:rgba(37,99,235,.12);color:#2563eb;border:1px solid rgba(37,99,235,.3);font-weight:700}
+.ad-btn-edit{background:var(--bg-soft);color:var(--gray-1);border:1px solid var(--line)}
+.ad-btn-edit:hover{border-color:var(--gray-2)}
+.ad-btn-delete{background:rgba(239,68,68,.06);color:#ef4444;border:1px solid rgba(239,68,68,.15)}
+.ad-btn-delete:hover{background:rgba(239,68,68,.14)}
+html.dark .ad-btn-approve{color:#34d399;border-color:rgba(52,211,153,.25)}
+html.dark .ad-btn-reject{color:#f87171;border-color:rgba(239,68,68,.2)}
+html.dark .ad-btn-feature{color:#60a5fa;border-color:rgba(96,165,250,.25)}
+html.dark .ad-btn-unfeature{color:#60a5fa;border-color:rgba(96,165,250,.3)}
+html.dark .ad-btn-edit{background:var(--bg-soft-2);color:var(--gray-1);border-color:rgba(255,255,255,.08)}
+html.dark .ad-btn-delete{color:#f87171;border-color:rgba(239,68,68,.18)}
+
+/* ── Edit inline form ── */
+.ad-edit-form{margin-top:14px;padding-top:14px;border-top:1px solid var(--line-2);display:none}
+html.dark .ad-edit-form{border-color:rgba(255,255,255,.06)}
+.ad-edit-form textarea{width:100%;padding:10px 12px;border:1px solid var(--line);
+  border-radius:var(--radius-sm);font-size:13.5px;font-family:var(--font-jp);
+  color:var(--ink);background:var(--bg);resize:vertical;margin-bottom:8px}
+html.dark .ad-edit-form textarea{background:var(--bg-soft-2);border-color:rgba(255,255,255,.1);color:var(--ink)}
+.ad-edit-form textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(37,99,235,.1)}
+.ad-edit-actions{display:flex;gap:8px}
+.ad-btn-save{padding:8px 16px;border:none;border-radius:6px;font-size:12.5px;font-weight:600;
+  cursor:pointer;background:var(--ink);color:#fff;font-family:var(--font-jp)}
+.ad-btn-cancel-edit{padding:8px 14px;border:1px solid var(--line);border-radius:6px;
+  font-size:12.5px;cursor:pointer;background:none;color:var(--gray-1);font-family:var(--font-jp)}
+html.dark .ad-btn-cancel-edit{border-color:rgba(255,255,255,.1)}
+
+/* ── Empty state ── */
+.ad-empty{text-align:center;padding:40px 20px;color:var(--gray-2);font-size:14px}
+
+/* ── Responsive ── */
+@media(max-width:720px){
+  .ad-stats{grid-template-columns:repeat(2,1fr)}
+  .ad-main{padding:20px 14px}
+  .ad-token-form{flex-direction:column}
+  .ad-token-field{width:100%}
+}
+@media(max-width:480px){
+  .ad-stats{grid-template-columns:1fr 1fr}
+  .ad-tab{padding:10px 14px;font-size:12px}
+}
+</style>
+<script>(function(){var t=localStorage.getItem('hm_theme');if(t==='dark'||(t===null&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');})()</script>
+</head>
+<body>
+
+<!-- ── Login ── -->
+<div id="adLogin">
+  <div class="ad-login-card">
+    <div class="ad-login-logo">H</div>
+    <h1 class="ad-login-title">Review Admin</h1>
+    <p class="ad-login-sub">Hello Moving · 管理者専用</p>
+    <form id="loginForm">
+      <input type="password" id="adPass" class="ad-input" placeholder="管理者パスワード" autocomplete="current-password" required/>
+      <p class="ad-login-err" id="loginErr">パスワードが正しくありません。</p>
+      <button type="submit" class="ad-btn-primary">ログイン</button>
+    </form>
+  </div>
+</div>
+
+<!-- ── Dashboard ── -->
+<div id="adDash">
+
+  <header class="ad-header">
+    <div class="ad-header-brand">
+      <div class="ad-header-mark">H</div>
+      Hello Moving
+      <span class="ad-header-tag">Review Admin</span>
+    </div>
+    <div class="ad-header-right">
+      <button class="ad-darkbtn" id="adDarkBtn" aria-label="ダークモード切替" title="Toggle dark mode">◑</button>
+      <a href="/" class="ad-logout" style="text-decoration:none">サイトを見る</a>
+      <button class="ad-logout" id="adLogout">ログアウト</button>
+    </div>
+  </header>
+
+  <main class="ad-main">
+
+    <!-- Stats -->
+    <div class="ad-stats" id="adStats"></div>
+
+    <!-- Token Generator -->
+    <div class="ad-section">
+      <div class="ad-section-head">
+        <span class="ad-section-title">レビューリンク発行</span>
+        <span style="font-size:12px;color:var(--gray-2)">サービス完了後にお客様へ送付</span>
+      </div>
+      <div class="ad-section-body">
+        <div class="ad-token-form">
+          <div class="ad-token-field">
+            <label class="ad-token-label" for="tkBookingId">予約No. / Booking ID</label>
+            <input type="text" id="tkBookingId" class="ad-token-input" placeholder="例：BK-2026-001"/>
+          </div>
+          <div class="ad-token-field">
+            <label class="ad-token-label" for="tkService">サービス</label>
+            <select id="tkService" class="ad-token-select">
+              <option value="単身引越し">📦 単身引越し</option>
+              <option value="カップル・ご夫婦引越し">👫 カップル引越し</option>
+              <option value="学生・新生活引越し">🎓 学生引越し</option>
+              <option value="不用品回収・処分サービス">♻️ 不用品回収</option>
+              <option value="当日・お急ぎ引越し">🚚 当日対応</option>
+              <option value="家具組立・分解">🔧 家具組立・分解</option>
+            </select>
+          </div>
+          <div class="ad-token-field">
+            <label class="ad-token-label" for="tkArea">エリア</label>
+            <input type="text" id="tkArea" class="ad-token-input" placeholder="例：東京都渋谷区"/>
+          </div>
+          <button class="ad-btn-gen" id="tkGenBtn">リンクを発行</button>
+        </div>
+        <div class="ad-token-result" id="tkResult">
+          <div class="ad-token-link-wrap">
+            <div class="ad-token-link" id="tkLinkDisplay"></div>
+            <button class="ad-btn-copy" id="tkCopyBtn">コピー</button>
+          </div>
+          <p style="font-size:11.5px;color:var(--gray-2);margin-top:8px">このリンクをLINE・メールでお客様に送付してください。1件の予約につき1回のみ使用可能です。</p>
+        </div>
+        <div style="margin-top:16px;border-top:1px solid var(--line-2);padding-top:14px">
+          <p style="font-size:12px;color:var(--gray-2);margin-bottom:10px;font-weight:500">発行済みトークン</p>
+          <div id="tkList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reviews -->
+    <div class="ad-section">
+      <div class="ad-section-head">
+        <span class="ad-section-title">レビュー管理</span>
+      </div>
+      <div class="ad-tabs" id="adTabs">
+        <button class="ad-tab active" data-tab="pending">承認待ち <span class="ad-tab-badge" id="tabBadge">0</span></button>
+        <button class="ad-tab" data-tab="approved">承認済み</button>
+        <button class="ad-tab" data-tab="rejected">却下</button>
+        <button class="ad-tab" data-tab="all">すべて</button>
+      </div>
+      <div id="adReviewList" class="ad-review-list"></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var TK='hm_review_tokens', RV='hm_reviews';
+  var ADMIN_PASS='hellomoving2026';
+  var SESSION_KEY='hm_admin_sess';
+  var currentTab='pending';
+
+  function getTokens(){try{return JSON.parse(localStorage.getItem(TK)||'[]');}catch(e){return[];}}
+  function getReviews(){try{return JSON.parse(localStorage.getItem(RV)||'[]');}catch(e){return[];}}
+  function save(k,v){localStorage.setItem(k,JSON.stringify(v));}
+  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+  // ── Auth ──
+  function isLoggedIn(){return sessionStorage.getItem(SESSION_KEY)==='1';}
+  function login(){sessionStorage.setItem(SESSION_KEY,'1');showDash();}
+  function logout(){sessionStorage.removeItem(SESSION_KEY);location.reload();}
+
+  document.getElementById('loginForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    var p=document.getElementById('adPass').value;
+    var errEl=document.getElementById('loginErr');
+    if(p===ADMIN_PASS){errEl.style.display='none';login();}
+    else{errEl.style.display='block';}
+  });
+
+  if(isLoggedIn()){showDash();}
+
+  function showDash(){
+    document.getElementById('adLogin').style.display='none';
+    document.getElementById('adDash').style.display='block';
+    renderAll();
+  }
+
+  document.getElementById('adLogout').addEventListener('click',logout);
+
+  // ── Dark mode ──
+  document.getElementById('adDarkBtn').addEventListener('click',function(){
+    var dark=document.documentElement.classList.toggle('dark');
+    localStorage.setItem('hm_theme',dark?'dark':'light');
+  });
+
+  // ── Stats ──
+  function renderStats(){
+    var reviews=getReviews();
+    var tokens=getTokens();
+    var pending=reviews.filter(function(r){return r.status==='pending';}).length;
+    var approved=reviews.filter(function(r){return r.status==='approved';}).length;
+    var rejected=reviews.filter(function(r){return r.status==='rejected';}).length;
+    document.getElementById('adStats').innerHTML=
+      '<div class="ad-stat ad-stat-pending"><div class="ad-stat-num">'+pending+'</div><div class="ad-stat-lbl">承認待ち</div></div>'+
+      '<div class="ad-stat ad-stat-approved"><div class="ad-stat-num">'+approved+'</div><div class="ad-stat-lbl">承認済み</div></div>'+
+      '<div class="ad-stat ad-stat-rejected"><div class="ad-stat-num">'+rejected+'</div><div class="ad-stat-lbl">却下</div></div>'+
+      '<div class="ad-stat"><div class="ad-stat-num">'+tokens.filter(function(t){return !t.used;}).length+'</div><div class="ad-stat-lbl">未使用トークン</div></div>';
+    var badge=document.getElementById('tabBadge');
+    if(badge){badge.textContent=pending;badge.style.display=pending?'inline-flex':'none';}
+  }
+
+  // ── Tabs ──
+  document.getElementById('adTabs').addEventListener('click',function(e){
+    var btn=e.target.closest('.ad-tab');if(!btn)return;
+    document.querySelectorAll('.ad-tab').forEach(function(t){t.classList.remove('active');});
+    btn.classList.add('active');
+    currentTab=btn.dataset.tab;
+    renderReviews();
+  });
+
+  // ── Token generator ──
+  document.getElementById('tkGenBtn').addEventListener('click',function(){
+    var bid=(document.getElementById('tkBookingId').value||'').trim();
+    var svc=document.getElementById('tkService').value;
+    var area=(document.getElementById('tkArea').value||'').trim();
+    if(!bid){document.getElementById('tkBookingId').focus();return;}
+    var tokens=getTokens();
+    var dupe=tokens.find(function(t){return t.bookingId===bid&&!t.used;});
+    if(dupe){
+      var link=location.origin+'/review.html?token='+dupe.token;
+      showTokenResult(link);return;
+    }
+    var token=Math.random().toString(36).slice(2)+Date.now().toString(36);
+    tokens.push({token:token,bookingId:bid,service:svc,area:area,used:false,createdAt:new Date().toISOString()});
+    save(TK,tokens);
+    var link=location.origin+'/review.html?token='+token;
+    showTokenResult(link);
+    renderTokenList();
+    renderStats();
+  });
+
+  function showTokenResult(link){
+    var res=document.getElementById('tkResult');
+    document.getElementById('tkLinkDisplay').textContent=link;
+    res.style.display='block';
+    var copyBtn=document.getElementById('tkCopyBtn');
+    copyBtn.textContent='コピー';copyBtn.classList.remove('copied');
+    copyBtn.onclick=function(){
+      navigator.clipboard.writeText(link).then(function(){
+        copyBtn.textContent='コピー済み ✓';copyBtn.classList.add('copied');
+        setTimeout(function(){copyBtn.textContent='コピー';copyBtn.classList.remove('copied');},2500);
+      }).catch(function(){
+        var el=document.createElement('textarea');
+        el.value=link;document.body.appendChild(el);el.select();
+        try{document.execCommand('copy');copyBtn.textContent='コピー済み ✓';copyBtn.classList.add('copied');}catch(e){}
+        document.body.removeChild(el);
+        setTimeout(function(){copyBtn.textContent='コピー';copyBtn.classList.remove('copied');},2500);
+      });
+    };
+  }
+
+  function renderTokenList(){
+    var tokens=getTokens().slice().reverse().slice(0,8);
+    var el=document.getElementById('tkList');
+    if(!tokens.length){el.innerHTML='<p class="ad-empty" style="padding:12px 0">まだトークンがありません。</p>';return;}
+    el.innerHTML=tokens.map(function(t){
+      return '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line-2);font-size:12px;">'+
+        '<span style="font-weight:600;color:var(--ink)">'+esc(t.bookingId)+'</span>'+
+        '<span style="color:var(--gray-2)">'+esc(t.service)+'</span>'+
+        (t.area?'<span style="color:var(--gray-2)">'+esc(t.area)+'</span>':'')+
+        '<span style="margin-left:auto;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;'+
+          (t.used?'background:rgba(107,114,128,.1);color:var(--gray-2)':'background:rgba(16,185,129,.1);color:#059669')+
+          '">'+(t.used?'使用済み':'未使用')+'</span>'+
+      '</div>';
+    }).join('');
+  }
+
+  // ── Reviews ──
+  function renderReviews(){
+    var all=getReviews();
+    var list;
+    if(currentTab==='pending') list=all.filter(function(r){return r.status==='pending';});
+    else if(currentTab==='approved') list=all.filter(function(r){return r.status==='approved';});
+    else if(currentTab==='rejected') list=all.filter(function(r){return r.status==='rejected';});
+    else list=all;
+    list=list.slice().sort(function(a,b){return new Date(b.createdAt)-new Date(a.createdAt);});
+    var el=document.getElementById('adReviewList');
+    if(!list.length){el.innerHTML='<div class="ad-empty">レビューはありません。</div>';return;}
+    el.innerHTML='';
+    list.forEach(function(r){el.appendChild(buildReviewEl(r));});
+  }
+
+  function buildReviewEl(r){
+    var div=document.createElement('div');
+    var statusClass=r.featured&&r.status==='approved'?'featured':r.status;
+    div.className='ad-review-item '+statusClass;
+    div.dataset.id=r.id;
+    var stars='★'.repeat(r.rating||0)+'☆'.repeat(5-(r.rating||0));
+    var statusLabel=r.featured&&r.status==='approved'?'注目':'';
+    var statusBadge='<span class="ad-rev-status-badge '+(r.featured&&r.status==='approved'?'featured':r.status)+'">'+(
+      r.status==='pending'?'承認待ち':
+      r.status==='approved'?(r.featured?'★ 注目掲載':'承認済み'):
+      '却下'
+    )+'</span>';
+    div.innerHTML=
+      '<div class="ad-rev-meta">'+
+        '<span class="ad-rev-name">'+esc(r.name)+'</span>'+
+        '<span class="ad-rev-stars">'+stars+'</span>'+
+        '<span class="ad-rev-pill">'+esc(r.service)+'</span>'+
+        (r.area?'<span class="ad-rev-pill">'+esc(r.area)+'</span>':'')+
+        '<span class="ad-rev-pill">予約No. '+esc(r.bookingId)+'</span>'+
+        statusBadge+
+      '</div>'+
+      '<p class="ad-rev-text">'+esc(r.text)+'</p>'+
+      '<div class="ad-rev-footer">'+
+        '<span class="ad-rev-date">'+esc(r.date||r.createdAt.slice(0,10))+'</span>'+
+        '<div class="ad-rev-actions">'+
+          (r.status!=='approved'?'<button class="ad-rev-actions ad-btn-approve" data-action="approve">✓ 承認</button>':'')+
+          (r.status!=='rejected'?'<button class="ad-rev-actions ad-btn-reject" data-action="reject">✗ 却下</button>':'')+
+          (r.status==='approved'?(r.featured?'<button class="ad-rev-actions ad-btn-unfeature" data-action="unfeature">★ 注目解除</button>':'<button class="ad-rev-actions ad-btn-feature" data-action="feature">☆ 注目掲載</button>'):'')+
+          '<button class="ad-rev-actions ad-btn-edit" data-action="edit">✏ 編集</button>'+
+          '<button class="ad-rev-actions ad-btn-delete" data-action="delete">🗑 削除</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="ad-edit-form" id="edit-'+esc(r.id)+'">'+
+        '<textarea rows="4" class="ad-edit-ta">'+esc(r.text)+'</textarea>'+
+        '<div class="ad-edit-actions">'+
+          '<button class="ad-btn-save" data-action="save">保存</button>'+
+          '<button class="ad-btn-cancel-edit" data-action="cancel-edit">キャンセル</button>'+
+        '</div>'+
+      '</div>';
+
+    div.addEventListener('click',function(e){
+      var btn=e.target.closest('[data-action]');if(!btn)return;
+      var action=btn.dataset.action;
+      var reviews=getReviews();
+      var idx=reviews.findIndex(function(x){return x.id===r.id;});
+      if(idx===-1)return;
+      if(action==='approve'){reviews[idx].status='approved';}
+      else if(action==='reject'){reviews[idx].status='rejected';reviews[idx].featured=false;}
+      else if(action==='feature'){reviews[idx].featured=true;}
+      else if(action==='unfeature'){reviews[idx].featured=false;}
+      else if(action==='delete'){
+        if(!confirm('このレビューを削除しますか？')){return;}
+        reviews.splice(idx,1);save(RV,reviews);renderAll();return;
+      }
+      else if(action==='edit'){
+        var ef=document.getElementById('edit-'+r.id);
+        if(ef){ef.style.display=ef.style.display==='block'?'none':'block';}
+        return;
+      }
+      else if(action==='save'){
+        var ef=document.getElementById('edit-'+r.id);
+        var ta=ef?ef.querySelector('.ad-edit-ta'):null;
+        if(ta){reviews[idx].text=ta.value.trim();}
+        ef.style.display='none';
+      }
+      else if(action==='cancel-edit'){
+        var ef=document.getElementById('edit-'+r.id);
+        if(ef){ef.style.display='none';}
+        return;
+      }
+      save(RV,reviews);renderAll();
+    });
+    return div;
+  }
+
+  function renderAll(){
+    renderStats();
+    renderTokenList();
+    renderReviews();
+  }
+
+})();
+</script>
+</body>
+</html>

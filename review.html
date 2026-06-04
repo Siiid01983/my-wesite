@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>レビューを送る — Hello Moving</title>
+<meta name="robots" content="noindex,nofollow"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --navy:#0a1f44;--ink:#0b0f17;--gray-1:#3a4150;--gray-2:#6b7280;
+  --line:#e6e8ec;--line-2:#eef0f3;--bg:#fff;--bg-soft:#f7f8fa;--bg-soft-2:#fafbfc;
+  --green:#10b981;--radius:14px;--radius-sm:10px;
+  --font-jp:"Noto Sans JP",sans-serif;--font-en:"Inter",sans-serif;
+  --easing:cubic-bezier(.2,.7,.2,1)
+}
+html.dark{color-scheme:dark;
+  --bg:#0d1117;--bg-soft:#161b22;--bg-soft-2:#1c2128;--ink:#e6edf3;
+  --gray-1:#8b949e;--gray-2:#6e7681;--line:rgba(255,255,255,.08);--line-2:rgba(255,255,255,.06)}
+*,*::before,*::after{box-sizing:border-box}*{margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--font-jp);color:var(--ink);background:var(--bg);
+  line-height:1.8;-webkit-font-smoothing:antialiased;min-height:100vh;
+  display:flex;flex-direction:column}
+html.dark body{background:#0d1117}
+
+/* ── Header ── */
+.rv-header{background:var(--bg);border-bottom:1px solid var(--line);
+  padding:16px 24px;display:flex;align-items:center;justify-content:center}
+html.dark .rv-header{background:var(--bg-soft)}
+.rv-brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+.rv-mark{width:32px;height:32px;border-radius:8px;background:var(--ink);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:15px;font-family:var(--font-en);flex-shrink:0}
+.rv-name{font-weight:600;font-size:15px;color:var(--ink);letter-spacing:.06em}
+
+/* ── Layout ── */
+.rv-body{flex:1;display:flex;align-items:flex-start;justify-content:center;
+  padding:48px 20px 80px}
+.rv-card{background:var(--bg-soft);border:1px solid var(--line);
+  border-radius:var(--radius);padding:40px;max-width:540px;width:100%}
+html.dark .rv-card{background:var(--bg-soft);border-color:rgba(255,255,255,.08)}
+
+/* ── States ── */
+.rv-state{display:none}
+.rv-state.active{display:block}
+.rv-center{text-align:center;padding:8px 0}
+.rv-big-icon{font-size:44px;display:block;margin-bottom:16px}
+.rv-err-msg{font-size:14.5px;color:var(--gray-1);line-height:1.75}
+
+/* ── Typography ── */
+.rv-eyebrow{display:block;font-family:var(--font-en);font-size:10px;font-weight:500;
+  letter-spacing:.3em;text-transform:uppercase;color:var(--gray-2);margin-bottom:12px}
+.rv-h1{font-size:21px;font-weight:600;color:var(--ink);margin-bottom:6px;
+  letter-spacing:.04em;line-height:1.4}
+.rv-sub{font-size:13px;color:var(--gray-1);margin-bottom:24px;line-height:1.7}
+
+/* ── Verified badge ── */
+.rv-verified{display:inline-flex;align-items:center;gap:5px;
+  font-size:10.5px;font-weight:700;letter-spacing:.08em;
+  padding:3px 10px;border-radius:20px;
+  background:rgba(16,185,129,.1);color:#059669;
+  border:1px solid rgba(16,185,119,.22);margin-bottom:18px}
+html.dark .rv-verified{background:rgba(52,211,153,.1);
+  border-color:rgba(52,211,153,.25);color:#34d399}
+
+/* ── Info pills ── */
+.rv-pills{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:24px}
+.rv-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 11px;
+  border-radius:20px;font-size:11.5px;font-weight:500;letter-spacing:.03em;
+  background:var(--bg);border:1px solid var(--line);color:var(--gray-1)}
+html.dark .rv-pill{background:var(--bg-soft-2);border-color:rgba(255,255,255,.1);color:var(--gray-1)}
+
+/* ── Stars ── */
+.rv-stars-wrap{margin-bottom:22px}
+.rv-stars-lbl{display:block;font-size:13px;font-weight:600;color:var(--ink);
+  margin-bottom:10px;letter-spacing:.04em}
+.rv-stars{display:flex;gap:5px}
+.rv-star{font-size:34px;cursor:pointer;color:var(--line-2);
+  transition:color .12s,transform .1s;user-select:none;line-height:1}
+html.dark .rv-star{color:rgba(255,255,255,.15)}
+.rv-star.lit{color:#f59e0b}
+.rv-star:hover{transform:scale(1.12)}
+
+/* ── Fields ── */
+.rv-field{margin-bottom:18px}
+.rv-field label{display:block;font-size:13px;font-weight:600;color:var(--ink);
+  margin-bottom:7px;letter-spacing:.04em}
+.rv-field input,.rv-field textarea{width:100%;padding:11px 13px;
+  border:1px solid var(--line);border-radius:var(--radius-sm);font-size:14px;
+  font-family:var(--font-jp);color:var(--ink);background:var(--bg);
+  transition:border .15s;resize:vertical}
+.rv-field input:focus,.rv-field textarea:focus{outline:none;
+  border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+html.dark .rv-field input,html.dark .rv-field textarea{
+  background:var(--bg);border-color:rgba(255,255,255,.1);color:var(--ink)}
+.rv-char{font-size:11px;color:var(--gray-2);text-align:right;margin-top:4px}
+
+/* ── Submit ── */
+.rv-btn{width:100%;padding:14px;border:none;border-radius:var(--radius-sm);
+  font-size:15px;font-weight:600;cursor:pointer;background:var(--ink);color:#fff;
+  font-family:var(--font-jp);letter-spacing:.06em;
+  transition:background .25s var(--easing),transform .2s,box-shadow .2s;margin-top:4px}
+.rv-btn:hover:not([disabled]){background:var(--navy);transform:translateY(-1px);
+  box-shadow:0 8px 20px rgba(11,15,23,.15)}
+.rv-btn[disabled]{opacity:.38;cursor:not-allowed;transform:none}
+.rv-note{font-size:11.5px;color:var(--gray-2);text-align:center;
+  margin-top:12px;line-height:1.6}
+.rv-form-err{font-size:12.5px;color:#ef4444;margin-bottom:12px;display:none}
+
+/* ── Footer ── */
+.rv-footer{text-align:center;padding:18px;font-size:12px;color:var(--gray-2)}
+.rv-footer a{color:#2563eb}
+html.dark .rv-footer a{color:#60a5fa}
+
+@media(max-width:480px){.rv-card{padding:26px 18px}}
+</style>
+<script>(function(){var t=localStorage.getItem('hm_theme');if(t==='dark'||(t===null&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');})()</script>
+</head>
+<body>
+
+<header class="rv-header">
+  <a href="/" class="rv-brand">
+    <div class="rv-mark">H</div>
+    <span class="rv-name">Hello Moving</span>
+  </a>
+</header>
+
+<div class="rv-body">
+  <div class="rv-card">
+
+    <div class="rv-state active" id="rvLoading">
+      <span class="rv-eyebrow">確認中</span>
+      <p class="rv-sub" style="margin-bottom:0">リンクを確認しています...</p>
+    </div>
+
+    <div class="rv-state" id="rvInvalid">
+      <div class="rv-center">
+        <span class="rv-big-icon">❌</span>
+        <p class="rv-err-msg">このレビューリンクは無効または期限切れです。<br/>ご不明な点はLINEよりお問い合わせください。</p>
+      </div>
+    </div>
+
+    <div class="rv-state" id="rvUsed">
+      <div class="rv-center">
+        <span class="rv-big-icon">ℹ️</span>
+        <p class="rv-err-msg">このご予約のレビューは既に受け付けております。<br/>ご協力ありがとうございました。</p>
+      </div>
+    </div>
+
+    <div class="rv-state" id="rvForm">
+      <span class="rv-verified">
+        <svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+        Verified Customer &nbsp;·&nbsp; 実際のお客様
+      </span>
+      <span class="rv-eyebrow">Customer Review</span>
+      <h1 class="rv-h1">ご感想をお聞かせください</h1>
+      <p class="rv-sub">ご利用いただいたサービスの率直なご感想をお待ちしております。</p>
+      <div class="rv-pills" id="rvBookingInfo"></div>
+      <form id="rvForm" novalidate>
+        <div class="rv-stars-wrap">
+          <span class="rv-stars-lbl">総合評価 <span style="color:#ef4444" aria-hidden="true">*</span></span>
+          <div class="rv-stars" id="rvStars" role="radiogroup" aria-label="評価（1〜5星）">
+            <span class="rv-star" data-v="1" role="radio" aria-label="1点" tabindex="0">★</span>
+            <span class="rv-star" data-v="2" role="radio" aria-label="2点" tabindex="0">★</span>
+            <span class="rv-star" data-v="3" role="radio" aria-label="3点" tabindex="0">★</span>
+            <span class="rv-star" data-v="4" role="radio" aria-label="4点" tabindex="0">★</span>
+            <span class="rv-star" data-v="5" role="radio" aria-label="5点" tabindex="0">★</span>
+          </div>
+        </div>
+        <div class="rv-field">
+          <label for="rvName">お名前またはイニシャル <span style="color:#ef4444" aria-hidden="true">*</span></label>
+          <input type="text" id="rvName" placeholder="例：田中さま / T.K." maxlength="30" autocomplete="name" required/>
+        </div>
+        <div class="rv-field">
+          <label for="rvText">ご感想 <span style="color:#ef4444" aria-hidden="true">*</span> <span style="font-weight:400;color:var(--gray-2);font-size:11px">最大200文字</span></label>
+          <textarea id="rvText" rows="5" maxlength="200" placeholder="引越し当日のご様子やスタッフへのご感想など、ご自由にお書きください。" required></textarea>
+          <p class="rv-char"><span id="rvCount">0</span> / 200</p>
+        </div>
+        <p class="rv-form-err" id="rvFormErr" role="alert">すべての必須項目を入力してください。</p>
+        <button type="submit" class="rv-btn" id="rvSubmit">レビューを送信する</button>
+        <p class="rv-note">送信後、管理者が確認のうえウェブサイトに掲載いたします。</p>
+      </form>
+    </div>
+
+    <div class="rv-state" id="rvSuccess">
+      <div class="rv-center">
+        <span class="rv-big-icon">✅</span>
+        <h2 style="font-size:20px;font-weight:600;color:var(--ink);margin-bottom:10px">ありがとうございました</h2>
+        <p class="rv-err-msg">ご感想を受け付けました。<br/>管理者が確認後、ウェブサイトに掲載いたします。</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer class="rv-footer">
+  © 2026 Hello Moving &nbsp;·&nbsp; <a href="/">トップに戻る</a>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+  var TK='hm_review_tokens', RV='hm_reviews';
+
+  function getTokens(){try{return JSON.parse(localStorage.getItem(TK)||'[]');}catch(e){return[];}}
+  function getReviews(){try{return JSON.parse(localStorage.getItem(RV)||'[]');}catch(e){return[];}}
+  function save(key,val){localStorage.setItem(key,JSON.stringify(val));}
+  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+  function show(id){
+    document.querySelectorAll('.rv-state').forEach(function(el){el.classList.remove('active');});
+    var el=document.getElementById(id);if(el)el.classList.add('active');
+  }
+
+  var params=new URLSearchParams(location.search);
+  var token=(params.get('token')||'').replace(/[^a-z0-9]/gi,'');
+
+  if(!token){show('rvInvalid');return;}
+
+  var tokens=getTokens();
+  var tk=null;
+  for(var i=0;i<tokens.length;i++){if(tokens[i].token===token){tk=tokens[i];break;}}
+
+  if(!tk){show('rvInvalid');return;}
+  if(tk.used){show('rvUsed');return;}
+
+  // Populate booking info
+  var info=document.getElementById('rvBookingInfo');
+  if(info){
+    info.innerHTML=
+      '<span class="rv-pill">予約No. '+esc(tk.bookingId)+'</span>'+
+      '<span class="rv-pill">'+esc(tk.service)+'</span>'+
+      (tk.area?'<span class="rv-pill">'+esc(tk.area)+'</span>':'');
+  }
+
+  show('rvForm');
+
+  // Stars
+  var rating=0;
+  var stars=document.querySelectorAll('.rv-star');
+  function setRating(v){
+    rating=v;
+    stars.forEach(function(s){s.classList.toggle('lit',parseInt(s.dataset.v)<=v);});
+    stars.forEach(function(s){s.setAttribute('aria-checked',s.dataset.v==v?'true':'false');});
+  }
+  stars.forEach(function(s){
+    s.addEventListener('click',function(){setRating(parseInt(s.dataset.v));});
+    s.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '){e.preventDefault();s.click();}
+      if(e.key==='ArrowRight'||e.key==='ArrowUp'){e.preventDefault();var v=Math.min(5,parseInt(s.dataset.v)+1);setRating(v);}
+      if(e.key==='ArrowLeft'||e.key==='ArrowDown'){e.preventDefault();var v=Math.max(1,parseInt(s.dataset.v)-1);setRating(v);}
+    });
+  });
+
+  // Char counter
+  var ta=document.getElementById('rvText'), cc=document.getElementById('rvCount');
+  if(ta&&cc){ta.addEventListener('input',function(){cc.textContent=ta.value.length;});}
+
+  // Submit
+  document.getElementById('rvForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    var name=(document.getElementById('rvName').value||'').trim();
+    var text=(ta?ta.value:'').trim();
+    var errEl=document.getElementById('rvFormErr');
+    if(!rating||!name||!text){errEl.style.display='block';return;}
+    errEl.style.display='none';
+    var btn=document.getElementById('rvSubmit');
+    btn.disabled=true;btn.textContent='送信中...';
+    var reviews=getReviews();
+    reviews.push({
+      id:'r'+Date.now().toString(36),
+      token:token,bookingId:tk.bookingId,
+      name:name,service:tk.service,area:tk.area||'',
+      rating:rating,text:text,
+      date:new Date().toISOString().slice(0,10),
+      status:'pending',featured:false,
+      createdAt:new Date().toISOString()
+    });
+    save(RV,reviews);
+    var updTokens=getTokens();
+    for(var i=0;i<updTokens.length;i++){
+      if(updTokens[i].token===token){updTokens[i].used=true;break;}
+    }
+    save(TK,updTokens);
+    show('rvSuccess');
+  });
+})();
+</script>
+</body>
+</html>

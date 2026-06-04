@@ -1,0 +1,3095 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin — Hello Moving</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* ── Variables ── */
+:root{
+  --bg:#fff;--bg-soft:#f8f9fa;--bg-soft-2:#f0f2f5;
+  --ink:#0b0f17;--ink-2:#1e2532;
+  --gray-1:#6b7280;--gray-2:#9ca3af;
+  --line:rgba(0,0,0,.08);--line-2:rgba(0,0,0,.05);
+  --navy:#0a1f44;--blue:#2563eb;--blue-2:#1d4ed8;
+  --green:#10b981;--red:#ef4444;--yellow:#f59e0b;
+  --sw:230px
+}
+html.dark{
+  --bg:#0d1117;--bg-soft:#161b22;--bg-soft-2:#1c2128;
+  --ink:#e6edf3;--ink-2:#c9d1d9;
+  --gray-1:#8b949e;--gray-2:#6e7681;
+  --line:rgba(255,255,255,.08);--line-2:rgba(255,255,255,.04)
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}
+body{font-family:'Noto Sans JP','Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+
+/* ── Login screen ── */
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--navy);padding:20px;background-image:radial-gradient(circle at 20% 50%,rgba(29,158,117,.08) 0%,transparent 60%),radial-gradient(circle at 80% 20%,rgba(37,99,235,.06) 0%,transparent 50%)}
+.login-card{background:var(--bg);border-radius:20px;padding:44px 40px 36px;width:100%;max-width:380px;box-shadow:0 32px 80px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06)}
+.login-brand{display:flex;align-items:center;gap:13px;margin-bottom:32px;justify-content:center}
+.login-mark{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1D9E75,#059669);color:#fff;font-weight:700;font-size:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(29,158,117,.35)}
+.login-name{font-weight:700;font-size:17px;color:var(--ink);line-height:1.2}
+.login-sub{font-size:11px;color:var(--gray-2);letter-spacing:.03em}
+.login-title{text-align:center;font-size:20px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.login-title-sub{text-align:center;font-size:12px;color:var(--gray-2);margin-bottom:28px}
+.login-field{margin-bottom:16px}
+.login-label{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;color:var(--gray-1);margin-bottom:6px}
+.login-input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;font-family:inherit;color:var(--ink);background:var(--bg);transition:.15s}
+.login-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.login-input.has-error{border-color:var(--red);box-shadow:0 0 0 3px rgba(239,68,68,.1)}
+.login-remember{display:flex;align-items:center;gap:8px;margin-bottom:20px;margin-top:-4px}
+.login-remember input[type="checkbox"]{width:15px;height:15px;accent-color:var(--blue);cursor:pointer}
+.login-remember label{font-size:12px;color:var(--gray-1);cursor:pointer;user-select:none}
+.login-btn{width:100%;padding:13px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;justify-content:center;gap:8px;position:relative}
+.login-btn:hover:not(:disabled){background:var(--blue-2);transform:translateY(-1px);box-shadow:0 6px 16px rgba(37,99,235,.3)}
+.login-btn:disabled{opacity:.7;cursor:not-allowed;transform:none;box-shadow:none}
+.login-spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:lspin .6s linear infinite;display:none}
+.login-btn.loading .login-spinner{display:block}
+.login-btn.loading .login-btn-text{opacity:.8}
+@keyframes lspin{to{transform:rotate(360deg)}}
+.login-err{color:var(--red);font-size:12px;text-align:center;margin-top:12px;display:none;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:9px 12px}
+.login-forgot-wrap{text-align:center;margin-top:18px}
+.login-forgot{font-size:12px;color:var(--blue);text-decoration:none;background:none;border:none;cursor:pointer;font-family:inherit;padding:0}
+.login-forgot:hover{text-decoration:underline}
+.login-divider{height:1px;background:var(--line);margin:20px 0}
+.login-field-hint{font-size:11px;color:var(--red);margin-top:4px;display:none}
+html.dark .login-card{background:var(--bg-soft);box-shadow:0 32px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.06)}
+html.dark .login-input{background:var(--bg);border-color:rgba(255,255,255,.12);color:var(--ink)}
+html.dark .login-input:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(96,165,250,.12)}
+
+/* ── App layout ── */
+#adminApp{display:none;min-height:100vh}
+.layout{display:flex;min-height:100vh}
+
+/* ── Sidebar ── */
+.sidebar{width:var(--sw);flex-shrink:0;background:var(--navy);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;overflow-y:auto;transition:transform .25s}
+.sb-brand{padding:16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.sb-mark{width:32px;height:32px;border-radius:8px;background:#1D9E75;color:#fff;font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-name{font-weight:700;font-size:13px;color:#fff;line-height:1.2}
+.sb-sub{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.04em}
+.sb-nav{flex:1;padding:8px 0}
+.sb-section{padding:8px 14px 3px;font-size:10px;letter-spacing:.08em;color:rgba(255,255,255,.3);text-transform:uppercase;font-weight:600}
+.sb-link{display:flex;align-items:center;gap:9px;padding:8px 12px;color:rgba(255,255,255,.6);font-size:12px;font-weight:500;border-radius:6px;margin:1px 7px;cursor:pointer;border:none;background:none;width:calc(100% - 14px);text-align:left;transition:background .15s,color .15s;font-family:inherit}
+.sb-link:hover{background:rgba(255,255,255,.07);color:#fff}
+.sb-link.active{background:rgba(255,255,255,.13);color:#fff}
+.sb-link svg{opacity:.7;flex-shrink:0}
+.sb-link.active svg,.sb-link:hover svg{opacity:1}
+.sb-footer{padding:10px 14px;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:6px}
+.sb-logout{width:100%;padding:8px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.1);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;transition:.15s}
+.sb-logout:hover{background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.3);color:#f87171}
+
+/* ── Main area ── */
+.main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:52px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:var(--bg);position:sticky;top:0;z-index:50;gap:12px}
+.topbar-title{font-weight:700;font-size:15px;color:var(--ink)}
+.topbar-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.content{padding:20px;flex:1}
+.view{display:none}
+.view.active{display:block}
+
+/* ── Stat grid ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.stat-label{font-size:11px;font-weight:600;color:var(--gray-1);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.stat-val{font-size:26px;font-weight:700;color:var(--ink);line-height:1}
+.stat-sub{font-size:11px;color:var(--gray-2);margin-top:3px}
+
+/* ── Cards & panels ── */
+.panel{background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:20px}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap;gap:8px}
+.panel-title{font-weight:700;font-size:14px;color:var(--ink)}
+.panel-body{padding:16px}
+
+/* ── Table ── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead th{font-size:11px;font-weight:600;color:var(--gray-1);text-transform:uppercase;letter-spacing:.05em;padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);background:var(--bg-soft-2);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--line-2);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--bg-soft-2)}
+tbody td{padding:10px 12px;font-size:13px;color:var(--ink);vertical-align:middle}
+.td-sm{font-size:11px;color:var(--gray-2)}
+.td-mono{font-size:11px;color:var(--gray-1);font-variant-numeric:tabular-nums}
+
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-new{background:rgba(37,99,235,.1);color:#2563eb;border:1px solid rgba(37,99,235,.2)}
+.badge-review{background:rgba(245,158,11,.12);color:#b45309;border:1px solid rgba(245,158,11,.2)}
+.badge-confirmed{background:rgba(16,185,129,.1);color:#059669;border:1px solid rgba(16,185,129,.2)}
+.badge-done{background:rgba(107,114,128,.1);color:#4b5563;border:1px solid rgba(107,114,128,.2)}
+.badge-cancel{background:rgba(239,68,68,.08);color:#b91c1c;border:1px solid rgba(239,68,68,.15)}
+html.dark .badge-new{color:#60a5fa}
+html.dark .badge-review{color:#f59e0b}
+html.dark .badge-confirmed{color:#34d399}
+html.dark .badge-done{color:#9ca3af}
+html.dark .badge-cancel{color:#f87171}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:.15s;white-space:nowrap}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-2)}
+.btn-ghost{background:none;border:1px solid var(--line);color:var(--ink)}
+.btn-ghost:hover{border-color:var(--blue);color:var(--blue)}
+.btn-danger{background:none;border:1px solid rgba(239,68,68,.3);color:var(--red)}
+.btn-danger:hover{background:rgba(239,68,68,.08)}
+.btn-green{background:var(--green);color:#fff}
+.btn-green:hover{background:#059669}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-icon{padding:5px;border-radius:6px;line-height:0}
+
+/* ── Inputs ── */
+.input{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--bg);transition:.15s}
+.input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.sel{padding:7px 26px 7px 10px;border:1px solid var(--line);border-radius:8px;font-size:12px;font-family:inherit;color:var(--ink);background:var(--bg);cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%236b7280' d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;background-size:14px}
+.sel:focus{outline:none;border-color:var(--blue)}
+html.dark .input,.html.dark .sel{background:var(--bg-soft);border-color:rgba(255,255,255,.1);color:var(--ink)}
+html.dark .sel{background-color:var(--bg-soft)}
+
+/* ── Calendar ── */
+.cal-wrap{background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.cal-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line)}
+.cal-month{font-weight:700;font-size:15px;color:var(--ink)}
+.cal-nav{background:none;border:1px solid var(--line);color:var(--ink);width:32px;height:32px;border-radius:7px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:.15s;font-family:inherit}
+.cal-nav:hover:not(:disabled){border-color:var(--blue);color:var(--blue)}
+.cal-nav:disabled{opacity:.3;cursor:not-allowed}
+.cal-controls{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:12px;color:var(--gray-1);flex-wrap:wrap}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;padding:10px;background:var(--bg-soft)}
+.cal-dow{text-align:center;padding:5px 2px;font-size:10px;font-weight:600;color:var(--gray-2)}
+.cal-day{aspect-ratio:1;border-radius:7px;border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;background:var(--bg);transition:.15s;font-family:inherit;font-size:12px;font-weight:500;padding:2px;position:relative}
+.cal-day:hover:not(.cal-empty):not(.cal-past){border-color:var(--blue);box-shadow:0 0 0 2px rgba(37,99,235,.15)}
+.cal-empty{border:none;background:none;pointer-events:none}
+.cal-past{opacity:.3;cursor:not-allowed}
+.cal-today{border-color:var(--blue)!important;border-width:2px}
+.cal-today .c-num{color:var(--blue);font-weight:700}
+.cal-avail{border-color:rgba(16,185,129,.3);background:var(--bg)}
+.cal-limited{border-color:rgba(245,158,11,.45);background:rgba(254,243,199,.25)}
+.cal-booked{border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.06)}
+.cal-selected{box-shadow:0 0 0 2px #2563eb!important;border-color:#2563eb!important;background:rgba(37,99,235,.08)!important}
+.c-num{font-size:12px;line-height:1}
+.c-sym{font-size:10px;line-height:1;font-weight:700}
+.sym-a{color:#10b981}.sym-l{color:#f59e0b}.sym-b{color:#ef4444}
+.cal-legend{display:flex;gap:12px;padding:10px 16px;border-top:1px solid var(--line);font-size:11px;color:var(--gray-2);flex-wrap:wrap}
+.cal-leg{display:flex;align-items:center;gap:4px}
+html.dark .cal-day{background:var(--bg-soft);border-color:rgba(255,255,255,.08)}
+html.dark .cal-limited{background:rgba(245,158,11,.08)}
+html.dark .cal-booked{background:rgba(239,68,68,.08)}
+
+/* ── Pricing / Disposal / Capacity forms ── */
+.settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line-2);gap:12px}
+.settings-row:last-child{border-bottom:none}
+.settings-label{font-size:13px;font-weight:500;color:var(--ink)}
+.settings-sub{font-size:11px;color:var(--gray-2);margin-top:2px}
+.price-input{width:110px;padding:7px 10px;border:1px solid var(--line);border-radius:7px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--bg);text-align:right}
+.price-input:focus{outline:none;border-color:var(--blue)}
+html.dark .price-input{background:var(--bg-soft);border-color:rgba(255,255,255,.1)}
+
+/* ── Toggle switch ── */
+.toggle-wrap{display:flex;align-items:center;gap:8px}
+.toggle{position:relative;width:38px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;border-radius:11px;background:var(--gray-2);transition:.2s;cursor:pointer}
+.toggle input:checked~.toggle-track{background:var(--green)}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s;pointer-events:none}
+.toggle input:checked~.toggle-thumb{left:19px}
+
+/* ── Analytics charts ── */
+.chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:20px}
+.chart-card{background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;padding:16px}
+.chart-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:12px}
+.chart-canvas{width:100%;height:180px;display:block}
+
+/* ── Dashboard two-panel row ── */
+.dash-panels{display:flex;gap:16px;align-items:flex-start}
+.activity-panel{width:300px;flex-shrink:0}
+@media(max-width:900px){.dash-panels{flex-direction:column}.activity-panel{width:100%}}
+
+/* ── Activity feed ── */
+.activity-item{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line-2)}
+.activity-item:last-child{border-bottom:none;padding-bottom:0}
+.activity-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ai-blue{background:rgba(37,99,235,.1);color:var(--blue)}
+.ai-green{background:rgba(16,185,129,.1);color:var(--green)}
+.ai-yellow{background:rgba(245,158,11,.1);color:#b45309}
+.ai-purple{background:rgba(139,92,246,.1);color:#7c3aed}
+html.dark .ai-yellow{color:#f59e0b}
+html.dark .ai-purple{color:#a78bfa}
+.activity-body{flex:1;min-width:0}
+.activity-title{font-size:13px;font-weight:500;color:var(--ink);line-height:1.4}
+.activity-meta{font-size:11px;color:var(--gray-2);margin-top:2px}
+
+/* ── Quick actions ── */
+.qa-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:20px}
+.qa-btn{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--bg-soft);border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:13px;font-weight:500;color:var(--ink);font-family:inherit;transition:.15s;text-align:left;width:100%}
+.qa-btn:hover{border-color:var(--blue);background:rgba(37,99,235,.04)}
+.qa-btn svg{color:var(--blue);flex-shrink:0}
+html.dark .qa-btn:hover{background:rgba(37,99,235,.1)}
+
+/* ── Modal ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:24px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal-title{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:16px}
+.m-field{margin-bottom:12px}
+.m-label{display:block;font-size:12px;font-weight:600;color:var(--gray-1);margin-bottom:4px}
+.m-input,.m-sel,.m-ta{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--bg);transition:.15s;box-sizing:border-box}
+.m-input:focus,.m-sel:focus,.m-ta:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.m-ta{resize:vertical;min-height:64px}
+.m-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.m-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+html.dark .m-input,.html.dark .m-sel,.html.dark .m-ta{background:var(--bg-soft)}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:20px;right:20px;background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;pointer-events:none;max-width:280px}
+#toast.show{opacity:1;transform:translateY(0)}
+
+/* ── Empty state ── */
+.empty{text-align:center;padding:40px 20px;color:var(--gray-2)}
+.empty svg{opacity:.25;margin-bottom:10px}
+.empty p{font-size:14px}
+
+/* ── Search bar ── */
+.search-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.search-input{padding:7px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--bg);flex:1;min-width:160px}
+.search-input:focus{outline:none;border-color:var(--blue)}
+html.dark .search-input{background:var(--bg-soft);border-color:rgba(255,255,255,.1)}
+
+/* ── Session timer ── */
+.session-info{font-size:10px;color:rgba(255,255,255,.35);text-align:center;padding-bottom:4px}
+
+/* ── Mobile ── */
+.mob-btn{display:none;background:none;border:none;cursor:pointer;padding:5px;color:var(--ink);line-height:0}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-230px)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .mob-btn{display:flex}
+  .m-row{grid-template-columns:1fr}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .chart-grid{grid-template-columns:1fr}
+  .settings-grid{grid-template-columns:1fr}
+  .qa-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:400px){
+  .stat-grid,.qa-grid{grid-template-columns:1fr}
+}
+/* ── Reviews ── */
+.star-row{display:flex;gap:2px}
+.star-btn{background:none;border:none;cursor:pointer;font-size:24px;color:var(--gray-2);padding:0 3px;line-height:1;transition:color .1s;font-family:inherit}
+.star-btn.on{color:#f59e0b}
+.td-truncate{max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rev-preview{background:var(--bg-soft-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:12px}
+.rev-preview-lbl{font-size:10px;font-weight:600;color:var(--gray-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.rev-card-stars{font-size:15px;letter-spacing:2px;margin-bottom:4px}
+.rev-card-text{font-size:13px;color:var(--ink);line-height:1.55;font-style:italic;margin-bottom:6px}
+.rev-card-name{font-size:11px;font-weight:600;color:var(--gray-1)}
+/* Review status */
+.rev-st{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.rev-st-pending{background:rgba(245,158,11,.12);color:#b45309;border:1px solid rgba(245,158,11,.2)}
+.rev-st-approved{background:rgba(16,185,129,.1);color:#059669;border:1px solid rgba(16,185,129,.2)}
+.rev-st-rejected{background:rgba(239,68,68,.08);color:#b91c1c;border:1px solid rgba(239,68,68,.15)}
+.rev-pub-dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;flex-shrink:0}
+html.dark .rev-st-pending{color:#f59e0b}
+html.dark .rev-st-approved{color:#34d399}
+html.dark .rev-st-rejected{color:#f87171}
+/* Review stats bar */
+.rev-stats-bar{display:flex;gap:16px;padding:9px 16px;border-bottom:1px solid var(--line);font-size:12px;color:var(--gray-1);flex-wrap:wrap}
+.rev-stats-bar strong{color:var(--ink)}
+.rev-stats-bar .warn{color:#b45309}
+html.dark .rev-stats-bar .warn{color:#f59e0b}
+/* Public review form */
+#reviewPublicForm{min-height:100vh;display:none;align-items:center;justify-content:center;background:var(--navy);padding:20px;background-image:radial-gradient(circle at 20% 50%,rgba(29,158,117,.08) 0%,transparent 60%),radial-gradient(circle at 80% 20%,rgba(37,99,235,.06) 0%,transparent 50%)}
+.pub-verify-banner{display:flex;align-items:center;gap:10px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:10px 14px;margin-bottom:20px}
+.pub-verify-check{width:28px;height:28px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;font-weight:700}
+.pub-star-btn{background:none;border:none;cursor:pointer;font-size:28px;color:var(--gray-2);padding:0 4px;line-height:1;transition:color .1s;font-family:inherit}
+.pub-star-btn.on{color:#f59e0b}
+.pub-success{text-align:center;padding:10px 0 20px}
+.pub-success-icon{width:56px;height:56px;border-radius:50%;background:rgba(16,185,129,.15);color:var(--green);font-size:28px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.pub-success-title{font-size:18px;font-weight:700;color:var(--ink);margin-bottom:8px}
+.pub-success-sub{font-size:13px;color:var(--gray-1);line-height:1.6}
+.rev-tab-cnt{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:9px;font-size:10px;font-weight:700;padding:0 5px;background:rgba(245,158,11,.2);color:#b45309;margin-left:4px;vertical-align:middle}
+.rev-tab-cnt:empty{display:none}
+html.dark .rev-tab-cnt{color:#f59e0b}
+/* ── Hero Manager ── */
+.hero-layout{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}
+@media(max-width:900px){.hero-layout{grid-template-columns:1fr}}
+.hero-prev-card{background:linear-gradient(135deg,#0a1f44 0%,#1a3a6e 100%);border-radius:12px;padding:28px 22px;min-height:190px;display:flex;flex-direction:column;justify-content:center}
+.hero-prev-headline{font-size:17px;font-weight:700;color:#fff;line-height:1.35;margin-bottom:8px;word-break:break-word}
+.hero-prev-sub{font-size:12px;color:rgba(255,255,255,.75);line-height:1.55;margin-bottom:18px;word-break:break-word}
+.hero-prev-btns{display:flex;gap:8px;flex-wrap:wrap}
+.hero-prev-btn{padding:7px 14px;border-radius:7px;font-size:11px;font-weight:600;white-space:nowrap}
+.hero-prev-btn-p{background:#1D9E75;color:#fff}
+.hero-prev-btn-s{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)}
+.hero-save-ind{font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;margin-left:6px;font-weight:500}
+/* ── Backup Center ── */
+.import-msg{font-size:11px;margin-top:5px;font-weight:500;min-height:14px}
+.import-ok{color:var(--green)}
+.import-err{color:var(--red)}
+
+/* ── Customer Management ── */
+.cust-avatar{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--blue-2));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0;user-select:none}
+.cust-avatar-lg{width:52px;height:52px;border-radius:14px;font-size:22px}
+.cust-profile-hdr{display:flex;align-items:center;gap:14px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.cust-detail-grid{background:var(--bg-soft);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:16px}
+.cust-detail-row{display:flex;align-items:flex-start;padding:9px 14px;border-bottom:1px solid var(--line-2);gap:12px}
+.cust-detail-row:last-child{border-bottom:none}
+.cust-detail-label{font-size:11px;font-weight:600;color:var(--gray-1);width:88px;flex-shrink:0;padding-top:1px;text-transform:uppercase;letter-spacing:.04em}
+.cust-detail-val{font-size:13px;color:var(--ink);flex:1;word-break:break-all}
+.cust-hist-title{font-weight:700;font-size:13px;color:var(--ink);margin-bottom:10px}
+.cust-stats-bar{padding:9px 16px;border-bottom:1px solid var(--line);display:flex;gap:18px;font-size:12px;color:var(--gray-1);flex-wrap:wrap}
+.cust-stats-bar strong{color:var(--ink)}
+
+/* ── Media Library ── */
+.media-tabs{display:flex;border-bottom:1px solid var(--line);margin-bottom:16px}
+.media-tab{padding:10px 20px;font-size:13px;font-weight:600;color:var(--gray-1);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;font-family:inherit;transition:.15s}
+.media-tab:hover:not(.active){color:var(--ink)}
+.media-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.media-upload-zone{border:2px dashed var(--line);border-radius:12px;padding:28px 20px;text-align:center;cursor:pointer;transition:.2s;margin-bottom:16px;background:var(--bg-soft)}
+.media-upload-zone:hover,.media-upload-zone.drag-over{border-color:var(--blue);background:rgba(37,99,235,.04)}
+.media-upload-zone p{font-size:13px;color:var(--gray-1);margin:8px 0 4px}
+.media-upload-zone span{font-size:11px;color:var(--gray-2)}
+.media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:14px}
+.media-card{background:var(--bg-soft);border:1px solid var(--line);border-radius:10px;overflow:hidden;transition:border-color .15s}
+.media-card:hover{border-color:var(--blue)}
+.media-thumb{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;background:var(--bg-soft-2);cursor:pointer}
+.media-thumb-vid{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;background:var(--bg-soft-2);cursor:pointer}
+.media-card-body{padding:10px}
+.media-card-name{font-size:12px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
+.media-card-meta{font-size:11px;color:var(--gray-2);margin-bottom:8px}
+.media-card-actions{display:flex;gap:5px}
+.media-preview-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:2000;display:none;align-items:center;justify-content:center;padding:20px}
+.media-preview-overlay.open{display:flex}
+.media-preview-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);color:#fff;width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;font-family:inherit;line-height:1}
+.media-preview-close:hover{background:rgba(255,255,255,.22)}
+.media-preview-img{max-width:90vw;max-height:82vh;border-radius:8px;display:block;object-fit:contain;box-shadow:0 8px 40px rgba(0,0,0,.6)}
+.media-preview-vid{max-width:90vw;max-height:82vh;border-radius:8px;display:block;box-shadow:0 8px 40px rgba(0,0,0,.6)}
+.media-preview-name{color:rgba(255,255,255,.6);font-size:12px;margin-top:10px;text-align:center;max-width:80vw;word-break:break-all}
+@media(max-width:768px){.media-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:380px){.media-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<script>(function(){var t=localStorage.getItem('hm_theme');if(t==='dark'||(t===null&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');})()</script>
+
+<!-- ── Public Review Submission Form (accessible via admin.html#review) ── -->
+<div id="reviewPublicForm">
+  <div class="login-card" style="max-width:460px">
+    <div class="login-brand">
+      <div class="login-mark">H</div>
+      <div><div class="login-name">Hello Moving</div><div class="login-sub">カスタマーレビュー</div></div>
+    </div>
+
+    <!-- Step 1: Verify booking -->
+    <div id="pubStep1">
+      <div class="login-title">レビューを投稿する</div>
+      <div class="login-title-sub">完了した引越しの予約IDを入力してください</div>
+      <div class="login-field">
+        <label class="login-label"><span>予約ID</span><span style="color:var(--red);font-weight:400">必須</span></label>
+        <input class="login-input" id="pubBookingId" type="text" placeholder="HM-20260604-XXXX" autocomplete="off" />
+        <div class="login-field-hint" id="pubBookingHint" style="display:none"></div>
+      </div>
+      <button class="login-btn" id="pubVerifyBtn" type="button" onclick="verifyPubBooking()">
+        <div class="login-spinner"></div>
+        <span class="login-btn-text">予約を確認する</span>
+      </button>
+    </div>
+
+    <!-- Step 2: Write review -->
+    <div id="pubStep2" style="display:none">
+      <div class="pub-verify-banner">
+        <div class="pub-verify-check">✓</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--ink)" id="pubVerifiedName"></div>
+          <div style="font-size:11px;color:var(--gray-2)" id="pubVerifiedSvc"></div>
+        </div>
+      </div>
+      <div class="login-field">
+        <label class="login-label"><span>お名前</span><span style="color:var(--red);font-weight:400">必須</span></label>
+        <input class="login-input" id="pubName" type="text" placeholder="山田 太郎" />
+      </div>
+      <div class="login-field">
+        <label class="login-label">評価</label>
+        <div style="display:flex;gap:2px;margin-top:4px">
+          <button type="button" class="pub-star-btn on" onclick="setPubStars(1)">★</button>
+          <button type="button" class="pub-star-btn on" onclick="setPubStars(2)">★</button>
+          <button type="button" class="pub-star-btn on" onclick="setPubStars(3)">★</button>
+          <button type="button" class="pub-star-btn on" onclick="setPubStars(4)">★</button>
+          <button type="button" class="pub-star-btn on" onclick="setPubStars(5)">★</button>
+        </div>
+      </div>
+      <div class="login-field">
+        <label class="login-label"><span>レビュー内容</span><span style="color:var(--red);font-weight:400">必須</span></label>
+        <textarea class="login-input" id="pubText" rows="4" placeholder="サービスについてのご感想をお聞かせください..." style="resize:vertical;min-height:90px"></textarea>
+        <div class="login-field-hint" id="pubTextHint" style="display:none">レビュー内容を入力してください</div>
+      </div>
+      <button class="login-btn" id="pubSubmitBtn" type="button" onclick="submitPubReview()">
+        <div class="login-spinner"></div>
+        <span class="login-btn-text">レビューを送信する</span>
+      </button>
+    </div>
+
+    <!-- Success state -->
+    <div id="pubSuccess" style="display:none">
+      <div class="pub-success">
+        <div class="pub-success-icon">✓</div>
+        <div class="pub-success-title">ありがとうございます！</div>
+        <div class="pub-success-sub">レビューを受け付けました。<br>管理者が確認後、サイトに掲載いたします。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Login Screen ── -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-mark">H</div>
+      <div>
+        <div class="login-name">Hello Moving</div>
+        <div class="login-sub">ADMIN DASHBOARD</div>
+      </div>
+    </div>
+    <div class="login-title">ログイン</div>
+    <div class="login-title-sub">管理者アカウントでログインしてください</div>
+
+    <div class="login-field">
+      <label class="login-label" for="loginEmail">
+        <span>メールアドレス</span>
+        <span style="color:var(--red);font-weight:400">必須</span>
+      </label>
+      <input class="login-input" id="loginEmail" type="email"
+        placeholder="admin@hello-moving.com" autocomplete="email" />
+      <div class="login-field-hint" id="loginEmailHint">メールアドレスを入力してください</div>
+    </div>
+
+    <div class="login-field">
+      <label class="login-label" for="loginPass">
+        <span>パスワード</span>
+        <button class="login-forgot" type="button" onclick="handleForgot()">パスワードを忘れた方</button>
+      </label>
+      <input class="login-input" id="loginPass" type="password"
+        placeholder="••••••••" autocomplete="current-password" />
+      <div class="login-field-hint" id="loginPassHint">パスワードを入力してください</div>
+    </div>
+
+    <div class="login-remember">
+      <input type="checkbox" id="rememberMe" />
+      <label for="rememberMe">このデバイスでログイン状態を保持する</label>
+    </div>
+
+    <button class="login-btn" id="loginBtn" type="button">
+      <div class="login-spinner"></div>
+      <span class="login-btn-text">ログイン</span>
+    </button>
+    <div class="login-err" id="loginErr">
+      メールアドレスまたはパスワードが正しくありません
+    </div>
+  </div>
+</div>
+
+<!-- ── Admin App ── -->
+<div id="adminApp">
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sb-brand">
+        <div class="sb-mark">H</div>
+        <div><div class="sb-name">Hello Moving</div><div class="sb-sub">Admin Panel</div></div>
+      </div>
+      <nav class="sb-nav">
+        <div class="sb-section">管理</div>
+        <button class="sb-link active" data-view="dashboard" onclick="go('dashboard')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>ダッシュボード
+        </button>
+        <button class="sb-link" data-view="bookings" onclick="go('bookings')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>予約管理
+        </button>
+        <button class="sb-link" data-view="customers" onclick="go('customers')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>顧客管理
+        </button>
+        <button class="sb-link" data-view="quotes" onclick="go('quotes')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>見積り管理
+        </button>
+        <button class="sb-link" data-view="reviews" onclick="go('reviews')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>レビュー管理
+        </button>
+        <button class="sb-link" data-view="services" onclick="go('services')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>サービス管理
+        </button>
+        <button class="sb-link" data-view="hero" onclick="go('hero')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M3 5h2V3c-1.1 0-2 .9-2 2zm0 8h2v-2H3v2zm4 8h2v-2H7v2zm-4-4h2v-2H3v2zm0-8h2V7H3v2zm4-8H7v2h2V1zm8 0h-2v2h2V1zm-4 0H9v2h2V1zM5 21v-2H3c0 1.1.9 2 2 2zm-2-4h2v-2H3v2zM21 3h-2v2h2V3zm0 4h-2v2h2V7zm0 14c1.1 0 2-.9 2-2h-2v2zm0-8h-2v2h2v-2zm-4 8h2v-2h-2v2zm0-16h2V1h-2v2zm-4 16h2v-2h-2v2zm-4 0h2v-2H9v2z"/></svg>ヒーロー編集
+        </button>
+        <button class="sb-link" data-view="calendar" onclick="go('calendar')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M20 3h-1V1h-2v2H7V1H5v2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H4V8h16v13z"/></svg>カレンダー管理
+        </button>
+        <button class="sb-link" data-view="analytics" onclick="go('analytics')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg>分析
+        </button>
+        <button class="sb-link" data-view="media" onclick="go('media')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>メディアライブラリ
+        </button>
+        <div class="sb-section" style="margin-top:6px">設定</div>
+        <button class="sb-link" data-view="capacity" onclick="go('capacity')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>容量設定
+        </button>
+        <button class="sb-link" data-view="pricing" onclick="go('pricing')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>料金管理
+        </button>
+        <button class="sb-link" data-view="disposal" onclick="go('disposal')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>不用品管理
+        </button>
+        <button class="sb-link" data-view="actions" onclick="go('actions')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>クイック操作
+        </button>
+        <button class="sb-link" data-view="backup" onclick="go('backup')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>バックアップ
+        </button>
+        <div class="sb-section" style="margin-top:6px">その他</div>
+        <button class="sb-link" onclick="toggleDark()">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>ダークモード
+        </button>
+        <a class="sb-link" href="index.html" target="_blank">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>サイトを表示
+        </a>
+      </nav>
+      <div class="sb-footer">
+        <div class="session-info" id="sessionTimer">セッション残り時間: --分</div>
+        <button class="sb-logout" onclick="logout()">
+          ログアウト
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="mob-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+          </button>
+          <span class="topbar-title" id="topbarTitle">ダッシュボード</span>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost btn-sm" onclick="go('bookings');setTimeout(openAdd,50)">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>予約を追加
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="exportCSV()">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>CSV出力
+          </button>
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- 1. DASHBOARD -->
+        <div id="view-dashboard" class="view active">
+          <div class="stat-grid" id="statGrid"></div>
+          <div id="qaGrid"></div>
+          <div class="dash-panels">
+            <div class="panel" style="flex:1;min-width:0">
+              <div class="panel-head">
+                <span class="panel-title">最近の予約</span>
+                <button class="btn btn-ghost btn-sm" onclick="go('bookings')">すべて表示 →</button>
+              </div>
+              <div class="table-wrap"><div id="recentWrap"></div></div>
+            </div>
+            <div class="panel activity-panel">
+              <div class="panel-head"><span class="panel-title">最近のアクティビティ</span></div>
+              <div class="panel-body" id="activityWrap"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. BOOKINGS -->
+        <div id="view-bookings" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">予約一覧</span>
+              <div class="search-bar">
+                <select class="sel" id="bkFilter" onchange="renderBookings()">
+                  <option value="">全ステータス</option>
+                  <option value="新規">新規</option>
+                  <option value="確認中">確認中</option>
+                  <option value="確定">確定</option>
+                  <option value="完了">完了</option>
+                  <option value="キャンセル">キャンセル</option>
+                </select>
+                <input class="search-input" id="bkSearch" placeholder="名前・メール・予約番号..." oninput="renderBookings()" />
+              </div>
+            </div>
+            <div class="table-wrap" id="bookingsWrap"></div>
+          </div>
+        </div>
+
+        <!-- CUSTOMERS -->
+        <div id="view-customers" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">顧客一覧</span>
+              <div class="search-bar">
+                <select class="sel" id="custFilter" onchange="renderCustomers()">
+                  <option value="">全顧客</option>
+                  <option value="with">予約あり</option>
+                  <option value="none">予約なし</option>
+                </select>
+                <input class="search-input" id="custSearch" placeholder="名前・メール・電話・顧客ID..." oninput="renderCustomers()" style="min-width:220px" />
+              </div>
+            </div>
+            <div class="cust-stats-bar" id="custStatsBar"></div>
+            <div class="table-wrap" id="customersWrap"></div>
+          </div>
+        </div>
+
+        <!-- 3. CALENDAR -->
+        <div id="view-calendar" class="view">
+          <div class="cal-wrap">
+            <div class="cal-hdr">
+              <button class="cal-nav" id="calPrev" onclick="calMove(-1)">&#8592;</button>
+              <span class="cal-month" id="calMonth"></span>
+              <button class="cal-nav" onclick="calMove(1)">&#8594;</button>
+            </div>
+            <div class="cal-controls">
+              <span id="calHint">クリックして空き状況を変更（○→△→×→○）</span>
+              <div style="display:flex;gap:6px;margin-left:auto;flex-wrap:wrap">
+                <button class="btn btn-ghost btn-sm" id="bulkToggle" onclick="toggleBulk()">一括選択</button>
+                <select class="sel" id="bulkStatus" style="display:none">
+                  <option value="available">○ 空き</option>
+                  <option value="limited">△ 残りわずか</option>
+                  <option value="booked">× 満了</option>
+                </select>
+                <button class="btn btn-ghost btn-sm" id="bulkApply" style="display:none" onclick="applyBulk()">選択日に適用</button>
+                <button class="btn btn-ghost btn-sm" onclick="resetAvail()">全リセット</button>
+                <button class="btn btn-primary btn-sm" onclick="toast('空き状況を更新しました')">保存</button>
+              </div>
+            </div>
+            <div class="cal-grid" id="calGrid"></div>
+            <div class="cal-legend">
+              <span class="cal-leg"><span class="sym-a">○</span> 空き</span>
+              <span class="cal-leg"><span class="sym-l">△</span> 残りわずか</span>
+              <span class="cal-leg"><span class="sym-b">×</span> 満了</span>
+              <span style="margin-left:auto;font-size:10px" id="bulkCount"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. ANALYTICS -->
+        <div id="view-analytics" class="view">
+          <div class="stat-grid" id="analyticsGrid"></div>
+        </div>
+
+        <!-- 5. CAPACITY -->
+        <div id="view-capacity" class="view">
+          <div class="settings-grid">
+            <div class="panel">
+              <div class="panel-head"><span class="panel-title">予約容量設定</span></div>
+              <div class="panel-body">
+                <div class="settings-row">
+                  <div>
+                    <div class="settings-label">1日の最大予約数</div>
+                    <div class="settings-sub">この数を超えると「満了（×）」になります</div>
+                  </div>
+                  <input type="number" class="price-input" id="capMax" value="5" min="1" max="20" style="width:80px;text-align:center" />
+                </div>
+                <div class="settings-row">
+                  <div>
+                    <div class="settings-label">残りわずか閾値</div>
+                    <div class="settings-sub">この数以上で「残りわずか（△）」になります</div>
+                  </div>
+                  <input type="number" class="price-input" id="capLimited" value="3" min="1" max="20" style="width:80px;text-align:center" />
+                </div>
+                <div style="margin-top:16px;display:flex;gap:8px">
+                  <button class="btn btn-primary" onclick="saveCapacity()">保存</button>
+                  <button class="btn btn-ghost" onclick="loadCapacity()">リセット</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. PRICING -->
+        <div id="view-pricing" class="view">
+          <div class="panel">
+            <div class="panel-head"><span class="panel-title">料金設定（参考価格）</span></div>
+            <div class="panel-body" id="pricingBody"></div>
+          </div>
+        </div>
+
+        <!-- 7. DISPOSAL -->
+        <div id="view-disposal" class="view">
+          <div class="panel">
+            <div class="panel-head"><span class="panel-title">不用品カテゴリ管理</span></div>
+            <div class="panel-body" id="disposalBody"></div>
+          </div>
+        </div>
+
+        <!-- 8. QUICK ACTIONS -->
+        <div id="view-actions" class="view">
+          <div class="panel">
+            <div class="panel-head"><span class="panel-title">クイック操作</span></div>
+            <div class="panel-body">
+              <div class="qa-grid" style="margin-bottom:0">
+                <button class="qa-btn" onclick="go('bookings');filterToday()">
+                  <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+                  本日の予約を表示
+                </button>
+                <button class="qa-btn" onclick="go('calendar');showFullBooked()">
+                  <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                  満了日を表示
+                </button>
+                <button class="qa-btn" onclick="exportCSV()">
+                  <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                  予約データをエクスポート
+                </button>
+                <button class="qa-btn" onclick="document.getElementById('csvImport').click()">
+                  <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+                  予約データをインポート
+                </button>
+                <button class="qa-btn" onclick="generateReport()">
+                  <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                  売上レポート生成
+                </button>
+                <button class="qa-btn" onclick="clearAllData()" style="color:var(--red)">
+                  <svg viewBox="0 0 24 24" width="18" height="18" style="color:var(--red)"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                  全データを消去
+                </button>
+              </div>
+              <input type="file" id="csvImport" accept=".csv" style="display:none" onchange="importCSV(event)" />
+            </div>
+          </div>
+        </div>
+        <!-- QUOTES -->
+        <div id="view-quotes" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">見積りリクエスト</span>
+              <div class="search-bar">
+                <select class="sel" id="qtSvcFilter" onchange="renderQuotes()">
+                  <option value="">全サービス</option>
+                  <option>単身引越し</option>
+                  <option>カップル・ご夫婦引越し</option>
+                  <option>学生・新生活引越し</option>
+                  <option>当日・お急ぎ引越し</option>
+                  <option>不用品回収・処分サービス</option>
+                  <option>家具組立・分解</option>
+                </select>
+                <select class="sel" id="qtSort" onchange="renderQuotes()">
+                  <option value="desc">新しい順</option>
+                  <option value="asc">古い順</option>
+                </select>
+                <input class="search-input" id="qtSearch" placeholder="名前・メール・サービスで検索..." oninput="renderQuotes()" style="min-width:200px" />
+                <button class="btn btn-ghost btn-sm" onclick="exportQuotesCSV()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>CSV出力
+                </button>
+              </div>
+            </div>
+            <div class="table-wrap" id="quotesWrap"></div>
+          </div>
+        </div>
+
+        <!-- SERVICES -->
+        <div id="view-services" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">サービス管理</span>
+              <button class="btn btn-primary btn-sm" onclick="openSvcModal()">
+                <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>サービスを追加
+              </button>
+            </div>
+            <div class="table-wrap" id="servicesWrap"></div>
+          </div>
+        </div>
+
+        <!-- HERO CONTENT MANAGER -->
+        <div id="view-hero" class="view">
+          <div class="hero-layout">
+            <div class="panel">
+              <div class="panel-head">
+                <span class="panel-title">ヒーローコンテンツ</span>
+                <span class="hero-save-ind" id="heroSaveInd">保存しました ✓</span>
+              </div>
+              <div class="panel-body">
+                <div class="m-field">
+                  <label class="m-label">メイン見出し</label>
+                  <input class="m-input" id="heroHeadline" placeholder="東京・全国の引越しはHello Moving" oninput="saveHero()" />
+                </div>
+                <div class="m-field">
+                  <label class="m-label">サブタイトル</label>
+                  <textarea class="m-ta" id="heroSubtitle" rows="2" placeholder="丁寧・迅速・安心..." oninput="saveHero()"></textarea>
+                </div>
+                <div class="m-row">
+                  <div class="m-field">
+                    <label class="m-label">プライマリ CTA</label>
+                    <input class="m-input" id="heroCtaPrimary" placeholder="無料で見積もる" oninput="saveHero()" />
+                  </div>
+                  <div class="m-field">
+                    <label class="m-label">セカンダリ CTA</label>
+                    <input class="m-input" id="heroCtaSecondary" placeholder="サービスを見る" oninput="saveHero()" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--gray-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">プレビュー</div>
+              <div class="hero-prev-card">
+                <div class="hero-prev-headline" id="prevHeadline"></div>
+                <div class="hero-prev-sub" id="prevSubtitle"></div>
+                <div class="hero-prev-btns">
+                  <div class="hero-prev-btn hero-prev-btn-p" id="prevCtaPrimary"></div>
+                  <div class="hero-prev-btn hero-prev-btn-s" id="prevCtaSecondary"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- REVIEWS -->
+        <div id="view-reviews" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <span class="panel-title">レビュー管理</span>
+                <div class="media-tabs" style="margin-bottom:0;border-bottom:none">
+                  <button class="media-tab active" id="revTabPending"  onclick="switchRevTab('pending')">保留中 <span id="revCntPending"  class="rev-tab-cnt"></span></button>
+                  <button class="media-tab"         id="revTabApproved" onclick="switchRevTab('approved')">承認済み <span id="revCntApproved" class="rev-tab-cnt"></span></button>
+                  <button class="media-tab"         id="revTabRejected" onclick="switchRevTab('rejected')">却下 <span id="revCntRejected" class="rev-tab-cnt"></span></button>
+                </div>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                <button class="btn btn-ghost btn-sm" onclick="copyRevFormLink()" title="顧客投稿リンクをコピー">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>投稿リンク
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="openRevModal()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>レビューを追加
+                </button>
+              </div>
+            </div>
+            <div class="rev-stats-bar" id="revStatsBar"></div>
+            <div class="table-wrap" id="reviewsWrap"></div>
+          </div>
+        </div>
+
+        <!-- BACKUP CENTER -->
+        <div id="view-backup" class="view">
+          <div class="settings-grid">
+            <div class="panel">
+              <div class="panel-head"><span class="panel-title">エクスポート</span></div>
+              <div class="panel-body" style="display:flex;flex-direction:column;gap:10px">
+                <button class="btn btn-ghost" style="justify-content:flex-start" onclick="exportBookingsJSON()">
+                  <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>予約データ (JSON)
+                </button>
+                <button class="btn btn-ghost" style="justify-content:flex-start" onclick="exportQuotesJSON()">
+                  <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>見積りデータ (JSON)
+                </button>
+                <button class="btn btn-ghost" style="justify-content:flex-start" onclick="exportReviewsJSON()">
+                  <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>レビューデータ (JSON)
+                </button>
+                <button class="btn btn-primary" style="justify-content:flex-start" onclick="exportFullBackup()">
+                  <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>フルバックアップ
+                </button>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><span class="panel-title">インポート・復元</span></div>
+              <div class="panel-body">
+                <div class="settings-row">
+                  <div>
+                    <div class="settings-label">予約データ</div>
+                    <div class="settings-sub">bookings.json 形式</div>
+                  </div>
+                  <div>
+                    <label class="btn btn-ghost btn-sm" for="impBookings" style="cursor:pointer;display:inline-flex">
+                      <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>選択
+                    </label>
+                    <input type="file" id="impBookings" accept=".json" style="display:none" onchange="handleImport('impBookings','bookings')" />
+                    <div class="import-msg" id="impBookingsMsg"></div>
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <div>
+                    <div class="settings-label">レビューデータ</div>
+                    <div class="settings-sub">reviews.json 形式</div>
+                  </div>
+                  <div>
+                    <label class="btn btn-ghost btn-sm" for="impReviews" style="cursor:pointer;display:inline-flex">
+                      <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>選択
+                    </label>
+                    <input type="file" id="impReviews" accept=".json" style="display:none" onchange="handleImport('impReviews','reviews')" />
+                    <div class="import-msg" id="impReviewsMsg"></div>
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <div>
+                    <div class="settings-label">フルバックアップ</div>
+                    <div class="settings-sub">backup.json 形式</div>
+                  </div>
+                  <div>
+                    <label class="btn btn-primary btn-sm" for="impBackup" style="cursor:pointer;display:inline-flex">
+                      <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>選択
+                    </label>
+                    <input type="file" id="impBackup" accept=".json" style="display:none" onchange="handleImport('impBackup','backup')" />
+                    <div class="import-msg" id="impBackupMsg"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MEDIA LIBRARY -->
+        <div id="view-media" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title" id="mediaTabTitle">画像</span>
+              <div class="media-tabs" style="margin-bottom:0;border-bottom:none">
+                <button class="media-tab active" id="tabImages" onclick="switchMediaTab('images')">
+                  <svg viewBox="0 0 24 24" width="13" height="13" style="margin-right:5px;vertical-align:middle"><path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>画像
+                </button>
+                <button class="media-tab" id="tabVideos" onclick="switchMediaTab('videos')">
+                  <svg viewBox="0 0 24 24" width="13" height="13" style="margin-right:5px;vertical-align:middle"><path fill="currentColor" d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>動画
+                </button>
+              </div>
+            </div>
+            <div class="panel-body">
+
+              <!-- Images pane -->
+              <div id="media-pane-images">
+                <div class="media-upload-zone" id="imgDropZone"
+                  onclick="document.getElementById('imgUpload').click()"
+                  ondragover="mediaDragOver(event,'imgDropZone')"
+                  ondragleave="mediaDragLeave('imgDropZone')"
+                  ondrop="mediaDropFiles(event,'images')">
+                  <svg viewBox="0 0 24 24" width="30" height="30" style="color:var(--blue)"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+                  <p>クリックまたはドラッグ&ドロップで画像をアップロード</p>
+                  <span>PNG・JPG・GIF・WebP・SVG（最大5MB）</span>
+                </div>
+                <input type="file" id="imgUpload" accept="image/*" multiple style="display:none" onchange="handleMediaUpload(event,'images')" />
+                <div class="media-grid" id="imgGrid"></div>
+                <div class="empty" id="imgEmpty">
+                  <svg viewBox="0 0 24 24" width="40" height="40"><path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                  <p>画像がまだアップロードされていません</p>
+                </div>
+              </div>
+
+              <!-- Videos pane -->
+              <div id="media-pane-videos" style="display:none">
+                <div class="media-upload-zone" id="vidDropZone"
+                  onclick="document.getElementById('vidUpload').click()"
+                  ondragover="mediaDragOver(event,'vidDropZone')"
+                  ondragleave="mediaDragLeave('vidDropZone')"
+                  ondrop="mediaDropFiles(event,'videos')">
+                  <svg viewBox="0 0 24 24" width="30" height="30" style="color:var(--blue)"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+                  <p>クリックまたはドラッグ&ドロップで動画をアップロード</p>
+                  <span>MP4・WebM・MOV（最大50MB）</span>
+                </div>
+                <input type="file" id="vidUpload" accept="video/*" multiple style="display:none" onchange="handleMediaUpload(event,'videos')" />
+                <div class="media-grid" id="vidGrid"></div>
+                <div class="empty" id="vidEmpty">
+                  <svg viewBox="0 0 24 24" width="40" height="40"><path fill="currentColor" d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                  <p>動画がまだアップロードされていません</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /content -->
+    </main>
+  </div><!-- /layout -->
+</div><!-- /adminApp -->
+
+<!-- Booking Edit Modal -->
+<div class="overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-title" id="editModalTitle">予約を追加</div>
+    <div class="m-row">
+      <div class="m-field"><label class="m-label">お客様名 *</label><input class="m-input" id="mName" placeholder="山田 太郎" /></div>
+      <div class="m-field"><label class="m-label">メールアドレス</label><input class="m-input" id="mEmail" type="email" placeholder="example@email.com" /></div>
+    </div>
+    <div class="m-row">
+      <div class="m-field"><label class="m-label">サービス</label>
+        <select class="m-sel" id="mSvc">
+          <option>単身引越し</option><option>カップル・ご夫婦引越し</option><option>学生・新生活引越し</option><option>当日・お急ぎ引越し</option><option>不用品回収・処分サービス</option>
+        </select>
+      </div>
+      <div class="m-field"><label class="m-label">ステータス</label>
+        <select class="m-sel" id="mStatus">
+          <option value="新規">新規</option><option value="確認中">確認中</option><option value="確定">確定</option><option value="完了">完了</option><option value="キャンセル">キャンセル</option>
+        </select>
+      </div>
+    </div>
+    <div class="m-row">
+      <div class="m-field"><label class="m-label">引越し日</label><input class="m-input" id="mDate" type="date" /></div>
+      <div class="m-field"><label class="m-label">希望時間帯</label>
+        <select class="m-sel" id="mTime">
+          <option>午前 8:00〜12:00</option><option>午後 12:00〜17:00</option><option>夕方 17:00〜20:00</option><option value="">未定</option>
+        </select>
+      </div>
+    </div>
+    <div class="m-field"><label class="m-label">引越し元住所</label><input class="m-input" id="mFrom" placeholder="東京都千代田区..." /></div>
+    <div class="m-field"><label class="m-label">引越し先住所</label><input class="m-input" id="mTo" placeholder="東京都新宿区..." /></div>
+    <div class="m-field"><label class="m-label">備考</label><textarea class="m-ta" id="mNotes" placeholder="ご要望・社内メモ..."></textarea></div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closeEdit()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveBooking()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="overlay" id="detailModal">
+  <div class="modal" style="max-width:520px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="modal-title" style="margin-bottom:0" id="detailRef"></div>
+      <button class="btn btn-ghost btn-sm" onclick="closeDetail()">閉じる</button>
+    </div>
+    <div id="detailBody"></div>
+    <div class="m-actions" style="margin-top:14px">
+      <button class="btn btn-ghost btn-sm" id="detailEditBtn">編集</button>
+      <button class="btn btn-danger btn-sm" id="detailDelBtn">削除</button>
+    </div>
+  </div>
+</div>
+
+<!-- Report Modal -->
+<div class="overlay" id="reportModal">
+  <div class="modal" style="max-width:560px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="modal-title" style="margin-bottom:0">売上レポート</div>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('reportModal').classList.remove('open')">閉じる</button>
+    </div>
+    <div id="reportBody"></div>
+  </div>
+</div>
+
+<!-- Service Add/Edit Modal -->
+<div class="overlay" id="svcModal">
+  <div class="modal">
+    <div class="modal-title" id="svcModalTitle">サービスを追加</div>
+    <div class="m-field">
+      <label class="m-label">サービス名 *</label>
+      <input class="m-input" id="svcTitle" placeholder="単身引越し" />
+    </div>
+    <div class="m-field">
+      <label class="m-label">説明</label>
+      <textarea class="m-ta" id="svcDesc" rows="3" placeholder="サービスの説明文..."></textarea>
+    </div>
+    <div class="m-field">
+      <label class="m-label">バッジテキスト <span style="font-weight:400;color:var(--gray-2)">（任意）</span></label>
+      <input class="m-input" id="svcBadge" placeholder="人気No.1 / 緊急対応 など" />
+    </div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closeSvcModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveSvc()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Review Add/Edit Modal -->
+<div class="overlay" id="revModal">
+  <div class="modal">
+    <div class="modal-title" id="revModalTitle">レビューを追加</div>
+    <div class="m-row">
+      <div class="m-field">
+        <label class="m-label">お客様名 *</label>
+        <input class="m-input" id="rName" placeholder="山田 太郎" oninput="updateRevPreview()" />
+      </div>
+      <div class="m-field">
+        <label class="m-label">予約ID <span style="font-weight:400;color:var(--gray-2)">(任意)</span></label>
+        <input class="m-input" id="rBookingId" placeholder="HM-20260604-XXXX" />
+      </div>
+    </div>
+    <div class="m-field">
+      <label class="m-label">評価 *</label>
+      <div class="star-row" id="revModalStars">
+        <button type="button" class="star-btn on" onclick="setRevStars(1)">★</button>
+        <button type="button" class="star-btn on" onclick="setRevStars(2)">★</button>
+        <button type="button" class="star-btn on" onclick="setRevStars(3)">★</button>
+        <button type="button" class="star-btn on" onclick="setRevStars(4)">★</button>
+        <button type="button" class="star-btn on" onclick="setRevStars(5)">★</button>
+      </div>
+    </div>
+    <div class="m-field">
+      <label class="m-label">レビュー内容 *</label>
+      <textarea class="m-ta" id="rText" rows="3" placeholder="サービスについてのご感想..." oninput="updateRevPreview()"></textarea>
+    </div>
+    <div class="rev-preview">
+      <div class="rev-preview-lbl">プレビュー</div>
+      <div class="rev-card-stars" id="previewStars"><span style="color:#f59e0b">★★★★★</span></div>
+      <div class="rev-card-text" id="previewText">レビュー内容がここに表示されます...</div>
+      <div class="rev-card-name" id="previewName">— お客様名</div>
+    </div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closeRevModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveReview()">保存（承認済みとして追加）</button>
+    </div>
+  </div>
+</div>
+
+<!-- Customer Profile Modal -->
+<div class="overlay" id="custModal">
+  <div class="modal" style="max-width:540px">
+    <div class="cust-profile-hdr">
+      <div class="cust-avatar cust-avatar-lg" id="custAvatarLg"></div>
+      <div>
+        <div style="font-size:17px;font-weight:700;color:var(--ink);line-height:1.3" id="custModalName"></div>
+        <div style="font-size:11px;color:var(--gray-2);margin-top:3px;font-variant-numeric:tabular-nums" id="custModalId"></div>
+      </div>
+    </div>
+    <div class="cust-detail-grid" id="custModalBody"></div>
+    <div id="custModalHistory"></div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closeCustModal()">閉じる</button>
+      <button class="btn btn-danger" id="custModalDelBtn">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>顧客を削除
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Media Preview Overlay -->
+<div class="media-preview-overlay" id="mediaPreviewOverlay" onclick="if(event.target===this)closeMediaPreview()">
+  <button class="media-preview-close" onclick="closeMediaPreview()">✕</button>
+  <div style="display:flex;flex-direction:column;align-items:center">
+    <img id="mediaPreviewImg" class="media-preview-img" src="" alt="" style="display:none" />
+    <video id="mediaPreviewVid" class="media-preview-vid" controls style="display:none"></video>
+    <div class="media-preview-name" id="mediaPreviewName"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+/* ════════════════════════════════════════════════════════
+   AUTH — session stored in sessionStorage, 30-min timeout
+   ════════════════════════════════════════════════════════ */
+const Auth = {
+  CREDS: {user:'admin@hello-moving.com', pass:'hello2026'},
+  KEY: 'hm_admin_sess',
+  TIMEOUT: 30 * 60 * 1000,
+  _timer: null,
+
+  login(user, pass, remember) {
+    console.log('[Auth] login attempt for:', user);
+    if (user === this.CREDS.user && pass === this.CREDS.pass) {
+      const ts = Date.now().toString();
+      sessionStorage.setItem(this.KEY, ts);
+      console.log('[Auth] sessionStorage written —', this.KEY, '=', sessionStorage.getItem(this.KEY));
+      if (remember) localStorage.setItem('hm_admin_remember', user);
+      else localStorage.removeItem('hm_admin_remember');
+      return true;
+    }
+    console.warn('[Auth] login failed — credentials did not match');
+    return false;
+  },
+  logout() { sessionStorage.removeItem(this.KEY); showLogin(); },
+  isLoggedIn() {
+    const t = sessionStorage.getItem(this.KEY);
+    if (!t) return false;
+    if (Date.now() - parseInt(t) > this.TIMEOUT) { this.logout(); return false; }
+    return true;
+  },
+  touch() { if (this.isLoggedIn()) sessionStorage.setItem(this.KEY, Date.now().toString()); },
+  startTimer() {
+    this._timer = setInterval(() => {
+      if (!this.isLoggedIn()) return;
+      const elapsed = Date.now() - parseInt(sessionStorage.getItem(this.KEY));
+      const remaining = Math.max(0, Math.ceil((this.TIMEOUT - elapsed) / 60000));
+      const el = document.getElementById('sessionTimer');
+      if (el) el.textContent = `セッション残り: ${remaining}分`;
+      if (remaining === 0) this.logout();
+    }, 30000);
+  }
+};
+
+/* ════════════════════════════════════════════════════════
+   STORAGE ADAPTER
+   Swap this object for FirebaseAdapter / SupabaseAdapter
+   All UI code calls Adapter.* only — never localStorage directly
+   ════════════════════════════════════════════════════════ */
+const Adapter = (() => {
+  const K = {
+    bk: 'hm_admin_bookings',
+    av: 'hm_admin_avail',
+    booked: 'hm_booked',
+    counts: 'hm_counts',
+    cap: 'hm_capacity',
+    prices: 'hm_prices',
+    disposal: 'hm_disposal',
+    cust: 'hm_customers'
+  };
+  const ls = (k, def) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(def)); } catch(e) { return def; } };
+  const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} };
+
+  return {
+    /* Bookings */
+    getBookings: () => ls(K.bk, []),
+    addBooking(b) { const a = this.getBookings(); a.unshift(b); save(K.bk, a); },
+    updateBooking(id, patch) { save(K.bk, this.getBookings().map(b => b.id === id ? {...b, ...patch} : b)); },
+    deleteBooking(id) { save(K.bk, this.getBookings().filter(b => b.id !== id)); },
+
+    /* Availability */
+    getAvail: () => ls(K.av, {}),
+    setDate(date, status) {
+      const a = this.getAvail();
+      if (status === 'available') delete a[date]; else a[date] = status;
+      save(K.av, a);
+      let booked = ls(K.booked, []);
+      booked = booked.filter(d => d !== date);
+      if (status === 'booked') booked.push(date);
+      save(K.booked, booked);
+    },
+    clearAvail() { localStorage.removeItem(K.av); localStorage.removeItem(K.booked); localStorage.removeItem(K.counts); },
+
+    /* Capacity */
+    getCapacity: () => ls(K.cap, {max: 5, limited: 3}),
+    saveCapacity: (v) => save(K.cap, v),
+
+    /* Prices */
+    getPrices: () => ls(K.prices, {
+      '単身引越し': 30000,
+      'カップル・ご夫婦引越し': 50000,
+      '学生・新生活引越し': 25000,
+      '当日・お急ぎ引越し': 60000,
+      '不用品回収・処分サービス': 20000
+    }),
+    savePrices: (v) => save(K.prices, v),
+
+    /* Quotes (hm_quotes) */
+    getQuotes: () => ls('hm_quotes', []),
+    addQuote(q) { const a = this.getQuotes(); a.unshift(q); save('hm_quotes', a); },
+    deleteQuote(id) { save('hm_quotes', this.getQuotes().filter(q => q.id !== id)); },
+
+    /* Services */
+    getServices() {
+      const v = ls('hm_services', null);
+      if (v) return v;
+      const defaults = [
+        {id:'SVC-1',title:'単身引越し',description:'一人暮らしの方に最適。荷物が少なくてもプロが丁寧にサポートします。',badge:'人気No.1'},
+        {id:'SVC-2',title:'カップル・ご夫婦引越し',description:'二人暮らしのお引越しをトータルサポート。家具の配置まで丁寧にお手伝いします。',badge:''},
+        {id:'SVC-3',title:'学生・新生活引越し',description:'新生活スタートをお手伝い。学生の方に嬉しいリーズナブルなプランです。',badge:''},
+        {id:'SVC-4',title:'当日・お急ぎ引越し',description:'急なご依頼にも対応。当日でも可能な限りお引越しをお手伝いします。',badge:'緊急対応'},
+        {id:'SVC-5',title:'不用品回収・処分サービス',description:'引越し時の不用品をまとめて回収・処分。便利にご活用いただけます。',badge:''},
+        {id:'SVC-6',title:'家具組立・分解',description:'家具の組み立てや分解も承ります。各メーカーに対応。',badge:''},
+      ];
+      save('hm_services', defaults);
+      return defaults;
+    },
+    addService(s) { const a = this.getServices(); a.push(s); save('hm_services', a); },
+    updateService(id, patch) { save('hm_services', this.getServices().map(s => s.id === id ? {...s, ...patch} : s)); },
+    deleteService(id) { save('hm_services', this.getServices().filter(s => s.id !== id)); },
+    saveServices(svcs) { save('hm_services', svcs); },
+
+    /* Hero */
+    getHero: () => ls('hm_hero', {
+      headline:     '東京・全国の引越しはHello Moving',
+      subtitle:     '丁寧・迅速・安心。あなたの新生活を全力でサポートします。',
+      ctaPrimary:   '無料で見積もる',
+      ctaSecondary: 'サービスを見る'
+    }),
+    saveHero: (v) => save('hm_hero', v),
+
+    /* Reviews */
+    getReviews() {
+      const reviews = ls('hm_reviews', []);
+      let dirty = false;
+      reviews.forEach(r => {
+        if (!r.status) { r.status = 'approved'; r.published = true; r.source = 'admin'; dirty = true; }
+      });
+      if (dirty) save('hm_reviews', reviews);
+      return reviews;
+    },
+    addReview(r) { const a = this.getReviews(); a.unshift(r); save('hm_reviews', a); },
+    updateReview(id, patch) { save('hm_reviews', this.getReviews().map(r => r.id === id ? {...r, ...patch} : r)); },
+    deleteReview(id) { save('hm_reviews', this.getReviews().filter(r => r.id !== id)); },
+
+    /* Disposal categories */
+    getDisposal: () => ls(K.disposal, {
+      'ベッド・マットレス': {enabled: true, price: 5000},
+      'ソファ・チェア':     {enabled: true, price: 4000},
+      '冷蔵庫':            {enabled: true, price: 6000},
+      '洗濯機':            {enabled: true, price: 5000},
+      'テーブル・棚':       {enabled: true, price: 3000},
+      'その他大型ゴミ':     {enabled: true, price: 3000}
+    }),
+    saveDisposal: (v) => save(K.disposal, v),
+
+    /* Customers */
+    getCustomers: () => ls(K.cust, []),
+    saveCustomers(v) { save(K.cust, v); },
+
+    /* Migration: pull existing hm_booked into admin avail */
+    migrate() {
+      const booked = ls(K.booked, []);
+      const avail = this.getAvail();
+      booked.forEach(d => { if (!avail[d]) avail[d] = 'booked'; });
+      save(K.av, avail);
+    }
+  };
+})();
+
+/* ════════════════════════════════════════════════════════
+   CONSTANTS & HELPERS
+   ════════════════════════════════════════════════════════ */
+const MN = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+const DN = ['日','月','火','水','木','金','土'];
+const ST_MAP = {
+  '新規':'badge-new','確認中':'badge-review','確定':'badge-confirmed',
+  '完了':'badge-done','キャンセル':'badge-cancel'
+};
+
+const pad = n => String(n).padStart(2,'0');
+const todayStr = () => { const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const isPast = ds => ds < todayStr();
+
+function fmtD(ds) {
+  if (!ds) return '—';
+  const d = new Date(ds + 'T00:00:00');
+  return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())}（${DN[d.getDay()]}）`;
+}
+function fmtDT(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function genId() {
+  const d = new Date();
+  return `HM-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${Math.random().toString(36).substr(2,4).toUpperCase()}`;
+}
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function badge(st) { return `<span class="badge ${ST_MAP[st]||'badge-new'}">${esc(st||'新規')}</span>`; }
+
+function toast(msg, dur=2400) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), dur);
+}
+
+/* ════════════════════════════════════════════════════════
+   STATS
+   ════════════════════════════════════════════════════════ */
+function calcStats() {
+  const bk = Adapter.getBookings();
+  const avail = Adapter.getAvail();
+  const prices = Adapter.getPrices();
+  const today = todayStr();
+  const now = new Date(); now.setHours(0,0,0,0);
+  const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay());
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const inRange = (ds, from) => ds >= fmtISO(from);
+  function fmtISO(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+
+  const todayBk = bk.filter(b => b.date === today).length;
+  const weekBk  = bk.filter(b => b.date >= fmtISO(weekStart)).length;
+  const monthBk = bk.filter(b => b.date >= fmtISO(monthStart)).length;
+  const fullyBooked = Object.values(avail).filter(v => v === 'booked').length;
+
+  let revenue = 0;
+  bk.filter(b => b.status !== 'キャンセル').forEach(b => {
+    revenue += (prices[b.service] || 0);
+  });
+
+  return {todayBk, weekBk, monthBk, fullyBooked, revenue};
+}
+
+/* ════════════════════════════════════════════════════════
+   NAVIGATION
+   ════════════════════════════════════════════════════════ */
+const VIEW_TITLES = {
+  dashboard:'ダッシュボード', bookings:'予約管理', quotes:'見積り管理',
+  reviews:'レビュー管理', services:'サービス管理', hero:'ヒーロー編集', calendar:'カレンダー管理', analytics:'分析',
+  capacity:'容量設定', pricing:'料金管理', disposal:'不用品管理', actions:'クイック操作',
+  backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理'
+};
+
+function go(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.sb-link').forEach(l => l.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  const lnk = document.querySelector(`[data-view="${view}"]`);
+  if (lnk) lnk.classList.add('active');
+  document.getElementById('topbarTitle').textContent = VIEW_TITLES[view]||'';
+  document.getElementById('sidebar').classList.remove('open');
+  Auth.touch();
+  if (view==='dashboard') renderDash();
+  if (view==='bookings') renderBookings();
+  if (view==='calendar') renderCal();
+  if (view==='analytics') renderAnalytics();
+  if (view==='capacity') loadCapacity();
+  if (view==='pricing') renderPricing();
+  if (view==='disposal') renderDisposal();
+  if (view==='quotes') renderQuotes();
+  if (view==='reviews') renderReviews();
+  if (view==='services') renderServices();
+  if (view==='hero') renderHero();
+  if (view==='backup') renderBackup();
+  if (view==='media') renderMedia();
+  if (view==='customers') renderCustomers();
+}
+
+function toggleDark() {
+  document.documentElement.classList.toggle('dark');
+  localStorage.setItem('hm_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  if (document.getElementById('view-analytics').classList.contains('active')) renderAnalytics();
+}
+
+/* ════════════════════════════════════════════════════════
+   DASHBOARD
+   ════════════════════════════════════════════════════════ */
+function renderDash() {
+  const bk      = Adapter.getBookings();
+  const quotes  = Adapter.getQuotes();
+  const reviews = Adapter.getReviews();
+  const newCust = bk.filter(b => b.status === '新規').length;
+  const s = calcStats();
+
+  document.getElementById('statGrid').innerHTML = `
+    <div class="stat-card" style="cursor:pointer" onclick="go('bookings')">
+      <div class="stat-label">総予約数</div>
+      <div class="stat-val">${bk.length}</div>
+      <div class="stat-sub" style="color:var(--blue)">今月 ${s.monthBk}件</div>
+    </div>
+    <div class="stat-card" style="cursor:pointer" onclick="go('quotes')">
+      <div class="stat-label">見積りリクエスト</div>
+      <div class="stat-val" style="color:var(--blue)">${quotes.length}</div>
+      <div class="stat-sub">受付済み合計</div>
+    </div>
+    <div class="stat-card" style="cursor:pointer" onclick="go('reviews')">
+      <div class="stat-label">レビュー数</div>
+      <div class="stat-val" style="color:#8b5cf6">${reviews.filter(r=>r.status==='approved').length}</div>
+      <div class="stat-sub" style="${reviews.filter(r=>r.status==='pending').length?'color:#b45309;font-weight:600':''}">${reviews.filter(r=>r.status==='pending').length?'保留中 '+reviews.filter(r=>r.status==='pending').length+'件':'承認済み'}</div>
+    </div>
+    <div class="stat-card" style="cursor:pointer" onclick="go('bookings')">
+      <div class="stat-label">新規顧客</div>
+      <div class="stat-val" style="color:var(--green)">${newCust}</div>
+      <div class="stat-sub">新規ステータス</div>
+    </div>
+  `;
+
+  const recent = bk.slice(0, 5);
+  document.getElementById('recentWrap').innerHTML = recent.length ? buildTable(recent, true) : emptyHTML('予約がありません');
+  renderQA();
+  renderActivity();
+}
+
+function renderActivity() {
+  const bk      = Adapter.getBookings();
+  const quotes  = Adapter.getQuotes();
+  const reviews = Adapter.getReviews();
+
+  const items = [];
+
+  bk.slice(0, 3).forEach(b => items.push({
+    icon: 'ai-blue',
+    svg: '<path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>',
+    title: `新規予約を受信しました — ${esc(b.name||'—')}`,
+    meta: fmtDT(b.createdAt) + '　' + esc(b.service||''),
+    ts: new Date(b.createdAt||0).getTime()
+  }));
+
+  quotes.slice(0, 2).forEach(q => items.push({
+    icon: 'ai-yellow',
+    svg: '<path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>',
+    title: `見積りリクエストが届きました — ${esc(q.name||'—')}`,
+    meta: fmtDT(q.createdAt),
+    ts: new Date(q.createdAt||0).getTime()
+  }));
+
+  reviews.slice(0, 2).forEach(r => items.push({
+    icon: 'ai-purple',
+    svg: '<path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>',
+    title: `レビューを受信しました — ${esc(r.name||'—')}`,
+    meta: fmtDT(r.createdAt) + '　★'.repeat(r.rating||5).trim(),
+    ts: new Date(r.createdAt||0).getTime()
+  }));
+
+  items.sort((a, b) => b.ts - a.ts);
+
+  if (!items.length) {
+    document.getElementById('activityWrap').innerHTML = `<div class="empty" style="padding:24px 0"><p>アクティビティはありません</p></div>`;
+    return;
+  }
+
+  document.getElementById('activityWrap').innerHTML = items.slice(0, 8).map(it => `
+    <div class="activity-item">
+      <div class="activity-icon ${it.icon}">
+        <svg viewBox="0 0 24 24" width="16" height="16">${it.svg}</svg>
+      </div>
+      <div class="activity-body">
+        <div class="activity-title">${it.title}</div>
+        <div class="activity-meta">${it.meta}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderQA() {
+  document.getElementById('qaGrid').innerHTML = `
+  <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--gray-2);margin-bottom:10px">クイックアクション</div>
+  <div class="qa-grid">
+    <button class="qa-btn" onclick="go('services');setTimeout(openSvcModal,60)">
+      <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+      <div><div style="font-weight:600">新しいサービス</div><div style="font-size:11px;color:var(--gray-2);margin-top:1px">サービスを追加</div></div>
+    </button>
+    <button class="qa-btn" onclick="go('reviews');setTimeout(openRevModal,60)">
+      <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+      <div><div style="font-weight:600">レビューを追加</div><div style="font-size:11px;color:var(--gray-2);margin-top:1px">お客様の声を登録</div></div>
+    </button>
+    <button class="qa-btn" onclick="toast('メディアマネージャーは準備中です')">
+      <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+      <div><div style="font-weight:600">メディアをアップロード</div><div style="font-size:11px;color:var(--gray-2);margin-top:1px">画像・ファイル管理</div></div>
+    </button>
+    <button class="qa-btn" onclick="go('hero')">
+      <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+      <div><div style="font-weight:600">ホームページを編集</div><div style="font-size:11px;color:var(--gray-2);margin-top:1px">ヒーローコンテンツ</div></div>
+    </button>
+  </div>`;
+}
+
+/* ════════════════════════════════════════════════════════
+   BOOKINGS TABLE
+   ════════════════════════════════════════════════════════ */
+function renderBookings() {
+  const filter = document.getElementById('bkFilter')?.value || '';
+  const q = (document.getElementById('bkSearch')?.value || '').toLowerCase();
+  let bk = Adapter.getBookings();
+  if (filter) bk = bk.filter(b => b.status === filter);
+  if (q) bk = bk.filter(b =>
+    (b.name||'').toLowerCase().includes(q) ||
+    (b.email||'').toLowerCase().includes(q) ||
+    (b.id||'').toLowerCase().includes(q)
+  );
+  document.getElementById('bookingsWrap').innerHTML = bk.length ? buildTable(bk, false) : emptyHTML('該当する予約がありません');
+}
+
+function buildTable(bk, compact) {
+  const rows = bk.map(b => `<tr>
+    <td class="td-mono">${esc(b.id||'—')}</td>
+    <td>${fmtD(b.date)}<br><span class="td-sm">${esc(b.time||'')}</span></td>
+    <td>${esc(b.service||'—')}</td>
+    <td><strong>${esc(b.name||'—')}</strong>${!compact&&b.email?`<br><span class="td-sm">${esc(b.email)}</span>`:''}</td>
+    ${!compact?`<td class="td-sm">${esc(b.fromAddr||'—')}</td>`:''}
+    ${!compact?`<td class="td-sm">${esc(b.toAddr||'—')}</td>`:''}
+    <td>${badge(b.status||'新規')}</td>
+    <td>
+      <div style="display:flex;gap:4px;align-items:center">
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="openDetail('${esc(b.id)}')" title="詳細"><svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></button>
+        <select class="sel" style="font-size:11px;padding:4px 20px 4px 6px" onchange="quickStatus('${esc(b.id)}',this.value)">
+          <option ${b.status==='新規'?'selected':''}>新規</option>
+          <option ${b.status==='確認中'?'selected':''}>確認中</option>
+          <option ${b.status==='確定'?'selected':''}>確定</option>
+          <option ${b.status==='完了'?'selected':''}>完了</option>
+          <option ${b.status==='キャンセル'?'selected':''}>キャンセル</option>
+        </select>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="delBooking('${esc(b.id)}')" title="削除"><svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+      </div>
+    </td>
+  </tr>`).join('');
+
+  return `<table><thead><tr>
+    <th>予約番号</th><th>日時</th><th>サービス</th><th>お客様名</th>
+    ${!compact?'<th>引越し元</th><th>引越し先</th>':''}
+    <th>ステータス</th><th>操作</th>
+  </tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function emptyHTML(msg) {
+  return `<div class="empty"><svg viewBox="0 0 24 24" width="40" height="40"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg><p>${msg}</p></div>`;
+}
+
+function quickStatus(id, status) {
+  Adapter.updateBooking(id, {status});
+  toast('ステータスを更新しました');
+  renderDash();
+}
+
+function delBooking(id) {
+  if (!confirm('この予約を削除しますか？')) return;
+  Adapter.deleteBooking(id);
+  toast('削除しました');
+  renderBookings(); renderDash();
+}
+
+function filterToday() {
+  document.getElementById('bkSearch').value = '';
+  document.getElementById('bkFilter').value = '';
+  go('bookings');
+}
+
+/* ════════════════════════════════════════════════════════
+   ADD / EDIT MODAL
+   ════════════════════════════════════════════════════════ */
+let _editId = null;
+
+function openAdd() {
+  _editId = null;
+  document.getElementById('editModalTitle').textContent = '予約を追加';
+  ['mName','mEmail','mFrom','mTo','mNotes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('mSvc').value = '単身引越し';
+  document.getElementById('mStatus').value = '新規';
+  document.getElementById('mDate').value = todayStr();
+  document.getElementById('mTime').value = '午前 8:00〜12:00';
+  document.getElementById('editModal').classList.add('open');
+}
+
+function openEdit(id) {
+  const b = Adapter.getBookings().find(b => b.id === id); if (!b) return;
+  _editId = id;
+  document.getElementById('editModalTitle').textContent = '予約を編集';
+  document.getElementById('mName').value = b.name||'';
+  document.getElementById('mEmail').value = b.email||'';
+  document.getElementById('mSvc').value = b.service||'単身引越し';
+  document.getElementById('mStatus').value = b.status||'新規';
+  document.getElementById('mDate').value = b.date||'';
+  document.getElementById('mTime').value = b.time||'';
+  document.getElementById('mFrom').value = b.fromAddr||'';
+  document.getElementById('mTo').value = b.toAddr||'';
+  document.getElementById('mNotes').value = b.notes||'';
+  document.getElementById('editModal').classList.add('open');
+  closeDetail();
+}
+
+function closeEdit() { document.getElementById('editModal').classList.remove('open'); }
+
+function saveBooking() {
+  const name = document.getElementById('mName').value.trim();
+  if (!name) { alert('お客様名を入力してください'); return; }
+  const existing = _editId ? Adapter.getBookings().find(b => b.id === _editId) : null;
+  const b = {
+    id: _editId || genId(),
+    name,
+    email: document.getElementById('mEmail').value.trim(),
+    service: document.getElementById('mSvc').value,
+    status: document.getElementById('mStatus').value,
+    date: document.getElementById('mDate').value,
+    time: document.getElementById('mTime').value,
+    fromAddr: document.getElementById('mFrom').value.trim(),
+    toAddr: document.getElementById('mTo').value.trim(),
+    notes: document.getElementById('mNotes').value.trim(),
+    createdAt: existing?.createdAt || new Date().toISOString()
+  };
+  if (_editId) { Adapter.updateBooking(_editId, b); toast('予約を更新しました'); }
+  else { Adapter.addBooking(b); toast('予約を追加しました'); }
+  closeEdit(); renderBookings(); renderDash();
+}
+
+/* ════════════════════════════════════════════════════════
+   DETAIL MODAL
+   ════════════════════════════════════════════════════════ */
+function openDetail(id) {
+  const b = Adapter.getBookings().find(b => b.id === id); if (!b) return;
+  document.getElementById('detailRef').textContent = b.id;
+  const r = (l,v) => `<div style="display:flex;padding:8px 0;border-bottom:1px solid var(--line-2);gap:12px"><span style="font-size:12px;color:var(--gray-1);font-weight:500;width:110px;flex-shrink:0">${l}</span><span style="font-size:13px;color:var(--ink);flex:1">${esc(String(v||'—'))}</span></div>`;
+  document.getElementById('detailBody').innerHTML =
+    `<div style="margin-bottom:12px">${badge(b.status||'新規')}</div>` +
+    r('サービス',b.service) + r('引越し日',fmtD(b.date)) + r('希望時間帯',b.time) +
+    r('お客様名',b.name) + r('メール',b.email) +
+    r('引越し元',b.fromAddr) + r('引越し先',b.toAddr) +
+    r('備考',b.notes) + r('受付日時',fmtDT(b.createdAt));
+  document.getElementById('detailEditBtn').onclick = () => openEdit(id);
+  document.getElementById('detailDelBtn').onclick = () => { if(confirm('削除しますか？')){ Adapter.deleteBooking(id); closeDetail(); renderBookings(); renderDash(); toast('削除しました'); }};
+  document.getElementById('detailModal').classList.add('open');
+}
+function closeDetail() { document.getElementById('detailModal').classList.remove('open'); }
+
+/* ════════════════════════════════════════════════════════
+   CALENDAR MANAGEMENT
+   ════════════════════════════════════════════════════════ */
+let _calV = new Date(); _calV.setDate(1);
+let _bulkMode = false;
+let _bulkSel = new Set();
+
+function renderCal() {
+  const avail = Adapter.getAvail();
+  const y = _calV.getFullYear(), m = _calV.getMonth();
+  const first = new Date(y,m,1).getDay(), total = new Date(y,m+1,0).getDate();
+  const nowM = new Date(); nowM.setDate(1);
+  document.getElementById('calMonth').textContent = `${y}年${MN[m]}`;
+  document.getElementById('calPrev').disabled = y===nowM.getFullYear() && m<=nowM.getMonth();
+
+  const today = todayStr();
+  let h = DN.map((d,i)=>`<div class="cal-dow" style="${i===0?'color:#ef4444':i===6?'color:#2563eb':''}">${d}</div>`).join('');
+  for(let i=0;i<first;i++) h+='<div class="cal-day cal-empty"></div>';
+  for(let d=1;d<=total;d++){
+    const ds=`${y}-${pad(m+1)}-${pad(d)}`;
+    const past=isPast(ds), isT=ds===today;
+    const st=avail[ds]||'available';
+    const sym=st==='available'?'○':st==='limited'?'△':'×';
+    const sc=st==='available'?'sym-a':st==='limited'?'sym-l':'sym-b';
+    const dow=new Date(y,m,d).getDay();
+    const nc=dow===0?'#ef4444':dow===6?'#2563eb':'';
+    const sel=_bulkSel.has(ds);
+    let cls='cal-day';
+    if(past)cls+=' cal-past';else if(isT)cls+=' cal-today';
+    if(st==='limited')cls+=' cal-limited';
+    if(st==='booked')cls+=' cal-booked';
+    if(st==='available'&&!past)cls+=' cal-avail';
+    if(sel)cls+=' cal-selected';
+    h+=`<button class="${cls}" type="button" ${past?'disabled':''} onclick="calClick('${ds}')">
+      <span class="c-num" ${nc?`style="color:${nc}"`:''}}>${d}</span>
+      <span class="c-sym ${sc}">${sym}</span>
+    </button>`;
+  }
+  document.getElementById('calGrid').innerHTML = h;
+  document.getElementById('bulkCount').textContent = _bulkMode ? `${_bulkSel.size}日選択中` : '';
+}
+
+function calClick(ds) {
+  Auth.touch();
+  if (_bulkMode) {
+    if (_bulkSel.has(ds)) _bulkSel.delete(ds); else _bulkSel.add(ds);
+    renderCal(); return;
+  }
+  const avail = Adapter.getAvail();
+  const cur = avail[ds]||'available';
+  const next = cur==='available'?'limited':cur==='limited'?'booked':'available';
+  Adapter.setDate(ds, next);
+  renderCal();
+  toast(`${ds}: ${next==='available'?'空き':next==='limited'?'残りわずか':'満了'}`);
+}
+
+function calMove(dir) { _calV.setMonth(_calV.getMonth()+dir); renderCal(); }
+
+function resetAvail() {
+  if (!confirm('全ての空き状況設定をリセットしますか？')) return;
+  Adapter.clearAvail(); renderCal(); toast('リセットしました');
+}
+
+function toggleBulk() {
+  _bulkMode = !_bulkMode;
+  _bulkSel.clear();
+  document.getElementById('bulkToggle').textContent = _bulkMode ? '一括選択を終了' : '一括選択';
+  document.getElementById('bulkStatus').style.display = _bulkMode ? '' : 'none';
+  document.getElementById('bulkApply').style.display = _bulkMode ? '' : 'none';
+  document.getElementById('calHint').textContent = _bulkMode ? '日付をクリックして選択、「適用」ボタンで一括変更' : 'クリックして空き状況を変更（○→△→×→○）';
+  renderCal();
+}
+
+function applyBulk() {
+  const status = document.getElementById('bulkStatus').value;
+  _bulkSel.forEach(ds => Adapter.setDate(ds, status));
+  toast(`${_bulkSel.size}件を更新しました`);
+  _bulkSel.clear(); renderCal();
+}
+
+function showFullBooked() {
+  const avail = Adapter.getAvail();
+  const dates = Object.entries(avail).filter(([,v])=>v==='booked').map(([d])=>fmtD(d));
+  alert(dates.length ? `満了日:\n${dates.join('\n')}` : '満了日はありません');
+}
+
+/* ════════════════════════════════════════════════════════
+   CAPACITY SETTINGS
+   ════════════════════════════════════════════════════════ */
+function loadCapacity() {
+  const c = Adapter.getCapacity();
+  document.getElementById('capMax').value = c.max || 5;
+  document.getElementById('capLimited').value = c.limited || 3;
+}
+
+function saveCapacity() {
+  const max = parseInt(document.getElementById('capMax').value) || 5;
+  const limited = parseInt(document.getElementById('capLimited').value) || 3;
+  Adapter.saveCapacity({max, limited});
+  toast('容量設定を保存しました');
+}
+
+/* ════════════════════════════════════════════════════════
+   PRICING MANAGEMENT
+   ════════════════════════════════════════════════════════ */
+function renderPricing() {
+  const prices = Adapter.getPrices();
+  let h = '';
+  Object.entries(prices).forEach(([svc, price]) => {
+    h += `<div class="settings-row">
+      <div class="settings-label">${esc(svc)}</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:12px;color:var(--gray-2)">¥</span>
+        <input type="number" class="price-input" data-svc="${esc(svc)}" value="${price}" min="0" step="1000" />
+      </div>
+    </div>`;
+  });
+  h += `<div style="margin-top:16px;display:flex;gap:8px">
+    <button class="btn btn-primary" onclick="savePricing()">保存</button>
+    <button class="btn btn-ghost" onclick="renderPricing()">リセット</button>
+  </div>`;
+  document.getElementById('pricingBody').innerHTML = h;
+}
+
+function savePricing() {
+  const prices = {};
+  document.querySelectorAll('#pricingBody .price-input').forEach(inp => {
+    prices[inp.dataset.svc] = parseInt(inp.value) || 0;
+  });
+  Adapter.savePrices(prices);
+  toast('料金設定を保存しました');
+}
+
+/* ════════════════════════════════════════════════════════
+   DISPOSAL MANAGEMENT
+   ════════════════════════════════════════════════════════ */
+function renderDisposal() {
+  const disp = Adapter.getDisposal();
+  let h = '';
+  Object.entries(disp).forEach(([cat, cfg]) => {
+    const id = 'dt_' + cat.replace(/[^a-z0-9]/gi,'_');
+    h += `<div class="settings-row">
+      <div>
+        <div class="settings-label">${esc(cat)}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <label class="toggle" title="${cfg.enabled?'無効にする':'有効にする'}">
+          <input type="checkbox" id="te_${id}" ${cfg.enabled?'checked':''} />
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <span style="font-size:12px;color:var(--gray-2)">¥</span>
+          <input type="number" class="price-input" id="tp_${id}" value="${cfg.price}" min="0" step="500" style="width:90px" />
+        </div>
+      </div>
+    </div>`;
+  });
+  h += `<div style="margin-top:16px;display:flex;gap:8px">
+    <button class="btn btn-primary" onclick="saveDisposal()">保存</button>
+  </div>`;
+  document.getElementById('disposalBody').innerHTML = h;
+}
+
+function saveDisposal() {
+  const disp = Adapter.getDisposal();
+  Object.keys(disp).forEach(cat => {
+    const id = 'dt_' + cat.replace(/[^a-z0-9]/gi,'_');
+    const en = document.getElementById('te_'+id)?.checked;
+    const pr = parseInt(document.getElementById('tp_'+id)?.value) || 0;
+    if (en !== undefined) disp[cat] = {enabled: en, price: pr};
+  });
+  Adapter.saveDisposal(disp);
+  toast('不用品設定を保存しました');
+}
+
+/* ════════════════════════════════════════════════════════
+   ANALYTICS — pure-JS Canvas charts
+   ════════════════════════════════════════════════════════ */
+function renderAnalytics() {
+  const bk          = Adapter.getBookings();
+  const avail       = Adapter.getAvail();
+  const pending     = bk.filter(b => b.status === '新規' || b.status === '確認中').length;
+  const completed   = bk.filter(b => b.status === '完了').length;
+  const quotes      = Adapter.getQuotes().length;
+  const reviews     = Adapter.getReviews().length;
+  const bookedDates = Object.values(avail).filter(v => v === 'booked').length;
+
+  const cards = [
+    {label:'総予約数',         val: bk.length,   sub:'全ステータス合計', color:''},
+    {label:'対応中',           val: pending,      sub:'新規 ＋ 確認中',   color:'var(--blue)'},
+    {label:'完了',             val: completed,    sub:'完了した予約',      color:'var(--green)'},
+    {label:'見積りリクエスト', val: quotes,       sub:'受付済み',          color:'var(--yellow)'},
+    {label:'レビュー数',       val: reviews,      sub:'登録済みレビュー',  color:'#8b5cf6'},
+    {label:'満了日数',         val: bookedDates,  sub:'×マーク日',        color:'var(--red)'},
+  ];
+
+  document.getElementById('analyticsGrid').innerHTML = cards.map(c =>
+    `<div class="stat-card">
+      <div class="stat-label">${c.label}</div>
+      <div class="stat-val"${c.color ? ` style="color:${c.color}"` : ''}>${c.val}</div>
+      <div class="stat-sub">${c.sub}</div>
+    </div>`
+  ).join('');
+}
+
+/* ════════════════════════════════════════════════════════
+   QUOTE MANAGEMENT
+   ════════════════════════════════════════════════════════ */
+function renderQuotes() {
+  const svcFilter = document.getElementById('qtSvcFilter')?.value || '';
+  const sort      = document.getElementById('qtSort')?.value || 'desc';
+  const q         = (document.getElementById('qtSearch')?.value || '').toLowerCase();
+
+  let quotes = Adapter.getQuotes();
+
+  // Filter
+  if (svcFilter) quotes = quotes.filter(qt => qt.service === svcFilter);
+  if (q) quotes = quotes.filter(qt =>
+    (qt.name||'').toLowerCase().includes(q) ||
+    (qt.email||'').toLowerCase().includes(q) ||
+    (qt.service||'').toLowerCase().includes(q)
+  );
+
+  // Sort by 受付日 (createdAt)
+  quotes.sort((a, b) => {
+    const da = new Date(a.createdAt||0), db = new Date(b.createdAt||0);
+    return sort === 'asc' ? da - db : db - da;
+  });
+
+  if (!quotes.length) {
+    document.getElementById('quotesWrap').innerHTML = emptyHTML('見積りリクエストがありません');
+    return;
+  }
+
+  const rows = quotes.map(qt => `<tr>
+    <td class="td-mono">${fmtDT(qt.createdAt)}</td>
+    <td><strong>${esc(qt.name||'—')}</strong></td>
+    <td class="td-sm">${esc(qt.email||'—')}</td>
+    <td>${esc(qt.service||'—')}</td>
+    <td>${qt.moveDate ? fmtD(qt.moveDate) : '<span class="td-sm">未定</span>'}</td>
+    <td class="td-sm">${esc(qt.fromAddr||'—')}</td>
+    <td class="td-sm">${esc(qt.toAddr||'—')}</td>
+    <td>
+      <div style="display:flex;gap:4px">
+        <button class="btn btn-primary btn-sm" onclick="convertToBooking('${esc(qt.id)}')" title="予約に変換">予約化</button>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteQuote('${esc(qt.id)}')" title="削除">
+          <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+        </button>
+      </div>
+    </td>
+  </tr>`).join('');
+
+  document.getElementById('quotesWrap').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>受付日時</th><th>お客様名</th><th>メール</th><th>サービス</th>
+        <th>希望引越し日</th><th>引越し元</th><th>引越し先</th><th>操作</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function deleteQuote(id) {
+  if (!confirm('この見積りリクエストを削除しますか？')) return;
+  Adapter.deleteQuote(id);
+  toast('削除しました');
+  renderQuotes();
+}
+
+function convertToBooking(id) {
+  const qt = Adapter.getQuotes().find(q => q.id === id);
+  if (!qt) return;
+  // Pre-fill the booking add modal from the quote data
+  _editId = null;
+  document.getElementById('editModalTitle').textContent = '見積りから予約を作成';
+  document.getElementById('mName').value  = qt.name  || '';
+  document.getElementById('mEmail').value = qt.email || '';
+  document.getElementById('mSvc').value   = qt.service || '単身引越し';
+  document.getElementById('mStatus').value = '確認中';
+  document.getElementById('mDate').value  = qt.moveDate || '';
+  document.getElementById('mTime').value  = qt.time || '午前 8:00〜12:00';
+  document.getElementById('mFrom').value  = qt.fromAddr || '';
+  document.getElementById('mTo').value    = qt.toAddr   || '';
+  document.getElementById('mNotes').value = qt.notes    || '';
+  go('bookings');
+  document.getElementById('editModal').classList.add('open');
+}
+
+function exportQuotesCSV() {
+  const quotes = Adapter.getQuotes();
+  if (!quotes.length) { toast('エクスポートするデータがありません'); return; }
+  const heads = ['受付日時','お客様名','メール','サービス','希望引越し日','引越し元住所','引越し先住所','備考'];
+  const rows = quotes.map(qt =>
+    [fmtDT(qt.createdAt), qt.name, qt.email, qt.service, qt.moveDate, qt.fromAddr, qt.toAddr, qt.notes]
+    .map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',')
+  );
+  const csv = '﻿' + [heads.join(','), ...rows].join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
+  a.download = `hello-moving-quotes-${todayStr()}.csv`;
+  a.click();
+  toast('CSVをエクスポートしました');
+}
+
+/* ════════════════════════════════════════════════════════
+   SERVICE MANAGEMENT
+   ════════════════════════════════════════════════════════ */
+let _svcId = null;
+
+function renderServices() {
+  const svcs = Adapter.getServices();
+  if (!svcs.length) {
+    document.getElementById('servicesWrap').innerHTML = emptyHTML('サービスがありません');
+    return;
+  }
+  const rows = svcs.map((s, i) => `<tr>
+    <td style="text-align:center;font-weight:700;color:var(--gray-2);width:36px">${i + 1}</td>
+    <td><strong>${esc(s.title||'—')}</strong></td>
+    <td class="td-truncate td-sm">${esc(s.description||'—')}</td>
+    <td>${s.badge ? `<span class="badge badge-new">${esc(s.badge)}</span>` : '<span class="td-sm">—</span>'}</td>
+    <td>
+      <div style="display:flex;gap:4px;align-items:center">
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="moveSvc('${esc(s.id)}',-1)" ${i===0?'disabled':''} title="上へ">
+          <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+        </button>
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="moveSvc('${esc(s.id)}',1)" ${i===svcs.length-1?'disabled':''} title="下へ">
+          <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="openSvcEdit('${esc(s.id)}')">編集</button>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="delSvc('${esc(s.id)}')">
+          <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+        </button>
+      </div>
+    </td>
+  </tr>`).join('');
+  document.getElementById('servicesWrap').innerHTML = `
+    <table><thead><tr>
+      <th style="width:36px">#</th><th>サービス名</th><th>説明</th><th>バッジ</th><th>操作</th>
+    </tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function moveSvc(id, dir) {
+  const svcs = Adapter.getServices();
+  const idx = svcs.findIndex(s => s.id === id);
+  if (idx < 0) return;
+  const next = idx + dir;
+  if (next < 0 || next >= svcs.length) return;
+  [svcs[idx], svcs[next]] = [svcs[next], svcs[idx]];
+  Adapter.saveServices(svcs);
+  renderServices();
+}
+
+function openSvcModal() {
+  _svcId = null;
+  document.getElementById('svcModalTitle').textContent = 'サービスを追加';
+  document.getElementById('svcTitle').value = '';
+  document.getElementById('svcDesc').value = '';
+  document.getElementById('svcBadge').value = '';
+  document.getElementById('svcModal').classList.add('open');
+}
+
+function openSvcEdit(id) {
+  const s = Adapter.getServices().find(s => s.id === id); if (!s) return;
+  _svcId = id;
+  document.getElementById('svcModalTitle').textContent = 'サービスを編集';
+  document.getElementById('svcTitle').value = s.title || '';
+  document.getElementById('svcDesc').value = s.description || '';
+  document.getElementById('svcBadge').value = s.badge || '';
+  document.getElementById('svcModal').classList.add('open');
+}
+
+function closeSvcModal() { document.getElementById('svcModal').classList.remove('open'); }
+
+function saveSvc() {
+  const title = document.getElementById('svcTitle').value.trim();
+  const description = document.getElementById('svcDesc').value.trim();
+  const badge = document.getElementById('svcBadge').value.trim();
+  if (!title) { alert('サービス名を入力してください'); return; }
+  if (_svcId) {
+    Adapter.updateService(_svcId, {title, description, badge});
+    toast('サービスを更新しました');
+  } else {
+    Adapter.addService({id: 'SVC-' + Date.now(), title, description, badge});
+    toast('サービスを追加しました');
+  }
+  closeSvcModal();
+  renderServices();
+}
+
+function delSvc(id) {
+  if (!confirm('このサービスを削除しますか？')) return;
+  Adapter.deleteService(id);
+  toast('削除しました');
+  renderServices();
+}
+
+/* ════════════════════════════════════════════════════════
+   HERO CONTENT MANAGER
+   ════════════════════════════════════════════════════════ */
+function renderHero() {
+  const h = Adapter.getHero();
+  document.getElementById('heroHeadline').value     = h.headline     || '';
+  document.getElementById('heroSubtitle').value     = h.subtitle     || '';
+  document.getElementById('heroCtaPrimary').value   = h.ctaPrimary   || '';
+  document.getElementById('heroCtaSecondary').value = h.ctaSecondary || '';
+  _updateHeroPrev(h);
+}
+
+function saveHero() {
+  const h = {
+    headline:     document.getElementById('heroHeadline').value,
+    subtitle:     document.getElementById('heroSubtitle').value,
+    ctaPrimary:   document.getElementById('heroCtaPrimary').value,
+    ctaSecondary: document.getElementById('heroCtaSecondary').value
+  };
+  Adapter.saveHero(h);
+  _updateHeroPrev(h);
+  const ind = document.getElementById('heroSaveInd');
+  ind.style.opacity = '1';
+  clearTimeout(ind._t);
+  ind._t = setTimeout(() => { ind.style.opacity = '0'; }, 1600);
+}
+
+function _updateHeroPrev(h) {
+  document.getElementById('prevHeadline').textContent   = h.headline     || '（見出しを入力）';
+  document.getElementById('prevSubtitle').textContent   = h.subtitle     || '（サブタイトルを入力）';
+  document.getElementById('prevCtaPrimary').textContent   = h.ctaPrimary   || 'CTA 1';
+  document.getElementById('prevCtaSecondary').textContent = h.ctaSecondary || 'CTA 2';
+}
+
+/* ════════════════════════════════════════════════════════
+   REVIEW MANAGEMENT
+   ════════════════════════════════════════════════════════ */
+let _revId = null, _revRating = 5, _revTab = 'pending';
+
+const _starH = n =>
+  `<span style="color:#f59e0b">${'★'.repeat(n)}</span><span style="color:var(--gray-2)">${'★'.repeat(5-n)}</span>`;
+
+function switchRevTab(tab) {
+  _revTab = tab;
+  ['pending','approved','rejected'].forEach(t => {
+    document.getElementById('revTab'+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle('active', t===tab);
+  });
+  renderReviews();
+}
+
+function renderReviews() {
+  const all      = Adapter.getReviews();
+  const pending  = all.filter(r => r.status === 'pending');
+  const approved = all.filter(r => r.status === 'approved');
+  const rejected = all.filter(r => r.status === 'rejected');
+  const published = approved.filter(r => r.published);
+
+  // Tab counts
+  document.getElementById('revCntPending').textContent  = pending.length  || '';
+  document.getElementById('revCntApproved').textContent = approved.length || '';
+  document.getElementById('revCntRejected').textContent = rejected.length || '';
+
+  // Stats bar
+  document.getElementById('revStatsBar').innerHTML =
+    `<span>保留中 <strong class="${pending.length?'warn':''}">${pending.length}</strong></span>` +
+    `<span>承認済み <strong>${approved.length}</strong></span>` +
+    `<span>公開中 <strong style="color:var(--green)">${published.length}</strong></span>` +
+    `<span>却下 <strong>${rejected.length}</strong></span>`;
+
+  const list = _revTab==='pending' ? pending : _revTab==='approved' ? approved : rejected;
+
+  if (!list.length) {
+    document.getElementById('reviewsWrap').innerHTML = emptyHTML(
+      _revTab==='pending' ? '保留中のレビューはありません' :
+      _revTab==='approved' ? '承認済みのレビューはありません' : '却下されたレビューはありません'
+    );
+    return;
+  }
+
+  const rows = list.map(r => {
+    const srcBadge = r.source === 'customer'
+      ? `<span class="rev-st rev-st-pending" style="font-size:10px;padding:2px 7px">顧客投稿</span>`
+      : `<span class="rev-st rev-st-approved" style="font-size:10px;padding:2px 7px;background:rgba(37,99,235,.08);color:var(--blue);border-color:rgba(37,99,235,.2)">管理者</span>`;
+    const pubBadge = r.status==='approved'
+      ? (r.published
+          ? `<span class="rev-st rev-st-approved" style="font-size:10px;padding:2px 7px"><span class="rev-pub-dot"></span>公開中</span>`
+          : `<span class="rev-st rev-st-pending" style="font-size:10px;padding:2px 7px">非公開</span>`)
+      : '';
+
+    let actions = '';
+    if (_revTab === 'pending') {
+      actions = `
+        <button class="btn btn-green btn-sm" onclick="approveRev('${r.id}')">
+          <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>承認
+        </button>
+        <button class="btn btn-ghost btn-sm" style="border-color:rgba(239,68,68,.3);color:var(--red)" onclick="rejectRev('${r.id}')">
+          <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>却下
+        </button>`;
+    } else if (_revTab === 'approved') {
+      actions = `
+        <button class="btn ${r.published?'btn-ghost':'btn-primary'} btn-sm" onclick="publishRev('${r.id}',${!r.published})">
+          <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="${r.published?'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z':'M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z'}"/></svg>${r.published?'非公開にする':'公開する'}
+        </button>
+        <button class="btn btn-ghost btn-sm" style="border-color:rgba(239,68,68,.3);color:var(--red)" onclick="rejectRev('${r.id}')">却下</button>`;
+    } else {
+      actions = `
+        <button class="btn btn-ghost btn-sm" onclick="approveRev('${r.id}')">承認に戻す</button>`;
+    }
+    actions += `
+      <button class="btn btn-danger btn-sm btn-icon" onclick="delRev('${r.id}')" title="削除">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+      </button>`;
+
+    return `<tr>
+      <td>
+        <strong>${esc(r.name||'—')}</strong><br>
+        <div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap">${srcBadge}${pubBadge}</div>
+      </td>
+      <td style="font-size:14px;letter-spacing:1px;white-space:nowrap">${_starH(r.rating||5)}</td>
+      <td class="td-truncate" style="max-width:220px">${esc(r.text||'—')}</td>
+      <td class="td-mono td-sm">${esc(r.bookingId||'—')}</td>
+      <td class="td-mono td-sm">${fmtDT(r.createdAt)}</td>
+      <td><div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">${actions}</div></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('reviewsWrap').innerHTML = `
+    <table><thead><tr>
+      <th>お客様名</th><th>評価</th><th>レビュー内容</th><th>予約ID</th><th>投稿日時</th><th>操作</th>
+    </tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function approveRev(id) {
+  Adapter.updateReview(id, { status:'approved', published:false });
+  toast('承認しました');
+  renderReviews(); renderDash();
+}
+
+function rejectRev(id) {
+  Adapter.updateReview(id, { status:'rejected', published:false });
+  toast('却下しました');
+  renderReviews(); renderDash();
+}
+
+function publishRev(id, pub) {
+  Adapter.updateReview(id, { published: pub });
+  toast(pub ? '公開しました' : '非公開にしました');
+  renderReviews();
+}
+
+function openRevModal() {
+  _revId = null; _revRating = 5;
+  document.getElementById('revModalTitle').textContent = 'レビューを追加（管理者）';
+  document.getElementById('rName').value = '';
+  document.getElementById('rText').value = '';
+  document.getElementById('rBookingId').value = '';
+  setRevStars(5);
+  document.getElementById('revModal').classList.add('open');
+}
+
+function openRevEdit(id) {
+  const r = Adapter.getReviews().find(r => r.id === id); if (!r) return;
+  _revId = id; _revRating = r.rating || 5;
+  document.getElementById('revModalTitle').textContent = 'レビューを編集';
+  document.getElementById('rName').value = r.name || '';
+  document.getElementById('rText').value = r.text || '';
+  document.getElementById('rBookingId').value = r.bookingId || '';
+  setRevStars(r.rating || 5);
+  document.getElementById('revModal').classList.add('open');
+}
+
+function closeRevModal() { document.getElementById('revModal').classList.remove('open'); }
+
+function setRevStars(n) {
+  _revRating = n;
+  document.querySelectorAll('#revModalStars .star-btn').forEach((btn, i) => btn.classList.toggle('on', i < n));
+  updateRevPreview();
+}
+
+function updateRevPreview() {
+  const name = document.getElementById('rName').value.trim() || 'お客様名';
+  const text = document.getElementById('rText').value.trim() || 'レビュー内容がここに表示されます...';
+  document.getElementById('previewStars').innerHTML =
+    `<span style="color:#f59e0b">${'★'.repeat(_revRating)}</span><span style="color:var(--gray-2)">${'★'.repeat(5-_revRating)}</span>`;
+  document.getElementById('previewText').textContent = text;
+  document.getElementById('previewName').textContent = '— ' + name;
+}
+
+function saveReview() {
+  const name = document.getElementById('rName').value.trim();
+  const text = document.getElementById('rText').value.trim();
+  if (!name) { alert('お客様名を入力してください'); return; }
+  if (!text) { alert('レビュー内容を入力してください'); return; }
+  const bookingId = document.getElementById('rBookingId').value.trim();
+  const existing  = _revId ? Adapter.getReviews().find(r => r.id === _revId) : null;
+  const r = {
+    id: _revId || ('REV-' + Date.now()),
+    name, rating: _revRating, text,
+    bookingId: bookingId || null,
+    status: 'approved', published: false, source: 'admin',
+    createdAt: existing?.createdAt || new Date().toISOString()
+  };
+  if (_revId) { Adapter.updateReview(_revId, r); toast('レビューを更新しました'); }
+  else { Adapter.addReview(r); toast('レビューを追加しました（承認済み）'); }
+  closeRevModal();
+  _revTab = 'approved';
+  renderReviews(); renderDash();
+}
+
+function delRev(id) {
+  if (!confirm('このレビューを削除しますか？')) return;
+  Adapter.deleteReview(id);
+  toast('削除しました');
+  renderReviews(); renderDash();
+}
+
+function copyRevFormLink() {
+  const link = window.location.href.split('#')[0] + '#review';
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(link).then(() => toast('投稿リンクをコピーしました'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = link; ta.style.cssText='position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); toast('投稿リンクをコピーしました'); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+}
+
+/* ── Public review form ── */
+let _pubRating = 5, _pubBooking = null;
+
+function showPublicReviewForm() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminApp').style.display   = 'none';
+  document.getElementById('reviewPublicForm').style.display = 'flex';
+  document.getElementById('pubBookingId').addEventListener('keydown', e => {
+    if (e.key === 'Enter') verifyPubBooking();
+  });
+}
+
+function setPubStars(n) {
+  _pubRating = n;
+  document.querySelectorAll('.pub-star-btn').forEach((btn, i) => btn.classList.toggle('on', i < n));
+}
+
+function verifyPubBooking() {
+  const bkId = document.getElementById('pubBookingId').value.trim().toUpperCase();
+  const hint  = document.getElementById('pubBookingHint');
+  const btn   = document.getElementById('pubVerifyBtn');
+
+  hint.style.display = 'none';
+  document.getElementById('pubBookingId').classList.remove('has-error');
+
+  if (!bkId) {
+    document.getElementById('pubBookingId').classList.add('has-error');
+    hint.textContent = '予約IDを入力してください';
+    hint.style.display = 'block'; return;
+  }
+
+  btn.disabled = true; btn.classList.add('loading');
+  btn.querySelector('.login-btn-text').textContent = '確認中...';
+
+  setTimeout(() => {
+    btn.disabled = false; btn.classList.remove('loading');
+    btn.querySelector('.login-btn-text').textContent = '予約を確認する';
+
+    const booking = Adapter.getBookings().find(b => b.id.toUpperCase() === bkId);
+    if (!booking) {
+      document.getElementById('pubBookingId').classList.add('has-error');
+      hint.textContent = '予約IDが見つかりません。正しいIDをご確認ください。';
+      hint.style.display = 'block'; return;
+    }
+    if (booking.status !== '完了') {
+      document.getElementById('pubBookingId').classList.add('has-error');
+      hint.textContent = 'サービス完了後にレビューをご投稿いただけます。';
+      hint.style.display = 'block'; return;
+    }
+    const already = Adapter.getReviews().find(r => r.bookingId === booking.id);
+    if (already) {
+      document.getElementById('pubBookingId').classList.add('has-error');
+      hint.textContent = 'この予約のレビューは既に投稿されています。';
+      hint.style.display = 'block'; return;
+    }
+
+    _pubBooking = booking;
+    document.getElementById('pubVerifiedName').textContent = booking.name || '';
+    document.getElementById('pubVerifiedSvc').textContent  = booking.service + ' — ' + (booking.date||'');
+    document.getElementById('pubName').value = booking.name || '';
+    document.getElementById('pubStep1').style.display = 'none';
+    document.getElementById('pubStep2').style.display = 'block';
+  }, 600);
+}
+
+function submitPubReview() {
+  const name = document.getElementById('pubName').value.trim();
+  const text = document.getElementById('pubText').value.trim();
+  const textHint = document.getElementById('pubTextHint');
+  textHint.style.display = 'none';
+  if (!text) { textHint.style.display = 'block'; return; }
+
+  const btn = document.getElementById('pubSubmitBtn');
+  btn.disabled = true; btn.classList.add('loading');
+  btn.querySelector('.login-btn-text').textContent = '送信中...';
+
+  setTimeout(() => {
+    Adapter.addReview({
+      id: 'REV-' + Date.now(),
+      name: name || (_pubBooking?.name||'匿名'),
+      rating: _pubRating, text,
+      bookingId: _pubBooking?.id || null,
+      status: 'pending', published: false, source: 'customer',
+      createdAt: new Date().toISOString()
+    });
+    document.getElementById('pubStep2').style.display = 'none';
+    document.getElementById('pubSuccess').style.display = 'block';
+    btn.disabled = false; btn.classList.remove('loading');
+  }, 700);
+}
+
+/* ════════════════════════════════════════════════════════
+   BACKUP CENTER
+   ════════════════════════════════════════════════════════ */
+function _dlJSON(filename, obj) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 2)], {type:'application/json'}));
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function exportBookingsJSON() {
+  _dlJSON(`hm-bookings-${todayStr()}.json`, Adapter.getBookings());
+  toast('予約データをエクスポートしました');
+}
+function exportQuotesJSON() {
+  _dlJSON(`hm-quotes-${todayStr()}.json`, Adapter.getQuotes());
+  toast('見積りデータをエクスポートしました');
+}
+function exportReviewsJSON() {
+  _dlJSON(`hm-reviews-${todayStr()}.json`, Adapter.getReviews());
+  toast('レビューデータをエクスポートしました');
+}
+function exportFullBackup() {
+  const backup = {version:1, exportedAt:new Date().toISOString(), data:{}};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('hm_')) {
+      try { backup.data[key] = JSON.parse(localStorage.getItem(key)); }
+      catch { backup.data[key] = localStorage.getItem(key); }
+    }
+  }
+  _dlJSON(`hm-backup-${todayStr()}.json`, backup);
+  toast('フルバックアップをエクスポートしました');
+}
+
+function _setImportMsg(id, type, msg) {
+  const el = document.getElementById(id + 'Msg');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'import-msg ' + (type === 'ok' ? 'import-ok' : 'import-err');
+}
+
+function handleImport(inputId, type) {
+  const input = document.getElementById(inputId);
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    let parsed;
+    try { parsed = JSON.parse(ev.target.result); }
+    catch { _setImportMsg(inputId, 'err', 'エラー: 無効なJSONファイルです'); input.value = ''; return; }
+    if (type === 'bookings')     _doImportBookings(parsed, inputId);
+    else if (type === 'reviews') _doImportReviews(parsed, inputId);
+    else if (type === 'backup')  _doImportBackup(parsed, inputId);
+    input.value = '';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function _doImportBookings(data, inputId) {
+  if (!Array.isArray(data))
+    return _setImportMsg(inputId, 'err', 'エラー: 配列形式が必要です');
+  if (!data.every(b => b && b.id && b.name))
+    return _setImportMsg(inputId, 'err', 'エラー: id・name フィールドが必要です');
+  localStorage.setItem('hm_admin_bookings', JSON.stringify(data));
+  _setImportMsg(inputId, 'ok', `✓ ${data.length}件をインポートしました`);
+  toast('予約データをインポートしました'); renderDash();
+}
+
+function _doImportReviews(data, inputId) {
+  if (!Array.isArray(data))
+    return _setImportMsg(inputId, 'err', 'エラー: 配列形式が必要です');
+  if (!data.every(r => r && r.id && r.name && typeof r.rating === 'number'))
+    return _setImportMsg(inputId, 'err', 'エラー: id・name・rating フィールドが必要です');
+  localStorage.setItem('hm_reviews', JSON.stringify(data));
+  _setImportMsg(inputId, 'ok', `✓ ${data.length}件をインポートしました`);
+  toast('レビューデータをインポートしました');
+}
+
+function _doImportBackup(data, inputId) {
+  if (!data || typeof data.data !== 'object')
+    return _setImportMsg(inputId, 'err', 'エラー: 有効なバックアップファイルではありません');
+  let count = 0;
+  Object.entries(data.data).forEach(([key, val]) => {
+    if (key.startsWith('hm_')) {
+      try { localStorage.setItem(key, typeof val === 'string' ? val : JSON.stringify(val)); count++; }
+      catch {}
+    }
+  });
+  if (!count) return _setImportMsg(inputId, 'err', 'エラー: 復元できるデータがありません');
+  _setImportMsg(inputId, 'ok', `✓ ${count}種類のデータを復元しました`);
+  toast('バックアップを復元しました'); renderDash();
+}
+
+function renderBackup() {
+  ['impBookings', 'impReviews', 'impBackup'].forEach(id => {
+    const el = document.getElementById(id + 'Msg');
+    if (el) { el.textContent = ''; el.className = 'import-msg'; }
+  });
+}
+
+/* ════════════════════════════════════════════════════════
+   CSV EXPORT / IMPORT / REPORT
+   ════════════════════════════════════════════════════════ */
+function exportCSV() {
+  const bk = Adapter.getBookings();
+  if (!bk.length) { toast('エクスポートするデータがありません'); return; }
+  const h = ['予約番号','ステータス','サービス','引越し日','希望時間帯','お客様名','メール','引越し元','引越し先','備考','受付日時'];
+  const rows = bk.map(b=>[b.id,b.status,b.service,b.date,b.time,b.name,b.email,b.fromAddr,b.toAddr,b.notes,b.createdAt]
+    .map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv = '﻿' + [h.join(','),...rows].join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download = `hello-moving-${todayStr()}.csv`;
+  a.click(); toast('CSVをエクスポートしました');
+}
+
+function importCSV(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const lines = ev.target.result.replace(/^﻿/,'').split(/\r?\n/).filter(Boolean);
+    if (lines.length < 2) { toast('有効なCSVファイルではありません'); return; }
+    let count = 0;
+    lines.slice(1).forEach(line => {
+      const cols = line.split(',').map(c => c.replace(/^"|"$/g,'').replace(/""/g,'"'));
+      if (cols[0] && cols[5]) {
+        Adapter.addBooking({id:cols[0],status:cols[1]||'新規',service:cols[2]||'',date:cols[3]||'',time:cols[4]||'',name:cols[5]||'',email:cols[6]||'',fromAddr:cols[7]||'',toAddr:cols[8]||'',notes:cols[9]||'',createdAt:cols[10]||new Date().toISOString()});
+        count++;
+      }
+    });
+    e.target.value = '';
+    toast(`${count}件をインポートしました`);
+    renderDash();
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function generateReport() {
+  const bk = Adapter.getBookings();
+  const prices = Adapter.getPrices();
+  const s = calcStats();
+
+  const byStatus = {新規:0,確認中:0,確定:0,完了:0,キャンセル:0};
+  const bySvc = {};
+  let revenue = 0;
+  bk.forEach(b => {
+    if (byStatus[b.status]!==undefined) byStatus[b.status]++;
+    bySvc[b.service] = (bySvc[b.service]||0) + 1;
+    if (b.status !== 'キャンセル') revenue += (prices[b.service]||0);
+  });
+
+  const rows = (obj) => Object.entries(obj).map(([k,v])=>`<tr><td style="padding:7px 10px;color:var(--gray-1);font-size:12px">${esc(k)}</td><td style="padding:7px 10px;font-weight:600;font-size:13px">${v}</td></tr>`).join('');
+
+  document.getElementById('reportBody').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div><div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--ink)">売上サマリー</div>
+        <table style="width:100%;border-collapse:collapse">
+          <tr><td style="padding:7px 10px;color:var(--gray-1);font-size:12px">総予約数</td><td style="padding:7px 10px;font-weight:600">${bk.length}</td></tr>
+          <tr><td style="padding:7px 10px;color:var(--gray-1);font-size:12px">今月</td><td style="padding:7px 10px;font-weight:600">${s.monthBk}件</td></tr>
+          <tr><td style="padding:7px 10px;color:var(--gray-1);font-size:12px">売上予測</td><td style="padding:7px 10px;font-weight:600;color:var(--green)">¥${revenue.toLocaleString()}</td></tr>
+        </table>
+      </div>
+      <div><div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--ink)">ステータス別</div>
+        <table style="width:100%;border-collapse:collapse">${rows(byStatus)}</table>
+      </div>
+      <div style="grid-column:1/-1"><div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--ink)">サービス別</div>
+        <table style="width:100%;border-collapse:collapse">${rows(bySvc)}</table>
+      </div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('reportModal').classList.remove('open')">閉じる</button>
+    </div>
+  `;
+  document.getElementById('reportModal').classList.add('open');
+}
+
+function clearAllData() {
+  if (!confirm('全予約データ・空き状況データを完全に消去しますか？\nこの操作は取り消せません。')) return;
+  ['hm_admin_bookings','hm_admin_avail','hm_booked','hm_counts'].forEach(k => localStorage.removeItem(k));
+  toast('全データを消去しました');
+  renderDash();
+}
+
+/* ════════════════════════════════════════════════════════
+   CUSTOMER MANAGEMENT
+   ════════════════════════════════════════════════════════ */
+function _custKey(b) {
+  return b.email ? b.email.trim().toLowerCase() : 'nomail_' + (b.name||'').trim().toLowerCase();
+}
+
+function _syncCustomers() {
+  const bookings = Adapter.getBookings();
+  const stored   = Adapter.getCustomers();
+  const byKey    = new Map(stored.map(c => [c._key, c]));
+  let   dirty    = false;
+
+  bookings.forEach(b => {
+    const _key = _custKey(b);
+    if (!byKey.has(_key)) {
+      const d  = new Date(b.createdAt || Date.now());
+      const id = `CUST-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
+      const c  = { id, _key, name: b.name||'', email: b.email||'', phone:'', postalCode:'', address:'', registeredAt: b.createdAt||new Date().toISOString(), deleted:false };
+      stored.push(c);
+      byKey.set(_key, c);
+      dirty = true;
+    }
+  });
+  if (dirty) Adapter.saveCustomers(stored);
+  return stored;
+}
+
+function renderCustomers() {
+  const all      = _syncCustomers();
+  const bookings = Adapter.getBookings();
+  const filter   = document.getElementById('custFilter')?.value || '';
+  const q        = (document.getElementById('custSearch')?.value || '').toLowerCase();
+
+  const enriched = all
+    .filter(c => !c.deleted)
+    .map(c => {
+      const bks = bookings.filter(b => _custKey(b) === c._key);
+      return { ...c, bkCount: bks.length, latestBk: bks[0] || null };
+    });
+
+  let list = enriched;
+  if (filter === 'with')  list = list.filter(c => c.bkCount > 0);
+  if (filter === 'none')  list = list.filter(c => c.bkCount === 0);
+  if (q) list = list.filter(c =>
+    (c.name||'').toLowerCase().includes(q) ||
+    (c.email||'').toLowerCase().includes(q) ||
+    (c.phone||'').includes(q) ||
+    (c.id||'').toLowerCase().includes(q)
+  );
+  list.sort((a, b) => (b.registeredAt||'') > (a.registeredAt||'') ? 1 : -1);
+
+  const statsEl = document.getElementById('custStatsBar');
+  if (statsEl) statsEl.innerHTML =
+    `<span>合計 <strong>${enriched.length}</strong> 名</span>` +
+    `<span>予約あり <strong>${enriched.filter(c=>c.bkCount>0).length}</strong> 名</span>` +
+    `<span>表示中 <strong>${list.length}</strong> 件</span>`;
+
+  if (!list.length) {
+    document.getElementById('customersWrap').innerHTML = emptyHTML('該当する顧客がいません');
+    return;
+  }
+
+  const rows = list.map(c => {
+    const init = (c.name||'?').trim().charAt(0);
+    const bkBadge = c.bkCount > 0
+      ? `<span class="badge badge-confirmed">${c.bkCount}件</span>`
+      : `<span class="badge badge-done">なし</span>`;
+    return `<tr>
+      <td class="td-mono" style="font-size:11px">${esc(c.id)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:9px">
+          <div class="cust-avatar" style="width:28px;height:28px;font-size:12px;border-radius:7px">${esc(init)}</div>
+          <strong>${esc(c.name||'—')}</strong>
+        </div>
+      </td>
+      <td class="td-sm">${esc(c.phone||'—')}</td>
+      <td class="td-sm">${esc(c.email||'—')}</td>
+      <td>${bkBadge}</td>
+      <td class="td-mono" style="font-size:11px">${fmtDT(c.registeredAt)}</td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-ghost btn-sm btn-icon" title="プロフィール" onclick="openCustModal('${esc(c.id)}')">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          </button>
+          <button class="btn btn-danger btn-sm btn-icon" title="削除" onclick="deleteCust('${esc(c.id)}')">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('customersWrap').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>顧客ID</th><th>お客様名</th><th>電話番号</th><th>メール</th><th>予約数</th><th>登録日時</th><th>操作</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function openCustModal(id) {
+  const stored   = Adapter.getCustomers();
+  const c        = stored.find(c => c.id === id);
+  if (!c) return;
+  const bookings = Adapter.getBookings()
+    .filter(b => _custKey(b) === c._key)
+    .sort((a, b) => (b.date||'') > (a.date||'') ? 1 : -1);
+
+  const init = (c.name||'?').trim().charAt(0);
+  document.getElementById('custAvatarLg').textContent = init;
+  document.getElementById('custModalName').textContent = c.name || '—';
+  document.getElementById('custModalId').textContent   = c.id;
+
+  const row = (l, v) => `<div class="cust-detail-row">
+    <span class="cust-detail-label">${l}</span>
+    <span class="cust-detail-val">${esc(v||'—')}</span>
+  </div>`;
+  document.getElementById('custModalBody').innerHTML =
+    row('メール',    c.email) +
+    row('電話番号',  c.phone) +
+    row('郵便番号',  c.postalCode) +
+    row('住所',      c.address) +
+    row('登録日時',  fmtDT(c.registeredAt));
+
+  let histHTML = `<div class="cust-hist-title">予約履歴 <span style="font-weight:400;color:var(--gray-2);font-size:12px">${bookings.length}件</span></div>`;
+  if (bookings.length) {
+    const bkRows = bookings.map(b => `<tr>
+      <td class="td-mono" style="font-size:11px">${esc(b.id||'—')}</td>
+      <td style="font-size:12px">${fmtD(b.date)}</td>
+      <td style="font-size:12px">${esc(b.service||'—')}</td>
+      <td>${badge(b.status||'新規')}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm btn-icon" title="予約詳細" onclick="closeCustModal();openDetail('${esc(b.id)}')">
+          <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+        </button>
+      </td>
+    </tr>`).join('');
+    histHTML += `<div class="table-wrap" style="max-height:200px;overflow-y:auto;border:1px solid var(--line);border-radius:10px">
+      <table>
+        <thead><tr><th>予約番号</th><th>日付</th><th>サービス</th><th>ステータス</th><th></th></tr></thead>
+        <tbody>${bkRows}</tbody>
+      </table>
+    </div>`;
+  } else {
+    histHTML += `<div class="empty" style="padding:18px 0"><p>予約履歴がありません</p></div>`;
+  }
+  document.getElementById('custModalHistory').innerHTML = histHTML;
+
+  document.getElementById('custModalDelBtn').onclick = () => {
+    closeCustModal();
+    deleteCust(id);
+  };
+
+  document.getElementById('custModal').classList.add('open');
+}
+
+function closeCustModal() {
+  document.getElementById('custModal').classList.remove('open');
+}
+
+function deleteCust(id) {
+  const stored = Adapter.getCustomers();
+  const c = stored.find(c => c.id === id);
+  if (!c) return;
+  if (!confirm(`「${c.name||'この顧客'}」を削除しますか？\n※予約データは削除されません`)) return;
+  c.deleted = true;
+  Adapter.saveCustomers(stored);
+  toast('顧客を削除しました');
+  renderCustomers();
+}
+
+/* ════════════════════════════════════════════════════════
+   MEDIA LIBRARY
+   ════════════════════════════════════════════════════════ */
+const MediaLib = {
+  KEY: { images:'hm_media_images', videos:'hm_media_videos' },
+  get(type) {
+    try { return JSON.parse(localStorage.getItem(this.KEY[type]) || '[]'); } catch(e) { return []; }
+  },
+  save(type, items) {
+    try { localStorage.setItem(this.KEY[type], JSON.stringify(items)); return true; }
+    catch(e) { toast('ストレージ容量が不足しています。ファイルを削除して空き容量を確保してください'); return false; }
+  },
+  add(type, item) { const a = this.get(type); a.unshift(item); return this.save(type, a); },
+  remove(type, id) { return this.save(type, this.get(type).filter(i => i.id !== id)); },
+  find(type, id) { return this.get(type).find(i => i.id === id) || null; }
+};
+
+let _mediaActiveTab = 'images';
+
+function switchMediaTab(tab) {
+  _mediaActiveTab = tab;
+  document.getElementById('tabImages').classList.toggle('active', tab==='images');
+  document.getElementById('tabVideos').classList.toggle('active', tab==='videos');
+  document.getElementById('media-pane-images').style.display = tab==='images' ? '' : 'none';
+  document.getElementById('media-pane-videos').style.display = tab==='videos' ? '' : 'none';
+  document.getElementById('mediaTabTitle').textContent = tab==='images' ? '画像' : '動画';
+}
+
+function renderMedia() {
+  _renderMediaPane('images');
+  _renderMediaPane('videos');
+}
+
+function _renderMediaPane(type) {
+  const items = MediaLib.get(type);
+  const grid  = document.getElementById(type==='images' ? 'imgGrid' : 'vidGrid');
+  const empty = document.getElementById(type==='images' ? 'imgEmpty' : 'vidEmpty');
+  empty.style.display = items.length ? 'none' : '';
+  if (!items.length) { grid.innerHTML = ''; return; }
+  grid.innerHTML = items.map(item => {
+    const id = item.id;
+    const thumb = type==='images'
+      ? `<img class="media-thumb" src="${esc(item.data)}" alt="${esc(item.name)}" onclick="previewMediaItem('${type}','${id}')" />`
+      : `<video class="media-thumb-vid" src="${esc(item.data)}" preload="metadata" onclick="previewMediaItem('${type}','${id}')"></video>`;
+    const previewIcon = type==='images'
+      ? `<svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>`
+      : `<svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>`;
+    return `<div class="media-card">
+      ${thumb}
+      <div class="media-card-body">
+        <div class="media-card-name" title="${esc(item.name)}">${esc(item.name)}</div>
+        <div class="media-card-meta">${_fmtBytes(item.size)} · ${esc(item.date)}</div>
+        <div class="media-card-actions">
+          <button class="btn btn-ghost btn-sm btn-icon" title="プレビュー" onclick="previewMediaItem('${type}','${id}')">${previewIcon}</button>
+          <button class="btn btn-ghost btn-sm btn-icon" title="URLをコピー" onclick="copyMediaURL('${type}','${id}')">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+          </button>
+          <button class="btn btn-danger btn-sm btn-icon" title="削除" onclick="deleteMediaItem('${type}','${id}')">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function handleMediaUpload(e, type) {
+  const files = Array.from(e.target.files);
+  e.target.value = '';
+  _uploadMediaFiles(files, type);
+}
+
+function mediaDropFiles(e, type) {
+  e.preventDefault();
+  const zoneId = type==='images' ? 'imgDropZone' : 'vidDropZone';
+  document.getElementById(zoneId).classList.remove('drag-over');
+  const accept = type==='images' ? /^image\// : /^video\//;
+  _uploadMediaFiles(Array.from(e.dataTransfer.files).filter(f => accept.test(f.type)), type);
+}
+
+function mediaDragOver(e, zoneId) {
+  e.preventDefault();
+  document.getElementById(zoneId).classList.add('drag-over');
+}
+
+function mediaDragLeave(zoneId) {
+  document.getElementById(zoneId).classList.remove('drag-over');
+}
+
+function _uploadMediaFiles(files, type) {
+  if (!files.length) { toast('対応していないファイル形式です'); return; }
+  const MAX = type==='images' ? 5*1024*1024 : 50*1024*1024;
+  let done = 0, ok = 0;
+  files.forEach(file => {
+    if (file.size > MAX) {
+      toast(`${file.name}：ファイルサイズが上限を超えています`);
+      if (++done === files.length) _renderMediaPane(type);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const added = MediaLib.add(type, {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+        name: file.name,
+        size: file.size,
+        date: new Date().toLocaleDateString('ja-JP'),
+        data: ev.target.result
+      });
+      if (added) ok++;
+      if (++done === files.length) {
+        _renderMediaPane(type);
+        if (ok) toast(`${ok}件のファイルをアップロードしました`);
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function deleteMediaItem(type, id) {
+  if (!confirm('このファイルを削除しますか？')) return;
+  MediaLib.remove(type, id);
+  _renderMediaPane(type);
+  toast('削除しました');
+}
+
+function copyMediaURL(type, id) {
+  const item = MediaLib.find(type, id);
+  if (!item) return;
+  const text = item.data;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => toast('URLをコピーしました')).catch(() => _fallbackCopy(text));
+  } else {
+    _fallbackCopy(text);
+  }
+}
+
+function _fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); toast('URLをコピーしました'); } catch(e) { toast('コピーに失敗しました'); }
+  document.body.removeChild(ta);
+}
+
+function previewMediaItem(type, id) {
+  const item = MediaLib.find(type, id);
+  if (!item) return;
+  const imgEl  = document.getElementById('mediaPreviewImg');
+  const vidEl  = document.getElementById('mediaPreviewVid');
+  const nameEl = document.getElementById('mediaPreviewName');
+  nameEl.textContent = item.name;
+  if (type==='images') {
+    imgEl.src = item.data;
+    imgEl.style.display = 'block';
+    vidEl.style.display = 'none';
+    vidEl.src = '';
+  } else {
+    vidEl.src = item.data;
+    vidEl.style.display = 'block';
+    imgEl.style.display = 'none';
+    imgEl.src = '';
+  }
+  document.getElementById('mediaPreviewOverlay').classList.add('open');
+}
+
+function closeMediaPreview() {
+  const vidEl = document.getElementById('mediaPreviewVid');
+  vidEl.pause();
+  vidEl.src = '';
+  document.getElementById('mediaPreviewImg').src = '';
+  document.getElementById('mediaPreviewOverlay').classList.remove('open');
+}
+
+function _fmtBytes(b) {
+  if (!b) return '—';
+  if (b < 1024) return b + ' B';
+  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+  return (b/(1024*1024)).toFixed(1) + ' MB';
+}
+
+/* ════════════════════════════════════════════════════════
+   AUTH UI
+   ════════════════════════════════════════════════════════ */
+function showLogin() {
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('adminApp').style.display='none';
+  const remembered = localStorage.getItem('hm_admin_remember') || '';
+  document.getElementById('loginEmail').value = remembered;
+  document.getElementById('rememberMe').checked = !!remembered;
+  document.getElementById('loginPass').value='';
+  document.getElementById('loginErr').style.display='none';
+  document.getElementById('loginEmail').classList.remove('has-error');
+  document.getElementById('loginPass').classList.remove('has-error');
+  if (remembered) document.getElementById('loginPass').focus();
+  else document.getElementById('loginEmail').focus();
+}
+
+function showApp() {
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('adminApp').style.display='block';
+}
+
+function logout() { Auth.logout(); showLogin(); }
+
+/* ════════════════════════════════════════════════════════
+   EVENT HANDLERS
+   ════════════════════════════════════════════════════════ */
+function handleForgot() {
+  alert('パスワードリセットについては管理者にお問い合わせください。\n\nEmail: hellomoving1@gmail.com');
+}
+
+document.getElementById('loginBtn').addEventListener('click', () => {
+  const emailEl = document.getElementById('loginEmail');
+  const passEl  = document.getElementById('loginPass');
+  const btn     = document.getElementById('loginBtn');
+  const errEl   = document.getElementById('loginErr');
+  const emailHint = document.getElementById('loginEmailHint');
+  const passHint  = document.getElementById('loginPassHint');
+
+  // Reset state
+  emailEl.classList.remove('has-error'); emailHint.style.display='none';
+  passEl.classList.remove('has-error');  passHint.style.display='none';
+  errEl.style.display='none';
+
+  const u = emailEl.value.trim();
+  const p = passEl.value;
+  let valid = true;
+
+  if (!u) { emailEl.classList.add('has-error'); emailHint.style.display='block'; emailEl.focus(); valid=false; }
+  if (!p) { passEl.classList.add('has-error');  passHint.style.display='block'; if(valid)passEl.focus(); valid=false; }
+  if (!valid) return;
+
+  // Loading state
+  btn.disabled = true;
+  btn.classList.add('loading');
+  btn.querySelector('.login-btn-text').textContent = 'ログイン中...';
+
+  setTimeout(() => {
+    const remember = document.getElementById('rememberMe').checked;
+    if (Auth.login(u, p, remember)) {
+      showApp(); init();
+    } else {
+      errEl.style.display='block';
+      emailEl.classList.add('has-error');
+      passEl.classList.add('has-error');
+    }
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    btn.querySelector('.login-btn-text').textContent = 'ログイン';
+  }, 600);
+});
+
+document.getElementById('loginPass').addEventListener('keydown', e => {
+  if (e.key==='Enter') document.getElementById('loginBtn').click();
+});
+document.getElementById('loginEmail').addEventListener('keydown', e => {
+  if (e.key==='Enter') document.getElementById('loginPass').focus();
+});
+
+document.getElementById('editModal').addEventListener('click', e => { if(e.target===e.currentTarget)closeEdit(); });
+document.getElementById('detailModal').addEventListener('click', e => { if(e.target===e.currentTarget)closeDetail(); });
+document.getElementById('reportModal').addEventListener('click', e => { if(e.target===e.currentTarget)document.getElementById('reportModal').classList.remove('open'); });
+document.getElementById('revModal').addEventListener('click', e => { if(e.target===e.currentTarget)closeRevModal(); });
+document.getElementById('svcModal').addEventListener('click', e => { if(e.target===e.currentTarget)closeSvcModal(); });
+document.getElementById('custModal').addEventListener('click', e => { if(e.target===e.currentTarget)closeCustModal(); });
+
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape') { closeEdit(); closeDetail(); closeRevModal(); closeSvcModal(); closeCustModal(); closeMediaPreview(); document.getElementById('reportModal').classList.remove('open'); }
+  Auth.touch();
+});
+document.addEventListener('click', () => Auth.touch());
+
+/* Resize charts on window resize */
+let _resizeT;
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeT);
+  _resizeT = setTimeout(() => {
+    if (document.getElementById('view-analytics').classList.contains('active')) renderAnalytics();
+  }, 150);
+});
+
+/* ════════════════════════════════════════════════════════
+   SEED DEMO DATA
+   ════════════════════════════════════════════════════════ */
+function seedDemo() {
+  if (Adapter.getBookings().length) return;
+  const today = todayStr();
+  const d = n => { const x=new Date(); x.setDate(x.getDate()+n); return `${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`; };
+  [
+    {id:'HM-'+today.replace(/-/g,'')+'A1B2',name:'田中 花子',email:'tanaka@example.com',service:'単身引越し',date:d(3),time:'午前 8:00〜12:00',fromAddr:'東京都渋谷区恵比寿1-1',toAddr:'東京都新宿区西新宿2-2',notes:'',status:'確定',createdAt:new Date(Date.now()-86400000*2).toISOString()},
+    {id:'HM-'+today.replace(/-/g,'')+'C3D4',name:'佐藤 太郎',email:'sato@example.com',service:'カップル・ご夫婦引越し',date:d(7),time:'午後 12:00〜17:00',fromAddr:'埼玉県さいたま市大宮区',toAddr:'東京都港区六本木3-3',notes:'ベッドの分解希望',status:'新規',createdAt:new Date(Date.now()-86400000).toISOString()},
+    {id:'HM-'+today.replace(/-/g,'')+'E5F6',name:'Mr. Miller',email:'miller@example.com',service:'単身引越し',date:d(12),time:'午前 8:00〜12:00',fromAddr:'東京都目黒区4-4',toAddr:'東京都品川区5-5',notes:'English support needed',status:'確認中',createdAt:new Date().toISOString()},
+    {id:'HM-'+today.replace(/-/g,'')+'G7H8',name:'中村 一郎',email:'nakamura@example.com',service:'不用品回収・処分サービス',date:d(-3),time:'夕方 17:00〜20:00',fromAddr:'東京都千代田区6-6',toAddr:'',notes:'ソファと冷蔵庫',status:'完了',createdAt:new Date(Date.now()-86400000*4).toISOString()},
+    {id:'HM-'+today.replace(/-/g,'')+'I9J0',name:'山田 美咲',email:'yamada@example.com',service:'学生・新生活引越し',date:d(-8),time:'午前 8:00〜12:00',fromAddr:'神奈川県横浜市7-7',toAddr:'東京都豊島区池袋8-8',notes:'',status:'キャンセル',createdAt:new Date(Date.now()-86400000*9).toISOString()},
+    {id:'HM-'+today.replace(/-/g,'')+'K1L2',name:'鈴木 健一',email:'suzuki@example.com',service:'当日・お急ぎ引越し',date:today,time:'午前 8:00〜12:00',fromAddr:'東京都江戸川区',toAddr:'東京都墨田区',notes:'急ぎのため',status:'確認中',createdAt:new Date().toISOString()},
+  ].forEach(b => Adapter.addBooking(b));
+}
+
+/* ════════════════════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════════════════════ */
+function init() {
+  Adapter.migrate();
+  seedDemo();
+  renderDash();
+  Auth.startTimer();
+}
+
+if (window.location.hash === '#review') {
+  showPublicReviewForm();
+} else if (Auth.isLoggedIn()) {
+  showApp(); init();
+} else {
+  showLogin();
+}
+</script>
+</body>
+</html>
