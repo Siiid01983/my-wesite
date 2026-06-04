@@ -632,6 +632,9 @@ html.dark .rev-tab-cnt{color:#f59e0b}
         <button class="sb-link" data-view="backup" onclick="go('backup')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>バックアップ
         </button>
+        <button class="sb-link" data-view="changelog" onclick="go('changelog')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M13 2.05v2.02c3.95.49 7 3.85 7 7.93 0 3.21-1.81 6-4.72 7.72L13 17v5h5l-1.22-1.22C19.91 19.07 22 15.76 22 12c0-5.18-3.95-9.45-9-9.95zM11 2.05C5.95 2.55 2 6.82 2 12c0 3.76 2.09 7.07 5.22 8.78L6 22h5V2.05zM11 17H9.5L11 15.5V17zm2 0v-1.5L14.5 17H13z"/></svg>変更履歴
+        </button>
         <div class="sb-section" style="margin-top:6px">その他</div>
         <button class="sb-link" onclick="toggleDark()">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>ダークモード
@@ -1536,6 +1539,11 @@ html.dark .rev-tab-cnt{color:#f59e0b}
           </div>
         </div>
 
+        <!-- CHANGELOG -->
+        <div id="view-changelog" class="view">
+          <div id="changelogContent"></div>
+        </div>
+
         <!-- MEDIA LIBRARY -->
         <div id="view-media" class="view">
           <div class="panel">
@@ -2299,7 +2307,7 @@ const VIEW_TITLES = {
   dashboard:'ダッシュボード', bookings:'予約管理', quotes:'見積り管理',
   reviews:'レビュー管理', services:'サービス管理', faq:'FAQ編集', company:'会社情報編集', footer:'フッター編集', hero:'ヒーロー編集', calendar:'カレンダー管理', analytics:'分析',
   capacity:'容量設定', pricing:'料金管理', disposal:'不用品管理', actions:'クイック操作',
-  backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理'
+  backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理', changelog:'変更履歴'
 };
 
 function go(view) {
@@ -2328,6 +2336,7 @@ function go(view) {
   if (view==='backup') renderBackup();
   if (view==='media') renderMedia();
   if (view==='customers') renderCustomers();
+  if (view==='changelog') renderChangelog();
 }
 
 function toggleDark() {
@@ -5732,6 +5741,110 @@ function renderBackup() {
     const el = document.getElementById(id + 'Msg');
     if (el) { el.textContent = ''; el.className = 'import-msg'; }
   });
+}
+
+/* ════════════════════════════════════════════════════════
+   CHANGELOG
+   ════════════════════════════════════════════════════════ */
+const CHANGELOG = [
+  {
+    version: 'v3.0', date: '2026-06-04', label: '最新',
+    entries: [
+      { type:'feat',    text:'全管理ページに印刷機能を追加（予約・見積り・レビュー・顧客・レポート・分析・バックアップ・料金・不用品・容量・カレンダー）' },
+      { type:'feat',    text:'分析モジュールを全面刷新：KPIカード6枚・期間フィルター・Canvasグラフ3種・CSV出力・印刷対応' },
+      { type:'feat',    text:'分析KPIカードに分析期間ラベルを追加。KPIが選択期間でフィルタリングされるよう変更' },
+      { type:'feat',    text:'不用品管理をカテゴリベースに刷新：カテゴリ・アイテムのCRUD、合計処分費用のリアルタイム表示' },
+      { type:'feat',    text:'売上レポートをクイック操作に直接印刷ボタンとして追加' },
+      { type:'fix',     text:'renderAnalyticsCharts内の const svcCount・const periodLabel 二重宣言バグを修正' },
+    ]
+  },
+  {
+    version: 'v2.5', date: '2026-06-03',
+    entries: [
+      { type:'feat',    text:'顧客管理モジュール追加：顧客一覧・プロフィールモーダル・予約履歴・削除' },
+      { type:'feat',    text:'メディアライブラリ追加：画像・動画のアップロード・プレビュー・削除' },
+      { type:'feat',    text:'レビュー管理を刷新：タブ表示（保留中・承認済み・却下）・公開切替・顧客投稿フォーム対応' },
+      { type:'feat',    text:'バックアップセンター追加：JSON形式のエクスポート/インポート・フルバックアップ・復元' },
+      { type:'improve', text:'予約管理に顧客管理との連携（顧客IDの自動生成・履歴追跡）を追加' },
+    ]
+  },
+  {
+    version: 'v2.0', date: '2026-06-02',
+    entries: [
+      { type:'feat',    text:'ヒーローエディター追加：見出し・サブテキスト・CTA・バッジ・背景画像・バージョン履歴管理' },
+      { type:'feat',    text:'サービス管理を追加：サービスカードのCRUD・プレビュー・注目カード設定' },
+      { type:'feat',    text:'FAQ編集モジュール追加：質問・回答のCRUD・ライブプレビュー' },
+      { type:'feat',    text:'会社情報編集モジュール追加：会社概要行のCRUD・プレビュー' },
+      { type:'feat',    text:'フッター編集モジュール追加：リンク・列・著作権テキストの編集' },
+      { type:'improve', text:'見積り管理に予約変換機能（予約化ボタン）を追加' },
+    ]
+  },
+  {
+    version: 'v1.5', date: '2026-06-01',
+    entries: [
+      { type:'feat',    text:'カレンダー管理追加：日別空き状況（○/△/×）の編集・一括設定' },
+      { type:'feat',    text:'料金管理追加：サービスごとの基本料金・距離・階数・割増料金の設定' },
+      { type:'feat',    text:'容量設定追加：1日の最大予約数・残りわずか閾値の設定' },
+      { type:'feat',    text:'クイック操作パネル追加：主要機能へのショートカットを一覧表示' },
+      { type:'feat',    text:'分析ページ追加（初期版）：予約統計・完了率・満了日数のカード表示' },
+    ]
+  },
+  {
+    version: 'v1.0', date: '2026-05-30',
+    entries: [
+      { type:'feat',    text:'管理システム初期リリース' },
+      { type:'feat',    text:'ログイン画面：メール・パスワード認証・セッション管理（30分）・ダークモード自動検出' },
+      { type:'feat',    text:'ダッシュボード：統計カード・最近の予約・アクティビティフィード・クイックアクション' },
+      { type:'feat',    text:'予約管理：一覧・ステータスフィルター・検索・追加・編集・削除・詳細モーダル' },
+      { type:'feat',    text:'見積り管理：リクエスト一覧・フィルター・CSV出力・削除' },
+      { type:'feat',    text:'CSV エクスポート / インポート機能' },
+      { type:'feat',    text:'レスポンシブレイアウト・ダークモード対応' },
+    ]
+  },
+];
+
+const CL_TYPE = {
+  feat:    { label:'新機能',  bg:'rgba(37,99,235,.1)',   color:'#2563eb',  border:'rgba(37,99,235,.2)'  },
+  improve: { label:'改善',    bg:'rgba(16,185,129,.1)',  color:'#059669',  border:'rgba(16,185,129,.2)' },
+  fix:     { label:'バグ修正', bg:'rgba(239,68,68,.08)', color:'#b91c1c',  border:'rgba(239,68,68,.18)' },
+};
+
+function renderChangelog() {
+  const el = document.getElementById('changelogContent');
+  if (!el) return;
+
+  let h = `<div class="panel" style="margin-bottom:16px">
+    <div class="panel-head">
+      <span class="panel-title">変更履歴</span>
+      <span style="font-size:11px;color:var(--gray-2)">${CHANGELOG.length}バージョン · ${CHANGELOG.reduce((s,v)=>s+v.entries.length,0)}件の変更</span>
+    </div>
+  </div>`;
+
+  CHANGELOG.forEach((ver, vi) => {
+    const isLatest = vi === 0;
+    h += `<div class="panel" style="margin-bottom:14px">
+      <div class="panel-head">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span style="font-size:16px;font-weight:700;color:var(--ink)">${esc(ver.version)}</span>
+          ${isLatest ? `<span style="display:inline-flex;align-items:center;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.25)">最新</span>` : ''}
+          <span style="font-size:12px;color:var(--gray-2)">${esc(ver.date)}</span>
+        </div>
+        <span style="font-size:12px;color:var(--gray-2)">${ver.entries.length}件</span>
+      </div>
+      <div class="panel-body" style="padding:8px 16px">`;
+
+    ver.entries.forEach(entry => {
+      const t = CL_TYPE[entry.type] || CL_TYPE.feat;
+      h += `<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-2)">
+        <span style="flex-shrink:0;margin-top:1px;display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:${t.bg};color:${t.color};border:1px solid ${t.border};white-space:nowrap">${t.label}</span>
+        <span style="font-size:13px;color:var(--ink);line-height:1.55">${esc(entry.text)}</span>
+      </div>`;
+    });
+
+    h += `</div></div>`;
+  });
+
+  el.innerHTML = h;
 }
 
 function printBackup() {
