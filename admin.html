@@ -342,6 +342,22 @@ html.dark .rev-tab-cnt{color:#f59e0b}
 .hmpick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:12px}
 .hmpick-img{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:.15s;display:block}
 .hmpick-img:hover{border-color:var(--blue)}
+/* ── Services Editor ── */
+.svc-prev-wrap{background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;padding:18px;min-height:260px;max-height:600px;overflow-y:auto}
+.svc-prev-eyebrow{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--gray-2);text-transform:uppercase;margin-bottom:5px}
+.svc-prev-title{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:3px;line-height:1.3}
+.svc-prev-lead{font-size:11px;color:var(--gray-2);margin-bottom:12px;line-height:1.55}
+.svc-prev-card{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:7px}
+.svc-prev-card:last-child{margin-bottom:0}
+.svc-prev-card-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.05em;padding:2px 7px;border-radius:12px;background:rgba(37,99,235,.1);color:#2563eb;border:1px solid rgba(37,99,235,.2);margin-bottom:6px}
+.svc-prev-card-title{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:3px}
+.svc-prev-card-desc{font-size:10px;color:var(--gray-2);line-height:1.5;margin-bottom:4px}
+.svc-prev-card-cta{font-size:10px;color:var(--blue);font-weight:600}
+.svc-prev-card-feat{background:linear-gradient(135deg,#0a1f44 0%,#1a3a6e 100%);border-color:transparent}
+.svc-prev-card-feat .svc-prev-card-badge{background:rgba(239,68,68,.2);color:#f87171;border-color:rgba(239,68,68,.3)}
+.svc-prev-card-feat .svc-prev-card-title{color:#fff}
+.svc-prev-card-feat .svc-prev-card-desc{color:rgba(255,255,255,.65)}
+.svc-save-ind{font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;margin-left:6px;font-weight:500}
 /* ── Backup Center ── */
 .import-msg{font-size:11px;margin-top:5px;font-weight:500;min-height:14px}
 .import-ok{color:var(--green)}
@@ -808,14 +824,72 @@ html.dark .rev-tab-cnt{color:#f59e0b}
 
         <!-- SERVICES -->
         <div id="view-services" class="view">
-          <div class="panel">
-            <div class="panel-head">
-              <span class="panel-title">サービス管理</span>
-              <button class="btn btn-primary btn-sm" onclick="openSvcModal()">
-                <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>サービスを追加
-              </button>
-            </div>
-            <div class="table-wrap" id="servicesWrap"></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="saveServicesAll()">
+              <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+              変更を保存
+            </button>
+            <span class="svc-save-ind" id="svcSaveInd">サイトに保存しました ✓</span>
+          </div>
+          <div class="hero-layout">
+
+            <!-- Left: panels -->
+            <div style="display:flex;flex-direction:column;gap:16px">
+
+              <!-- Section Header -->
+              <div class="panel">
+                <div class="panel-head"><span class="panel-title">セクションヘッダー</span></div>
+                <div class="panel-body">
+                  <div class="m-field">
+                    <label class="m-label">Eyebrow</label>
+                    <input class="m-input" id="svcMetaEyebrow" oninput="liveSvcPreview()" />
+                  </div>
+                  <div class="m-field">
+                    <label class="m-label">タイトル</label>
+                    <input class="m-input" id="svcMetaTitle" oninput="liveSvcPreview()" />
+                  </div>
+                  <div class="m-field" style="margin-bottom:0">
+                    <label class="m-label">リードテキスト</label>
+                    <input class="m-input" id="svcMetaLead" oninput="liveSvcPreview()" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Services List -->
+              <div class="panel">
+                <div class="panel-head">
+                  <span class="panel-title">サービス一覧</span>
+                  <button class="btn btn-primary btn-sm" onclick="openSvcModal()">
+                    <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>サービスを追加
+                  </button>
+                </div>
+                <div class="table-wrap" id="servicesWrap"></div>
+              </div>
+
+              <!-- Version History -->
+              <div class="panel">
+                <div class="panel-head"><span class="panel-title">バージョン履歴</span></div>
+                <div class="panel-body" id="svcHistoryList">
+                  <div class="empty" style="padding:16px 0"><p>まだバージョンがありません</p></div>
+                </div>
+              </div>
+
+            </div><!-- /left -->
+
+            <!-- Right: live preview -->
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--gray-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">ライブプレビュー</div>
+              <div class="svc-prev-wrap" id="svcPrevWrap">
+                <div id="svcPrevEyebrow" class="svc-prev-eyebrow"></div>
+                <div id="svcPrevTitle" class="svc-prev-title"></div>
+                <div id="svcPrevLead" class="svc-prev-lead"></div>
+                <div id="svcPrevCards"></div>
+              </div>
+              <div style="font-size:11px;color:var(--gray-2);margin-top:8px;line-height:1.5">
+                「変更を保存」でサイトに反映されます。
+              </div>
+            </div><!-- /right -->
+
           </div>
         </div>
 
@@ -1212,19 +1286,34 @@ html.dark .rev-tab-cnt{color:#f59e0b}
 
 <!-- Service Add/Edit Modal -->
 <div class="overlay" id="svcModal">
-  <div class="modal">
+  <div class="modal" style="max-width:540px">
     <div class="modal-title" id="svcModalTitle">サービスを追加</div>
     <div class="m-field">
       <label class="m-label">サービス名 *</label>
-      <input class="m-input" id="svcTitle" placeholder="単身引越し" />
+      <input class="m-input" id="svcTitle" placeholder="単身引越し" oninput="updateSvcModalPrev()" />
     </div>
     <div class="m-field">
       <label class="m-label">説明</label>
-      <textarea class="m-ta" id="svcDesc" rows="3" placeholder="サービスの説明文..."></textarea>
+      <textarea class="m-ta" id="svcDesc" rows="3" placeholder="サービスの説明文..." oninput="updateSvcModalPrev()"></textarea>
     </div>
-    <div class="m-field">
-      <label class="m-label">バッジテキスト <span style="font-weight:400;color:var(--gray-2)">（任意）</span></label>
-      <input class="m-input" id="svcBadge" placeholder="人気No.1 / 緊急対応 など" />
+    <div class="m-row">
+      <div class="m-field">
+        <label class="m-label">バッジテキスト <span style="font-weight:400;color:var(--gray-2)">（任意）</span></label>
+        <input class="m-input" id="svcBadge" placeholder="人気サービス / 緊急対応" oninput="updateSvcModalPrev()" />
+      </div>
+      <div class="m-field">
+        <label class="m-label">CTAテキスト</label>
+        <input class="m-input" id="svcCtaText" placeholder="無料お見積り →" oninput="updateSvcModalPrev()" />
+      </div>
+    </div>
+    <div class="rev-preview">
+      <div class="rev-preview-lbl">プレビュー</div>
+      <div class="svc-prev-card" id="svcModalPrevCard" style="margin-bottom:0">
+        <div id="svcPrevModalBadge" class="svc-prev-card-badge" style="display:none"></div>
+        <div id="svcPrevModalTitle" class="svc-prev-card-title"></div>
+        <div id="svcPrevModalDesc" class="svc-prev-card-desc"></div>
+        <div id="svcPrevModalCta" class="svc-prev-card-cta"></div>
+      </div>
     </div>
     <div class="m-actions">
       <button class="btn btn-ghost" onclick="closeSvcModal()">キャンセル</button>
@@ -1412,16 +1501,16 @@ const Adapter = (() => {
 
     /* Services */
     getServices() {
-      const v = ls('hm_services', null);
-      if (v) return v;
       const defaults = [
-        {id:'SVC-1',title:'単身引越し',description:'一人暮らしの方に最適。荷物が少なくてもプロが丁寧にサポートします。',badge:'人気No.1'},
-        {id:'SVC-2',title:'カップル・ご夫婦引越し',description:'二人暮らしのお引越しをトータルサポート。家具の配置まで丁寧にお手伝いします。',badge:''},
-        {id:'SVC-3',title:'学生・新生活引越し',description:'新生活スタートをお手伝い。学生の方に嬉しいリーズナブルなプランです。',badge:''},
-        {id:'SVC-4',title:'当日・お急ぎ引越し',description:'急なご依頼にも対応。当日でも可能な限りお引越しをお手伝いします。',badge:'緊急対応'},
-        {id:'SVC-5',title:'不用品回収・処分サービス',description:'引越し時の不用品をまとめて回収・処分。便利にご活用いただけます。',badge:''},
-        {id:'SVC-6',title:'家具組立・分解',description:'家具の組み立てや分解も承ります。各メーカーに対応。',badge:''},
+        {id:'SVC-1',title:'単身引越し',description:'1人分の荷物に最適化。必要な分だけコンパクトに対応。',badge:'人気サービス',cta_text:'無料お見積り →'},
+        {id:'SVC-2',title:'カップル・ご夫婦引越し',description:'養生から家具配置まで。二人の新生活をスムーズに。',badge:'人気サービス',cta_text:'無料お見積り →'},
+        {id:'SVC-3',title:'学生・新生活引越し',description:'初めての引越しも段取りから設置まで対応。',badge:'人気サービス',cta_text:'無料お見積り →'},
+        {id:'SVC-4',title:'当日・お急ぎ引越しプラン',description:'急な引越しも当日対応。最短2時間でご返信します。',badge:'緊急対応',cta_text:''},
+        {id:'SVC-5',title:'不用品回収・処分',description:'回収・処分・搬出まで一括。手続き不要。',badge:'',cta_text:'無料お見積り →'},
+        {id:'SVC-6',title:'家具組立・分解',description:'IKEA・大型家具の組立・分解に対応。',badge:'',cta_text:'無料お見積り →'},
       ];
+      const v = ls('hm_services', null);
+      if (v) return v.map(s => ({ cta_text: '無料お見積り →', ...s }));
       save('hm_services', defaults);
       return defaults;
     },
@@ -1429,6 +1518,14 @@ const Adapter = (() => {
     updateService(id, patch) { save('hm_services', this.getServices().map(s => s.id === id ? {...s, ...patch} : s)); },
     deleteService(id) { save('hm_services', this.getServices().filter(s => s.id !== id)); },
     saveServices(svcs) { save('hm_services', svcs); },
+    getSvcMeta: () => ls('hm_services_section', { eyebrow:'Services', title:'承っている引越し', lead:'単身・カップル・学生・当日引越しまで対応。' }),
+    saveSvcMeta: (v) => save('hm_services_section', v),
+    getSvcHistory: () => { try { return JSON.parse(localStorage.getItem('hm_svc_history') || '[]'); } catch(e) { return []; } },
+    pushSvcHistory(snap) {
+      const hist = this.getSvcHistory();
+      hist.unshift({ ts: Date.now(), meta: snap.meta, services: snap.services });
+      try { localStorage.setItem('hm_svc_history', JSON.stringify(hist.slice(0, 10))); } catch(e) {}
+    },
 
     /* Hero */
     getHero() {
@@ -2176,39 +2273,63 @@ let _svcId = null;
 
 function renderServices() {
   const svcs = Adapter.getServices();
+  const meta = Adapter.getSvcMeta();
+  document.getElementById('svcMetaEyebrow').value = meta.eyebrow || '';
+  document.getElementById('svcMetaTitle').value   = meta.title   || '';
+  document.getElementById('svcMetaLead').value    = meta.lead    || '';
   if (!svcs.length) {
     document.getElementById('servicesWrap').innerHTML = emptyHTML('サービスがありません');
-    return;
+  } else {
+    const rows = svcs.map((s, i) => `<tr>
+      <td style="text-align:center;font-weight:700;color:var(--gray-2);width:36px">${i + 1}</td>
+      <td><strong>${esc(s.title||'—')}</strong></td>
+      <td class="td-truncate td-sm">${esc(s.description||'—')}</td>
+      <td>${s.badge ? `<span class="badge badge-new">${esc(s.badge)}</span>` : '<span class="td-sm">—</span>'}</td>
+      <td>
+        <div style="display:flex;gap:4px;align-items:center">
+          <button class="btn btn-ghost btn-sm btn-icon" onclick="moveSvc('${esc(s.id)}',-1)" ${i===0?'disabled':''} title="上へ">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+          </button>
+          <button class="btn btn-ghost btn-sm btn-icon" onclick="moveSvc('${esc(s.id)}',1)" ${i===svcs.length-1?'disabled':''} title="下へ">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="openSvcEdit('${esc(s.id)}')">編集</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="delSvc('${esc(s.id)}')">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>`).join('');
+    document.getElementById('servicesWrap').innerHTML = `
+      <table><thead><tr>
+        <th style="width:36px">#</th><th>サービス名</th><th>説明</th><th>バッジ</th><th>操作</th>
+      </tr></thead><tbody>${rows}</tbody></table>`;
   }
-  const rows = svcs.map((s, i) => `<tr>
-    <td style="text-align:center;font-weight:700;color:var(--gray-2);width:36px">${i + 1}</td>
-    <td><strong>${esc(s.title||'—')}</strong></td>
-    <td class="td-truncate td-sm">${esc(s.description||'—')}</td>
-    <td>${s.badge ? `<span class="badge badge-new">${esc(s.badge)}</span>` : '<span class="td-sm">—</span>'}</td>
-    <td>
-      <div style="display:flex;gap:4px;align-items:center">
-        <button class="btn btn-ghost btn-sm btn-icon" onclick="moveSvc('${esc(s.id)}',-1)" ${i===0?'disabled':''} title="上へ">
-          <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
-        </button>
-        <button class="btn btn-ghost btn-sm btn-icon" onclick="moveSvc('${esc(s.id)}',1)" ${i===svcs.length-1?'disabled':''} title="下へ">
-          <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
-        </button>
-        <button class="btn btn-ghost btn-sm" onclick="openSvcEdit('${esc(s.id)}')">編集</button>
-        <button class="btn btn-danger btn-sm btn-icon" onclick="delSvc('${esc(s.id)}')">
-          <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-        </button>
-      </div>
-    </td>
-  </tr>`).join('');
-  document.getElementById('servicesWrap').innerHTML = `
-    <table><thead><tr>
-      <th style="width:36px">#</th><th>サービス名</th><th>説明</th><th>バッジ</th><th>操作</th>
-    </tr></thead><tbody>${rows}</tbody></table>`;
+  liveSvcPreview();
+  renderSvcHistory();
+}
+
+function liveSvcPreview() {
+  const eyebrow = document.getElementById('svcMetaEyebrow').value;
+  const title   = document.getElementById('svcMetaTitle').value;
+  const lead    = document.getElementById('svcMetaLead').value;
+  const svcs    = Adapter.getServices();
+  document.getElementById('svcPrevEyebrow').textContent = eyebrow;
+  document.getElementById('svcPrevTitle').textContent   = title;
+  document.getElementById('svcPrevLead').textContent    = lead;
+  document.getElementById('svcPrevCards').innerHTML = svcs.map((s, i) =>
+    `<div class="svc-prev-card${i === 0 ? ' svc-prev-card-feat' : ''}">
+       ${s.badge ? `<div class="svc-prev-card-badge">${esc(s.badge)}</div>` : ''}
+       <div class="svc-prev-card-title">${esc(s.title || '—')}</div>
+       <div class="svc-prev-card-desc">${esc(s.description || '')}</div>
+       ${s.cta_text ? `<div class="svc-prev-card-cta">${esc(s.cta_text)}</div>` : ''}
+     </div>`
+  ).join('');
 }
 
 function moveSvc(id, dir) {
   const svcs = Adapter.getServices();
-  const idx = svcs.findIndex(s => s.id === id);
+  const idx  = svcs.findIndex(s => s.id === id);
   if (idx < 0) return;
   const next = idx + dir;
   if (next < 0 || next >= svcs.length) return;
@@ -2220,9 +2341,11 @@ function moveSvc(id, dir) {
 function openSvcModal() {
   _svcId = null;
   document.getElementById('svcModalTitle').textContent = 'サービスを追加';
-  document.getElementById('svcTitle').value = '';
-  document.getElementById('svcDesc').value = '';
-  document.getElementById('svcBadge').value = '';
+  document.getElementById('svcTitle').value   = '';
+  document.getElementById('svcDesc').value    = '';
+  document.getElementById('svcBadge').value   = '';
+  document.getElementById('svcCtaText').value = '無料お見積り →';
+  updateSvcModalPrev();
   document.getElementById('svcModal').classList.add('open');
 }
 
@@ -2230,24 +2353,41 @@ function openSvcEdit(id) {
   const s = Adapter.getServices().find(s => s.id === id); if (!s) return;
   _svcId = id;
   document.getElementById('svcModalTitle').textContent = 'サービスを編集';
-  document.getElementById('svcTitle').value = s.title || '';
-  document.getElementById('svcDesc').value = s.description || '';
-  document.getElementById('svcBadge').value = s.badge || '';
+  document.getElementById('svcTitle').value   = s.title       || '';
+  document.getElementById('svcDesc').value    = s.description || '';
+  document.getElementById('svcBadge').value   = s.badge       || '';
+  document.getElementById('svcCtaText').value = s.cta_text    || '';
+  updateSvcModalPrev();
   document.getElementById('svcModal').classList.add('open');
 }
 
 function closeSvcModal() { document.getElementById('svcModal').classList.remove('open'); }
 
+function updateSvcModalPrev() {
+  const title = document.getElementById('svcTitle').value;
+  const desc  = document.getElementById('svcDesc').value;
+  const badge = document.getElementById('svcBadge').value;
+  const cta   = document.getElementById('svcCtaText').value;
+  const g = id => document.getElementById(id);
+  g('svcPrevModalTitle').textContent = title || '（サービス名）';
+  g('svcPrevModalDesc').textContent  = desc  || '';
+  g('svcPrevModalCta').textContent   = cta   || '';
+  const b = g('svcPrevModalBadge');
+  if (badge) { b.textContent = badge; b.style.display = 'inline-block'; }
+  else        { b.style.display = 'none'; }
+}
+
 function saveSvc() {
-  const title = document.getElementById('svcTitle').value.trim();
+  const title       = document.getElementById('svcTitle').value.trim();
   const description = document.getElementById('svcDesc').value.trim();
-  const badge = document.getElementById('svcBadge').value.trim();
+  const badge       = document.getElementById('svcBadge').value.trim();
+  const cta_text    = document.getElementById('svcCtaText').value.trim();
   if (!title) { alert('サービス名を入力してください'); return; }
   if (_svcId) {
-    Adapter.updateService(_svcId, {title, description, badge});
+    Adapter.updateService(_svcId, { title, description, badge, cta_text });
     toast('サービスを更新しました');
   } else {
-    Adapter.addService({id: 'SVC-' + Date.now(), title, description, badge});
+    Adapter.addService({ id: 'SVC-' + Date.now(), title, description, badge, cta_text });
     toast('サービスを追加しました');
   }
   closeSvcModal();
@@ -2259,6 +2399,53 @@ function delSvc(id) {
   Adapter.deleteService(id);
   toast('削除しました');
   renderServices();
+}
+
+function saveServicesAll() {
+  const meta = {
+    eyebrow: document.getElementById('svcMetaEyebrow').value.trim(),
+    title:   document.getElementById('svcMetaTitle').value.trim(),
+    lead:    document.getElementById('svcMetaLead').value.trim()
+  };
+  Adapter.pushSvcHistory({ meta: Adapter.getSvcMeta(), services: Adapter.getServices() });
+  Adapter.saveSvcMeta(meta);
+  renderSvcHistory();
+  const ind = document.getElementById('svcSaveInd');
+  ind.style.opacity = '1';
+  clearTimeout(ind._t);
+  ind._t = setTimeout(() => { ind.style.opacity = '0'; }, 2400);
+}
+
+function renderSvcHistory() {
+  const hist = Adapter.getSvcHistory();
+  const el   = document.getElementById('svcHistoryList');
+  if (!hist.length) {
+    el.innerHTML = '<div class="empty" style="padding:16px 0"><p>まだバージョンがありません</p></div>';
+    return;
+  }
+  el.innerHTML = hist.map((entry, i) => {
+    const d  = new Date(entry.ts);
+    const ts = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const snap = (entry.meta && entry.meta.title) || '（タイトルなし）';
+    return `<div class="hhist-item">
+      <div class="hhist-meta">
+        <div class="hhist-time">${ts}</div>
+        <div class="hhist-snap">${esc(snap)} — ${(entry.services||[]).length}件</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="restoreSvcVersion(${i})">復元</button>
+    </div>`;
+  }).join('');
+}
+
+function restoreSvcVersion(idx) {
+  if (!confirm('このバージョンを復元しますか？\n現在の内容はバージョン履歴に保存されます。')) return;
+  const hist = Adapter.getSvcHistory();
+  if (!hist[idx]) return;
+  Adapter.pushSvcHistory({ meta: Adapter.getSvcMeta(), services: Adapter.getServices() });
+  Adapter.saveSvcMeta(hist[idx].meta);
+  Adapter.saveServices(hist[idx].services);
+  renderServices();
+  toast('バージョンを復元しました');
 }
 
 /* ════════════════════════════════════════════════════════

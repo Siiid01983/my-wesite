@@ -1408,11 +1408,11 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
 <section class="section services" id="services">
   <div class="container">
     <header class="section-head">
-      <span class="eyebrow">Services</span>
-      <h2 class="section-title">承っている引越し</h2>
-      <p class="section-lead">単身・カップル・学生・当日引越しまで対応。</p>
+      <span class="eyebrow" id="svcEyebrowEl">Services</span>
+      <h2 class="section-title" id="svcTitleEl">承っている引越し</h2>
+      <p class="section-lead" id="svcLeadEl">単身・カップル・学生・当日引越しまで対応。</p>
     </header>
-    <div class="service-grid">
+    <div class="service-grid" id="svcGridEl">
       <article class="service-card service-card-urgent service-card-featured">
         <div class="service-icon urgent-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="32" height="32"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.5 5H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
@@ -1499,6 +1499,40 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
     </div>
   </div>
 </section>
+<script>
+/* Services content loader — applies admin-saved content from localStorage */
+(function(){
+  try {
+    var rawSvcs = localStorage.getItem('hm_services');
+    var rawMeta = localStorage.getItem('hm_services_section');
+    var el = function(id){ return document.getElementById(id); };
+    var set = function(id, val){ var e = el(id); if (e && val) e.textContent = val; };
+    if (rawMeta) {
+      var mt = JSON.parse(rawMeta);
+      set('svcEyebrowEl', mt.eyebrow);
+      set('svcTitleEl',   mt.title);
+      set('svcLeadEl',    mt.lead);
+    }
+    if (rawSvcs) {
+      var svcs  = JSON.parse(rawSvcs);
+      var cards = document.querySelectorAll('#svcGridEl .service-card');
+      svcs.forEach(function(svc, i) {
+        if (!cards[i]) return;
+        var card     = cards[i];
+        var featured = card.classList.contains('service-card-featured');
+        var h3 = card.querySelector('h3');
+        if (h3 && svc.title) h3.textContent = svc.title;
+        var p = card.querySelector(featured ? '.service-featured-body p' : 'p');
+        if (p && svc.description) p.textContent = svc.description;
+        var badge = card.querySelector(featured ? '.service-featured-eyebrow' : '.svc-pop-badge');
+        if (badge && svc.badge) badge.textContent = svc.badge;
+        var cta = card.querySelector('.service-card-cta');
+        if (cta && svc.cta_text) cta.textContent = svc.cta_text;
+      });
+    }
+  } catch(e) {}
+})();
+</script>
 
 <!-- ============== MOVING COST CALCULATOR ============== -->
 <section class="section hm-calc-section" id="calculator" aria-label="料金シミュレーター">
