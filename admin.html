@@ -99,6 +99,7 @@ html.dark .login-input:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(96,1
 .stat-label{font-size:11px;font-weight:600;color:var(--gray-1);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
 .stat-val{font-size:26px;font-weight:700;color:var(--ink);line-height:1}
 .stat-sub{font-size:11px;color:var(--gray-2);margin-top:3px}
+.stat-period{font-size:10px;color:var(--gray-2);margin-top:8px;padding-top:7px;border-top:1px solid var(--line-2);display:flex;align-items:center;gap:3px;opacity:.8}
 
 /* ── Cards & panels ── */
 .panel{background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:20px}
@@ -744,6 +745,9 @@ html.dark .rev-tab-cnt{color:#f59e0b}
                   <option value="booked">× 満了</option>
                 </select>
                 <button class="btn btn-ghost btn-sm" id="bulkApply" style="display:none" onclick="applyBulk()">選択日に適用</button>
+                <button class="btn btn-ghost btn-sm" onclick="printCalendar()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
+                </button>
                 <button class="btn btn-ghost btn-sm" onclick="resetAvail()">全リセット</button>
                 <button class="btn btn-primary btn-sm" onclick="toast('空き状況を更新しました')">保存</button>
               </div>
@@ -760,14 +764,45 @@ html.dark .rev-tab-cnt{color:#f59e0b}
 
         <!-- 4. ANALYTICS -->
         <div id="view-analytics" class="view">
-          <div class="stat-grid" id="analyticsGrid"></div>
+          <div class="stat-grid" id="analyticsGrid" style="margin-bottom:20px"></div>
+          <!-- Period filter bar -->
+          <div class="panel" style="margin-bottom:16px">
+            <div class="panel-head" style="flex-wrap:wrap;gap:8px;row-gap:8px">
+              <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color:var(--gray-1);flex-shrink:0"><path fill="currentColor" d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+                <span style="font-size:12px;font-weight:600;color:var(--gray-1);white-space:nowrap">分析期間</span>
+              </div>
+              <div id="analyticsPeriodBtns" style="display:flex;gap:4px;flex-wrap:wrap;align-items:center"></div>
+              <div id="analyticsCustomRange" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
+                <input type="date" id="aFrom" class="input" style="width:130px;padding:5px 8px;font-size:12px" />
+                <span style="color:var(--gray-2);font-size:12px">〜</span>
+                <input type="date" id="aTo" class="input" style="width:130px;padding:5px 8px;font-size:12px" />
+                <button class="btn btn-primary btn-sm" onclick="applyAnalyticsCustom()">適用</button>
+              </div>
+              <div style="display:flex;gap:5px;margin-left:auto;flex-shrink:0">
+                <button class="btn btn-ghost btn-sm" onclick="exportAnalyticsCSV()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>CSV出力
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="printAnalytics()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="chart-grid" id="analyticsCharts" style="margin-bottom:16px"></div>
+          <div id="analyticsExtra"></div>
         </div>
 
         <!-- 5. CAPACITY -->
         <div id="view-capacity" class="view">
           <div class="settings-grid">
             <div class="panel">
-              <div class="panel-head"><span class="panel-title">予約容量設定</span></div>
+              <div class="panel-head">
+                <span class="panel-title">予約容量設定</span>
+                <button class="btn btn-ghost btn-sm" onclick="printCapacity()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
+                </button>
+              </div>
               <div class="panel-body">
                 <div class="settings-row">
                   <div>
@@ -795,17 +830,22 @@ html.dark .rev-tab-cnt{color:#f59e0b}
         <!-- 6. PRICING -->
         <div id="view-pricing" class="view">
           <div class="panel">
-            <div class="panel-head"><span class="panel-title">料金設定（参考価格）</span></div>
+            <div class="panel-head">
+              <span class="panel-title">料金管理</span>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:11px;color:var(--gray-2)">保存するとサイトに即時反映されます</span>
+                <button class="btn btn-ghost btn-sm" onclick="printPricing()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
+                </button>
+              </div>
+            </div>
             <div class="panel-body" id="pricingBody"></div>
           </div>
         </div>
 
         <!-- 7. DISPOSAL -->
         <div id="view-disposal" class="view">
-          <div class="panel">
-            <div class="panel-head"><span class="panel-title">不用品カテゴリ管理</span></div>
-            <div class="panel-body" id="disposalBody"></div>
-          </div>
+          <div id="disposalContent"></div>
         </div>
 
         <!-- 8. QUICK ACTIONS -->
@@ -833,6 +873,10 @@ html.dark .rev-tab-cnt{color:#f59e0b}
                 <button class="qa-btn" onclick="generateReport()">
                   <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
                   売上レポート生成
+                </button>
+                <button class="qa-btn" onclick="printReport()">
+                  <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+                  売上レポートを印刷
                 </button>
                 <button class="qa-btn" onclick="clearAllData()" style="color:var(--red)">
                   <svg viewBox="0 0 24 24" width="18" height="18" style="color:var(--red)"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
@@ -1424,7 +1468,12 @@ html.dark .rev-tab-cnt{color:#f59e0b}
         <div id="view-backup" class="view">
           <div class="settings-grid">
             <div class="panel">
-              <div class="panel-head"><span class="panel-title">エクスポート</span></div>
+              <div class="panel-head">
+                <span class="panel-title">エクスポート</span>
+                <button class="btn btn-ghost btn-sm" onclick="printBackup()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>状況を印刷
+                </button>
+              </div>
               <div class="panel-body" style="display:flex;flex-direction:column;gap:10px">
                 <button class="btn btn-ghost" style="justify-content:flex-start" onclick="exportBookingsJSON()">
                   <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>予約データ (JSON)
@@ -1610,6 +1659,9 @@ html.dark .rev-tab-cnt{color:#f59e0b}
     </div>
     <div id="detailBody"></div>
     <div class="m-actions" style="margin-top:14px">
+      <button class="btn btn-ghost btn-sm" id="detailPrintBtn">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
+      </button>
       <button class="btn btn-ghost btn-sm" id="detailEditBtn">編集</button>
       <button class="btn btn-danger btn-sm" id="detailDelBtn">削除</button>
     </div>
@@ -1796,9 +1848,46 @@ html.dark .rev-tab-cnt{color:#f59e0b}
     <div id="custModalHistory"></div>
     <div class="m-actions">
       <button class="btn btn-ghost" onclick="closeCustModal()">閉じる</button>
+      <button class="btn btn-ghost" id="custModalPrintBtn">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
+      </button>
       <button class="btn btn-danger" id="custModalDelBtn">
         <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>顧客を削除
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- Disposal Category Modal -->
+<div class="overlay" id="disposalCatModal" onclick="if(event.target===this)closeDisposalCatModal()">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title" id="disposalCatModalTitle">カテゴリを追加</div>
+    <div class="m-field">
+      <label class="m-label">カテゴリ名 *</label>
+      <input class="m-input" id="disposalCatName" placeholder="例: 家具" onkeydown="if(event.key==='Enter')saveDisposalCat()" />
+    </div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closeDisposalCatModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveDisposalCat()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Disposal Item Modal -->
+<div class="overlay" id="disposalItemModal" onclick="if(event.target===this)closeDisposalItemModal()">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-title" id="disposalItemModalTitle">アイテムを追加</div>
+    <div class="m-field">
+      <label class="m-label">アイテム名 *</label>
+      <input class="m-input" id="disposalItemName" placeholder="例: ベッド・マットレス" />
+    </div>
+    <div class="m-field">
+      <label class="m-label">処分料金 (¥)</label>
+      <input class="m-input" id="disposalItemFee" type="number" min="0" step="500" placeholder="5000" onkeydown="if(event.key==='Enter')saveDisposalItem()" />
+    </div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closeDisposalItemModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveDisposalItem()">保存</button>
     </div>
   </div>
 </div>
@@ -1904,13 +1993,19 @@ const Adapter = (() => {
     saveCapacity: (v) => save(K.cap, v),
 
     /* Prices */
-    getPrices: () => ls(K.prices, {
-      '単身引越し': 30000,
-      'カップル・ご夫婦引越し': 50000,
-      '学生・新生活引越し': 25000,
-      '当日・お急ぎ引越し': 60000,
-      '不用品回収・処分サービス': 20000
-    }),
+    getPrices: () => {
+      const DEFAULTS = {
+        '単身引越し':             { base: 25000, distPerKm: 150, floorFee: 2000, weekend: 5000, sameday: 10000 },
+        'カップル・ご夫婦引越し': { base: 45000, distPerKm: 150, floorFee: 2000, weekend: 8000, sameday: 15000 },
+        '学生・新生活引越し':     { base: 22000, distPerKm: 150, floorFee: 2000, weekend: 4000, sameday:  8000 },
+        '不用品回収・処分サービス': { base: 18000, distPerKm: 150, floorFee: 2000, weekend: 3000, sameday: 5000 }
+      };
+      const stored = ls(K.prices, null);
+      if (!stored) return DEFAULTS;
+      const first = Object.values(stored)[0];
+      if (typeof first === 'number') return DEFAULTS;
+      return { ...DEFAULTS, ...stored };
+    },
     savePrices: (v) => save(K.prices, v),
 
     /* Quotes (hm_quotes) */
@@ -2091,15 +2186,30 @@ const Adapter = (() => {
       try { localStorage.setItem('hm_footer_history', JSON.stringify(hist.slice(0, 10))); } catch(e) {}
     },
 
-    /* Disposal categories */
-    getDisposal: () => ls(K.disposal, {
-      'ベッド・マットレス': {enabled: true, price: 5000},
-      'ソファ・チェア':     {enabled: true, price: 4000},
-      '冷蔵庫':            {enabled: true, price: 6000},
-      '洗濯機':            {enabled: true, price: 5000},
-      'テーブル・棚':       {enabled: true, price: 3000},
-      'その他大型ゴミ':     {enabled: true, price: 3000}
-    }),
+    /* Disposal categories (v2: category-based) */
+    getDisposal: () => {
+      const DEFAULTS = {categories:[
+        {id:'cat_furniture',name:'家具',items:[
+          {id:'itm_bed',   name:'ベッド・マットレス', fee:5000, enabled:true},
+          {id:'itm_sofa',  name:'ソファ・チェア',     fee:4000, enabled:true},
+          {id:'itm_table', name:'テーブル・棚',       fee:3000, enabled:true},
+        ]},
+        {id:'cat_appliances',name:'家電',items:[
+          {id:'itm_fridge', name:'冷蔵庫', fee:6000, enabled:true},
+          {id:'itm_washer', name:'洗濯機', fee:5000, enabled:true},
+        ]},
+        {id:'cat_electronics',name:'電子機器',items:[
+          {id:'itm_tv', name:'テレビ',   fee:2500, enabled:true},
+          {id:'itm_pc', name:'パソコン', fee:2000, enabled:true},
+        ]},
+        {id:'cat_misc',name:'その他',items:[
+          {id:'itm_other', name:'その他大型ゴミ', fee:3000, enabled:true},
+        ]},
+      ]};
+      const stored = ls(K.disposal, null);
+      if (!stored || !stored.categories) return JSON.parse(JSON.stringify(DEFAULTS));
+      return stored;
+    },
     saveDisposal: (v) => save(K.disposal, v),
 
     /* Customers */
@@ -2175,7 +2285,8 @@ function calcStats() {
 
   let revenue = 0;
   bk.filter(b => b.status !== 'キャンセル').forEach(b => {
-    revenue += (prices[b.service] || 0);
+    const p = prices[b.service];
+    revenue += (typeof p === 'number' ? p : (p && p.base) || 0);
   });
 
   return {todayBk, weekBk, monthBk, fullyBooked, revenue};
@@ -2222,7 +2333,7 @@ function go(view) {
 function toggleDark() {
   document.documentElement.classList.toggle('dark');
   localStorage.setItem('hm_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-  if (document.getElementById('view-analytics').classList.contains('active')) renderAnalytics();
+  if (document.getElementById('view-analytics').classList.contains('active')) renderAnalyticsCharts();
 }
 
 /* ════════════════════════════════════════════════════════
@@ -2477,11 +2588,98 @@ function openDetail(id) {
     r('お客様名',b.name) + r('メール',b.email) +
     r('引越し元',b.fromAddr) + r('引越し先',b.toAddr) +
     r('備考',b.notes) + r('受付日時',fmtDT(b.createdAt));
-  document.getElementById('detailEditBtn').onclick = () => openEdit(id);
-  document.getElementById('detailDelBtn').onclick = () => { if(confirm('削除しますか？')){ Adapter.deleteBooking(id); closeDetail(); renderBookings(); renderDash(); toast('削除しました'); }};
+  document.getElementById('detailPrintBtn').onclick = () => printBooking(id);
+  document.getElementById('detailEditBtn').onclick  = () => openEdit(id);
+  document.getElementById('detailDelBtn').onclick   = () => { if(confirm('削除しますか？')){ Adapter.deleteBooking(id); closeDetail(); renderBookings(); renderDash(); toast('削除しました'); }};
   document.getElementById('detailModal').classList.add('open');
 }
 function closeDetail() { document.getElementById('detailModal').classList.remove('open'); }
+
+function printBooking(id) {
+  const b = Adapter.getBookings().find(b => b.id === id); if (!b) return;
+  const e = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  const STATUS_COLOR = {
+    '新規':'#2563eb','確認中':'#b45309','確定':'#059669','完了':'#4b5563','キャンセル':'#b91c1c'
+  };
+  const STATUS_BG = {
+    '新規':'#eff6ff','確認中':'#fffbeb','確定':'#f0fdf4','完了':'#f9fafb','キャンセル':'#fef2f2'
+  };
+  const st = b.status || '新規';
+
+  const row = (label, value) => `
+    <tr>
+      <td style="width:130px;font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;padding:9px 14px;border-bottom:1px solid #f0f2f5;vertical-align:top;white-space:nowrap">${e(label)}</td>
+      <td style="font-size:13px;color:#0b0f17;padding:9px 14px;border-bottom:1px solid #f0f2f5">${e(value||'—')}</td>
+    </tr>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="UTF-8">
+<title>予約確認書 ${e(b.id)}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Hiragino Sans','Meiryo','Yu Gothic',sans-serif;font-size:13px;color:#0b0f17;background:#fff;padding:32px 36px}
+@media print{body{padding:0}@page{margin:16mm 14mm;size:A4 portrait}}
+</style></head><body>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #0a1f44;margin-bottom:24px">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:40px;height:40px;border-radius:10px;background:#1D9E75;color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">H</div>
+    <div>
+      <div style="font-size:17px;font-weight:700;color:#0a1f44;line-height:1.2">Hello Moving</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:1px">ハローム―ビング</div>
+    </div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:18px;font-weight:700;color:#0a1f44">予約確認書</div>
+    <div style="font-size:12px;color:#6b7280;margin-top:3px;font-variant-numeric:tabular-nums">${e(b.id)}</div>
+    <div style="font-size:11px;color:#9ca3af;margin-top:2px">出力日: ${new Date().toLocaleDateString('ja-JP')}</div>
+  </div>
+</div>
+
+<div style="display:inline-flex;align-items:center;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;background:${STATUS_BG[st]||'#f9fafb'};color:${STATUS_COLOR[st]||'#374151'};border:1px solid ${STATUS_COLOR[st]||'#d1d5db'}33;margin-bottom:20px">
+  ${e(st)}
+</div>
+
+<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:28px">
+  ${row('サービス',    b.service)}
+  ${row('引越し日',    fmtD(b.date))}
+  ${row('希望時間帯',  b.time)}
+  ${row('お客様名',    b.name)}
+  ${row('メールアドレス', b.email)}
+  ${row('引越し元住所', b.fromAddr)}
+  ${row('引越し先住所', b.toAddr)}
+  ${row('備考・ご要望', b.notes)}
+  ${row('受付日時',    fmtDT(b.createdAt))}
+</table>
+
+<div style="background:#f8f9fa;border:1px solid #e5e7eb;border-radius:10px;padding:16px 20px;font-size:11px;color:#6b7280;line-height:1.8;margin-bottom:28px">
+  <div style="font-weight:700;color:#374151;margin-bottom:6px;font-size:12px">ご確認事項</div>
+  <div>・ご予約内容に変更がある場合は、引越し日の3日前までにご連絡ください。</div>
+  <div>・キャンセルポリシーについては別途ご案内の通りです。</div>
+  <div>・当日のスタッフ到着時間は前後する場合がございます。</div>
+</div>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-end;padding-top:14px;border-top:1px solid #e5e7eb">
+  <div style="font-size:10px;color:#9ca3af;line-height:1.7">
+    <div>Hello Moving — 引越し専門サービス</div>
+    <div>このドキュメントは管理システムから自動生成されました</div>
+  </div>
+  <div style="text-align:right;font-size:11px;color:#6b7280;line-height:1.7">
+    <div style="font-weight:600;color:#0b0f17">Hello Moving</div>
+    <div>info@hello-moving.com</div>
+  </div>
+</div>
+
+<script>window.onload=function(){setTimeout(function(){window.print();},350);window.onafterprint=function(){window.close();}}<\/script>
+</body></html>`;
+
+  const w = window.open('','_blank','width=780,height=680');
+  if (!w) { toast('ポップアップをブロックしています。許可してから再試行してください'); return; }
+  w.document.write(html);
+  w.document.close();
+}
 
 /* ════════════════════════════════════════════════════════
    CALENDAR MANAGEMENT
@@ -2541,6 +2739,122 @@ function calClick(ds) {
 
 function calMove(dir) { _calV.setMonth(_calV.getMonth()+dir); renderCal(); }
 
+function printCalendar() {
+  const avail  = Adapter.getAvail();
+  const cap    = Adapter.getCapacity();
+  const bk     = Adapter.getBookings();
+  const y      = _calV.getFullYear();
+  const m      = _calV.getMonth();
+  const total  = new Date(y, m+1, 0).getDate();
+  const firstDow = new Date(y, m, 1).getDay();
+  const today  = todayStr();
+  const DN_FULL = ['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'];
+
+  const ST = { available:'available', limited:'limited', booked:'booked' };
+  const ST_LABEL  = { available:'○ 空き', limited:'△ 残りわずか', booked:'× 満了' };
+  const ST_COLOR  = { available:'#059669', limited:'#b45309', booked:'#b91c1c' };
+  const ST_BG     = { available:'#f0fdf4', limited:'#fffbeb', booked:'#fef2f2' };
+  const ST_BORDER = { available:'#10b98133', limited:'#f59e0b55', booked:'#ef444433' };
+
+  /* count bookings per day this month */
+  const bkCount = {};
+  bk.forEach(b => { if (b.date && b.date.startsWith(`${y}-${pad(m+1)}`)) bkCount[b.date] = (bkCount[b.date]||0) + 1; });
+
+  /* month summary */
+  let cntA=0, cntL=0, cntB=0;
+  for (let d=1; d<=total; d++) {
+    const ds = `${y}-${pad(m+1)}-${pad(d)}`;
+    const st = avail[ds] || 'available';
+    if (st==='available') cntA++; else if (st==='limited') cntL++; else cntB++;
+  }
+
+  /* build 7-col grid cells */
+  const cells = [];
+  for (let i = 0; i < firstDow; i++) cells.push('<td style="border:1px solid #f0f2f5;background:#fafafa"></td>');
+  for (let d = 1; d <= total; d++) {
+    const ds  = `${y}-${pad(m+1)}-${pad(d)}`;
+    const st  = avail[ds] || 'available';
+    const dow = new Date(y, m, d).getDay();
+    const isToday   = ds === today;
+    const isPast    = ds < today;
+    const bookCount = bkCount[ds] || 0;
+    const weekendStyle = dow===0||dow===6 ? 'background-color:#fafffe;' : '';
+    const borderStyle  = isToday ? 'border:2px solid #2563eb;' : 'border:1px solid #e5e7eb;';
+    const opacity      = isPast ? 'opacity:.45;' : '';
+    cells.push(`<td style="${borderStyle}${weekendStyle}${opacity}padding:6px 8px;vertical-align:top;min-width:40px">
+      <div style="font-size:13px;font-weight:700;color:${isToday?'#2563eb':(dow===0?'#ef4444':dow===6?'#2563eb':'#0b0f17')};margin-bottom:4px">${d}</div>
+      <div style="font-size:9px;font-weight:700;color:${ST_COLOR[st]}">${ST_LABEL[st]}</div>
+      ${bookCount ? `<div style="font-size:9px;color:#6b7280;margin-top:2px">予約 ${bookCount}件</div>` : ''}
+    </td>`);
+  }
+  /* pad end */
+  const remainder = cells.length % 7;
+  if (remainder) for (let i = remainder; i < 7; i++) cells.push('<td style="border:1px solid #f0f2f5;background:#fafafa"></td>');
+
+  const weeks = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(`<tr>${cells.slice(i,i+7).join('')}</tr>`);
+
+  const statCard = (label, value, color) =>
+    `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px">
+      <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">${label}</div>
+      <div style="font-size:18px;font-weight:700;color:${color}">${value}</div>
+    </div>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="UTF-8">
+<title>${y}年${m+1}月 カレンダー — Hello Moving</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Hiragino Sans','Meiryo','Yu Gothic',sans-serif;font-size:13px;color:#0b0f17;background:#fff;padding:28px 32px}
+table{border-collapse:collapse;width:100%}
+@media print{body{padding:0}@page{margin:14mm 12mm;size:A4 landscape}}
+</style></head><body>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:14px;border-bottom:2px solid #0a1f44;margin-bottom:20px">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:38px;height:38px;border-radius:9px;background:#1D9E75;color:#fff;font-size:19px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">H</div>
+    <div>
+      <div style="font-size:16px;font-weight:700;color:#0a1f44;line-height:1.2">Hello Moving</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:1px">ハローム―ビング</div>
+    </div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:20px;font-weight:700;color:#0a1f44">${y}年${m+1}月</div>
+    <div style="font-size:11px;color:#9ca3af;margin-top:3px">空き状況カレンダー・出力日: ${new Date().toLocaleDateString('ja-JP')}</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:18px">
+  ${statCard('表示月', `${y}年${m+1}月`, '#0b0f17')}
+  ${statCard('○ 空き', cntA+'日', '#059669')}
+  ${statCard('△ 残りわずか', cntL+'日', '#b45309')}
+  ${statCard('× 満了', cntB+'日', '#b91c1c')}
+  ${statCard('1日最大予約', cap.max+'件', '#0b0f17')}
+</div>
+
+<table>
+  <thead><tr>${DN_FULL.map((d,i)=>`<th style="padding:8px 4px;text-align:center;font-size:11px;font-weight:600;color:${i===0?'#ef4444':i===6?'#2563eb':'#6b7280'};border-bottom:2px solid #e5e7eb">${d}</th>`).join('')}</tr></thead>
+  <tbody>${weeks.join('')}</tbody>
+</table>
+
+<div style="display:flex;align-items:center;gap:16px;margin-top:14px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:11px;color:#6b7280">
+  <span style="font-weight:600;color:#374151">凡例:</span>
+  <span style="color:#059669;font-weight:600">○ 空き</span>
+  <span style="color:#b45309;font-weight:600">△ 残りわずか</span>
+  <span style="color:#b91c1c;font-weight:600">× 満了</span>
+  <span style="margin-left:auto">出力日: ${new Date().toLocaleDateString('ja-JP')} — Hello Moving 管理システム</span>
+</div>
+
+<script>window.onload=function(){setTimeout(function(){window.print();},350);window.onafterprint=function(){window.close();}}<\/script>
+</body></html>`;
+
+  const w = window.open('','_blank','width=1000,height=760');
+  if (!w) { toast('ポップアップをブロックしています。許可してから再試行してください'); return; }
+  w.document.write(html);
+  w.document.close();
+}
+
 function resetAvail() {
   if (!confirm('全ての空き状況設定をリセットしますか？')) return;
   Adapter.clearAvail(); renderCal(); toast('リセットしました');
@@ -2585,108 +2899,1248 @@ function saveCapacity() {
   toast('容量設定を保存しました');
 }
 
+function printCapacity() {
+  const cap   = Adapter.getCapacity();
+  const avail = Adapter.getAvail();
+  const today = todayStr();
+  const e = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  /* upcoming 60 days availability */
+  const upcoming = [];
+  for (let i = 0; i < 60; i++) {
+    const d  = new Date(); d.setDate(d.getDate() + i);
+    const ds = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const st = avail[ds] || 'available';
+    upcoming.push({ date: ds, dow: _DOW_JP[d.getDay()], status: st });
+  }
+
+  const countByStatus = { available: 0, limited: 0, booked: 0 };
+  upcoming.forEach(u => { countByStatus[u.status] = (countByStatus[u.status]||0) + 1; });
+
+  const ST_LABEL = { available:'○ 空き', limited:'△ 残りわずか', booked:'× 満了' };
+  const ST_COLOR = { available:'#059669', limited:'#b45309', booked:'#b91c1c' };
+  const ST_BG    = { available:'#f0fdf4', limited:'#fffbeb', booked:'#fef2f2' };
+  const ST_BORDER= { available:'#10b98133', limited:'#f59e0b33', booked:'#ef444433' };
+
+  const pill = st =>
+    `<span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${ST_BG[st]};color:${ST_COLOR[st]};border:1px solid ${ST_BORDER[st]}">${ST_LABEL[st]||st}</span>`;
+
+  const avRows = upcoming.map((u, fi) => {
+    const bg = fi % 2 === 1 ? 'background:#fafafa' : '';
+    return `<tr>
+      <td style="padding:6px 12px;font-size:11px;font-variant-numeric:tabular-nums;border:1px solid #f0f2f5;${bg};white-space:nowrap">${u.date}</td>
+      <td style="padding:6px 12px;font-size:11px;text-align:center;border:1px solid #f0f2f5;${bg}">${u.dow}曜日</td>
+      <td style="padding:6px 12px;border:1px solid #f0f2f5;${bg}">${pill(u.status)}</td>
+    </tr>`;
+  }).join('');
+
+  const statCard = (label, value, color='#0b0f17') =>
+    `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px">
+      <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${label}</div>
+      <div style="font-size:20px;font-weight:700;color:${color}">${value}</div>
+    </div>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="UTF-8">
+<title>容量設定レポート — Hello Moving</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Hiragino Sans','Meiryo','Yu Gothic',sans-serif;font-size:13px;color:#0b0f17;background:#fff;padding:32px 36px}
+@media print{body{padding:0}@page{margin:16mm 14mm;size:A4 portrait}}
+</style></head><body>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #0a1f44;margin-bottom:24px">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:40px;height:40px;border-radius:10px;background:#1D9E75;color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">H</div>
+    <div>
+      <div style="font-size:17px;font-weight:700;color:#0a1f44;line-height:1.2">Hello Moving</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:1px">ハローム―ビング</div>
+    </div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:18px;font-weight:700;color:#0a1f44">容量設定レポート</div>
+    <div style="font-size:11px;color:#9ca3af;margin-top:4px">出力日: ${new Date().toLocaleDateString('ja-JP')}</div>
+  </div>
+</div>
+
+<div style="font-size:12px;font-weight:700;color:#0a1f44;letter-spacing:.05em;text-transform:uppercase;padding-bottom:6px;border-bottom:1px solid #e5e7eb;margin-bottom:12px">現在の設定</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px">
+  ${statCard('1日の最大予約数', cap.max+'件')}
+  ${statCard('残りわずか閾値', cap.limited+'件以上', '#b45309')}
+  ${statCard('満了ライン', cap.max+'件以上', '#b91c1c')}
+</div>
+
+<div style="font-size:12px;font-weight:700;color:#0a1f44;letter-spacing:.05em;text-transform:uppercase;padding-bottom:6px;border-bottom:1px solid #e5e7eb;margin-bottom:12px">今後60日間の空き状況サマリー</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
+  ${statCard('○ 空き', countByStatus.available+'日', '#059669')}
+  ${statCard('△ 残りわずか', countByStatus.limited+'日', '#b45309')}
+  ${statCard('× 満了', countByStatus.booked+'日', '#b91c1c')}
+</div>
+
+<div style="font-size:12px;font-weight:700;color:#0a1f44;letter-spacing:.05em;text-transform:uppercase;padding-bottom:6px;border-bottom:1px solid #e5e7eb;margin-bottom:4px">日別空き状況（今後60日間）</div>
+<table style="width:100%;border-collapse:collapse">
+  <thead><tr>
+    <th style="background:#f8f9fa;font-weight:600;text-align:left;padding:7px 12px;border:1px solid #e5e7eb;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280">日付</th>
+    <th style="background:#f8f9fa;font-weight:600;text-align:center;padding:7px 12px;border:1px solid #e5e7eb;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280">曜日</th>
+    <th style="background:#f8f9fa;font-weight:600;text-align:left;padding:7px 12px;border:1px solid #e5e7eb;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280">空き状況</th>
+  </tr></thead>
+  <tbody>${avRows}</tbody>
+</table>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-end;padding-top:14px;border-top:1px solid #e5e7eb;margin-top:24px">
+  <div style="font-size:10px;color:#9ca3af;line-height:1.7">
+    <div>Hello Moving — 管理システム</div>
+    <div>このドキュメントは管理システムから自動生成されました</div>
+  </div>
+  <div style="text-align:right;font-size:11px;color:#6b7280;line-height:1.7">
+    <div style="font-weight:600;color:#0b0f17">Hello Moving</div>
+    <div>info@hello-moving.com</div>
+  </div>
+</div>
+
+<script>window.onload=function(){setTimeout(function(){window.print();},350);window.onafterprint=function(){window.close();}}<\/script>
+</body></html>`;
+
+  const w = window.open('','_blank','width=740,height=780');
+  if (!w) { toast('ポップアップをブロックしています。許可してから再試行してください'); return; }
+  w.document.write(html);
+  w.document.close();
+}
+
 /* ════════════════════════════════════════════════════════
    PRICING MANAGEMENT
    ════════════════════════════════════════════════════════ */
+const PRICING_SERVICES = [
+  { key: '単身引越し',             label: '単身引越し',    en: 'Single Moving' },
+  { key: 'カップル・ご夫婦引越し', label: 'カップル引越し', en: 'Couple Moving' },
+  { key: '学生・新生活引越し',     label: '学生引越し',    en: 'Student Moving' },
+  { key: '不用品回収・処分サービス', label: '不用品処分',   en: 'Disposal Service' }
+];
+const PRICING_FIELDS = [
+  { key: 'base',      label: '基本料金',         sub: '引越しの基本費用',       unit: '円',    step: 1000 },
+  { key: 'distPerKm', label: '距離料金（/km）',   sub: '1kmあたりの追加料金',    unit: '円/km', step: 10 },
+  { key: 'floorFee',  label: '階数料金（/階）',   sub: '2階以上・1階あたりの料金', unit: '円/階', step: 500 },
+  { key: 'weekend',   label: '土日・祝日割増',    sub: '土日・祝日の追加料金',    unit: '円',   step: 500 },
+  { key: 'sameday',   label: '当日申込割増',      sub: '当日のご依頼の追加料金',  unit: '円',   step: 1000 }
+];
+
+let _pricingActiveIdx = 0;
+
 function renderPricing() {
   const prices = Adapter.getPrices();
-  let h = '';
-  Object.entries(prices).forEach(([svc, price]) => {
-    h += `<div class="settings-row">
-      <div class="settings-label">${esc(svc)}</div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-size:12px;color:var(--gray-2)">¥</span>
-        <input type="number" class="price-input" data-svc="${esc(svc)}" value="${price}" min="0" step="1000" />
-      </div>
-    </div>`;
+
+  let tabs = '<div class="media-tabs" id="pricingTabs" style="margin:-16px -16px 0;padding:0 16px">';
+  PRICING_SERVICES.forEach((svc, i) => {
+    tabs += `<button class="media-tab${i===_pricingActiveIdx?' active':''}" onclick="switchPricingTab(${i})">${esc(svc.label)}</button>`;
   });
-  h += `<div style="margin-top:16px;display:flex;gap:8px">
-    <button class="btn btn-primary" onclick="savePricing()">保存</button>
-    <button class="btn btn-ghost" onclick="renderPricing()">リセット</button>
+  tabs += '</div>';
+
+  let panels = '';
+  PRICING_SERVICES.forEach((svc, i) => {
+    const cfg = prices[svc.key] || {};
+    panels += `<div id="ptab-${i}" style="margin-top:16px;${i===_pricingActiveIdx?'':'display:none'}">`;
+    panels += `<div style="margin-bottom:14px;padding:10px 14px;background:rgba(37,99,235,.05);border:1px solid rgba(37,99,235,.15);border-radius:8px;display:flex;align-items:center;gap:10px">
+      <svg viewBox="0 0 24 24" width="15" height="15" style="flex-shrink:0;color:var(--blue)"><path fill="currentColor" d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+      <span style="font-size:12px;color:var(--blue);font-weight:600">${esc(svc.label)}</span>
+      <span style="font-size:11px;color:var(--gray-2)">${esc(svc.en)}</span>
+    </div>`;
+    PRICING_FIELDS.forEach(f => {
+      const val = cfg[f.key] != null ? cfg[f.key] : '';
+      panels += `<div class="settings-row">
+        <div>
+          <div class="settings-label">${esc(f.label)}</div>
+          <div class="settings-sub">${esc(f.sub)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="font-size:12px;color:var(--gray-2)">¥</span>
+          <input type="number" class="price-input" data-svc-idx="${i}" data-key="${f.key}" value="${val}" min="0" step="${f.step}" style="width:120px" />
+          <span style="font-size:11px;color:var(--gray-2);white-space:nowrap">${esc(f.unit)}</span>
+        </div>
+      </div>`;
+    });
+    panels += '</div>';
+  });
+
+  const actions = `<div style="margin-top:20px;display:flex;gap:8px;align-items:center;padding-top:16px;border-top:1px solid var(--line)">
+    <button class="btn btn-primary" onclick="savePricing()">
+      <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+      保存して反映
+    </button>
+    <button class="btn btn-ghost" onclick="_pricingActiveIdx=0;renderPricing()">リセット</button>
+    <span id="pricingSaveInd" style="font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;font-weight:500">✓ 保存しました</span>
   </div>`;
-  document.getElementById('pricingBody').innerHTML = h;
+
+  document.getElementById('pricingBody').innerHTML = tabs + panels + actions;
+}
+
+function switchPricingTab(idx) {
+  _pricingActiveIdx = idx;
+  PRICING_SERVICES.forEach((_, i) => {
+    const panel = document.getElementById('ptab-' + i);
+    if (panel) panel.style.display = i === idx ? '' : 'none';
+  });
+  document.querySelectorAll('#pricingTabs .media-tab').forEach((btn, i) => {
+    btn.classList.toggle('active', i === idx);
+  });
 }
 
 function savePricing() {
-  const prices = {};
-  document.querySelectorAll('#pricingBody .price-input').forEach(inp => {
-    prices[inp.dataset.svc] = parseInt(inp.value) || 0;
+  const prices = Adapter.getPrices();
+  document.querySelectorAll('#pricingBody .price-input[data-svc-idx]').forEach(inp => {
+    const i = parseInt(inp.dataset.svcIdx);
+    const key = inp.dataset.key;
+    const svc = PRICING_SERVICES[i];
+    if (!svc) return;
+    if (!prices[svc.key]) prices[svc.key] = {};
+    prices[svc.key][key] = parseInt(inp.value) || 0;
   });
   Adapter.savePrices(prices);
-  toast('料金設定を保存しました');
+  const ind = document.getElementById('pricingSaveInd');
+  if (ind) { ind.style.opacity = '1'; setTimeout(() => { ind.style.opacity = '0'; }, 2500); }
+  toast('料金を保存しました・サイトに即時反映');
+}
+
+function printPricing() {
+  const prices = Adapter.getPrices();
+  const e = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  /* header row: service names */
+  const thCells = PRICING_SERVICES.map(svc =>
+    `<th style="background:#f8f9fa;font-weight:600;text-align:right;padding:9px 14px;border:1px solid #e5e7eb;font-size:11px;color:#0b0f17;white-space:nowrap">${e(svc.label)}<br><span style="font-size:9px;font-weight:400;color:#9ca3af">${e(svc.en)}</span></th>`
+  ).join('');
+
+  /* one row per pricing field */
+  const bodyRows = PRICING_FIELDS.map((f, fi) => {
+    const bg = fi % 2 === 1 ? 'background:#fafafa' : '';
+    const cells = PRICING_SERVICES.map(svc => {
+      const cfg = prices[svc.key] || {};
+      const val = cfg[f.key] != null ? cfg[f.key] : 0;
+      return `<td style="padding:9px 14px;border:1px solid #f0f2f5;text-align:right;font-weight:600;font-variant-numeric:tabular-nums;${bg}">¥${Number(val).toLocaleString()}<span style="font-size:10px;font-weight:400;color:#9ca3af;margin-left:3px">${e(f.unit)}</span></td>`;
+    }).join('');
+    return `<tr>
+      <td style="padding:9px 14px;border:1px solid #f0f2f5;font-size:12px;font-weight:600;color:#374151;${bg};white-space:nowrap">${e(f.label)}</td>
+      <td style="padding:9px 14px;border:1px solid #f0f2f5;font-size:11px;color:#9ca3af;${bg}">${e(f.sub)}</td>
+      ${cells}
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="UTF-8">
+<title>料金表 — Hello Moving</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Hiragino Sans','Meiryo','Yu Gothic',sans-serif;font-size:13px;color:#0b0f17;background:#fff;padding:32px 36px}
+@media print{body{padding:0}@page{margin:14mm 12mm;size:A4 landscape}}
+</style></head><body>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #0a1f44;margin-bottom:24px">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:40px;height:40px;border-radius:10px;background:#1D9E75;color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">H</div>
+    <div>
+      <div style="font-size:17px;font-weight:700;color:#0a1f44;line-height:1.2">Hello Moving</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:1px">ハローム―ビング</div>
+    </div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:18px;font-weight:700;color:#0a1f44">料金表</div>
+    <div style="font-size:11px;color:#9ca3af;margin-top:4px">出力日: ${new Date().toLocaleDateString('ja-JP')}</div>
+  </div>
+</div>
+
+<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:24px">
+  <thead>
+    <tr>
+      <th style="background:#f8f9fa;font-weight:600;text-align:left;padding:9px 14px;border:1px solid #e5e7eb;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em">料金項目</th>
+      <th style="background:#f8f9fa;font-weight:600;text-align:left;padding:9px 14px;border:1px solid #e5e7eb;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em">説明</th>
+      ${thCells}
+    </tr>
+  </thead>
+  <tbody>${bodyRows}</tbody>
+</table>
+
+<div style="background:#f0fdf4;border:1px solid #10b98133;border-radius:8px;padding:12px 16px;font-size:11px;color:#374151;line-height:1.8;margin-bottom:24px">
+  <strong style="color:#059669">ご注意：</strong> 表示金額は基本料金です。実際の料金は距離・階数・日程等により異なります。最終的な料金はお見積り時にご確認ください。
+</div>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-end;padding-top:14px;border-top:1px solid #e5e7eb">
+  <div style="font-size:10px;color:#9ca3af;line-height:1.7">
+    <div>Hello Moving — 引越し専門サービス</div>
+    <div>このドキュメントは管理システムから自動生成されました</div>
+  </div>
+  <div style="text-align:right;font-size:11px;color:#6b7280;line-height:1.7">
+    <div style="font-weight:600;color:#0b0f17">Hello Moving</div>
+    <div>info@hello-moving.com</div>
+  </div>
+</div>
+
+<script>window.onload=function(){setTimeout(function(){window.print();},350);window.onafterprint=function(){window.close();}}<\/script>
+</body></html>`;
+
+  const w = window.open('','_blank','width=960,height=700');
+  if (!w) { toast('ポップアップをブロックしています。許可してから再試行してください'); return; }
+  w.document.write(html);
+  w.document.close();
 }
 
 /* ════════════════════════════════════════════════════════
-   DISPOSAL MANAGEMENT
+   DISPOSAL MANAGEMENT (v2 — category-based)
    ════════════════════════════════════════════════════════ */
+let _dispCatEditId  = null;
+let _dispItemCatId  = null;
+let _dispItemEditId = null;
+
+function _duid() { return 'id_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+function calcDisposalTotal(data) {
+  return data.categories.reduce((sum, cat) =>
+    sum + cat.items.filter(i => i.enabled).reduce((s, i) => s + (i.fee || 0), 0), 0);
+}
+
 function renderDisposal() {
-  const disp = Adapter.getDisposal();
-  let h = '';
-  Object.entries(disp).forEach(([cat, cfg]) => {
-    const id = 'dt_' + cat.replace(/[^a-z0-9]/gi,'_');
-    h += `<div class="settings-row">
-      <div>
-        <div class="settings-label">${esc(cat)}</div>
+  const data = Adapter.getDisposal();
+  const total = calcDisposalTotal(data);
+
+  let h = `<div class="panel" style="margin-bottom:16px">
+    <div class="panel-head">
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <span class="panel-title">不用品カテゴリ管理</span>
+        <span style="font-size:12px;color:var(--gray-1)">合計処分費用:
+          <strong id="disposalTotal" style="color:var(--ink);font-size:15px;font-variant-numeric:tabular-nums">¥${total.toLocaleString()}</strong>
+        </span>
       </div>
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <label class="toggle" title="${cfg.enabled?'無効にする':'有効にする'}">
-          <input type="checkbox" id="te_${id}" ${cfg.enabled?'checked':''} />
-          <div class="toggle-track"></div>
-          <div class="toggle-thumb"></div>
-        </label>
-        <div style="display:flex;align-items:center;gap:4px">
-          <span style="font-size:12px;color:var(--gray-2)">¥</span>
-          <input type="number" class="price-input" id="tp_${id}" value="${cfg.price}" min="0" step="500" style="width:90px" />
-        </div>
+      <div style="display:flex;gap:5px">
+        <button class="btn btn-ghost btn-sm" onclick="printDisposal()">
+          <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="openDisposalCatModal(null)">
+          <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>カテゴリを追加
+        </button>
       </div>
-    </div>`;
-  });
-  h += `<div style="margin-top:16px;display:flex;gap:8px">
-    <button class="btn btn-primary" onclick="saveDisposal()">保存</button>
+    </div>
   </div>`;
-  document.getElementById('disposalBody').innerHTML = h;
+
+  if (!data.categories.length) {
+    h += `<div class="empty"><svg viewBox="0 0 24 24" width="40" height="40"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg><p>カテゴリがありません。上のボタンで追加してください。</p></div>`;
+  } else {
+    data.categories.forEach(cat => {
+      h += `<div class="panel" style="margin-bottom:14px">
+        <div class="panel-head">
+          <span class="panel-title" style="font-size:13px">${esc(cat.name)}</span>
+          <div style="display:flex;gap:5px;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" onclick="openDisposalItemModal('${cat.id}',null)">
+              <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>アイテム追加
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="openDisposalCatModal('${cat.id}')">
+              <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>編集
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="deleteDisposalCat('${cat.id}')">
+              <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>削除
+            </button>
+          </div>
+        </div>`;
+
+      if (!cat.items.length) {
+        h += `<div style="padding:18px 16px;text-align:center;font-size:13px;color:var(--gray-2)">アイテムがありません。「アイテム追加」で追加してください。</div>`;
+      } else {
+        h += `<div class="table-wrap"><table><thead><tr>
+          <th>アイテム名</th>
+          <th style="text-align:right">処分料金</th>
+          <th style="text-align:center">有効</th>
+          <th style="text-align:right">操作</th>
+        </tr></thead><tbody>`;
+        cat.items.forEach(item => {
+          h += `<tr>
+            <td style="font-weight:500">${esc(item.name)}</td>
+            <td style="text-align:right;font-variant-numeric:tabular-nums">¥${(item.fee||0).toLocaleString()}</td>
+            <td style="text-align:center">
+              <label class="toggle" title="${item.enabled?'無効にする':'有効にする'}">
+                <input type="checkbox" ${item.enabled?'checked':''} onchange="toggleDisposalItem('${cat.id}','${item.id}')" />
+                <div class="toggle-track"></div>
+                <div class="toggle-thumb"></div>
+              </label>
+            </td>
+            <td style="text-align:right">
+              <div style="display:flex;gap:4px;justify-content:flex-end">
+                <button class="btn btn-ghost btn-sm btn-icon" onclick="openDisposalItemModal('${cat.id}','${item.id}')" title="編集">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                </button>
+                <button class="btn btn-danger btn-sm btn-icon" onclick="deleteDisposalItem('${cat.id}','${item.id}')" title="削除">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>`;
+        });
+        h += `</tbody></table></div>`;
+      }
+      h += `</div>`;
+    });
+  }
+
+  document.getElementById('disposalContent').innerHTML = h;
 }
 
-function saveDisposal() {
-  const disp = Adapter.getDisposal();
-  Object.keys(disp).forEach(cat => {
-    const id = 'dt_' + cat.replace(/[^a-z0-9]/gi,'_');
-    const en = document.getElementById('te_'+id)?.checked;
-    const pr = parseInt(document.getElementById('tp_'+id)?.value) || 0;
-    if (en !== undefined) disp[cat] = {enabled: en, price: pr};
-  });
-  Adapter.saveDisposal(disp);
-  toast('不用品設定を保存しました');
+function updateDisposalTotal() {
+  const el = document.getElementById('disposalTotal');
+  if (el) el.textContent = '¥' + calcDisposalTotal(Adapter.getDisposal()).toLocaleString();
+}
+
+/* ── Category modal ── */
+function openDisposalCatModal(catId) {
+  _dispCatEditId = catId;
+  const cat = catId ? Adapter.getDisposal().categories.find(c => c.id === catId) : null;
+  document.getElementById('disposalCatModalTitle').textContent = catId ? 'カテゴリを編集' : 'カテゴリを追加';
+  document.getElementById('disposalCatName').value = cat ? cat.name : '';
+  document.getElementById('disposalCatModal').classList.add('open');
+  setTimeout(() => document.getElementById('disposalCatName').focus(), 50);
+}
+function closeDisposalCatModal() { document.getElementById('disposalCatModal').classList.remove('open'); }
+function saveDisposalCat() {
+  const name = document.getElementById('disposalCatName').value.trim();
+  if (!name) { toast('カテゴリ名を入力してください'); return; }
+  const data = Adapter.getDisposal();
+  if (_dispCatEditId) {
+    const cat = data.categories.find(c => c.id === _dispCatEditId);
+    if (cat) cat.name = name;
+  } else {
+    data.categories.push({ id: _duid(), name, items: [] });
+  }
+  Adapter.saveDisposal(data);
+  closeDisposalCatModal();
+  renderDisposal();
+  toast(_dispCatEditId ? 'カテゴリを更新しました' : 'カテゴリを追加しました');
+}
+function deleteDisposalCat(catId) {
+  const data = Adapter.getDisposal();
+  const cat = data.categories.find(c => c.id === catId);
+  if (!cat || !confirm(`「${cat.name}」カテゴリとその全アイテムを削除しますか？`)) return;
+  data.categories = data.categories.filter(c => c.id !== catId);
+  Adapter.saveDisposal(data);
+  renderDisposal();
+  toast('カテゴリを削除しました');
+}
+
+/* ── Item modal ── */
+function openDisposalItemModal(catId, itemId) {
+  _dispItemCatId  = catId;
+  _dispItemEditId = itemId;
+  const data = Adapter.getDisposal();
+  const cat  = data.categories.find(c => c.id === catId);
+  const item = itemId && cat ? cat.items.find(i => i.id === itemId) : null;
+  document.getElementById('disposalItemModalTitle').textContent = itemId ? 'アイテムを編集' : 'アイテムを追加';
+  document.getElementById('disposalItemName').value = item ? item.name : '';
+  document.getElementById('disposalItemFee').value  = item ? item.fee  : '';
+  document.getElementById('disposalItemModal').classList.add('open');
+  setTimeout(() => document.getElementById('disposalItemName').focus(), 50);
+}
+function closeDisposalItemModal() { document.getElementById('disposalItemModal').classList.remove('open'); }
+function saveDisposalItem() {
+  const name = document.getElementById('disposalItemName').value.trim();
+  const fee  = parseInt(document.getElementById('disposalItemFee').value) || 0;
+  if (!name) { toast('アイテム名を入力してください'); return; }
+  const data = Adapter.getDisposal();
+  const cat  = data.categories.find(c => c.id === _dispItemCatId);
+  if (!cat) return;
+  if (_dispItemEditId) {
+    const item = cat.items.find(i => i.id === _dispItemEditId);
+    if (item) { item.name = name; item.fee = fee; }
+  } else {
+    cat.items.push({ id: _duid(), name, fee, enabled: true });
+  }
+  Adapter.saveDisposal(data);
+  closeDisposalItemModal();
+  renderDisposal();
+  toast(_dispItemEditId ? 'アイテムを更新しました' : 'アイテムを追加しました');
+}
+function deleteDisposalItem(catId, itemId) {
+  const data = Adapter.getDisposal();
+  const cat  = data.categories.find(c => c.id === catId);
+  if (!cat) return;
+  const item = cat.items.find(i => i.id === itemId);
+  if (!item || !confirm(`「${item.name}」を削除しますか？`)) return;
+  cat.items = cat.items.filter(i => i.id !== itemId);
+  Adapter.saveDisposal(data);
+  renderDisposal();
+  toast('アイテムを削除しました');
+}
+function toggleDisposalItem(catId, itemId) {
+  const data = Adapter.getDisposal();
+  const cat  = data.categories.find(c => c.id === catId);
+  if (!cat) return;
+  const item = cat.items.find(i => i.id === itemId);
+  if (!item) return;
+  item.enabled = !item.enabled;
+  Adapter.saveDisposal(data);
+  updateDisposalTotal();
+}
+
+function printDisposal() {
+  const data  = Adapter.getDisposal();
+  const total = calcDisposalTotal(data);
+  const e = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  const categorySections = data.categories.map(cat => {
+    if (!cat.items.length) return '';
+    const rows = cat.items.map((item, fi) => {
+      const bg = fi % 2 === 1 ? 'background:#fafafa' : '';
+      return `<tr>
+        <td style="padding:8px 14px;border:1px solid #f0f2f5;font-size:12px;color:#374151;${bg}">${e(item.name)}</td>
+        <td style="padding:8px 14px;border:1px solid #f0f2f5;font-size:12px;font-weight:600;text-align:right;font-variant-numeric:tabular-nums;${bg}">¥${(item.fee||0).toLocaleString()}</td>
+        <td style="padding:8px 14px;border:1px solid #f0f2f5;text-align:center;${bg}">
+          <span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;${item.enabled?'background:#f0fdf4;color:#059669;border:1px solid #10b98133':'background:#f9fafb;color:#9ca3af;border:1px solid #e5e7eb'}">${item.enabled?'有効':'無効'}</span>
+        </td>
+      </tr>`;
+    }).join('');
+
+    const catTotal = cat.items.filter(i=>i.enabled).reduce((s,i)=>s+(i.fee||0),0);
+    return `<div style="margin-bottom:20px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12px;font-weight:700;color:#0a1f44;letter-spacing:.05em;text-transform:uppercase;padding-bottom:6px;border-bottom:1px solid #e5e7eb;margin-bottom:4px">
+        <span>${e(cat.name)}</span>
+        <span style="font-size:11px;font-weight:500;color:#6b7280;text-transform:none;letter-spacing:0">小計 ¥${catTotal.toLocaleString()}</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr>
+          <th style="background:#f8f9fa;font-weight:600;text-align:left;padding:7px 14px;border:1px solid #e5e7eb;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280">アイテム名</th>
+          <th style="background:#f8f9fa;font-weight:600;text-align:right;padding:7px 14px;border:1px solid #e5e7eb;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280">処分料金</th>
+          <th style="background:#f8f9fa;font-weight:600;text-align:center;padding:7px 14px;border:1px solid #e5e7eb;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280">状態</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="UTF-8">
+<title>不用品処分料金表 — Hello Moving</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Hiragino Sans','Meiryo','Yu Gothic',sans-serif;font-size:13px;color:#0b0f17;background:#fff;padding:32px 36px}
+@media print{body{padding:0}@page{margin:16mm 14mm;size:A4 portrait}}
+</style></head><body>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #0a1f44;margin-bottom:24px">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:40px;height:40px;border-radius:10px;background:#1D9E75;color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">H</div>
+    <div>
+      <div style="font-size:17px;font-weight:700;color:#0a1f44;line-height:1.2">Hello Moving</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:1px">ハローム―ビング</div>
+    </div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:18px;font-weight:700;color:#0a1f44">不用品処分料金表</div>
+    <div style="font-size:11px;color:#9ca3af;margin-top:4px">出力日: ${new Date().toLocaleDateString('ja-JP')}</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px">
+  ${[
+    ['カテゴリ数',   data.categories.length+'件'],
+    ['総アイテム数', data.categories.reduce((s,c)=>s+c.items.length,0)+'件'],
+    ['合計処分費用', '¥'+total.toLocaleString()],
+  ].map(([l,v])=>`<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px">
+    <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${l}</div>
+    <div style="font-size:18px;font-weight:700;color:#0b0f17">${v}</div>
+  </div>`).join('')}
+</div>
+
+${categorySections || '<p style="color:#9ca3af;font-size:13px;text-align:center;padding:20px">カテゴリがありません</p>'}
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px;padding:12px 16px;background:#f8f9fa;border:1px solid #e5e7eb;border-radius:8px">
+  <span style="font-size:13px;font-weight:600;color:#374151">合計処分費用（有効アイテムのみ）</span>
+  <span style="font-size:20px;font-weight:700;color:#0b0f17;font-variant-numeric:tabular-nums">¥${total.toLocaleString()}</span>
+</div>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-end;padding-top:14px;border-top:1px solid #e5e7eb;margin-top:24px">
+  <div style="font-size:10px;color:#9ca3af;line-height:1.7">
+    <div>Hello Moving — 引越し専門サービス</div>
+    <div>このドキュメントは管理システムから自動生成されました</div>
+  </div>
+  <div style="text-align:right;font-size:11px;color:#6b7280;line-height:1.7">
+    <div style="font-weight:600;color:#0b0f17">Hello Moving</div>
+    <div>info@hello-moving.com</div>
+  </div>
+</div>
+
+<script>window.onload=function(){setTimeout(function(){window.print();},350);window.onafterprint=function(){window.close();}}<\/script>
+</body></html>`;
+
+  const w = window.open('','_blank','width=780,height=720');
+  if (!w) { toast('ポップアップをブロックしています。許可してから再試行してください'); return; }
+  w.document.write(html);
+  w.document.close();
 }
 
 /* ════════════════════════════════════════════════════════
-   ANALYTICS — pure-JS Canvas charts
+   ANALYTICS (v2) — KPI cards + period filter + Canvas charts
    ════════════════════════════════════════════════════════ */
-function renderAnalytics() {
-  const bk          = Adapter.getBookings();
-  const avail       = Adapter.getAvail();
-  const pending     = bk.filter(b => b.status === '新規' || b.status === '確認中').length;
-  const completed   = bk.filter(b => b.status === '完了').length;
-  const quotes      = Adapter.getQuotes().length;
-  const reviews     = Adapter.getReviews().length;
-  const bookedDates = Object.values(avail).filter(v => v === 'booked').length;
+let _aPeriod = '6m';
+let _aFrom   = '';
+let _aTo     = '';
 
-  const cards = [
-    {label:'総予約数',         val: bk.length,   sub:'全ステータス合計', color:''},
-    {label:'対応中',           val: pending,      sub:'新規 ＋ 確認中',   color:'var(--blue)'},
-    {label:'完了',             val: completed,    sub:'完了した予約',      color:'var(--green)'},
-    {label:'見積りリクエスト', val: quotes,       sub:'受付済み',          color:'var(--yellow)'},
-    {label:'レビュー数',       val: reviews,      sub:'登録済みレビュー',  color:'#8b5cf6'},
-    {label:'満了日数',         val: bookedDates,  sub:'×マーク日',        color:'var(--red)'},
+const _DOW_JP = ['日','月','火','水','木','金','土'];
+const _SVC_SHORT = {
+  '単身引越し':'単身引越し',
+  'カップル・ご夫婦引越し':'カップル',
+  '学生・新生活引越し':'学生引越し',
+  '当日・お急ぎ引越し':'当日プラン',
+  '不用品回収・処分サービス':'不用品回収',
+  '家具組立・分解':'家具組立',
+};
+const _A_PERIODS = [
+  {key:'7d',    label:'過去7日'},
+  {key:'30d',   label:'過去30日'},
+  {key:'3m',    label:'過去3ヶ月'},
+  {key:'6m',    label:'過去6ヶ月'},
+  {key:'year',  label:'今年'},
+  {key:'all',   label:'全期間'},
+  {key:'custom',label:'カスタム'},
+];
+
+function getAnalyticsRange() {
+  const t = new Date(); t.setHours(0,0,0,0);
+  const toStr = todayStr();
+  if (_aPeriod === 'custom') return { from: _aFrom || '2020-01-01', to: _aTo || toStr };
+  let from = new Date(t);
+  if      (_aPeriod === '7d')   from.setDate(t.getDate() - 6);
+  else if (_aPeriod === '30d')  from.setDate(t.getDate() - 29);
+  else if (_aPeriod === '3m')   from.setMonth(t.getMonth() - 3);
+  else if (_aPeriod === '6m')   from.setMonth(t.getMonth() - 6);
+  else if (_aPeriod === 'year') from = new Date(t.getFullYear(), 0, 1);
+  else                          from = new Date(2020, 0, 1);
+  return {
+    from: `${from.getFullYear()}-${pad(from.getMonth()+1)}-${pad(from.getDate())}`,
+    to: toStr
+  };
+}
+
+function _aInitFilter() {
+  const wrap = document.getElementById('analyticsPeriodBtns');
+  if (!wrap) return;
+  if (!wrap.dataset.inited) {
+    wrap.dataset.inited = '1';
+    wrap.innerHTML = _A_PERIODS.map(p =>
+      `<button class="btn btn-sm btn-ghost" data-aperiod="${p.key}" onclick="setAnalyticsPeriod('${p.key}')">${p.label}</button>`
+    ).join('');
+    const r = getAnalyticsRange();
+    const af = document.getElementById('aFrom');
+    const at = document.getElementById('aTo');
+    if (af) af.value = r.from;
+    if (at) at.value = r.to;
+  }
+  _aUpdateBtns();
+}
+
+function _aUpdateBtns() {
+  document.querySelectorAll('#analyticsPeriodBtns button[data-aperiod]').forEach(btn => {
+    btn.className = `btn btn-sm ${btn.dataset.aperiod === _aPeriod ? 'btn-primary' : 'btn-ghost'}`;
+  });
+  const cr = document.getElementById('analyticsCustomRange');
+  if (cr) cr.style.display = _aPeriod === 'custom' ? 'flex' : 'none';
+}
+
+function setAnalyticsPeriod(key) {
+  _aPeriod = key;
+  _aUpdateBtns();
+  if (key !== 'custom') renderAnalyticsCharts();
+}
+
+function applyAnalyticsCustom() {
+  const f = document.getElementById('aFrom')?.value;
+  const t = document.getElementById('aTo')?.value;
+  if (!f || !t)  { toast('開始日と終了日を選択してください'); return; }
+  if (f > t)     { toast('開始日は終了日より前にしてください'); return; }
+  _aFrom = f; _aTo = t;
+  renderAnalyticsCharts();
+}
+
+function renderAnalytics() {
+  _aInitFilter();
+  renderAnalyticsCharts();
+}
+
+function renderAnalyticsCharts() {
+  const isDark        = document.documentElement.classList.contains('dark');
+  const { from, to }  = getAnalyticsRange();
+  const bk            = Adapter.getBookings();
+  const quotes        = Adapter.getQuotes();
+  const prices        = Adapter.getPrices();
+  const fromD         = new Date(from + 'T00:00:00');
+  const toD           = new Date(to   + 'T00:00:00');
+  const days          = Math.round((toD - fromD) / 86400000) + 1;
+
+  /* ── Period label ── */
+  const periodLabel = _aPeriod === 'custom'
+    ? `${from.slice(5)} 〜 ${to.slice(5)}`
+    : (_A_PERIODS.find(p => p.key === _aPeriod)?.label || '');
+  const calIcon = `<svg viewBox="0 0 24 24" width="10" height="10" style="flex-shrink:0"><path fill="currentColor" d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>`;
+
+  /* ── KPI computations (period-filtered) ── */
+  const bkInRange  = bk.filter(b => b.date >= from && b.date <= to);
+  const qtInRange  = quotes.filter(q => (q.createdAt||'').slice(0,10) >= from && (q.createdAt||'').slice(0,10) <= to);
+  const activeBkR  = bkInRange.filter(b => b.status !== 'キャンセル');
+  const totalBk    = bkInRange.length;
+  const totalQt    = qtInRange.length;
+  const convRate   = totalQt > 0 ? Math.round((activeBkR.length / totalQt) * 100) : 0;
+
+  const svcCount = {};
+  activeBkR.forEach(b => { svcCount[b.service] = (svcCount[b.service]||0) + 1; });
+  const topSvcEntry = Object.entries(svcCount).sort((a,b) => b[1]-a[1])[0];
+
+  let periodRevenue = 0;
+  activeBkR.forEach(b => {
+    const p = prices[b.service];
+    periodRevenue += (typeof p === 'number' ? p : (p && p.base) || 0);
+  });
+
+  const dowCount = [0,0,0,0,0,0,0];
+  activeBkR.forEach(b => { dowCount[new Date(b.date + 'T00:00:00').getDay()]++; });
+  const maxDow = Math.max(...dowCount);
+  const topDow = dowCount.indexOf(maxDow);
+
+  const convColor = convRate >= 50 ? 'var(--green)' : (convRate >= 25 ? 'var(--yellow)' : 'var(--red)');
+  const kpis = [
+    { label:'総予約数',
+      val: totalBk,
+      sub: `確定済み ${bkInRange.filter(b=>b.status==='確定').length}件`,
+      color: '', sm: false },
+    { label:'見積りリクエスト',
+      val: totalQt,
+      sub: '受付済み合計',
+      color: 'var(--blue)', sm: false },
+    { label:'転換率',
+      val: convRate + '%',
+      sub: '見積り → 予約 (キャンセル除く)',
+      color: convColor, sm: false },
+    { label:'人気サービス',
+      val: topSvcEntry ? (_SVC_SHORT[topSvcEntry[0]]||topSvcEntry[0]) : '—',
+      sub: topSvcEntry ? topSvcEntry[1]+'件のご依頼' : 'データなし',
+      color: '#8b5cf6', sm: true },
+    { label:'期間売上概算',
+      val: '¥' + periodRevenue.toLocaleString(),
+      sub: '基本料金ベース・キャンセル除く',
+      color: 'var(--green)', sm: true },
+    { label:'人気の引越し曜日',
+      val: maxDow > 0 ? _DOW_JP[topDow]+'曜日' : '—',
+      sub: maxDow > 0 ? maxDow+'件 最多予約曜日' : 'データなし',
+      color: 'var(--blue)', sm: true },
   ];
 
-  document.getElementById('analyticsGrid').innerHTML = cards.map(c =>
+  document.getElementById('analyticsGrid').innerHTML = kpis.map(k =>
     `<div class="stat-card">
-      <div class="stat-label">${c.label}</div>
-      <div class="stat-val"${c.color ? ` style="color:${c.color}"` : ''}>${c.val}</div>
-      <div class="stat-sub">${c.sub}</div>
+      <div class="stat-label">${k.label}</div>
+      <div class="stat-val" style="color:${k.color||'var(--ink)'};${k.sm?'font-size:18px;line-height:1.3;word-break:break-all':''}">${k.val}</div>
+      <div class="stat-sub">${k.sub}</div>
+      <div class="stat-period">${calIcon}${periodLabel}</div>
     </div>`
   ).join('');
+
+  /* ── Chart 1: time-series with adaptive granularity ── */
+  let c1Labels = [], c1Data = [], c1Title = '';
+
+  if (days <= 14) {
+    c1Title = `日別予約推移`;
+    for (let i = 0; i < days; i++) {
+      const d  = new Date(fromD); d.setDate(fromD.getDate() + i);
+      const ds = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      c1Labels.push(_DOW_JP[d.getDay()]);
+      c1Data.push(bk.filter(b => b.date === ds).length);
+    }
+  } else if (days <= 84) {
+    c1Title = `週別予約推移`;
+    const weeks = Math.ceil(days / 7);
+    for (let i = 0; i < weeks; i++) {
+      const ws  = new Date(fromD); ws.setDate(fromD.getDate() + i * 7);
+      const we  = new Date(ws);    we.setDate(ws.getDate() + 6);
+      const wsS = `${ws.getFullYear()}-${pad(ws.getMonth()+1)}-${pad(ws.getDate())}`;
+      const weS = `${we.getFullYear()}-${pad(we.getMonth()+1)}-${pad(we.getDate())}`;
+      c1Labels.push(`${ws.getMonth()+1}/${ws.getDate()}`);
+      c1Data.push(bk.filter(b => b.date >= wsS && b.date <= weS).length);
+    }
+  } else {
+    c1Title = `月別予約推移`;
+    let cur = new Date(fromD.getFullYear(), fromD.getMonth(), 1);
+    const endM = new Date(toD.getFullYear(), toD.getMonth(), 1);
+    while (cur <= endM) {
+      const ym = `${cur.getFullYear()}-${pad(cur.getMonth()+1)}`;
+      const thisYear = cur.getFullYear() === new Date().getFullYear();
+      c1Labels.push(thisYear ? `${cur.getMonth()+1}月` : `${cur.getFullYear()}/${cur.getMonth()+1}`);
+      c1Data.push(bk.filter(b => b.date.startsWith(ym)).length);
+      cur.setMonth(cur.getMonth() + 1);
+    }
+  }
+
+  /* ── Chart 2: monthly breakdown in period ── */
+  const c2Labels = [], c2Data = [];
+  {
+    let cur = new Date(fromD.getFullYear(), fromD.getMonth(), 1);
+    const endM = new Date(toD.getFullYear(), toD.getMonth(), 1);
+    while (cur <= endM) {
+      const ym = `${cur.getFullYear()}-${pad(cur.getMonth()+1)}`;
+      c2Labels.push(`${cur.getMonth()+1}月`);
+      c2Data.push(bk.filter(b => b.date.startsWith(ym)).length);
+      cur.setMonth(cur.getMonth() + 1);
+    }
+  }
+  const c2Title = `月別予約数`;
+
+  /* ── Chart 3: service popularity (period-filtered, non-cancelled) ── */
+  const c3SvcCount = {};
+  bk.filter(b => b.date >= from && b.date <= to && b.status !== 'キャンセル').forEach(b => {
+    c3SvcCount[b.service] = (c3SvcCount[b.service] || 0) + 1;
+  });
+  const svcKeys   = Object.keys(c3SvcCount).sort((a,b) => c3SvcCount[b] - c3SvcCount[a]);
+  const c3Labels  = svcKeys.map(s => _SVC_SHORT[s] || s.slice(0, 6));
+  const c3Data    = svcKeys.map(s => c3SvcCount[s]);
+
+  /* ── Period label for chart titles ── */
+  const chartPeriodLabel = _aPeriod === 'custom'
+    ? `${from} 〜 ${to}`
+    : (_A_PERIODS.find(p => p.key === _aPeriod)?.label || '');
+
+  document.getElementById('analyticsCharts').innerHTML = `
+    <div class="chart-card">
+      <div class="chart-title">${c1Title}<span style="font-size:10px;color:var(--gray-2);margin-left:6px;font-weight:400">${chartPeriodLabel}</span></div>
+      <canvas id="chartC1" class="chart-canvas"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">${c2Title}<span style="font-size:10px;color:var(--gray-2);margin-left:6px;font-weight:400">${chartPeriodLabel}</span></div>
+      <canvas id="chartC2" class="chart-canvas"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">サービス人気度<span style="font-size:10px;color:var(--gray-2);margin-left:6px;font-weight:400">${chartPeriodLabel}</span></div>
+      <canvas id="chartC3" class="chart-canvas"></canvas>
+    </div>`;
+
+  requestAnimationFrame(() => {
+    drawBarChart('chartC1', c1Labels, c1Data, isDark);
+    drawBarChart('chartC2', c2Labels, c2Data, isDark);
+    drawHBarChart('chartC3', c3Labels, c3Data, isDark);
+  });
+
+  /* ── Popular upcoming dates (period-filtered) ── */
+  const today = todayStr();
+  const dateCount = {};
+  bk.filter(b => b.status !== 'キャンセル' && b.date >= from && b.date <= to && b.date >= today).forEach(b => {
+    dateCount[b.date] = (dateCount[b.date] || 0) + 1;
+  });
+  const topDates = Object.entries(dateCount).sort((a,b) => b[1]-a[1]).slice(0, 6);
+  const extraEl  = document.getElementById('analyticsExtra');
+  if (!extraEl) return;
+  if (topDates.length) {
+    const rows = topDates.map(([dt, cnt]) => {
+      const d  = new Date(dt + 'T00:00:00');
+      const dw = d.getDay();
+      return `<div class="settings-row">
+        <div>
+          <div class="settings-label">${dt}</div>
+          <div class="settings-sub">${_DOW_JP[dw]}曜日${dw===0||dw===6?' · 週末':''}</div>
+        </div>
+        <span class="badge badge-confirmed">${cnt}件</span>
+      </div>`;
+    }).join('');
+    extraEl.innerHTML = `<div class="panel"><div class="panel-head"><span class="panel-title">人気の引越し日（期間内・今後）</span></div><div class="panel-body">${rows}</div></div>`;
+  } else {
+    extraEl.innerHTML = `<div class="panel"><div class="panel-head"><span class="panel-title">人気の引越し日</span></div><div class="panel-body"><div class="empty" style="padding:20px"><p>期間内に今後の予約データがありません</p></div></div></div>`;
+  }
+}
+
+/* ── Shared analytics data builder ── */
+function _analyticsData() {
+  const { from, to } = getAnalyticsRange();
+  const bk     = Adapter.getBookings();
+  const quotes = Adapter.getQuotes();
+  const prices = Adapter.getPrices();
+  const fromD  = new Date(from + 'T00:00:00');
+  const toD    = new Date(to   + 'T00:00:00');
+  const days   = Math.round((toD - fromD) / 86400000) + 1;
+
+  const periodLabel = _aPeriod === 'custom'
+    ? `${from} 〜 ${to}`
+    : (_A_PERIODS.find(p => p.key === _aPeriod)?.label || '');
+
+  const bkInRange = bk.filter(b => b.date >= from && b.date <= to);
+  const qtInRange = quotes.filter(q => (q.createdAt||'').slice(0,10) >= from && (q.createdAt||'').slice(0,10) <= to);
+  const activeBkR = bkInRange.filter(b => b.status !== 'キャンセル');
+  const convRate  = qtInRange.length > 0 ? Math.round((activeBkR.length / qtInRange.length) * 100) : 0;
+
+  const svcCount = {};
+  activeBkR.forEach(b => { svcCount[b.service] = (svcCount[b.service]||0) + 1; });
+  const topSvc = Object.entries(svcCount).sort((a,b) => b[1]-a[1])[0];
+
+  let revenue = 0;
+  activeBkR.forEach(b => {
+    const p = prices[b.service];
+    revenue += (typeof p === 'number' ? p : (p && p.base) || 0);
+  });
+
+  const dowCount = [0,0,0,0,0,0,0];
+  activeBkR.forEach(b => { dowCount[new Date(b.date+'T00:00:00').getDay()]++; });
+  const maxDow = Math.max(...dowCount);
+  const topDow = dowCount.indexOf(maxDow);
+
+  const kpis = [
+    { label:'総予約数',        val: bkInRange.length,             sub:`確定済み ${bkInRange.filter(b=>b.status==='確定').length}件` },
+    { label:'見積りリクエスト', val: qtInRange.length,             sub:'受付済み合計' },
+    { label:'転換率',          val: convRate+'%',                  sub:'見積り → 予約（キャンセル除く）' },
+    { label:'人気サービス',    val: topSvc ? (_SVC_SHORT[topSvc[0]]||topSvc[0]) : '—', sub: topSvc ? topSvc[1]+'件のご依頼' : 'データなし' },
+    { label:'期間売上概算',    val: '¥'+revenue.toLocaleString(),  sub:'基本料金ベース・キャンセル除く' },
+    { label:'人気の引越し曜日', val: maxDow>0 ? _DOW_JP[topDow]+'曜日' : '—', sub: maxDow>0 ? maxDow+'件 最多予約曜日' : 'データなし' },
+  ];
+
+  /* time-series rows (arrays, not CSV strings) */
+  const tsHeaders = [];
+  const tsRows    = [];
+  if (days <= 14) {
+    tsHeaders.push('日付','曜日','予約件数');
+    for (let i = 0; i < days; i++) {
+      const d  = new Date(fromD); d.setDate(fromD.getDate()+i);
+      const ds = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      tsRows.push([ds, _DOW_JP[d.getDay()]+'曜日', bk.filter(b=>b.date===ds).length]);
+    }
+  } else if (days <= 84) {
+    tsHeaders.push('週開始日','週終了日','予約件数');
+    const weeks = Math.ceil(days/7);
+    for (let i = 0; i < weeks; i++) {
+      const ws  = new Date(fromD); ws.setDate(fromD.getDate()+i*7);
+      const we  = new Date(ws);    we.setDate(ws.getDate()+6);
+      const wsS = `${ws.getFullYear()}-${pad(ws.getMonth()+1)}-${pad(ws.getDate())}`;
+      const weS = `${we.getFullYear()}-${pad(we.getMonth()+1)}-${pad(we.getDate())}`;
+      tsRows.push([wsS, weS, bk.filter(b=>b.date>=wsS&&b.date<=weS).length]);
+    }
+  } else {
+    tsHeaders.push('年月','予約件数');
+    let cur = new Date(fromD.getFullYear(), fromD.getMonth(), 1);
+    const endM = new Date(toD.getFullYear(), toD.getMonth(), 1);
+    while (cur <= endM) {
+      const ym = `${cur.getFullYear()}-${pad(cur.getMonth()+1)}`;
+      tsRows.push([ym, bk.filter(b=>b.date.startsWith(ym)).length]);
+      cur.setMonth(cur.getMonth()+1);
+    }
+  }
+
+  const serviceRows = Object.entries(svcCount).sort((a,b)=>b[1]-a[1]);
+
+  return { from, to, periodLabel, bkInRange, qtInRange, activeBkR,
+           kpis, timeSeries:{headers:tsHeaders, rows:tsRows}, serviceRows };
+}
+
+/* ── Analytics CSV export ── */
+function exportAnalyticsCSV() {
+  const d   = _analyticsData();
+  const qe  = v => `"${String(v==null?'':v).replace(/"/g,'""')}"`;
+  const row = (...cells) => cells.map(qe).join(',');
+
+  const s1 = [
+    row('【分析サマリー】'),
+    row('分析期間', d.periodLabel),
+    row('出力日時', new Date().toLocaleString('ja-JP')),
+    '',
+    row('指標','値','補足'),
+    ...d.kpis.map(k => row(k.label, k.val, k.sub)),
+  ];
+
+  const s2 = [
+    row('【時系列データ】'),
+    row(...d.timeSeries.headers),
+    ...d.timeSeries.rows.map(r => row(...r)),
+  ];
+
+  const s3 = [
+    row('【サービス別予約数】'),
+    row('サービス','件数'),
+    ...d.serviceRows.map(([svc,cnt]) => row(svc, cnt)),
+  ];
+
+  const s4 = [
+    row('【期間内予約一覧】'),
+    row('予約番号','ステータス','サービス','引越し日','希望時間帯','お客様名','メール','引越し元','引越し先','備考','受付日時'),
+    ...d.bkInRange.map(b => row(b.id,b.status,b.service,b.date,b.time,b.name,b.email,b.fromAddr,b.toAddr,b.notes,b.createdAt)),
+  ];
+
+  const csv = '﻿' + [s1,s2,s3,s4].map(s=>s.join('\r\n')).join('\r\n\r\n');
+  const a   = document.createElement('a');
+  a.href    = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download = `analytics-${d.from}-${d.to}.csv`;
+  a.click();
+  toast('分析データをCSVでエクスポートしました');
+}
+
+/* ── Analytics print view ── */
+function printAnalytics() {
+  const d   = _analyticsData();
+  const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  /* service bar rows */
+  const maxSvc = Math.max(...d.serviceRows.map(r=>r[1]), 1);
+  const svcTableRows = d.serviceRows.map(([svc,cnt]) => {
+    const pct = Math.round((cnt/maxSvc)*100);
+    return `<tr>
+      <td>${esc(svc)}</td>
+      <td><div style="background:#e5e7eb;border-radius:3px;height:11px;width:160px;position:relative;overflow:hidden"><div style="background:#2563eb;border-radius:3px;height:11px;width:${pct}%;position:absolute;top:0;left:0"></div></div></td>
+      <td style="text-align:right;font-weight:600">${cnt}件</td>
+    </tr>`;
+  }).join('');
+
+  /* booking list rows */
+  const bkTableRows = d.bkInRange.map(b => `<tr>
+    <td>${esc(b.id)}</td>
+    <td>${esc(b.status)}</td>
+    <td>${esc(b.service)}</td>
+    <td style="white-space:nowrap">${esc(b.date)}</td>
+    <td>${esc(b.name)}</td>
+    <td>${esc(b.email)}</td>
+    <td>${esc(b.fromAddr)}</td>
+    <td>${esc(b.toAddr)}</td>
+  </tr>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="UTF-8">
+<title>分析レポート — Hello Moving</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Hiragino Sans','Meiryo','Yu Gothic',sans-serif;font-size:12px;color:#0b0f17;background:#fff;padding:28px 32px}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:14px;border-bottom:2px solid #0a1f44;margin-bottom:20px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-mark{width:36px;height:36px;border-radius:9px;background:#1D9E75;color:#fff;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand-name{font-size:16px;font-weight:700;color:#0a1f44;line-height:1.2}
+.brand-sub{font-size:10px;color:#6b7280}
+.meta{text-align:right;font-size:11px;color:#6b7280;line-height:1.8}
+.meta strong{color:#0b0f17;font-weight:600}
+h2{font-size:11px;font-weight:700;color:#0a1f44;letter-spacing:.07em;text-transform:uppercase;margin:22px 0 10px;padding-bottom:5px;border-bottom:1px solid #e5e7eb}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px}
+.kpi-card{border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px}
+.kpi-lbl{font-size:9px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.kpi-val{font-size:20px;font-weight:700;line-height:1;margin-bottom:3px}
+.kpi-sub{font-size:10px;color:#9ca3af}
+.kpi-period{font-size:9px;color:#9ca3af;margin-top:7px;padding-top:6px;border-top:1px solid #f0f2f5;display:flex;align-items:center;gap:3px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:#f8f9fa;font-weight:600;text-align:left;padding:7px 10px;border:1px solid #e5e7eb;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280}
+td{padding:6px 10px;border:1px solid #f0f2f5;vertical-align:middle}
+tr:nth-child(even) td{background:#fafafa}
+.pg{page-break-before:always}
+.footer{margin-top:24px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:10px;color:#9ca3af;display:flex;justify-content:space-between}
+@media print{body{padding:0}@page{margin:14mm 12mm;size:A4 portrait}}
+</style></head><body>
+
+<div class="hdr">
+  <div class="brand">
+    <div class="brand-mark">H</div>
+    <div><div class="brand-name">Hello Moving</div><div class="brand-sub">分析レポート</div></div>
+  </div>
+  <div class="meta">
+    <div><strong>分析期間</strong>　${esc(d.periodLabel)}</div>
+    <div>${esc(d.from)} 〜 ${esc(d.to)}</div>
+    <div>出力日時　${new Date().toLocaleString('ja-JP')}</div>
+  </div>
+</div>
+
+<h2>KPI サマリー</h2>
+<div class="kpi-grid">${d.kpis.map(k=>`
+  <div class="kpi-card">
+    <div class="kpi-lbl">${esc(k.label)}</div>
+    <div class="kpi-val">${esc(k.val)}</div>
+    <div class="kpi-sub">${esc(k.sub)}</div>
+    <div class="kpi-period">&#128197; ${esc(d.periodLabel)}</div>
+  </div>`).join('')}
+</div>
+
+<h2>時系列データ</h2>
+<table>
+  <thead><tr>${d.timeSeries.headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead>
+  <tbody>${d.timeSeries.rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody>
+</table>
+
+<h2>サービス別予約数</h2>
+<table>
+  <thead><tr><th>サービス</th><th>グラフ</th><th style="text-align:right">件数</th></tr></thead>
+  <tbody>${svcTableRows || '<tr><td colspan="3" style="color:#9ca3af;text-align:center">データなし</td></tr>'}</tbody>
+</table>
+
+${d.bkInRange.length ? `<div class="pg">
+<h2 style="margin-top:0">期間内予約一覧（${d.bkInRange.length}件）</h2>
+<table>
+  <thead><tr><th>予約番号</th><th>ステータス</th><th>サービス</th><th>引越し日</th><th>お客様名</th><th>メール</th><th>引越し元</th><th>引越し先</th></tr></thead>
+  <tbody>${bkTableRows}</tbody>
+</table>
+</div>` : ''}
+
+<div class="footer">
+  <span>Hello Moving — 管理システム</span>
+  <span>${esc(d.from)} 〜 ${esc(d.to)}</span>
+</div>
+
+<script>window.onload=function(){setTimeout(function(){window.print();},350);window.onafterprint=function(){window.close();}}<\/script>
+</body></html>`;
+
+  const w = window.open('','_blank','width=960,height=760');
+  if (!w) { toast('ポップアップをブロックしています。許可してから再試行してください'); return; }
+  w.document.write(html);
+  w.document.close();
+}
+
+/* ── Vertical bar chart ── */
+function drawBarChart(id, labels, data, dark) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth || 280;
+  const H = 180;
+  canvas.width        = W * dpr;
+  canvas.height       = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const mg = { t:14, r:8, b:30, l:26 };
+  const cW = W - mg.l - mg.r;
+  const cH = H - mg.t - mg.b;
+  const maxVal = Math.max(...data, 1);
+
+  const barFill = dark ? 'rgba(96,165,250,0.85)'  : 'rgba(37,99,235,0.82)';
+  const gridCol = dark ? 'rgba(255,255,255,0.06)'  : 'rgba(0,0,0,0.06)';
+  const lblCol  = dark ? '#8b949e' : '#9ca3af';
+  const valCol  = dark ? '#c9d1d9' : '#374151';
+
+  ctx.clearRect(0, 0, W, H);
+
+  /* horizontal grid + y-axis labels */
+  const steps = 4;
+  ctx.strokeStyle = gridCol;
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= steps; i++) {
+    const y = mg.t + (cH / steps) * (steps - i);
+    ctx.beginPath(); ctx.moveTo(mg.l, y); ctx.lineTo(mg.l + cW, y); ctx.stroke();
+    if (i > 0) {
+      ctx.fillStyle = lblCol;
+      ctx.font = '9px Inter,system-ui,sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(Math.round((maxVal / steps) * i), mg.l - 3, y);
+    }
+  }
+
+  /* bars */
+  const n   = labels.length;
+  const gap = Math.max(4, cW / (n * 5));
+  const bw  = (cW - gap * (n + 1)) / n;
+
+  labels.forEach((lbl, i) => {
+    const bh = (data[i] / maxVal) * cH;
+    const x  = mg.l + gap * (i + 1) + bw * i;
+    const y  = mg.t + cH - bh;
+    const r  = bh > 0 ? Math.min(4, bw / 2, bh) : 0;
+
+    if (bh > 0) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + bw - r, y);
+      ctx.quadraticCurveTo(x + bw, y, x + bw, y + r);
+      ctx.lineTo(x + bw, y + bh);
+      ctx.lineTo(x, y + bh);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+      ctx.fillStyle = barFill;
+      ctx.fill();
+
+      if (bw > 10) {
+        ctx.fillStyle = valCol;
+        ctx.font = `600 ${Math.max(9, Math.min(11, bw / 2))}px Inter,system-ui,sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText(data[i], x + bw / 2, y - 3);
+      }
+    }
+
+    ctx.fillStyle = lblCol;
+    ctx.font = '10px Inter,system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(lbl, x + bw / 2, H - 4);
+  });
+}
+
+/* ── Horizontal bar chart ── */
+function drawHBarChart(id, labels, data, dark) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  if (!labels.length) {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    return;
+  }
+
+  const dpr  = window.devicePixelRatio || 1;
+  const W    = canvas.offsetWidth || 280;
+  const rowH = 30;
+  const H    = Math.max(180, labels.length * rowH + 24);
+  canvas.width        = W * dpr;
+  canvas.height       = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const PALETTE = dark
+    ? ['rgba(96,165,250,.85)','rgba(52,211,153,.8)','rgba(251,191,36,.8)','rgba(167,139,250,.8)','rgba(251,113,133,.8)','rgba(45,212,191,.8)']
+    : ['rgba(37,99,235,.8)','rgba(16,185,129,.8)','rgba(245,158,11,.8)','rgba(139,92,246,.8)','rgba(239,68,68,.8)','rgba(20,184,166,.8)'];
+
+  const mg     = { t:10, r:30, b:8, l:60 };
+  const cW     = W - mg.l - mg.r;
+  const maxVal = Math.max(...data, 1);
+  const lblCol = dark ? '#8b949e' : '#9ca3af';
+  const valCol = dark ? '#c9d1d9' : '#374151';
+  const gridCol = dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+
+  ctx.clearRect(0, 0, W, H);
+
+  /* vertical grid */
+  ctx.strokeStyle = gridCol;
+  ctx.lineWidth = 1;
+  [0.25, 0.5, 0.75, 1].forEach(f => {
+    const x = mg.l + cW * f;
+    ctx.beginPath(); ctx.moveTo(x, mg.t); ctx.lineTo(x, H - mg.b); ctx.stroke();
+  });
+
+  labels.forEach((lbl, i) => {
+    const bh = Math.max(10, rowH - 10);
+    const bw = (data[i] / maxVal) * cW;
+    const y  = mg.t + i * rowH;
+    const by = y + (rowH - bh) / 2;
+    const r  = bw > 0 ? Math.min(3, bh / 2, bw) : 0;
+
+    if (bw > 0) {
+      ctx.beginPath();
+      ctx.moveTo(mg.l, by + r);
+      ctx.quadraticCurveTo(mg.l, by, mg.l + r, by);
+      ctx.lineTo(mg.l + bw - r, by);
+      ctx.quadraticCurveTo(mg.l + bw, by, mg.l + bw, by + r);
+      ctx.lineTo(mg.l + bw, by + bh - r);
+      ctx.quadraticCurveTo(mg.l + bw, by + bh, mg.l + bw - r, by + bh);
+      ctx.lineTo(mg.l + r, by + bh);
+      ctx.quadraticCurveTo(mg.l, by + bh, mg.l, by + bh - r);
+      ctx.closePath();
+      ctx.fillStyle = PALETTE[i % PALETTE.length];
+      ctx.fill();
+    }
+
+    ctx.fillStyle = lblCol;
+    ctx.font = '10px Inter,system-ui,sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(lbl, mg.l - 6, y + rowH / 2);
+
+    ctx.fillStyle = valCol;
+    ctx.font = '600 10px Inter,system-ui,sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(data[i], mg.l + cW + 6, y + rowH / 2);
+  });
 }
 
 /* ════════════════════════════════════════════════════════
@@ -2729,6 +4183,9 @@ function renderQuotes() {
     <td>
       <div style="display:flex;gap:4px">
         <button class="btn btn-primary btn-sm" onclick="convertToBooking('${esc(qt.id)}')" title="予約に変換">予約化</button>
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="printQuote('${esc(qt.id)}')" title="印刷">
+          <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+        </button>
         <button class="btn btn-danger btn-sm btn-icon" onclick="deleteQuote('${esc(qt.id)}')" title="削除">
           <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
         </button>
@@ -2770,6 +4227,85 @@ function convertToBooking(id) {
   document.getElementById('mNotes').value = qt.notes    || '';
   go('bookings');
   document.getElementById('editModal').classList.add('open');
+}
+
+function printQuote(id) {
+  const qt = Adapter.getQuotes().find(q => q.id === id); if (!qt) return;
+  const e  = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  const row = (label, value) => `
+    <tr>
+      <td style="width:130px;font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;padding:9px 14px;border-bottom:1px solid #f0f2f5;vertical-align:top;white-space:nowrap">${e(label)}</td>
+      <td style="font-size:13px;color:#0b0f17;padding:9px 14px;border-bottom:1px solid #f0f2f5">${e(value||'—')}</td>
+    </tr>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="UTF-8">
+<title>見積り確認書 ${e(qt.id||'')}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Hiragino Sans','Meiryo','Yu Gothic',sans-serif;font-size:13px;color:#0b0f17;background:#fff;padding:32px 36px}
+@media print{body{padding:0}@page{margin:16mm 14mm;size:A4 portrait}}
+</style></head><body>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #0a1f44;margin-bottom:24px">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:40px;height:40px;border-radius:10px;background:#1D9E75;color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">H</div>
+    <div>
+      <div style="font-size:17px;font-weight:700;color:#0a1f44;line-height:1.2">Hello Moving</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:1px">ハローム―ビング</div>
+    </div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:18px;font-weight:700;color:#0a1f44">見積り確認書</div>
+    <div style="font-size:11px;color:#6b7280;margin-top:3px">受付日時: ${e(fmtDT(qt.createdAt))}</div>
+    <div style="font-size:11px;color:#9ca3af;margin-top:2px">出力日: ${new Date().toLocaleDateString('ja-JP')}</div>
+  </div>
+</div>
+
+<div style="display:inline-flex;align-items:center;gap:6px;background:#fef9ec;border:1px solid #f59e0b33;border-radius:20px;padding:5px 14px;font-size:12px;font-weight:700;color:#b45309;margin-bottom:20px">
+  <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
+  見積りリクエスト受付済み
+</div>
+
+<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:28px">
+  ${row('お客様名',    qt.name)}
+  ${row('メールアドレス', qt.email)}
+  ${row('サービス',    qt.service)}
+  ${row('希望引越し日', qt.moveDate ? fmtD(qt.moveDate) : '未定')}
+  ${row('希望時間帯',  qt.time)}
+  ${row('引越し元住所', qt.fromAddr)}
+  ${row('引越し先住所', qt.toAddr)}
+  ${row('備考・ご要望', qt.notes)}
+  ${row('受付日時',    fmtDT(qt.createdAt))}
+</table>
+
+<div style="background:#f0fdf4;border:1px solid #10b98133;border-radius:10px;padding:16px 20px;font-size:11px;color:#374151;line-height:1.9;margin-bottom:28px">
+  <div style="font-weight:700;color:#059669;margin-bottom:6px;font-size:12px">お見積りについて</div>
+  <div>・ご依頼内容を確認後、担当者よりメールまたはお電話にてご連絡いたします。</div>
+  <div>・お見積りは無料です。内容に変更がある場合はお気軽にご連絡ください。</div>
+  <div>・希望引越し日の空き状況によっては、ご希望に添えない場合がございます。</div>
+</div>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-end;padding-top:14px;border-top:1px solid #e5e7eb">
+  <div style="font-size:10px;color:#9ca3af;line-height:1.7">
+    <div>Hello Moving — 引越し専門サービス</div>
+    <div>このドキュメントは管理システムから自動生成されました</div>
+  </div>
+  <div style="text-align:right;font-size:11px;color:#6b7280;line-height:1.7">
+    <div style="font-weight:600;color:#0b0f17">Hello Moving</div>
+    <div>info@hello-moving.com</div>
+  </div>
+</div>
+
+<script>window.onload=function(){setTimeout(function(){window.print();},350);window.onafterprint=function(){window.close();}}<\/script>
+</body></html>`;
+
+  const w = window.open('','_blank','width=780,height=680');
+  if (!w) { toast('ポップアップをブロックしています。許可してから再試行してください'); return; }
+  w.document.write(html);
+  w.document.close();
 }
 
 function exportQuotesCSV() {
@@ -3233,6 +4769,9 @@ function renderReviews() {
       actions = `<button class="btn btn-ghost btn-sm" onclick="approveRev('${r.id}')">承認に戻す</button>`;
     }
     actions += `
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="printReview('${r.id}')" title="印刷">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+      </button>
       <button class="btn btn-danger btn-sm btn-icon" onclick="delRev('${r.id}')" title="削除">
         <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
       </button>`;
@@ -3354,6 +4893,89 @@ function delRev(id) {
   Adapter.deleteReview(id);
   toast('削除しました');
   renderReviews(); renderDash();
+}
+
+function printReview(id) {
+  const r = Adapter.getReviews().find(r => r.id === id); if (!r) return;
+  const e = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  const stars     = r.rating || 5;
+  const starsFull = '★'.repeat(stars) + '☆'.repeat(5 - stars);
+  const STATUS_LABEL = { pending:'保留中', approved:'承認済み', rejected:'却下' };
+  const STATUS_COLOR = { pending:'#b45309', approved:'#059669', rejected:'#b91c1c' };
+  const STATUS_BG    = { pending:'#fffbeb', approved:'#f0fdf4', rejected:'#fef2f2' };
+  const st = r.status || 'pending';
+
+  const meta = (label, value) => value
+    ? `<tr>
+        <td style="width:130px;font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;padding:8px 14px;border-bottom:1px solid #f0f2f5;vertical-align:top;white-space:nowrap">${e(label)}</td>
+        <td style="font-size:12px;color:#0b0f17;padding:8px 14px;border-bottom:1px solid #f0f2f5">${e(value)}</td>
+       </tr>`
+    : '';
+
+  const html = `<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="UTF-8">
+<title>レビュー確認 — ${e(r.name||'')}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Hiragino Sans','Meiryo','Yu Gothic',sans-serif;font-size:13px;color:#0b0f17;background:#fff;padding:32px 36px}
+@media print{body{padding:0}@page{margin:16mm 14mm;size:A4 portrait}}
+</style></head><body>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #0a1f44;margin-bottom:24px">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:40px;height:40px;border-radius:10px;background:#1D9E75;color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">H</div>
+    <div>
+      <div style="font-size:17px;font-weight:700;color:#0a1f44;line-height:1.2">Hello Moving</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:1px">ハローム―ビング</div>
+    </div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:18px;font-weight:700;color:#0a1f44">レビュー確認</div>
+    <div style="font-size:11px;color:#6b7280;margin-top:3px">投稿日時: ${e(fmtDT(r.createdAt))}</div>
+    <div style="font-size:11px;color:#9ca3af;margin-top:2px">出力日: ${new Date().toLocaleDateString('ja-JP')}</div>
+  </div>
+</div>
+
+<div style="display:inline-flex;align-items:center;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;background:${STATUS_BG[st]};color:${STATUS_COLOR[st]};border:1px solid ${STATUS_COLOR[st]}33;margin-bottom:20px">
+  ${e(STATUS_LABEL[st]||st)}
+</div>
+
+<div style="border:1px solid #e5e7eb;border-radius:12px;padding:20px 24px;margin-bottom:24px;background:#fafafa">
+  <div style="font-size:22px;letter-spacing:2px;color:#f59e0b;margin-bottom:8px">${starsFull}</div>
+  ${r.headline ? `<div style="font-size:16px;font-weight:700;color:#0b0f17;margin-bottom:10px;line-height:1.4">${e(r.headline)}</div>` : ''}
+  <div style="font-size:13px;color:#374151;line-height:1.75;font-style:italic;margin-bottom:14px">"${e(r.text||'—')}"</div>
+  <div style="font-size:12px;font-weight:600;color:#6b7280">— ${e(r.name||'匿名')}${r.location ? `、${e(r.location)}` : ''}</div>
+</div>
+
+<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:28px">
+  ${meta('サービス',   r.service)}
+  ${meta('引越し時期', r.date_label)}
+  ${meta('投稿元',     r.source === 'customer' ? '顧客フォーム' : '管理者登録')}
+  ${meta('公開状態',   r.status === 'approved' ? (r.published ? '公開中' : '非公開') : '—')}
+  ${meta('関連予約ID', r.bookingId)}
+  ${meta('投稿日時',   fmtDT(r.createdAt))}
+</table>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-end;padding-top:14px;border-top:1px solid #e5e7eb">
+  <div style="font-size:10px;color:#9ca3af;line-height:1.7">
+    <div>Hello Moving — 引越し専門サービス</div>
+    <div>このドキュメントは管理システムから自動生成されました</div>
+  </div>
+  <div style="text-align:right;font-size:11px;color:#6b7280;line-height:1.7">
+    <div style="font-weight:600;color:#0b0f17">Hello Moving</div>
+    <div>info@hello-moving.com</div>
+  </div>
+</div>
+
+<script>window.onload=function(){setTimeout(function(){window.print();},350);window.onafterprint=function(){window.close();}}<\/script>
+</body></html>`;
+
+  const w = window.open('','_blank','width=780,height=680');
+  if (!w) { toast('ポップアップをブロックしています。許可してから再試行してください'); return; }
+  w.document.write(html);
+  w.document.close();
 }
 
 function copyRevFormLink() {
@@ -4112,6 +5734,132 @@ function renderBackup() {
   });
 }
 
+function printBackup() {
+  const bk      = Adapter.getBookings();
+  const quotes  = Adapter.getQuotes();
+  const reviews = Adapter.getReviews();
+  const custs   = Adapter.getCustomers();
+  const prices  = Adapter.getPrices();
+  const disp    = Adapter.getDisposal();
+  const e       = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const now     = new Date();
+
+  /* booking breakdown */
+  const bkStatus = {新規:0,確認中:0,確定:0,完了:0,キャンセル:0};
+  bk.forEach(b => { if (bkStatus[b.status]!==undefined) bkStatus[b.status]++; });
+  const lastBk = bk.slice().sort((a,b)=>(b.createdAt||'')>(a.createdAt||'')?1:-1)[0];
+
+  /* review breakdown */
+  const revPending  = reviews.filter(r=>r.status==='pending').length;
+  const revApproved = reviews.filter(r=>r.status==='approved').length;
+  const revPublished= reviews.filter(r=>r.status==='approved'&&r.published).length;
+  const revRejected = reviews.filter(r=>r.status==='rejected').length;
+  const avgRating   = reviews.length
+    ? (reviews.reduce((s,r)=>s+(r.rating||5),0)/reviews.length).toFixed(1) : '—';
+
+  /* price table rows */
+  const priceRows = Object.entries(prices).map(([svc, cfg]) => {
+    const base = typeof cfg==='number' ? cfg : (cfg&&cfg.base)||0;
+    return `<tr>
+      <td style="padding:6px 12px;font-size:12px;color:#374151;border-bottom:1px solid #f0f2f5">${e(svc)}</td>
+      <td style="padding:6px 12px;font-size:12px;font-weight:600;color:#0b0f17;border-bottom:1px solid #f0f2f5;text-align:right">¥${base.toLocaleString()}</td>
+    </tr>`;
+  }).join('');
+
+  /* disposal summary */
+  const totalDispItems = disp.categories.reduce((s,c)=>s+c.items.length,0);
+  const enabledDispItems = disp.categories.reduce((s,c)=>s+c.items.filter(i=>i.enabled).length,0);
+
+  const statCard = (label, value, sub='', color='#0b0f17') =>
+    `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px">
+      <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${e(label)}</div>
+      <div style="font-size:20px;font-weight:700;color:${color};line-height:1.1">${e(value)}</div>
+      ${sub?`<div style="font-size:10px;color:#9ca3af;margin-top:3px">${e(sub)}</div>`:''}
+    </div>`;
+
+  const section = title =>
+    `<div style="font-size:12px;font-weight:700;color:#0a1f44;letter-spacing:.05em;text-transform:uppercase;padding-bottom:6px;border-bottom:1px solid #e5e7eb;margin:24px 0 10px">${title}</div>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="UTF-8">
+<title>システム状況レポート — Hello Moving</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Hiragino Sans','Meiryo','Yu Gothic',sans-serif;font-size:13px;color:#0b0f17;background:#fff;padding:32px 36px}
+@media print{body{padding:0}@page{margin:16mm 14mm;size:A4 portrait}}
+</style></head><body>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #0a1f44;margin-bottom:24px">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:40px;height:40px;border-radius:10px;background:#1D9E75;color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">H</div>
+    <div>
+      <div style="font-size:17px;font-weight:700;color:#0a1f44;line-height:1.2">Hello Moving</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:1px">ハローム―ビング</div>
+    </div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:18px;font-weight:700;color:#0a1f44">システム状況レポート</div>
+    <div style="font-size:11px;color:#9ca3af;margin-top:4px">出力日時: ${now.toLocaleString('ja-JP')}</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+  ${statCard('総予約数',   bk.length+'件',       `最終受付: ${lastBk?lastBk.createdAt.slice(0,10):'—'}`)}
+  ${statCard('見積り',     quotes.length+'件',    '受付済み合計', '#2563eb')}
+  ${statCard('レビュー',   reviews.length+'件',   `公開中 ${revPublished}件`, '#8b5cf6')}
+  ${statCard('顧客',       custs.length+'件',     '登録済み合計', '#059669')}
+</div>
+
+${section('予約ステータス別')}
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+  ${Object.entries(bkStatus).map(([st,n])=>statCard(st,n+'件')).join('')}
+</div>
+
+${section('レビュー内訳')}
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+  ${statCard('保留中',  revPending+'件',  '', '#b45309')}
+  ${statCard('承認済み',revApproved+'件', '', '#059669')}
+  ${statCard('公開中',  revPublished+'件','', '#059669')}
+  ${statCard('平均評価',avgRating+'★',   `${reviews.length}件のレビュー`, '#f59e0b')}
+</div>
+
+${section('料金設定スナップショット')}
+<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
+  <thead><tr>
+    <th style="background:#f8f9fa;font-weight:600;text-align:left;padding:7px 12px;border-bottom:1px solid #e5e7eb;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280">サービス</th>
+    <th style="background:#f8f9fa;font-weight:600;text-align:right;padding:7px 12px;border-bottom:1px solid #e5e7eb;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280">基本料金</th>
+  </tr></thead>
+  <tbody>${priceRows}</tbody>
+</table>
+
+${section('不用品管理')}
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+  ${statCard('カテゴリ数',  disp.categories.length+'件')}
+  ${statCard('総アイテム数',totalDispItems+'件')}
+  ${statCard('有効アイテム',enabledDispItems+'件', '', '#059669')}
+</div>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-end;padding-top:14px;border-top:1px solid #e5e7eb;margin-top:24px">
+  <div style="font-size:10px;color:#9ca3af;line-height:1.7">
+    <div>Hello Moving — 管理システム</div>
+    <div>このドキュメントは管理システムから自動生成されました</div>
+  </div>
+  <div style="text-align:right;font-size:11px;color:#6b7280;line-height:1.7">
+    <div style="font-weight:600;color:#0b0f17">Hello Moving</div>
+    <div>info@hello-moving.com</div>
+  </div>
+</div>
+
+<script>window.onload=function(){setTimeout(function(){window.print();},350);window.onafterprint=function(){window.close();}}<\/script>
+</body></html>`;
+
+  const w = window.open('','_blank','width=860,height=760');
+  if (!w) { toast('ポップアップをブロックしています。許可してから再試行してください'); return; }
+  w.document.write(html);
+  w.document.close();
+}
+
 /* ════════════════════════════════════════════════════════
    CSV EXPORT / IMPORT / REPORT
    ════════════════════════════════════════════════════════ */
@@ -4160,7 +5908,8 @@ function generateReport() {
   bk.forEach(b => {
     if (byStatus[b.status]!==undefined) byStatus[b.status]++;
     bySvc[b.service] = (bySvc[b.service]||0) + 1;
-    if (b.status !== 'キャンセル') revenue += (prices[b.service]||0);
+    const p2 = prices[b.service];
+    if (b.status !== 'キャンセル') revenue += (typeof p2 === 'number' ? p2 : (p2 && p2.base) || 0);
   });
 
   const rows = (obj) => Object.entries(obj).map(([k,v])=>`<tr><td style="padding:7px 10px;color:var(--gray-1);font-size:12px">${esc(k)}</td><td style="padding:7px 10px;font-weight:600;font-size:13px">${v}</td></tr>`).join('');
@@ -4183,9 +5932,113 @@ function generateReport() {
     </div>
     <div style="margin-top:16px;display:flex;gap:8px">
       <button class="btn btn-ghost btn-sm" onclick="document.getElementById('reportModal').classList.remove('open')">閉じる</button>
+      <button class="btn btn-ghost btn-sm" onclick="printReport()">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
+      </button>
     </div>
   `;
   document.getElementById('reportModal').classList.add('open');
+}
+
+function printReport() {
+  const bk     = Adapter.getBookings();
+  const prices = Adapter.getPrices();
+  const s      = calcStats();
+  const e      = v => String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  const byStatus = {新規:0,確認中:0,確定:0,完了:0,キャンセル:0};
+  const bySvc    = {};
+  let revenue    = 0;
+  bk.forEach(b => {
+    if (byStatus[b.status] !== undefined) byStatus[b.status]++;
+    bySvc[b.service] = (bySvc[b.service]||0) + 1;
+    const p = prices[b.service];
+    if (b.status !== 'キャンセル') revenue += (typeof p === 'number' ? p : (p && p.base) || 0);
+  });
+
+  const completed  = byStatus['完了']  || 0;
+  const cancelled  = byStatus['キャンセル'] || 0;
+  const active     = (byStatus['新規']||0) + (byStatus['確認中']||0) + (byStatus['確定']||0);
+  const compRate   = bk.length > 0 ? Math.round((completed / bk.length) * 100) : 0;
+
+  const tableRows = (obj, valueUnit='') => Object.entries(obj)
+    .map(([k, v], i) => `<tr style="${i%2===1?'background:#fafafa':''}">
+      <td style="padding:7px 12px;font-size:12px;color:#374151;border-bottom:1px solid #f0f2f5">${e(k)}</td>
+      <td style="padding:7px 12px;font-size:13px;font-weight:600;color:#0b0f17;border-bottom:1px solid #f0f2f5;text-align:right">${e(v)}${valueUnit}</td>
+    </tr>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="UTF-8">
+<title>売上レポート — Hello Moving</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Hiragino Sans','Meiryo','Yu Gothic',sans-serif;font-size:13px;color:#0b0f17;background:#fff;padding:32px 36px}
+@media print{body{padding:0}@page{margin:16mm 14mm;size:A4 portrait}}
+</style></head><body>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #0a1f44;margin-bottom:24px">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:40px;height:40px;border-radius:10px;background:#1D9E75;color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">H</div>
+    <div>
+      <div style="font-size:17px;font-weight:700;color:#0a1f44;line-height:1.2">Hello Moving</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:1px">ハローム―ビング</div>
+    </div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:18px;font-weight:700;color:#0a1f44">売上レポート</div>
+    <div style="font-size:11px;color:#9ca3af;margin-top:4px">出力日: ${new Date().toLocaleDateString('ja-JP')}</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px">
+  ${[
+    ['総予約数',   bk.length+'件',              '#0b0f17'],
+    ['今月の予約', s.monthBk+'件',              '#2563eb'],
+    ['完了率',     compRate+'%',               '#059669'],
+    ['売上予測',   '¥'+revenue.toLocaleString(),'#059669'],
+  ].map(([l,v,c])=>`<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px">
+    <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${l}</div>
+    <div style="font-size:18px;font-weight:700;color:${c}">${v}</div>
+  </div>`).join('')}
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+  <div>
+    <div style="font-size:12px;font-weight:700;color:#0a1f44;letter-spacing:.05em;text-transform:uppercase;padding-bottom:6px;border-bottom:1px solid #e5e7eb;margin-bottom:2px">ステータス別</div>
+    <table style="width:100%;border-collapse:collapse">${tableRows(byStatus,'件')}</table>
+  </div>
+  <div>
+    <div style="font-size:12px;font-weight:700;color:#0a1f44;letter-spacing:.05em;text-transform:uppercase;padding-bottom:6px;border-bottom:1px solid #e5e7eb;margin-bottom:2px">予約概況</div>
+    <table style="width:100%;border-collapse:collapse">
+      ${tableRows({'今日':s.todayBk+'件','今週':s.weekBk+'件','今月':s.monthBk+'件','対応中':active+'件','完了':completed+'件','キャンセル':cancelled+'件'})}
+    </table>
+  </div>
+</div>
+
+<div style="margin-bottom:24px">
+  <div style="font-size:12px;font-weight:700;color:#0a1f44;letter-spacing:.05em;text-transform:uppercase;padding-bottom:6px;border-bottom:1px solid #e5e7eb;margin-bottom:2px">サービス別予約数</div>
+  <table style="width:100%;border-collapse:collapse">${tableRows(bySvc,'件')}</table>
+</div>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-end;padding-top:14px;border-top:1px solid #e5e7eb">
+  <div style="font-size:10px;color:#9ca3af;line-height:1.7">
+    <div>Hello Moving — 引越し専門サービス</div>
+    <div>このドキュメントは管理システムから自動生成されました</div>
+  </div>
+  <div style="text-align:right;font-size:11px;color:#6b7280;line-height:1.7">
+    <div style="font-weight:600;color:#0b0f17">Hello Moving</div>
+    <div>info@hello-moving.com</div>
+  </div>
+</div>
+
+<script>window.onload=function(){setTimeout(function(){window.print();},350);window.onafterprint=function(){window.close();}}<\/script>
+</body></html>`;
+
+  const w = window.open('','_blank','width=820,height=720');
+  if (!w) { toast('ポップアップをブロックしています。許可してから再試行してください'); return; }
+  w.document.write(html);
+  w.document.close();
 }
 
 function clearAllData() {
@@ -4345,16 +6198,121 @@ function openCustModal(id) {
   }
   document.getElementById('custModalHistory').innerHTML = histHTML;
 
-  document.getElementById('custModalDelBtn').onclick = () => {
-    closeCustModal();
-    deleteCust(id);
-  };
+  document.getElementById('custModalPrintBtn').onclick = () => printCustomer(id);
+  document.getElementById('custModalDelBtn').onclick   = () => { closeCustModal(); deleteCust(id); };
 
   document.getElementById('custModal').classList.add('open');
 }
 
 function closeCustModal() {
   document.getElementById('custModal').classList.remove('open');
+}
+
+function printCustomer(id) {
+  const stored   = Adapter.getCustomers();
+  const c        = stored.find(c => c.id === id); if (!c) return;
+  const bookings = Adapter.getBookings()
+    .filter(b => _custKey(b) === c._key)
+    .sort((a, b) => (b.date||'') > (a.date||'') ? 1 : -1);
+  const e = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  const STATUS_COLOR = { '新規':'#2563eb','確認中':'#b45309','確定':'#059669','完了':'#4b5563','キャンセル':'#b91c1c' };
+  const STATUS_BG    = { '新規':'#eff6ff','確認中':'#fffbeb','確定':'#f0fdf4','完了':'#f9fafb','キャンセル':'#fef2f2' };
+
+  const init    = (c.name||'?').trim().charAt(0).toUpperCase();
+  const total   = bookings.length;
+  const done    = bookings.filter(b => b.status === '完了').length;
+  const active  = bookings.filter(b => b.status === '確定' || b.status === '確認中').length;
+  const cancelled = bookings.filter(b => b.status === 'キャンセル').length;
+
+  const bkRows = bookings.map(b => {
+    const st = b.status || '新規';
+    return `<tr>
+      <td style="font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap;color:#6b7280">${e(b.id)}</td>
+      <td style="white-space:nowrap">${e(fmtD(b.date))}</td>
+      <td>${e(b.service)}</td>
+      <td><span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${STATUS_BG[st]||'#f9fafb'};color:${STATUS_COLOR[st]||'#374151'};border:1px solid ${STATUS_COLOR[st]||'#d1d5db'}33">${e(st)}</span></td>
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="UTF-8">
+<title>顧客プロフィール — ${e(c.name||'')}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Hiragino Sans','Meiryo','Yu Gothic',sans-serif;font-size:13px;color:#0b0f17;background:#fff;padding:32px 36px}
+@media print{body{padding:0}@page{margin:16mm 14mm;size:A4 portrait}}
+</style></head><body>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #0a1f44;margin-bottom:24px">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:40px;height:40px;border-radius:10px;background:#1D9E75;color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">H</div>
+    <div>
+      <div style="font-size:17px;font-weight:700;color:#0a1f44;line-height:1.2">Hello Moving</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:1px">ハローム―ビング</div>
+    </div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:18px;font-weight:700;color:#0a1f44">顧客プロフィール</div>
+    <div style="font-size:11px;color:#9ca3af;margin-top:4px">出力日: ${new Date().toLocaleDateString('ja-JP')}</div>
+  </div>
+</div>
+
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:24px">
+  <div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;font-size:24px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${e(init)}</div>
+  <div>
+    <div style="font-size:20px;font-weight:700;color:#0b0f17;line-height:1.2">${e(c.name||'—')}</div>
+    <div style="font-size:11px;color:#9ca3af;margin-top:3px;font-variant-numeric:tabular-nums">${e(c.id)}</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px">
+  ${[['総予約数',total+'件'],['完了',done+'件'],['対応中',active+'件'],['キャンセル',cancelled+'件']].map(([l,v])=>
+    `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px">
+      <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${l}</div>
+      <div style="font-size:20px;font-weight:700;color:#0b0f17">${v}</div>
+    </div>`).join('')}
+</div>
+
+<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:24px">
+  ${[['メール',c.email],['電話番号',c.phone],['郵便番号',c.postalCode],['住所',c.address],['登録日時',fmtDT(c.registeredAt)]].map(([l,v])=>
+    `<tr>
+      <td style="width:130px;font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;padding:9px 14px;border-bottom:1px solid #f0f2f5;white-space:nowrap">${e(l)}</td>
+      <td style="font-size:13px;color:#0b0f17;padding:9px 14px;border-bottom:1px solid #f0f2f5">${e(v||'—')}</td>
+    </tr>`).join('')}
+</table>
+
+${bookings.length ? `
+<div style="font-size:13px;font-weight:700;color:#0b0f17;margin-bottom:10px">予約履歴 <span style="font-weight:400;color:#9ca3af;font-size:12px">${bookings.length}件</span></div>
+<table style="width:100%;border-collapse:collapse;font-size:11px">
+  <thead><tr>
+    <th style="background:#f8f9fa;font-weight:600;text-align:left;padding:7px 10px;border:1px solid #e5e7eb;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280">予約番号</th>
+    <th style="background:#f8f9fa;font-weight:600;text-align:left;padding:7px 10px;border:1px solid #e5e7eb;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280">引越し日</th>
+    <th style="background:#f8f9fa;font-weight:600;text-align:left;padding:7px 10px;border:1px solid #e5e7eb;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280">サービス</th>
+    <th style="background:#f8f9fa;font-weight:600;text-align:left;padding:7px 10px;border:1px solid #e5e7eb;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280">ステータス</th>
+  </tr></thead>
+  <tbody>${bkRows}</tbody>
+</table>` : `<div style="text-align:center;padding:20px;color:#9ca3af;font-size:12px">予約履歴がありません</div>`}
+
+<div style="display:flex;justify-content:space-between;align-items:flex-end;padding-top:14px;border-top:1px solid #e5e7eb;margin-top:24px">
+  <div style="font-size:10px;color:#9ca3af;line-height:1.7">
+    <div>Hello Moving — 引越し専門サービス</div>
+    <div>このドキュメントは管理システムから自動生成されました</div>
+  </div>
+  <div style="text-align:right;font-size:11px;color:#6b7280;line-height:1.7">
+    <div style="font-weight:600;color:#0b0f17">Hello Moving</div>
+    <div>info@hello-moving.com</div>
+  </div>
+</div>
+
+<script>window.onload=function(){setTimeout(function(){window.print();},350);window.onafterprint=function(){window.close();}}<\/script>
+</body></html>`;
+
+  const w = window.open('','_blank','width=820,height=720');
+  if (!w) { toast('ポップアップをブロックしています。許可してから再試行してください'); return; }
+  w.document.write(html);
+  w.document.close();
 }
 
 function deleteCust(id) {
@@ -4647,7 +6605,7 @@ let _resizeT;
 window.addEventListener('resize', () => {
   clearTimeout(_resizeT);
   _resizeT = setTimeout(() => {
-    if (document.getElementById('view-analytics').classList.contains('active')) renderAnalytics();
+    if (document.getElementById('view-analytics').classList.contains('active')) renderAnalyticsCharts();
   }, 150);
 });
 

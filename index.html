@@ -1717,7 +1717,14 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
           </label>
         </div>
         <p class="bk-err" id="hmcS5Err" aria-live="polite">予約タイミングをお選びください。</p>
-        <div class="bk-step-actions bk-step-actions-split">
+        <div style="margin-top:16px">
+          <label class="hm-calc-opt-row" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--bg-soft);font-size:13px">
+            <input type="checkbox" id="hmcWeekend" style="width:16px;height:16px;accent-color:var(--blue);flex-shrink:0;cursor:pointer" />
+            <span style="flex:1">土日・祝日の引越し</span>
+            <span id="hmcWeekendFeeLabel" style="font-size:12px;color:var(--green);font-weight:600"></span>
+          </label>
+        </div>
+        <div class="bk-step-actions bk-step-actions-split" style="margin-top:12px">
           <button type="button" class="bk-back-btn" id="hmcS5Back">← 戻る</button>
           <button type="button" class="bk-submit" id="hmcS5Next">結果を見る →</button>
         </div>
@@ -2573,6 +2580,16 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
   var HMC_URGENCY_MULT = { normal: 1.0, early: 1.1, nextday: 1.25, sameday: 1.5 };
   var HMC_STEPS = 6;
 
+  function getAdminPriceConfig(service) {
+    try {
+      var stored = JSON.parse(localStorage.getItem('hm_prices'));
+      if (!stored) return null;
+      var cfg = stored[service];
+      if (!cfg || typeof cfg === 'number') return null;
+      return cfg;
+    } catch(e) { return null; }
+  }
+
   // ═══════════════════════════════════════════
   // STATE
   // ═══════════════════════════════════════════
@@ -2582,7 +2599,8 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
     toFloor: 1,
     luggage: 'futsuu',
     options: [],
-    urgency: 'normal'
+    urgency: 'normal',
+    weekend: false
   };
 
   // ═══════════════════════════════════════════
@@ -2602,12 +2620,17 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
   //   range    = total × [0.90, 1.15]
   // ═══════════════════════════════════════════
   function calcEstimate() {
-    var base = HMC_BASE_PRICES[hmcState.service] || 0;
+    var cfg = getAdminPriceConfig(hmcState.service) || {};
+    var base = (cfg.base != null) ? cfg.base : (HMC_BASE_PRICES[hmcState.service] || 0);
+    var distPerKm = (cfg.distPerKm != null) ? cfg.distPerKm : HMC_DIST_FEE_PER_KM;
+    var floorPerFloor = (cfg.floorFee != null) ? cfg.floorFee : HMC_FLOOR_FEE_PER_FLOOR;
+    var samedaySurcharge = cfg.sameday || 0;
+    var weekendSurcharge = cfg.weekend || 0;
     var km = DistanceProvider.getDistance();
-    var distFee = km * HMC_DIST_FEE_PER_KM;
+    var distFee = km * distPerKm;
     var fromF = Math.max((hmcState.fromFloor || 1) - 1, 0);
     var toF = Math.max((hmcState.toFloor || 1) - 1, 0);
-    var floorFee = (fromF + toF) * HMC_FLOOR_FEE_PER_FLOOR;
+    var floorFee = (fromF + toF) * floorPerFloor;
     var luggMult = HMC_LUGGAGE_MULT[hmcState.luggage] || 1.0;
     var optFee = 0;
     hmcState.options.forEach(function(val) {
@@ -2615,11 +2638,14 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
       if (el) optFee += parseInt(el.dataset.price, 10) || 0;
     });
     var urgMult = HMC_URGENCY_MULT[hmcState.urgency] || 1.0;
+    var samedayFee = (hmcState.urgency === 'sameday' && samedaySurcharge > 0) ? samedaySurcharge : 0;
+    var weekendFee = (hmcState.weekend && weekendSurcharge > 0) ? weekendSurcharge : 0;
     var subtotal = (base + distFee + floorFee) * luggMult;
-    var total = (subtotal + optFee) * urgMult;
+    var total = (subtotal + optFee) * urgMult + samedayFee + weekendFee;
     return {
-      base: base, distFee: distFee, floorFee: floorFee,
+      base: base, distFee: distFee, floorFee: floorFee, distPerKm: distPerKm,
       luggMult: luggMult, optFee: optFee, urgMult: urgMult,
+      samedayFee: samedayFee, weekendFee: weekendFee,
       total: Math.round(total), km: km,
       low: Math.round(total * 0.90), high: Math.round(total * 1.15)
     };
@@ -2655,10 +2681,12 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
   // ═══════════════════════════════════════════
   function updateDistDisplay() {
     var km = DistanceProvider.getDistance();
+    var cfg = getAdminPriceConfig(hmcState.service) || {};
+    var distPerKm = (cfg.distPerKm != null) ? cfg.distPerKm : HMC_DIST_FEE_PER_KM;
     var kmVal = g('hmCalcKmVal');
     var feeTxt = g('hmCalcDistFee');
     if (kmVal) kmVal.textContent = km;
-    if (feeTxt) feeTxt.textContent = fmtYen(km * HMC_DIST_FEE_PER_KM);
+    if (feeTxt) feeTxt.textContent = fmtYen(km * distPerKm);
   }
 
   // ═══════════════════════════════════════════
@@ -2686,6 +2714,8 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
       ['オプション料金', fmtYen(est.optFee)],
       ['緊急対応係数', urgLabels[hmcState.urgency] || '']
     ];
+    if (est.samedayFee > 0) rows.push(['当日申込割増', fmtYen(est.samedayFee)]);
+    if (est.weekendFee > 0) rows.push(['土日・祝日割増', fmtYen(est.weekendFee)]);
     var tbl = g('hmCalcBreakdown');
     if (tbl) {
       tbl.innerHTML = rows.map(function(r) {
@@ -2719,9 +2749,12 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
     hmcState.luggage = 'futsuu';
     hmcState.options = [];
     hmcState.urgency = 'normal';
+    hmcState.weekend = false;
 
     document.querySelectorAll('[name="hmc_service"],[name="hmc_luggage"],[name="hmc_urgency"]').forEach(function(r) { r.checked = false; });
     document.querySelectorAll('[name="hmc_opt"]').forEach(function(c) { c.checked = false; });
+    var wkReset = g('hmcWeekend');
+    if (wkReset) wkReset.checked = false;
 
     var defLugg = document.querySelector('[name="hmc_luggage"][value="futsuu"]');
     if (defLugg) defLugg.checked = true;
@@ -2797,6 +2830,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
       hmcState.options.push(c.value);
     });
     showCalcStep(5);
+    updateWeekendLabel();
   });
 
   // Step 5
@@ -2808,10 +2842,21 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
     var err = g('hmcS5Err');
     if (!urg) { if (err) err.style.display = 'block'; return; }
     hmcState.urgency = urg.value;
+    var wkCb = g('hmcWeekend');
+    hmcState.weekend = wkCb ? wkCb.checked : false;
     if (err) err.style.display = 'none';
     renderResult();
     showCalcStep(6);
   });
+  function updateWeekendLabel() {
+    var wkLbl = g('hmcWeekendFeeLabel');
+    if (!wkLbl) return;
+    var cfg = getAdminPriceConfig(hmcState.service) || {};
+    var fee = cfg.weekend || 0;
+    wkLbl.textContent = fee > 0 ? '+' + fmtYen(fee) : '';
+  }
+  var wkCbEl = g('hmcWeekend');
+  if (wkCbEl) wkCbEl.addEventListener('change', updateWeekendLabel);
 
   // Step 6 reset
   var s6r = g('hmcS6Reset');
