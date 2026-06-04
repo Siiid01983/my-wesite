@@ -768,7 +768,7 @@ html.dark .login-err-lock{color:#f59e0b}
                   <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
                 </button>
                 <button class="btn btn-ghost btn-sm" onclick="resetAvail()">全リセット</button>
-                <button class="btn btn-primary btn-sm" onclick="toast('空き状況を更新しました')">保存</button>
+                <button class="btn btn-primary btn-sm" onclick="CalendarService.saveAvailability();toast('空き状況を更新しました')">保存</button>
               </div>
             </div>
             <div class="cal-grid" id="calGrid"></div>
@@ -2508,7 +2508,7 @@ function go(view) {
   Auth.touch();
   if (view==='dashboard') renderDash();
   if (view==='bookings') renderBookings();
-  if (view==='calendar') renderCal();
+  if (view==='calendar') refreshCalendarUI();
   if (view==='analytics') renderAnalytics();
   if (view==='capacity') loadCapacity();
   if (view==='pricing') renderPricing();
@@ -2772,6 +2772,7 @@ function saveBooking() {
   if (_editId) {
     const prev = Adapter.getBookings().find(x => x.id === _editId);
     Adapter.updateBooking(_editId, b);
+    BookingService.updateBooking(prev, b);
     toast('予約を更新しました');
     if (prev && prev.status !== b.status) {
       if (b.status === '確定') {
@@ -2785,6 +2786,7 @@ function saveBooking() {
     }
   } else {
     Adapter.addBooking(b);
+    BookingService.recordBooking(b);
     toast('予約を追加しました');
     sendLineNotif(`📅 新規予約\n${b.name}様\nサービス: ${b.service}\n日程: ${b.date || '未定'}\nID: ${b.id}`,'newBooking');
     sendEmailNotif({ subject:`[Hello Moving] 新規予約 - ${b.name}様`, trigger_type:'新規予約', ...bkEmailParams(b) },'newBooking');
@@ -2807,7 +2809,7 @@ function openDetail(id) {
     r('備考',b.notes) + r('受付日時',fmtDT(b.createdAt));
   document.getElementById('detailPrintBtn').onclick = () => printBooking(id);
   document.getElementById('detailEditBtn').onclick  = () => openEdit(id);
-  document.getElementById('detailDelBtn').onclick   = () => { if(confirm('削除しますか？')){ Adapter.deleteBooking(id); closeDetail(); renderBookings(); renderDash(); toast('削除しました'); }};
+  document.getElementById('detailDelBtn').onclick   = () => { if(confirm('削除しますか？')){ const _bk=Adapter.getBookings().find(b=>b.id===id); Adapter.deleteBooking(id); BookingService.releaseBooking(_bk); closeDetail(); renderBookings(); renderDash(); toast('削除しました'); }};
   document.getElementById('detailModal').classList.add('open');
 }
 function closeDetail() { document.getElementById('detailModal').classList.remove('open'); }
@@ -2899,14 +2901,166 @@ body{font-family:-apple-system,'Hiragino Sans','Meiryo','Yu Gothic',sans-serif;f
 }
 
 /* ════════════════════════════════════════════════════════
+   CALENDAR AVAILABILITY SERVICE  (data-only — no DOM calls)
+   Swap Adapter.* calls for async Supabase calls here.
+   ════════════════════════════════════════════════════════ */
+const CalendarService = {
+  getAvailability() {
+    const manualOverrides = Adapter.getAvail();
+    let counts = {};
+    try { counts = JSON.parse(localStorage.getItem('hm_counts') || '{}'); } catch(e) {}
+    const cap = Adapter.getCapacity();
+    const allDates = new Set([...Object.keys(manualOverrides), ...Object.keys(counts)]);
+    const result = {};
+    const rank = { available: 0, limited: 1, booked: 2 };
+    allDates.forEach(date => {
+      const count = counts[date] || 0;
+      const countStatus = count >= cap.max ? 'booked' : count >= cap.limited ? 'limited' : null;
+      const manual = manualOverrides[date] || null;
+      const effective = (!countStatus || (manual && rank[manual] >= rank[countStatus]))
+        ? manual : countStatus;
+      if (effective) result[date] = effective;
+    });
+    return result;
+  },
+
+  updateAvailability(date, status) {
+    Adapter.setDate(date, status);
+    this.saveAvailability();
+    document.dispatchEvent(new CustomEvent('calendar:updated', {
+      detail: { date, status, availability: this.getAvailability() }
+    }));
+  },
+
+  setBlockedDates(dates, status) {
+    dates.forEach(date => Adapter.setDate(date, status));
+    this.saveAvailability();
+    document.dispatchEvent(new CustomEvent('calendar:blocked', {
+      detail: { dates, status, availability: this.getAvailability() }
+    }));
+  },
+
+  setCapacity(max, limited) {
+    Adapter.saveCapacity({ max, limited });
+    BookingService.recomputeAll();
+    document.dispatchEvent(new CustomEvent('calendar:capacity-changed', {
+      detail: { max, limited }
+    }));
+  },
+
+  saveAvailability() {
+    /* Supabase hook point:
+       await supabase.from('availability').upsert(this.getAvailability()) */
+  }
+};
+
+/* ════════════════════════════════════════════════════════
+   BOOKING SERVICE  (data-only — no DOM calls)
+   Single source of truth: hm_counts drives availability.
+   hm_admin_avail is manual override only (more restrictive wins).
+   hm_booked is kept in sync for the public calendar on index.html.
+   ════════════════════════════════════════════════════════ */
+const BookingService = {
+  _occupies(bk) {
+    return !!(bk && bk.date && bk.status !== 'キャンセル');
+  },
+
+  getCounts() {
+    try { return JSON.parse(localStorage.getItem('hm_counts') || '{}'); } catch(e) { return {}; }
+  },
+
+  computeStatus(date) {
+    const cap = Adapter.getCapacity();
+    const count = (this.getCounts()[date] || 0);
+    if (count >= cap.max) return 'booked';
+    if (count >= cap.limited) return 'limited';
+    return 'available';
+  },
+
+  _adjustCount(date, delta) {
+    if (!date) return;
+    const counts = this.getCounts();
+    counts[date] = Math.max(0, (counts[date] || 0) + delta);
+    if (counts[date] === 0) delete counts[date];
+    try { localStorage.setItem('hm_counts', JSON.stringify(counts)); } catch(e) {}
+  },
+
+  _syncDate(date) {
+    if (!date) return 'available';
+    const status = this.computeStatus(date);
+    /* Sync hm_booked so the public calendar on index.html reflects the same state */
+    try {
+      const booked = new Set(JSON.parse(localStorage.getItem('hm_booked') || '[]'));
+      if (status === 'booked') booked.add(date); else booked.delete(date);
+      localStorage.setItem('hm_booked', JSON.stringify([...booked]));
+    } catch(e) {}
+    return status;
+  },
+
+  recordBooking(bk) {
+    if (!this._occupies(bk)) return;
+    this._adjustCount(bk.date, 1);
+    const status = this._syncDate(bk.date);
+    document.dispatchEvent(new CustomEvent('booking:created', { detail: { booking: bk, status } }));
+    document.dispatchEvent(new CustomEvent('calendar:updated', {
+      detail: { date: bk.date, status, source: 'booking' }
+    }));
+  },
+
+  releaseBooking(bk) {
+    if (!this._occupies(bk)) return;
+    this._adjustCount(bk.date, -1);
+    const status = this._syncDate(bk.date);
+    document.dispatchEvent(new CustomEvent('booking:updated', { detail: { booking: bk, status } }));
+    document.dispatchEvent(new CustomEvent('calendar:updated', {
+      detail: { date: bk.date, status, source: 'booking' }
+    }));
+  },
+
+  updateBooking(prev, next) {
+    if (this._occupies(prev)) this._adjustCount(prev.date, -1);
+    if (this._occupies(next))  this._adjustCount(next.date,  1);
+    const affected = [...new Set([prev.date, next.date].filter(Boolean))];
+    affected.forEach(date => this._syncDate(date));
+    document.dispatchEvent(new CustomEvent('booking:updated', { detail: { prev, next } }));
+    affected.forEach(date => {
+      document.dispatchEvent(new CustomEvent('calendar:updated', {
+        detail: { date, status: this.computeStatus(date), source: 'booking' }
+      }));
+    });
+  },
+
+  recomputeAll() {
+    /* Called when capacity thresholds change — re-sync hm_booked for every counted date */
+    const counts = this.getCounts();
+    Object.keys(counts).forEach(date => this._syncDate(date));
+    document.dispatchEvent(new CustomEvent('calendar:updated', { detail: { source: 'recompute' } }));
+  },
+
+  /* Rebuild hm_counts from hm_admin_bookings on first load.
+     Supabase hook point: replace with a server-side count query. */
+  bootstrap() {
+    const existing = this.getCounts();
+    if (Object.keys(existing).length > 0) return; // already populated
+    const counts = {};
+    Adapter.getBookings().forEach(bk => {
+      if (this._occupies(bk)) counts[bk.date] = (counts[bk.date] || 0) + 1;
+    });
+    try { localStorage.setItem('hm_counts', JSON.stringify(counts)); } catch(e) {}
+    Object.keys(counts).forEach(date => this._syncDate(date));
+  }
+};
+
+/* ════════════════════════════════════════════════════════
    CALENDAR MANAGEMENT
    ════════════════════════════════════════════════════════ */
 let _calV = new Date(); _calV.setDate(1);
 let _bulkMode = false;
 let _bulkSel = new Set();
 
-function renderCal() {
-  const avail = Adapter.getAvail();
+/* ── UI Layer ── */
+function renderCalendar() {
+  const avail = CalendarService.getAvailability();
   const y = _calV.getFullYear(), m = _calV.getMonth();
   const first = new Date(y,m,1).getDay(), total = new Date(y,m+1,0).getDate();
   const nowM = new Date(); nowM.setDate(1);
@@ -2937,24 +3091,34 @@ function renderCal() {
     </button>`;
   }
   document.getElementById('calGrid').innerHTML = h;
+  updateCalendarCounters();
+}
+
+function refreshCalendarUI() { renderCalendar(); }
+
+function updateCalendarCounters() {
   document.getElementById('bulkCount').textContent = _bulkMode ? `${_bulkSel.size}日選択中` : '';
 }
+
+/* ── Calendar event listeners ── */
+document.addEventListener('calendar:updated',          () => refreshCalendarUI());
+document.addEventListener('calendar:blocked',          () => refreshCalendarUI());
+document.addEventListener('calendar:capacity-changed', () => refreshCalendarUI());
 
 function calClick(ds) {
   Auth.touch();
   if (_bulkMode) {
     if (_bulkSel.has(ds)) _bulkSel.delete(ds); else _bulkSel.add(ds);
-    renderCal(); return;
+    refreshCalendarUI(); return;
   }
-  const avail = Adapter.getAvail();
+  const avail = CalendarService.getAvailability();
   const cur = avail[ds]||'available';
   const next = cur==='available'?'limited':cur==='limited'?'booked':'available';
-  Adapter.setDate(ds, next);
-  renderCal();
+  CalendarService.updateAvailability(ds, next);
   toast(`${ds}: ${next==='available'?'空き':next==='limited'?'残りわずか':'満了'}`);
 }
 
-function calMove(dir) { _calV.setMonth(_calV.getMonth()+dir); renderCal(); }
+function calMove(dir) { _calV.setMonth(_calV.getMonth()+dir); refreshCalendarUI(); }
 
 function printCalendar() {
   const avail  = Adapter.getAvail();
@@ -3074,7 +3238,9 @@ table{border-collapse:collapse;width:100%}
 
 function resetAvail() {
   if (!confirm('全ての空き状況設定をリセットしますか？')) return;
-  Adapter.clearAvail(); renderCal(); toast('リセットしました');
+  Adapter.clearAvail();
+  document.dispatchEvent(new CustomEvent('calendar:updated', { detail: { cleared: true } }));
+  toast('リセットしました');
 }
 
 function toggleBulk() {
@@ -3084,14 +3250,16 @@ function toggleBulk() {
   document.getElementById('bulkStatus').style.display = _bulkMode ? '' : 'none';
   document.getElementById('bulkApply').style.display = _bulkMode ? '' : 'none';
   document.getElementById('calHint').textContent = _bulkMode ? '日付をクリックして選択、「適用」ボタンで一括変更' : 'クリックして空き状況を変更（○→△→×→○）';
-  renderCal();
+  refreshCalendarUI();
 }
 
 function applyBulk() {
   const status = document.getElementById('bulkStatus').value;
-  _bulkSel.forEach(ds => Adapter.setDate(ds, status));
-  toast(`${_bulkSel.size}件を更新しました`);
-  _bulkSel.clear(); renderCal();
+  const dates = [..._bulkSel];
+  const count = dates.length;
+  _bulkSel.clear();
+  CalendarService.setBlockedDates(dates, status);
+  toast(`${count}件を更新しました`);
 }
 
 function showFullBooked() {
@@ -3112,7 +3280,7 @@ function loadCapacity() {
 function saveCapacity() {
   const max = parseInt(document.getElementById('capMax').value) || 5;
   const limited = parseInt(document.getElementById('capLimited').value) || 3;
-  Adapter.saveCapacity({max, limited});
+  CalendarService.setCapacity(max, limited);
   toast('容量設定を保存しました');
 }
 
@@ -7502,6 +7670,7 @@ function seedDemo() {
    ════════════════════════════════════════════════════════ */
 function init() {
   Adapter.migrate();
+  BookingService.bootstrap();
   seedDemo();
   renderDash();
   Auth.startTimer();
