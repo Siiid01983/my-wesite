@@ -327,6 +327,21 @@ html.dark .rev-tab-cnt{color:#f59e0b}
 .hero-prev-btn-p{background:#1D9E75;color:#fff}
 .hero-prev-btn-s{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)}
 .hero-save-ind{font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;margin-left:6px;font-weight:500}
+/* ── Hero Editor extras ── */
+.hbadge-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.hbadge-inp{flex:1;padding:7px 10px;border:1px solid var(--line);border-radius:7px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--bg)}
+.hbadge-inp:focus{outline:none;border-color:var(--blue)}
+.hhist-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line-2)}
+.hhist-item:last-child{border-bottom:none;padding-bottom:0}
+.hhist-meta{flex:1;min-width:0}
+.hhist-time{font-size:12px;font-weight:600;color:var(--ink)}
+.hhist-snap{font-size:11px;color:var(--gray-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hmpick{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:none;align-items:center;justify-content:center;padding:20px}
+.hmpick.open{display:flex}
+.hmpick-box{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:20px;max-width:560px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.hmpick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:12px}
+.hmpick-img{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:.15s;display:block}
+.hmpick-img:hover{border-color:var(--blue)}
 /* ── Backup Center ── */
 .import-msg{font-size:11px;margin-top:5px;font-weight:500;min-height:14px}
 .import-ok{color:var(--green)}
@@ -806,44 +821,159 @@ html.dark .rev-tab-cnt{color:#f59e0b}
 
         <!-- HERO CONTENT MANAGER -->
         <div id="view-hero" class="view">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="saveHero()">
+              <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+              変更を保存
+            </button>
+            <span class="hero-save-ind" id="heroSaveInd">サイトに保存しました ✓</span>
+          </div>
           <div class="hero-layout">
-            <div class="panel">
-              <div class="panel-head">
-                <span class="panel-title">ヒーローコンテンツ</span>
-                <span class="hero-save-ind" id="heroSaveInd">保存しました ✓</span>
-              </div>
-              <div class="panel-body">
-                <div class="m-field">
-                  <label class="m-label">メイン見出し</label>
-                  <input class="m-input" id="heroHeadline" placeholder="東京・全国の引越しはHello Moving" oninput="saveHero()" />
-                </div>
-                <div class="m-field">
-                  <label class="m-label">サブタイトル</label>
-                  <textarea class="m-ta" id="heroSubtitle" rows="2" placeholder="丁寧・迅速・安心..." oninput="saveHero()"></textarea>
-                </div>
-                <div class="m-row">
+
+            <!-- Left: edit panels -->
+            <div style="display:flex;flex-direction:column;gap:16px">
+
+              <!-- Headline -->
+              <div class="panel">
+                <div class="panel-head"><span class="panel-title">見出し</span></div>
+                <div class="panel-body">
                   <div class="m-field">
-                    <label class="m-label">プライマリ CTA</label>
-                    <input class="m-input" id="heroCtaPrimary" placeholder="無料で見積もる" oninput="saveHero()" />
+                    <label class="m-label">日本語</label>
+                    <input class="m-input" id="heroHdJa" oninput="liveHeroPreview()" />
                   </div>
-                  <div class="m-field">
-                    <label class="m-label">セカンダリ CTA</label>
-                    <input class="m-input" id="heroCtaSecondary" placeholder="サービスを見る" oninput="saveHero()" />
+                  <div class="m-field" style="margin-bottom:0">
+                    <label class="m-label">English</label>
+                    <input class="m-input" id="heroHdEn" oninput="liveHeroPreview()" />
                   </div>
                 </div>
               </div>
-            </div>
+
+              <!-- Sub-headline -->
+              <div class="panel">
+                <div class="panel-head"><span class="panel-title">サブ見出し</span></div>
+                <div class="panel-body">
+                  <div class="m-field">
+                    <label class="m-label">プライマリ</label>
+                    <input class="m-input" id="heroSubP" oninput="liveHeroPreview()" />
+                  </div>
+                  <div class="m-field" style="margin-bottom:0">
+                    <label class="m-label">セカンダリ</label>
+                    <input class="m-input" id="heroSubS" oninput="liveHeroPreview()" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- CTA Buttons -->
+              <div class="panel">
+                <div class="panel-head"><span class="panel-title">CTAボタン</span></div>
+                <div class="panel-body">
+                  <div style="font-size:11px;font-weight:700;color:var(--gray-1);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">予約ボタン（メイン）</div>
+                  <div class="m-row" style="margin-bottom:14px">
+                    <div class="m-field">
+                      <label class="m-label">上段テキスト</label>
+                      <input class="m-input" id="heroCtaBookSup" oninput="liveHeroPreview()" />
+                    </div>
+                    <div class="m-field">
+                      <label class="m-label">メインテキスト</label>
+                      <input class="m-input" id="heroCtaBookLbl" oninput="liveHeroPreview()" />
+                    </div>
+                  </div>
+                  <div style="font-size:11px;font-weight:700;color:var(--gray-1);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">見積りボタン（サブ）</div>
+                  <div class="m-row" style="margin-bottom:14px">
+                    <div class="m-field">
+                      <label class="m-label">上段テキスト</label>
+                      <input class="m-input" id="heroCtaQuoteSup" oninput="liveHeroPreview()" />
+                    </div>
+                    <div class="m-field">
+                      <label class="m-label">メインテキスト</label>
+                      <input class="m-input" id="heroCtaQuoteLbl" oninput="liveHeroPreview()" />
+                    </div>
+                  </div>
+                  <div style="font-size:11px;font-weight:700;color:var(--gray-1);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">LINEボタン</div>
+                  <div class="m-field" style="margin-bottom:0">
+                    <label class="m-label">テキスト</label>
+                    <input class="m-input" id="heroCtaLineInp" oninput="liveHeroPreview()" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Trust Badges -->
+              <div class="panel">
+                <div class="panel-head">
+                  <span class="panel-title">トラストバッジ</span>
+                  <button class="btn btn-ghost btn-sm" onclick="addHeroBadge()">
+                    <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>追加
+                  </button>
+                </div>
+                <div class="panel-body">
+                  <div style="font-size:11px;color:var(--gray-2);margin-bottom:10px">ヒーロー上部の小さなバッジテキストを編集します。</div>
+                  <div id="heroBadgeList"></div>
+                </div>
+              </div>
+
+              <!-- Background Image -->
+              <div class="panel">
+                <div class="panel-head"><span class="panel-title">背景画像</span></div>
+                <div class="panel-body">
+                  <div class="m-field">
+                    <label class="m-label">画像URL</label>
+                    <input class="m-input" id="heroBgUrl" placeholder="https://..." oninput="liveHeroPreview()" />
+                  </div>
+                  <div style="display:flex;gap:8px;margin-top:8px">
+                    <button class="btn btn-ghost btn-sm" onclick="openHeroMediaPick()">
+                      <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                      メディアから選択
+                    </button>
+                    <button class="btn btn-ghost btn-sm" onclick="clearHeroBg()">クリア</button>
+                  </div>
+                  <div id="heroBgThumb" style="margin-top:10px;display:none">
+                    <img id="heroBgImg" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;border:1px solid var(--line)" alt="" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Version History -->
+              <div class="panel">
+                <div class="panel-head"><span class="panel-title">バージョン履歴</span></div>
+                <div class="panel-body" id="heroHistoryList">
+                  <div class="empty" style="padding:16px 0"><p>まだバージョンがありません</p></div>
+                </div>
+              </div>
+
+            </div><!-- /left -->
+
+            <!-- Right: live preview -->
             <div>
-              <div style="font-size:10px;font-weight:600;color:var(--gray-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">プレビュー</div>
-              <div class="hero-prev-card">
-                <div class="hero-prev-headline" id="prevHeadline"></div>
-                <div class="hero-prev-sub" id="prevSubtitle"></div>
+              <div style="font-size:10px;font-weight:600;color:var(--gray-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">ライブプレビュー</div>
+              <div class="hero-prev-card" id="heroPrevCard">
+                <div id="prevBadges" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px"></div>
+                <div style="margin-bottom:6px">
+                  <div id="prevHdJa" style="font-size:16px;font-weight:700;color:#fff;line-height:1.35;margin-bottom:2px;word-break:break-word"></div>
+                  <div id="prevHdEn" style="font-size:11px;color:rgba(255,255,255,.65);line-height:1.4;word-break:break-word"></div>
+                </div>
+                <div style="margin-bottom:12px">
+                  <div id="prevSubP" style="font-size:12px;font-weight:600;color:#fff;margin-bottom:1px"></div>
+                  <div id="prevSubS" style="font-size:10px;color:rgba(255,255,255,.65)"></div>
+                </div>
                 <div class="hero-prev-btns">
-                  <div class="hero-prev-btn hero-prev-btn-p" id="prevCtaPrimary"></div>
-                  <div class="hero-prev-btn hero-prev-btn-s" id="prevCtaSecondary"></div>
+                  <div class="hero-prev-btn hero-prev-btn-p" style="display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2">
+                    <span id="prevBookSup" style="font-size:8px;opacity:.8;font-weight:500"></span>
+                    <span id="prevBookLbl" style="font-size:11px;font-weight:700"></span>
+                  </div>
+                  <div class="hero-prev-btn hero-prev-btn-s" style="display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2">
+                    <span id="prevQuoteSup" style="font-size:8px;opacity:.8;font-weight:500"></span>
+                    <span id="prevQuoteLbl" style="font-size:11px;font-weight:700"></span>
+                  </div>
+                  <div class="hero-prev-btn" style="background:rgba(6,199,85,.15);color:#4ade80;border:1px solid rgba(6,199,85,.3)">
+                    <span id="prevLineText" style="font-size:11px;font-weight:600"></span>
+                  </div>
                 </div>
               </div>
-            </div>
+              <div style="font-size:11px;color:var(--gray-2);margin-top:8px;line-height:1.5">
+                「変更を保存」でサイトに反映されます。
+              </div>
+            </div><!-- /right -->
+
           </div>
         </div>
 
@@ -1002,6 +1132,19 @@ html.dark .rev-tab-cnt{color:#f59e0b}
     </main>
   </div><!-- /layout -->
 </div><!-- /adminApp -->
+
+<!-- Hero BG Media Picker -->
+<div class="hmpick" id="heroMediaPick" onclick="if(event.target===this)closeHeroMediaPick()">
+  <div class="hmpick-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-size:15px;font-weight:700;color:var(--ink)">背景画像を選択</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeHeroMediaPick()">✕ 閉じる</button>
+    </div>
+    <div style="font-size:12px;color:var(--gray-2);margin-bottom:4px">メディアライブラリから背景に使用する画像をクリックして選択</div>
+    <div class="hmpick-grid" id="heroMediaPickGrid"></div>
+    <div class="empty" id="heroMediaPickEmpty" style="display:none;padding:20px 0"><p>メディアライブラリに画像がありません</p></div>
+  </div>
+</div>
 
 <!-- Booking Edit Modal -->
 <div class="overlay" id="editModal">
@@ -1288,13 +1431,35 @@ const Adapter = (() => {
     saveServices(svcs) { save('hm_services', svcs); },
 
     /* Hero */
-    getHero: () => ls('hm_hero', {
-      headline:     '東京・全国の引越しはHello Moving',
-      subtitle:     '丁寧・迅速・安心。あなたの新生活を全力でサポートします。',
-      ctaPrimary:   '無料で見積もる',
-      ctaSecondary: 'サービスを見る'
-    }),
+    getHero() {
+      const defaults = {
+        headline_ja:   'ていねいに、運びます。',
+        headline_en:   'Same-day moving. Careful, always.',
+        sub_primary:   'オンライン予約・無料見積り対応',
+        sub_secondary: '料金確認から予約までオンライン完結',
+        cta_book_sup:  'オンライン予約',
+        cta_book_lbl:  '今すぐ予約する',
+        cta_quote_sup: '無料見積り',
+        cta_quote_lbl: '料金を確認する',
+        cta_line:      'LINE相談',
+        trust_badges:  ['最短2時間でご返信', 'オンライン予約対応'],
+        bg_image:      ''
+      };
+      const saved = ls('hm_hero', defaults);
+      // Migrate legacy keys
+      if (saved.headline    && !saved.headline_ja)    saved.headline_ja    = saved.headline;
+      if (saved.subtitle    && !saved.sub_primary)    saved.sub_primary    = saved.subtitle;
+      if (saved.ctaPrimary  && !saved.cta_book_lbl)   saved.cta_book_lbl   = saved.ctaPrimary;
+      if (saved.ctaSecondary && !saved.cta_quote_lbl) saved.cta_quote_lbl  = saved.ctaSecondary;
+      return Object.assign({}, defaults, saved);
+    },
     saveHero: (v) => save('hm_hero', v),
+    getHeroHistory: () => { try { return JSON.parse(localStorage.getItem('hm_hero_history') || '[]'); } catch(e) { return []; } },
+    pushHeroHistory(v) {
+      const hist = this.getHeroHistory();
+      hist.unshift({ ts: Date.now(), data: v });
+      try { localStorage.setItem('hm_hero_history', JSON.stringify(hist.slice(0, 10))); } catch(e) {}
+    },
 
     /* Reviews */
     getReviews() {
@@ -2099,35 +2264,182 @@ function delSvc(id) {
 /* ════════════════════════════════════════════════════════
    HERO CONTENT MANAGER
    ════════════════════════════════════════════════════════ */
+function _readHeroFromForm() {
+  return {
+    headline_ja:   document.getElementById('heroHdJa').value,
+    headline_en:   document.getElementById('heroHdEn').value,
+    sub_primary:   document.getElementById('heroSubP').value,
+    sub_secondary: document.getElementById('heroSubS').value,
+    cta_book_sup:  document.getElementById('heroCtaBookSup').value,
+    cta_book_lbl:  document.getElementById('heroCtaBookLbl').value,
+    cta_quote_sup: document.getElementById('heroCtaQuoteSup').value,
+    cta_quote_lbl: document.getElementById('heroCtaQuoteLbl').value,
+    cta_line:      document.getElementById('heroCtaLineInp').value,
+    trust_badges:  Array.from(document.querySelectorAll('.hbadge-inp')).map(i => i.value).filter(v => v.trim()),
+    bg_image:      document.getElementById('heroBgUrl').value.trim()
+  };
+}
+
 function renderHero() {
   const h = Adapter.getHero();
-  document.getElementById('heroHeadline').value     = h.headline     || '';
-  document.getElementById('heroSubtitle').value     = h.subtitle     || '';
-  document.getElementById('heroCtaPrimary').value   = h.ctaPrimary   || '';
-  document.getElementById('heroCtaSecondary').value = h.ctaSecondary || '';
+  document.getElementById('heroHdJa').value        = h.headline_ja   || '';
+  document.getElementById('heroHdEn').value        = h.headline_en   || '';
+  document.getElementById('heroSubP').value        = h.sub_primary   || '';
+  document.getElementById('heroSubS').value        = h.sub_secondary || '';
+  document.getElementById('heroCtaBookSup').value  = h.cta_book_sup  || '';
+  document.getElementById('heroCtaBookLbl').value  = h.cta_book_lbl  || '';
+  document.getElementById('heroCtaQuoteSup').value = h.cta_quote_sup || '';
+  document.getElementById('heroCtaQuoteLbl').value = h.cta_quote_lbl || '';
+  document.getElementById('heroCtaLineInp').value  = h.cta_line      || '';
+  document.getElementById('heroBgUrl').value       = h.bg_image      || '';
+  _renderHeroBadgeList(h.trust_badges || []);
+  _updateHeroBgThumb(h.bg_image || '');
   _updateHeroPrev(h);
+  renderHeroHistory();
+}
+
+function _renderHeroBadgeList(badges) {
+  const list = document.getElementById('heroBadgeList');
+  if (!badges.length) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--gray-2);padding:4px 0">バッジがありません。「追加」で追加できます。</div>';
+    return;
+  }
+  list.innerHTML = badges.map((b, i) =>
+    `<div class="hbadge-row">
+       <input class="hbadge-inp" value="${b.replace(/[<>"&]/g,c=>({'<':'&lt;','>':'&gt;','"':'&quot;','&':'&amp;'}[c]))}" oninput="liveHeroPreview()" placeholder="バッジテキスト" />
+       <button class="btn btn-danger btn-sm btn-icon" onclick="removeHeroBadge(${i})" title="削除">
+         <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+       </button>
+     </div>`
+  ).join('');
+}
+
+function addHeroBadge() {
+  const badges = Array.from(document.querySelectorAll('.hbadge-inp')).map(i => i.value);
+  badges.push('');
+  _renderHeroBadgeList(badges);
+  const inps = document.querySelectorAll('.hbadge-inp');
+  if (inps.length) inps[inps.length - 1].focus();
+}
+
+function removeHeroBadge(idx) {
+  const badges = Array.from(document.querySelectorAll('.hbadge-inp')).map(i => i.value);
+  badges.splice(idx, 1);
+  _renderHeroBadgeList(badges);
+  liveHeroPreview();
+}
+
+function _updateHeroBgThumb(url) {
+  const thumb = document.getElementById('heroBgThumb');
+  const img   = document.getElementById('heroBgImg');
+  if (url) { img.src = url; thumb.style.display = 'block'; }
+  else      { thumb.style.display = 'none'; }
+}
+
+function clearHeroBg() {
+  document.getElementById('heroBgUrl').value = '';
+  _updateHeroBgThumb('');
+  _updateHeroPrev(_readHeroFromForm());
+}
+
+function openHeroMediaPick() {
+  const images = MediaLib.get('images');
+  const grid   = document.getElementById('heroMediaPickGrid');
+  const empty  = document.getElementById('heroMediaPickEmpty');
+  if (!images.length) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    grid.innerHTML = images.map(img =>
+      `<img class="hmpick-img" src="${img.url}" alt="${(img.name||'').replace(/"/g,'&quot;')}" onclick="selectHeroBgMedia('${img.url.replace(/'/g,'%27')}')" />`
+    ).join('');
+  }
+  document.getElementById('heroMediaPick').classList.add('open');
+}
+
+function closeHeroMediaPick() {
+  document.getElementById('heroMediaPick').classList.remove('open');
+}
+
+function selectHeroBgMedia(url) {
+  document.getElementById('heroBgUrl').value = url;
+  _updateHeroBgThumb(url);
+  liveHeroPreview();
+  closeHeroMediaPick();
 }
 
 function saveHero() {
-  const h = {
-    headline:     document.getElementById('heroHeadline').value,
-    subtitle:     document.getElementById('heroSubtitle').value,
-    ctaPrimary:   document.getElementById('heroCtaPrimary').value,
-    ctaSecondary: document.getElementById('heroCtaSecondary').value
-  };
+  const h = _readHeroFromForm();
+  Adapter.pushHeroHistory(Adapter.getHero());
   Adapter.saveHero(h);
   _updateHeroPrev(h);
+  renderHeroHistory();
   const ind = document.getElementById('heroSaveInd');
   ind.style.opacity = '1';
   clearTimeout(ind._t);
-  ind._t = setTimeout(() => { ind.style.opacity = '0'; }, 1600);
+  ind._t = setTimeout(() => { ind.style.opacity = '0'; }, 2400);
+}
+
+function liveHeroPreview() {
+  _updateHeroPrev(_readHeroFromForm());
+  _updateHeroBgThumb(document.getElementById('heroBgUrl').value.trim());
 }
 
 function _updateHeroPrev(h) {
-  document.getElementById('prevHeadline').textContent   = h.headline     || '（見出しを入力）';
-  document.getElementById('prevSubtitle').textContent   = h.subtitle     || '（サブタイトルを入力）';
-  document.getElementById('prevCtaPrimary').textContent   = h.ctaPrimary   || 'CTA 1';
-  document.getElementById('prevCtaSecondary').textContent = h.ctaSecondary || 'CTA 2';
+  const get = id => document.getElementById(id);
+  get('prevHdJa').textContent     = h.headline_ja   || '（日本語見出し）';
+  get('prevHdEn').textContent     = h.headline_en   || '';
+  get('prevSubP').textContent     = h.sub_primary   || '';
+  get('prevSubS').textContent     = h.sub_secondary || '';
+  get('prevBookSup').textContent  = h.cta_book_sup  || '';
+  get('prevBookLbl').textContent  = h.cta_book_lbl  || '';
+  get('prevQuoteSup').textContent = h.cta_quote_sup || '';
+  get('prevQuoteLbl').textContent = h.cta_quote_lbl || '';
+  get('prevLineText').textContent = h.cta_line      || 'LINE';
+  const badges = (h.trust_badges || []).filter(b => b.trim());
+  get('prevBadges').innerHTML = badges.map(b =>
+    `<span style="background:rgba(29,158,117,.25);color:#6ee7b7;border:1px solid rgba(29,158,117,.4);border-radius:20px;padding:3px 8px;font-size:9px;font-weight:600">${b}</span>`
+  ).join('');
+  const card = get('heroPrevCard');
+  if (h.bg_image) {
+    card.style.backgroundImage    = `linear-gradient(rgba(10,31,68,.75),rgba(10,31,68,.75)),url('${h.bg_image}')`;
+    card.style.backgroundSize     = 'cover';
+    card.style.backgroundPosition = 'center';
+  } else {
+    card.style.backgroundImage = card.style.backgroundSize = card.style.backgroundPosition = '';
+  }
+}
+
+function renderHeroHistory() {
+  const hist = Adapter.getHeroHistory();
+  const el   = document.getElementById('heroHistoryList');
+  if (!hist.length) {
+    el.innerHTML = '<div class="empty" style="padding:16px 0"><p>まだバージョンがありません</p></div>';
+    return;
+  }
+  el.innerHTML = hist.map((entry, i) => {
+    const d = new Date(entry.ts);
+    const ts = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const snap = (entry.data.headline_ja || entry.data.headline || '（見出しなし）');
+    return `<div class="hhist-item">
+      <div class="hhist-meta">
+        <div class="hhist-time">${ts}</div>
+        <div class="hhist-snap">${snap}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="restoreHeroVersion(${i})">復元</button>
+    </div>`;
+  }).join('');
+}
+
+function restoreHeroVersion(idx) {
+  if (!confirm('このバージョンを復元しますか？\n現在の内容はバージョン履歴に保存されます。')) return;
+  const hist = Adapter.getHeroHistory();
+  if (!hist[idx]) return;
+  Adapter.pushHeroHistory(Adapter.getHero());
+  Adapter.saveHero(hist[idx].data);
+  renderHero();
+  toast('バージョンを復元しました');
 }
 
 /* ════════════════════════════════════════════════════════
