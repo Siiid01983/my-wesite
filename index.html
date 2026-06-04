@@ -2449,11 +2449,11 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
         <span class="brand-mark">H</span>
         <span class="brand-text"><span class="brand-name">Hello Moving</span><span class="brand-sub">14+ Years — Tokyo</span></span>
       </a>
-      <p class="footer-desc">東京を拠点に、丁寧で安心の引越しを承っております。日本語・英語対応。</p>
+      <p class="footer-desc" id="footerDescEl">東京を拠点に、丁寧で安心の引越しを承っております。日本語・英語対応。</p>
     </div>
-    <div class="footer-col">
-      <h4>サービス</h4>
-      <ul>
+    <div class="footer-col" id="footerCol0El">
+      <h4 id="footerCol0TitleEl">サービス</h4>
+      <ul id="footerCol0LinksEl">
         <li><a href="#services">当日・お急ぎ引越しプラン</a></li>
         <li><a href="#services">単身引越し</a></li>
         <li><a href="#services">カップル・ご夫婦引越し</a></li>
@@ -2462,9 +2462,9 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
         <li><a href="#services">家具組立・分解</a></li>
       </ul>
     </div>
-    <div class="footer-col">
-      <h4>会社</h4>
-      <ul>
+    <div class="footer-col" id="footerCol1El">
+      <h4 id="footerCol1TitleEl">会社</h4>
+      <ul id="footerCol1LinksEl">
         <li><a href="#commitments">私たちのお約束</a></li>
         <li><a href="#flow">引越しの流れ</a></li>
         <li><a href="#reviews">お客様の声</a></li>
@@ -2472,9 +2472,9 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
         <li><a href="#company">会社情報</a></li>
       </ul>
     </div>
-    <div class="footer-col">
-      <h4>お問い合わせ</h4>
-      <ul>
+    <div class="footer-col" id="footerCol2El">
+      <h4 id="footerCol2TitleEl">お問い合わせ</h4>
+      <ul id="footerCol2LinksEl">
         <li><a href="#" class="liveChatTrigger">Live Chat</a></li>
         <li>受付：8:00 – 20:00</li>
         <li>対応エリア：日本全国</li>
@@ -2484,11 +2484,39 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
   </div>
   <div class="footer-bottom">
     <div class="container">
-      <small>© 2026 Hello Moving. All Rights Reserved.</small>
-      <small>国土交通省 認可運送事業者 第 431320058126 号 ／ Licensed Moving Company in Japan</small>
+      <small id="footerCopyrightEl">© 2026 Hello Moving. All Rights Reserved.</small>
+      <small id="footerLicenseEl">国土交通省 認可運送事業者 第 431320058126 号 ／ Licensed Moving Company in Japan</small>
     </div>
   </div>
 </footer>
+<script>
+/* Footer content loader — applies admin-saved content from localStorage */
+(function(){
+  try {
+    var raw = localStorage.getItem('hm_footer');
+    if (!raw) return;
+    var d = JSON.parse(raw);
+    var el  = function(id){ return document.getElementById(id); };
+    var set = function(id, val){ var e = el(id); if (e && val != null) e.textContent = val; };
+    var esc = function(s){ return String(s||'').replace(/[<>&"]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c];}); };
+    if (d.brand_desc) set('footerDescEl', d.brand_desc);
+    if (d.copyright)  set('footerCopyrightEl', d.copyright);
+    if (d.license)    set('footerLicenseEl', d.license);
+    if (Array.isArray(d.cols)) {
+      d.cols.forEach(function(col, i) {
+        set('footerCol' + i + 'TitleEl', col.title);
+        var ulEl = el('footerCol' + i + 'LinksEl');
+        if (ulEl && Array.isArray(col.links) && col.links.length) {
+          ulEl.innerHTML = col.links.map(function(lnk) {
+            if (lnk.href) return '<li><a href="' + esc(lnk.href) + '">' + esc(lnk.text) + '</a></li>';
+            return '<li>' + esc(lnk.text) + '</li>';
+          }).join('');
+        }
+      });
+    }
+  } catch(e) {}
+})();
+</script>
 
 <!-- ============== STICKY MOBILE CTA ============== -->
 <div class="sticky-cta" aria-label="予約・見積り">
