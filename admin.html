@@ -405,6 +405,13 @@ html.dark .rev-tab-cnt{color:#f59e0b}
 .import-ok{color:var(--green)}
 .import-err{color:var(--red)}
 
+/* ── Security page ── */
+.sec-pass-msg{font-size:12px;min-height:18px;margin-bottom:10px;font-weight:500}
+.sec-pass-ok{color:var(--green)}
+.sec-pass-err{color:var(--red)}
+.login-err-lock{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.25);color:#92400e}
+html.dark .login-err-lock{color:#f59e0b}
+
 /* ── Customer Management ── */
 .cust-avatar{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--blue-2));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0;user-select:none}
 .cust-avatar-lg{width:52px;height:52px;border-radius:14px;font-size:22px}
@@ -635,8 +642,14 @@ html.dark .rev-tab-cnt{color:#f59e0b}
         <button class="sb-link" data-view="line" onclick="go('line')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.076 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>LINE通知設定
         </button>
+        <button class="sb-link" data-view="email" onclick="go('email')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>メール通知設定
+        </button>
         <button class="sb-link" data-view="changelog" onclick="go('changelog')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M13 2.05v2.02c3.95.49 7 3.85 7 7.93 0 3.21-1.81 6-4.72 7.72L13 17v5h5l-1.22-1.22C19.91 19.07 22 15.76 22 12c0-5.18-3.95-9.45-9-9.95zM11 2.05C5.95 2.55 2 6.82 2 12c0 3.76 2.09 7.07 5.22 8.78L6 22h5V2.05zM11 17H9.5L11 15.5V17zm2 0v-1.5L14.5 17H13z"/></svg>変更履歴
+        </button>
+        <button class="sb-link" data-view="security" onclick="go('security')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4c1.4 0 2.8 1.1 2.8 2.5V9c.6 0 1.2.6 1.2 1.2v3.5c0 .7-.6 1.3-1.2 1.3H9.2C8.6 15 8 14.4 8 13.7v-3.5C8 9.6 8.6 9 9.2 9V7.5C9.2 6.1 10.6 5 12 5zm0 1.2c-.8 0-1.5.5-1.5 1.3V9h3V7.5c0-.8-.7-1.3-1.5-1.3z"/></svg>セキュリティ
         </button>
         <div class="sb-section" style="margin-top:6px">その他</div>
         <button class="sb-link" onclick="toggleDark()">
@@ -1542,6 +1555,11 @@ html.dark .rev-tab-cnt{color:#f59e0b}
           </div>
         </div>
 
+        <!-- EMAIL NOTIFY -->
+        <div id="view-email" class="view">
+          <div id="emailContent"></div>
+        </div>
+
         <!-- LINE NOTIFY -->
         <div id="view-line" class="view">
           <div id="lineContent"></div>
@@ -1550,6 +1568,47 @@ html.dark .rev-tab-cnt{color:#f59e0b}
         <!-- CHANGELOG -->
         <div id="view-changelog" class="view">
           <div id="changelogContent"></div>
+        </div>
+
+        <!-- SECURITY -->
+        <div id="view-security" class="view">
+          <div class="settings-grid">
+            <div class="panel">
+              <div class="panel-head"><span class="panel-title">パスワード変更</span></div>
+              <div class="panel-body">
+                <div class="m-field">
+                  <label class="m-label">現在のパスワード</label>
+                  <input class="m-input" id="secCurrentPass" type="password" placeholder="現在のパスワード" autocomplete="current-password" />
+                </div>
+                <div class="m-field">
+                  <label class="m-label">新しいパスワード <span style="color:var(--gray-2);font-weight:400">（8文字以上）</span></label>
+                  <input class="m-input" id="secNewPass" type="password" placeholder="8文字以上" autocomplete="new-password" />
+                </div>
+                <div class="m-field">
+                  <label class="m-label">新しいパスワード（確認）</label>
+                  <input class="m-input" id="secConfirmPass" type="password" placeholder="確認のため再入力" autocomplete="new-password" />
+                </div>
+                <div id="secPassMsg" class="sec-pass-msg"></div>
+                <button class="btn btn-primary" onclick="doChangePassword()">パスワードを変更する</button>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><span class="panel-title">現在のセッション</span></div>
+              <div class="panel-body" id="secSessionInfo"></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">ログイン履歴</span>
+              <button class="btn btn-ghost btn-sm" onclick="renderSecurity()">更新</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>日時</th><th>種別</th><th>詳細</th></tr></thead>
+                <tbody id="secLogBody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         <!-- MEDIA LIBRARY -->
@@ -1924,43 +1983,137 @@ html.dark .rev-tab-cnt{color:#f59e0b}
 'use strict';
 
 /* ════════════════════════════════════════════════════════
-   AUTH — session stored in sessionStorage, 30-min timeout
+   AUTH — hashed credentials, random session token, lockout
    ════════════════════════════════════════════════════════ */
 const Auth = {
-  CREDS: {user:'admin@hello-moving.com', pass:'hello2026'},
-  KEY: 'hm_admin_sess',
-  TIMEOUT: 30 * 60 * 1000,
+  KEY:       'hm_admin_sess',
+  CREDS_KEY: 'hm_admin_creds',
+  LOCK_KEY:  'hm_admin_lock',
+  LOG_KEY:   'hm_admin_log',
+  TIMEOUT:      30 * 60 * 1000,
+  MAX_ATTEMPTS: 5,
+  LOCKOUT_MS:   15 * 60 * 1000,
   _timer: null,
 
-  login(user, pass, remember) {
-    console.log('[Auth] login attempt for:', user);
-    if (user === this.CREDS.user && pass === this.CREDS.pass) {
-      const ts = Date.now().toString();
-      sessionStorage.setItem(this.KEY, ts);
-      console.log('[Auth] sessionStorage written —', this.KEY, '=', sessionStorage.getItem(this.KEY));
-      if (remember) localStorage.setItem('hm_admin_remember', user);
-      else localStorage.removeItem('hm_admin_remember');
-      return true;
+  async _hash(s) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  },
+
+  async initCreds() {
+    if (!localStorage.getItem(this.CREDS_KEY)) {
+      const hash = await this._hash('hello2026');
+      localStorage.setItem(this.CREDS_KEY, JSON.stringify({user:'admin@hello-moving.com', hash}));
     }
-    console.warn('[Auth] login failed — credentials did not match');
+  },
+
+  _getCreds() {
+    try { return JSON.parse(localStorage.getItem(this.CREDS_KEY)); } catch(e) { return null; }
+  },
+
+  _getLock() {
+    try { return JSON.parse(localStorage.getItem(this.LOCK_KEY)||'{}'); } catch(e) { return {}; }
+  },
+
+  isLockedOut() {
+    const lk = this._getLock();
+    if (!lk.until) return false;
+    if (Date.now() < lk.until) return true;
+    localStorage.removeItem(this.LOCK_KEY);
     return false;
   },
-  logout() { sessionStorage.removeItem(this.KEY); showLogin(); },
+
+  lockoutMins() {
+    const lk = this._getLock();
+    return lk.until ? Math.max(1, Math.ceil((lk.until - Date.now()) / 60000)) : 0;
+  },
+
+  attemptsLeft() {
+    const lk = this._getLock();
+    return Math.max(0, this.MAX_ATTEMPTS - (lk.count||0));
+  },
+
+  _recordFail() {
+    const lk = this._getLock();
+    lk.count = (lk.count||0) + 1;
+    lk.last  = Date.now();
+    if (lk.count >= this.MAX_ATTEMPTS) lk.until = Date.now() + this.LOCKOUT_MS;
+    localStorage.setItem(this.LOCK_KEY, JSON.stringify(lk));
+    this._addLog('fail', lk.count >= this.MAX_ATTEMPTS ? 'locked' : 'wrong_creds');
+  },
+
+  _addLog(type, detail) {
+    const log = this.getLog();
+    log.unshift({type, detail, ts: new Date().toISOString()});
+    if (log.length > 30) log.length = 30;
+    localStorage.setItem(this.LOG_KEY, JSON.stringify(log));
+  },
+
+  getLog() {
+    try { return JSON.parse(localStorage.getItem(this.LOG_KEY)||'[]'); } catch(e) { return []; }
+  },
+
+  async login(user, pass, remember) {
+    if (this.isLockedOut()) return {ok:false, locked:true};
+    const creds = this._getCreds();
+    if (!creds) return {ok:false, locked:false, left:1};
+    const hash = await this._hash(pass);
+    if (user === creds.user && hash === creds.hash) {
+      localStorage.removeItem(this.LOCK_KEY);
+      const token = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join('');
+      sessionStorage.setItem(this.KEY, JSON.stringify({token, ts:Date.now()}));
+      if (remember) localStorage.setItem('hm_admin_remember', user);
+      else localStorage.removeItem('hm_admin_remember');
+      this._addLog('login', 'success');
+      return {ok:true};
+    }
+    this._recordFail();
+    return {ok:false, locked:this.isLockedOut(), left:this.attemptsLeft()};
+  },
+
+  logout() {
+    this._addLog('logout', 'manual');
+    sessionStorage.removeItem(this.KEY);
+    showLogin();
+  },
+
   isLoggedIn() {
-    const t = sessionStorage.getItem(this.KEY);
-    if (!t) return false;
-    if (Date.now() - parseInt(t) > this.TIMEOUT) { this.logout(); return false; }
+    try {
+      const s = JSON.parse(sessionStorage.getItem(this.KEY)||'null');
+      if (!s || !s.token) return false;
+      if (Date.now() - s.ts > this.TIMEOUT) { sessionStorage.removeItem(this.KEY); return false; }
+      return true;
+    } catch(e) { return false; }
+  },
+
+  touch() {
+    try {
+      const s = JSON.parse(sessionStorage.getItem(this.KEY)||'null');
+      if (s && s.token) { s.ts = Date.now(); sessionStorage.setItem(this.KEY, JSON.stringify(s)); }
+    } catch(e) {}
+  },
+
+  async changePassword(current, newPass) {
+    const creds = this._getCreds();
+    if (!creds) return false;
+    const curHash = await this._hash(current);
+    if (curHash !== creds.hash) return false;
+    const newHash = await this._hash(newPass);
+    localStorage.setItem(this.CREDS_KEY, JSON.stringify({user:creds.user, hash:newHash}));
+    this._addLog('passwd_change', 'success');
     return true;
   },
-  touch() { if (this.isLoggedIn()) sessionStorage.setItem(this.KEY, Date.now().toString()); },
+
   startTimer() {
     this._timer = setInterval(() => {
       if (!this.isLoggedIn()) return;
-      const elapsed = Date.now() - parseInt(sessionStorage.getItem(this.KEY));
-      const remaining = Math.max(0, Math.ceil((this.TIMEOUT - elapsed) / 60000));
-      const el = document.getElementById('sessionTimer');
-      if (el) el.textContent = `セッション残り: ${remaining}分`;
-      if (remaining === 0) this.logout();
+      try {
+        const s = JSON.parse(sessionStorage.getItem(this.KEY));
+        const remaining = Math.max(0, Math.ceil((this.TIMEOUT - (Date.now()-s.ts)) / 60000));
+        const el = document.getElementById('sessionTimer');
+        if (el) el.textContent = `セッション残り: ${remaining}分`;
+        if (remaining === 0) { this._addLog('logout','timeout'); this.logout(); }
+      } catch(e) {}
     }, 30000);
   }
 };
@@ -1981,7 +2134,9 @@ const Adapter = (() => {
     disposal: 'hm_disposal',
     cust: 'hm_customers',
     line: 'hm_line',
-    linelog: 'hm_linelog'
+    linelog: 'hm_linelog',
+    email: 'hm_email',
+    emaillog: 'hm_emaillog'
   };
   const ls = (k, def) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(def)); } catch(e) { return def; } };
   const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} };
@@ -2241,6 +2396,17 @@ const Adapter = (() => {
     },
     clearLineLog() { save(K.linelog, []); },
 
+    /* Email Notify */
+    getEmailSettings: () => ls(K.email, { enabled:false, adminEmail:'', serviceId:'', templateId:'', publicKey:'', triggers:{ newBooking:true, statusConfirmed:true, statusComplete:true, newQuote:false } }),
+    saveEmailSettings: (v) => save(K.email, v),
+    getEmailLog: () => ls(K.emaillog, []),
+    pushEmailLog(entry) {
+      const log = this.getEmailLog();
+      log.unshift(entry);
+      save(K.emaillog, log.slice(0, 20));
+    },
+    clearEmailLog() { save(K.emaillog, []); },
+
     /* Customers */
     getCustomers: () => ls(K.cust, []),
     saveCustomers(v) { save(K.cust, v); },
@@ -2328,7 +2494,7 @@ const VIEW_TITLES = {
   dashboard:'ダッシュボード', bookings:'予約管理', quotes:'見積り管理',
   reviews:'レビュー管理', services:'サービス管理', faq:'FAQ編集', company:'会社情報編集', footer:'フッター編集', hero:'ヒーロー編集', calendar:'カレンダー管理', analytics:'分析',
   capacity:'容量設定', pricing:'料金管理', disposal:'不用品管理', actions:'クイック操作',
-  backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理', line:'LINE通知設定', changelog:'変更履歴'
+  backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理', line:'LINE通知設定', email:'メール通知設定', changelog:'変更履歴', security:'セキュリティ'
 };
 
 function go(view) {
@@ -2358,7 +2524,9 @@ function go(view) {
   if (view==='media') renderMedia();
   if (view==='customers') renderCustomers();
   if (view==='line') renderLine();
+  if (view==='email') renderEmail();
   if (view==='changelog') renderChangelog();
+  if (view==='security') renderSecurity();
 }
 
 function toggleDark() {
@@ -2606,13 +2774,20 @@ function saveBooking() {
     Adapter.updateBooking(_editId, b);
     toast('予約を更新しました');
     if (prev && prev.status !== b.status) {
-      if (b.status === '確定') sendLineNotif(`✅ 予約確定\n${b.name}様 (${b.id})\nサービス: ${b.service}\n日程: ${b.date}`,'statusConfirmed');
-      if (b.status === '完了') sendLineNotif(`🎉 引越し完了\n${b.name}様 (${b.id})\nサービス: ${b.service}`,'statusComplete');
+      if (b.status === '確定') {
+        sendLineNotif(`✅ 予約確定\n${b.name}様 (${b.id})\nサービス: ${b.service}\n日程: ${b.date}`,'statusConfirmed');
+        sendEmailNotif({ subject:`[Hello Moving] 予約確定 - ${b.name}様`, trigger_type:'予約確定', ...bkEmailParams(b) },'statusConfirmed');
+      }
+      if (b.status === '完了') {
+        sendLineNotif(`🎉 引越し完了\n${b.name}様 (${b.id})\nサービス: ${b.service}`,'statusComplete');
+        sendEmailNotif({ subject:`[Hello Moving] 引越し完了 - ${b.name}様`, trigger_type:'引越し完了', ...bkEmailParams(b) },'statusComplete');
+      }
     }
   } else {
     Adapter.addBooking(b);
     toast('予約を追加しました');
     sendLineNotif(`📅 新規予約\n${b.name}様\nサービス: ${b.service}\n日程: ${b.date || '未定'}\nID: ${b.id}`,'newBooking');
+    sendEmailNotif({ subject:`[Hello Moving] 新規予約 - ${b.name}様`, trigger_type:'新規予約', ...bkEmailParams(b) },'newBooking');
   }
   closeEdit(); renderBookings(); renderDash();
 }
@@ -5777,6 +5952,231 @@ function renderBackup() {
 }
 
 /* ════════════════════════════════════════════════════════
+   EMAIL NOTIFY  (EmailJS REST API — no SDK required)
+   ════════════════════════════════════════════════════════ */
+function bkEmailParams(b) {
+  return {
+    booking_id:     b.id      || '',
+    booking_name:   b.name    || '',
+    booking_email:  b.email   || '',
+    booking_service:b.service || '',
+    booking_date:   b.date    || '未定',
+    booking_time:   b.time    || '',
+    booking_from:   b.fromAddr|| '',
+    booking_to:     b.toAddr  || '',
+    booking_notes:  b.notes   || '',
+  };
+}
+
+async function sendEmailNotif(templateParams, triggerKey) {
+  const cfg = Adapter.getEmailSettings();
+  if (!cfg.enabled || !cfg.publicKey || !cfg.serviceId || !cfg.templateId) return;
+  if (triggerKey && !cfg.triggers[triggerKey]) return;
+  const ts = new Date().toLocaleString('ja-JP');
+  try {
+    const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service_id:      cfg.serviceId,
+        template_id:     cfg.templateId,
+        user_id:         cfg.publicKey,
+        template_params: { to_email: cfg.adminEmail, ...templateParams }
+      })
+    });
+    const ok = res.status === 200;
+    Adapter.pushEmailLog({ ts, ok, subject: templateParams.subject || '', status: res.status });
+    if (ok) toast('メール通知を送信しました');
+    else    toast('メール送信エラー: HTTP ' + res.status);
+  } catch(err) {
+    Adapter.pushEmailLog({ ts, ok: false, subject: templateParams.subject || '', status: err.message.slice(0, 40) });
+    toast('メール送信に失敗しました');
+  }
+  if (document.getElementById('view-email')?.classList.contains('active')) renderEmailLog();
+}
+
+function renderEmail() {
+  const cfg = Adapter.getEmailSettings();
+  const el  = document.getElementById('emailContent'); if (!el) return;
+
+  const triggerRows = [
+    ['newBooking',      '📅 新規予約',   '管理者が予約を追加したとき'],
+    ['statusConfirmed', '✅ 予約確定',   'ステータスが「確定」に変わったとき'],
+    ['statusComplete',  '🎉 引越し完了', 'ステータスが「完了」に変わったとき'],
+    ['newQuote',        '📋 新規見積り', '見積りリクエストが届いたとき'],
+  ];
+
+  el.innerHTML = `
+  <div class="settings-grid" style="margin-bottom:16px">
+
+    <!-- Credentials panel -->
+    <div class="panel">
+      <div class="panel-head">
+        <div style="display:flex;align-items:center;gap:8px">
+          <svg viewBox="0 0 24 24" width="18" height="18" style="color:var(--blue);flex-shrink:0"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          <span class="panel-title">メール通知設定</span>
+        </div>
+        <label class="toggle" title="${cfg.enabled?'無効にする':'有効にする'}">
+          <input type="checkbox" id="emailEnabled" ${cfg.enabled?'checked':''} onchange="saveEmailSettings()" />
+          <div class="toggle-track"></div><div class="toggle-thumb"></div>
+        </label>
+      </div>
+      <div class="panel-body">
+        <div class="m-field">
+          <label class="m-label">通知先メールアドレス</label>
+          <input class="input" id="emailAdmin" type="email" value="${esc(cfg.adminEmail)}" placeholder="admin@hello-moving.com" />
+        </div>
+        <div class="m-row">
+          <div class="m-field">
+            <label class="m-label">Service ID</label>
+            <input class="input" id="emailServiceId" type="text" value="${esc(cfg.serviceId)}" placeholder="service_xxxxxxx" style="font-family:monospace;font-size:12px" />
+          </div>
+          <div class="m-field">
+            <label class="m-label">Template ID</label>
+            <input class="input" id="emailTemplateId" type="text" value="${esc(cfg.templateId)}" placeholder="template_xxxxxxx" style="font-family:monospace;font-size:12px" />
+          </div>
+        </div>
+        <div class="m-field">
+          <label class="m-label">Public Key</label>
+          <div style="display:flex;gap:6px">
+            <input class="input" id="emailPublicKey" type="password" value="${esc(cfg.publicKey)}" placeholder="EmailJS Public Key" style="font-family:monospace;font-size:12px" />
+            <button class="btn btn-ghost btn-sm" style="flex-shrink:0" onclick="var i=document.getElementById('emailPublicKey');i.type=i.type==='password'?'text':'password'">表示</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="saveEmailSettings()">保存</button>
+          <button class="btn btn-ghost btn-sm" onclick="testEmailNotif()">テスト送信</button>
+          <a class="btn btn-ghost btn-sm" href="https://www.emailjs.com/" target="_blank">EmailJSを開く ↗</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Triggers panel -->
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">通知トリガー</span></div>
+      <div class="panel-body">
+        ${triggerRows.map(([key, label, sub]) => `
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">${label}</div>
+              <div class="settings-sub">${sub}</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" data-email-trigger="${key}" ${cfg.triggers[key]?'checked':''} onchange="saveEmailSettings()" />
+              <div class="toggle-track"></div><div class="toggle-thumb"></div>
+            </label>
+          </div>`).join('')}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Template variables reference -->
+  <div class="panel" style="margin-bottom:16px">
+    <div class="panel-head"><span class="panel-title">EmailJSテンプレート変数</span></div>
+    <div class="panel-body">
+      <p style="font-size:12px;color:var(--gray-1);margin-bottom:12px">EmailJSのテンプレートで以下の変数が使えます。テンプレートに <code style="background:var(--bg-soft-2);padding:1px 5px;border-radius:4px;font-size:11px">{{変数名}}</code> の形式で記述してください。</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">
+        ${[
+          ['to_email',        '通知先メールアドレス'],
+          ['subject',         'メール件名'],
+          ['trigger_type',    'イベント種別'],
+          ['booking_id',      '予約番号'],
+          ['booking_name',    'お客様名'],
+          ['booking_email',   'お客様メール'],
+          ['booking_service', 'サービス'],
+          ['booking_date',    '引越し日'],
+          ['booking_time',    '希望時間帯'],
+          ['booking_from',    '引越し元住所'],
+          ['booking_to',      '引越し先住所'],
+          ['booking_notes',   '備考'],
+        ].map(([v, desc]) => `
+          <div style="background:var(--bg-soft-2);border:1px solid var(--line);border-radius:6px;padding:7px 10px">
+            <code style="font-size:11px;color:var(--blue)">{{${v}}}</code>
+            <div style="font-size:11px;color:var(--gray-2);margin-top:2px">${desc}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>
+
+  <!-- Setup instructions -->
+  <div class="panel" style="margin-bottom:16px">
+    <div class="panel-head"><span class="panel-title">設定手順</span></div>
+    <div class="panel-body">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+        ${[
+          ['1', 'EmailJSに登録', 'emailjs.com にアクセスし、無料アカウントを作成します（月200通まで無料）'],
+          ['2', 'Email Serviceを追加', 'Email Services でGmailやOutlookなどを接続し、Service IDをメモします'],
+          ['3', 'Templateを作成', 'Email Templates で通知テンプレートを作成。左の変数一覧を参考に {{変数名}} を配置します'],
+          ['4', 'キーを設定', 'Account → General → Public Key をコピーし、上のフォームに Service ID・Template ID・Public Key を入力して保存します'],
+        ].map(([n, title, desc]) => `
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${n}</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:3px">${title}</div>
+              <div style="font-size:12px;color:var(--gray-2);line-height:1.55">${desc}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">送信ログ</span>
+      <button class="btn btn-ghost btn-sm" onclick="Adapter.clearEmailLog();renderEmailLog()">クリア</button>
+    </div>
+    <div id="emailLogBody" class="panel-body"></div>
+  </div>`;
+
+  renderEmailLog();
+}
+
+function renderEmailLog() {
+  const el = document.getElementById('emailLogBody'); if (!el) return;
+  const log = Adapter.getEmailLog();
+  if (!log.length) { el.innerHTML = '<div class="empty" style="padding:20px"><p>まだ送信履歴がありません</p></div>'; return; }
+  el.innerHTML = log.map(e => `
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-2)">
+      <span style="flex-shrink:0;display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;${e.ok?'background:rgba(16,185,129,.1);color:#059669;border:1px solid rgba(16,185,129,.2)':'background:rgba(239,68,68,.08);color:#b91c1c;border:1px solid rgba(239,68,68,.18)'}">
+        ${e.ok ? '✓ 成功' : '✗ 失敗'}
+      </span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.subject)}</div>
+        <div style="font-size:11px;color:var(--gray-2);margin-top:2px">${esc(e.ts)} · HTTP ${esc(String(e.status))}</div>
+      </div>
+    </div>`).join('');
+}
+
+function saveEmailSettings() {
+  const cfg      = Adapter.getEmailSettings();
+  cfg.adminEmail = document.getElementById('emailAdmin')?.value.trim()      || cfg.adminEmail;
+  cfg.serviceId  = document.getElementById('emailServiceId')?.value.trim()  || cfg.serviceId;
+  cfg.templateId = document.getElementById('emailTemplateId')?.value.trim() || cfg.templateId;
+  cfg.publicKey  = document.getElementById('emailPublicKey')?.value.trim()  || cfg.publicKey;
+  cfg.enabled    = document.getElementById('emailEnabled')?.checked ?? cfg.enabled;
+  document.querySelectorAll('[data-email-trigger]').forEach(cb => {
+    cfg.triggers[cb.dataset.emailTrigger] = cb.checked;
+  });
+  Adapter.saveEmailSettings(cfg);
+  toast('メール通知設定を保存しました');
+}
+
+async function testEmailNotif() {
+  const cfg = Adapter.getEmailSettings();
+  if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId) { toast('Service ID・Template ID・Public Keyを入力してください'); return; }
+  if (!cfg.adminEmail) { toast('通知先メールアドレスを入力してください'); return; }
+  await sendEmailNotif({
+    subject:      '[Hello Moving] テスト通知',
+    trigger_type: 'テスト送信',
+    booking_id: 'TEST-001', booking_name: 'テスト 太郎', booking_email: cfg.adminEmail,
+    booking_service: '単身引越し', booking_date: new Date().toISOString().slice(0,10),
+    booking_time: '午前 8:00〜12:00', booking_from: '東京都渋谷区', booking_to: '東京都新宿区', booking_notes: 'テスト送信です',
+  }, null);
+}
+
+/* ════════════════════════════════════════════════════════
    LINE NOTIFY
    ════════════════════════════════════════════════════════ */
 async function sendLineNotif(message, triggerKey) {
@@ -5944,7 +6344,14 @@ async function testLineNotif() {
    ════════════════════════════════════════════════════════ */
 const CHANGELOG = [
   {
-    version: 'v3.1', date: '2026-06-04', label: '最新',
+    version: 'v3.2', date: '2026-06-04', label: '最新',
+    entries: [
+      { type:'feat',    text:'メール通知連携：EmailJS REST APIを使用して新規予約・ステータス変更時に管理者へ自動メール送信（SDKなし）' },
+      { type:'feat',    text:'メール通知設定ページ：通知先メール・EmailJS認証情報・トリガー別ON/OFF・テンプレート変数リスト・送信ログ・テスト送信' },
+    ]
+  },
+  {
+    version: 'v3.1', date: '2026-06-04',
     entries: [
       { type:'feat',    text:'LINE通知連携：新規予約・ステータス変更（確定・完了）・見積り受信時にLINE Notifyへ自動送信' },
       { type:'feat',    text:'LINE通知設定ページ：トークン管理・トリガー別ON/OFF・CORSプロキシ設定・送信ログ（最新20件）・テスト送信' },
@@ -6014,7 +6421,6 @@ const CL_TYPE = {
 };
 
 const CHANGELOG_NEXT = [
-  { priority:'high',   text:'メール通知：新規予約・見積り受信時に管理者へ自動メール送信' },
   { priority:'high',   text:'PDF直接出力：印刷ビューをPDFファイルとして直接ダウンロード' },
   { priority:'medium', text:'Google カレンダー同期：予約を Google カレンダーに自動追加' },
   { priority:'medium', text:'一括操作：予約・見積りの複数選択とまとめてステータス変更' },
@@ -6875,6 +7281,70 @@ function _fmtBytes(b) {
 }
 
 /* ════════════════════════════════════════════════════════
+   SECURITY PAGE
+   ════════════════════════════════════════════════════════ */
+function renderSecurity() {
+  const si = document.getElementById('secSessionInfo');
+  if (si) {
+    try {
+      const s = JSON.parse(sessionStorage.getItem(Auth.KEY)||'null');
+      if (s && s.token) {
+        const loginAt = new Date(s.ts);
+        const exp     = new Date(s.ts + Auth.TIMEOUT);
+        const remMins = Math.max(0, Math.ceil((Auth.TIMEOUT - (Date.now()-s.ts)) / 60000));
+        si.innerHTML = `
+          <div class="settings-row"><div><div class="settings-label">ログイン時刻</div></div><div style="font-size:13px;color:var(--ink)">${loginAt.toLocaleString('ja-JP')}</div></div>
+          <div class="settings-row"><div><div class="settings-label">セッション期限</div></div><div style="font-size:13px;color:var(--ink)">${exp.toLocaleString('ja-JP')}</div></div>
+          <div class="settings-row"><div><div class="settings-label">残り時間</div></div><div style="font-size:13px;color:var(--green);font-weight:600">${remMins}分</div></div>
+          <div style="margin-top:12px"><button class="btn btn-danger btn-sm" onclick="logout()">セッションを終了する</button></div>
+        `;
+      }
+    } catch(e) {}
+  }
+
+  const tbody = document.getElementById('secLogBody');
+  if (!tbody) return;
+  const log = Auth.getLog();
+  if (!log.length) {
+    tbody.innerHTML='<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--gray-2)">履歴なし</td></tr>';
+    return;
+  }
+  const labelMap  = {login:'ログイン',logout:'ログアウト',fail:'認証失敗',passwd_change:'パスワード変更'};
+  const typeClass = {login:'badge-confirmed',fail:'badge-cancel',logout:'badge-done',passwd_change:'badge-review'};
+  const detailMap = {success:'成功',manual:'手動',timeout:'タイムアウト',wrong_creds:'認証エラー',locked:'アカウントロック'};
+  tbody.innerHTML = log.map(e => `<tr>
+    <td class="td-mono">${new Date(e.ts).toLocaleString('ja-JP')}</td>
+    <td><span class="badge ${typeClass[e.type]||'badge-done'}">${labelMap[e.type]||e.type}</span></td>
+    <td class="td-sm">${detailMap[e.detail]||e.detail||''}</td>
+  </tr>`).join('');
+}
+
+async function doChangePassword() {
+  const cur = document.getElementById('secCurrentPass').value;
+  const nw  = document.getElementById('secNewPass').value;
+  const con = document.getElementById('secConfirmPass').value;
+  const msg = document.getElementById('secPassMsg');
+
+  msg.className='sec-pass-msg sec-pass-err';
+  if (!cur||!nw||!con)       { msg.textContent='全ての項目を入力してください'; return; }
+  if (nw.length < 8)         { msg.textContent='パスワードは8文字以上で設定してください'; return; }
+  if (nw !== con)            { msg.textContent='新しいパスワードが一致しません'; return; }
+  if (nw === cur)            { msg.textContent='新しいパスワードは現在と異なるものにしてください'; return; }
+
+  const ok = await Auth.changePassword(cur, nw);
+  if (ok) {
+    msg.className='sec-pass-msg sec-pass-ok';
+    msg.textContent='パスワードを変更しました';
+    document.getElementById('secCurrentPass').value='';
+    document.getElementById('secNewPass').value='';
+    document.getElementById('secConfirmPass').value='';
+    toast('パスワードを変更しました');
+  } else {
+    msg.textContent='現在のパスワードが正しくありません';
+  }
+}
+
+/* ════════════════════════════════════════════════════════
    AUTH UI
    ════════════════════════════════════════════════════════ */
 function showLogin() {
@@ -6884,9 +7354,24 @@ function showLogin() {
   document.getElementById('loginEmail').value = remembered;
   document.getElementById('rememberMe').checked = !!remembered;
   document.getElementById('loginPass').value='';
-  document.getElementById('loginErr').style.display='none';
   document.getElementById('loginEmail').classList.remove('has-error');
   document.getElementById('loginPass').classList.remove('has-error');
+
+  const errEl = document.getElementById('loginErr');
+  const btn   = document.getElementById('loginBtn');
+  if (Auth.isLockedOut()) {
+    errEl.textContent = `アカウントがロックされています。${Auth.lockoutMins()}分後に再試行してください。`;
+    errEl.className = 'login-err login-err-lock';
+    errEl.style.display = 'block';
+    btn.disabled = true;
+    btn.querySelector('.login-btn-text').textContent = 'ロック中';
+  } else {
+    errEl.style.display = 'none';
+    errEl.className = 'login-err';
+    btn.disabled = false;
+    btn.querySelector('.login-btn-text').textContent = 'ログイン';
+  }
+
   if (remembered) document.getElementById('loginPass').focus();
   else document.getElementById('loginEmail').focus();
 }
@@ -6896,54 +7381,74 @@ function showApp() {
   document.getElementById('adminApp').style.display='block';
 }
 
-function logout() { Auth.logout(); showLogin(); }
+function logout() { Auth.logout(); }
 
 /* ════════════════════════════════════════════════════════
    EVENT HANDLERS
    ════════════════════════════════════════════════════════ */
 function handleForgot() {
-  alert('パスワードリセットについては管理者にお問い合わせください。\n\nEmail: hellomoving1@gmail.com');
+  alert('ログイン後、サイドバーの「セキュリティ」ページからパスワードを変更できます。\n\nお問い合わせ: hellomoving1@gmail.com');
 }
 
-document.getElementById('loginBtn').addEventListener('click', () => {
-  const emailEl = document.getElementById('loginEmail');
-  const passEl  = document.getElementById('loginPass');
-  const btn     = document.getElementById('loginBtn');
-  const errEl   = document.getElementById('loginErr');
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const emailEl   = document.getElementById('loginEmail');
+  const passEl    = document.getElementById('loginPass');
+  const btn       = document.getElementById('loginBtn');
+  const errEl     = document.getElementById('loginErr');
   const emailHint = document.getElementById('loginEmailHint');
   const passHint  = document.getElementById('loginPassHint');
 
-  // Reset state
   emailEl.classList.remove('has-error'); emailHint.style.display='none';
   passEl.classList.remove('has-error');  passHint.style.display='none';
   errEl.style.display='none';
+  errEl.className='login-err';
+
+  if (Auth.isLockedOut()) {
+    errEl.textContent = `アカウントがロックされています。${Auth.lockoutMins()}分後に再試行してください。`;
+    errEl.className = 'login-err login-err-lock';
+    errEl.style.display='block';
+    btn.disabled=true;
+    btn.querySelector('.login-btn-text').textContent='ロック中';
+    return;
+  }
 
   const u = emailEl.value.trim();
   const p = passEl.value;
   let valid = true;
-
   if (!u) { emailEl.classList.add('has-error'); emailHint.style.display='block'; emailEl.focus(); valid=false; }
   if (!p) { passEl.classList.add('has-error');  passHint.style.display='block'; if(valid)passEl.focus(); valid=false; }
   if (!valid) return;
 
-  // Loading state
-  btn.disabled = true;
+  btn.disabled=true;
   btn.classList.add('loading');
-  btn.querySelector('.login-btn-text').textContent = 'ログイン中...';
+  btn.querySelector('.login-btn-text').textContent='ログイン中...';
 
-  setTimeout(() => {
-    const remember = document.getElementById('rememberMe').checked;
-    if (Auth.login(u, p, remember)) {
-      showApp(); init();
-    } else {
-      errEl.style.display='block';
-      emailEl.classList.add('has-error');
-      passEl.classList.add('has-error');
-    }
-    btn.disabled = false;
-    btn.classList.remove('loading');
-    btn.querySelector('.login-btn-text').textContent = 'ログイン';
-  }, 600);
+  const result = await Auth.login(u, p, document.getElementById('rememberMe').checked);
+
+  btn.classList.remove('loading');
+
+  if (result.ok) {
+    showApp(); init();
+    return;
+  }
+
+  btn.disabled=false;
+  btn.querySelector('.login-btn-text').textContent='ログイン';
+  emailEl.classList.add('has-error');
+  passEl.classList.add('has-error');
+
+  if (result.locked) {
+    errEl.textContent=`ログイン試行回数が上限を超えました。${Auth.lockoutMins()}分間ロックされています。`;
+    errEl.className='login-err login-err-lock';
+    btn.disabled=true;
+    btn.querySelector('.login-btn-text').textContent='ロック中';
+  } else {
+    const left=result.left;
+    errEl.textContent = left>0
+      ? `メールアドレスまたはパスワードが正しくありません（残り${left}回）`
+      : 'メールアドレスまたはパスワードが正しくありません';
+  }
+  errEl.style.display='block';
 });
 
 document.getElementById('loginPass').addEventListener('keydown', e => {
@@ -7002,13 +7507,16 @@ function init() {
   Auth.startTimer();
 }
 
-if (window.location.hash === '#review') {
-  showPublicReviewForm();
-} else if (Auth.isLoggedIn()) {
-  showApp(); init();
-} else {
-  showLogin();
-}
+(async () => {
+  await Auth.initCreds();
+  if (window.location.hash === '#review') {
+    showPublicReviewForm();
+  } else if (Auth.isLoggedIn()) {
+    showApp(); init();
+  } else {
+    showLogin();
+  }
+})();
 </script>
 </body>
 </html>
