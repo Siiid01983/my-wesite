@@ -2653,7 +2653,7 @@ function renderQA() {
 function renderBookings() {
   const filter = document.getElementById('bkFilter')?.value || '';
   const q = (document.getElementById('bkSearch')?.value || '').toLowerCase();
-  let bk = Adapter.getBookings();
+  let bk = BookingService.getBookings();
   if (filter) bk = bk.filter(b => b.status === filter);
   if (q) bk = bk.filter(b =>
     (b.name||'').toLowerCase().includes(q) ||
@@ -2668,9 +2668,11 @@ function buildTable(bk, compact) {
     <td class="td-mono">${esc(b.id||'—')}</td>
     <td>${fmtD(b.date)}<br><span class="td-sm">${esc(b.time||'')}</span></td>
     <td>${esc(b.service||'—')}</td>
-    <td><strong>${esc(b.name||'—')}</strong>${!compact&&b.email?`<br><span class="td-sm">${esc(b.email)}</span>`:''}</td>
-    ${!compact?`<td class="td-sm">${esc(b.fromAddr||'—')}</td>`:''}
-    ${!compact?`<td class="td-sm">${esc(b.toAddr||'—')}</td>`:''}
+    <td>
+      <strong>${esc(b.name||'—')}</strong>
+      ${!compact?`<br><span class="td-sm">${esc(b.email||'—')}</span><br><span class="td-sm">${esc(b.phone||'—')}</span>`:''}
+    </td>
+    ${!compact?`<td class="td-sm">${fmtDT(b.createdAt)}</td>`:''}
     <td>${badge(b.status||'新規')}</td>
     <td>
       <div style="display:flex;gap:4px;align-items:center">
@@ -2688,8 +2690,8 @@ function buildTable(bk, compact) {
   </tr>`).join('');
 
   return `<table><thead><tr>
-    <th>予約番号</th><th>日時</th><th>サービス</th><th>お客様名</th>
-    ${!compact?'<th>引越し元</th><th>引越し先</th>':''}
+    <th>予約番号</th><th>引越し日時</th><th>引越し種別</th><th>お客様名</th>
+    ${!compact?'<th>受付日時</th>':''}
     <th>ステータス</th><th>操作</th>
   </tr></thead><tbody>${rows}</tbody></table>`;
 }
@@ -2699,14 +2701,20 @@ function emptyHTML(msg) {
 }
 
 function quickStatus(id, status) {
-  Adapter.updateBooking(id, {status});
+  if (status === 'キャンセル') {
+    BookingService.cancelBooking(id);
+  } else {
+    BookingService.updateBooking(id, { status });
+  }
   toast('ステータスを更新しました');
   renderDash();
 }
 
 function delBooking(id) {
   if (!confirm('この予約を削除しますか？')) return;
+  const bk = BookingService.getBookings().find(b => b.id === id);
   Adapter.deleteBooking(id);
+  if (bk) BookingService.releaseBooking(bk);
   toast('削除しました');
   renderBookings(); renderDash();
 }
@@ -2716,6 +2724,14 @@ function filterToday() {
   document.getElementById('bkFilter').value = '';
   go('bookings');
 }
+
+/* ── Auto-refresh Reservation Management on BookingService events ── */
+['booking:created', 'booking:updated', 'booking:cancelled'].forEach(evt => {
+  document.addEventListener(evt, () => {
+    if (document.getElementById('view-bookings').classList.contains('active')) renderBookings();
+    renderDash();
+  });
+});
 
 /* ════════════════════════════════════════════════════════
    ADD / EDIT MODAL
@@ -2734,7 +2750,7 @@ function openAdd() {
 }
 
 function openEdit(id) {
-  const b = Adapter.getBookings().find(b => b.id === id); if (!b) return;
+  const b = BookingService.getBookings().find(b => b.id === id); if (!b) return;
   _editId = id;
   document.getElementById('editModalTitle').textContent = '予約を編集';
   document.getElementById('mName').value = b.name||'';
@@ -2755,7 +2771,7 @@ function closeEdit() { document.getElementById('editModal').classList.remove('op
 function saveBooking() {
   const name = document.getElementById('mName').value.trim();
   if (!name) { alert('お客様名を入力してください'); return; }
-  const existing = _editId ? Adapter.getBookings().find(b => b.id === _editId) : null;
+  const existing = _editId ? BookingService.getBookings().find(b => b.id === _editId) : null;
   const b = {
     id: _editId || genId(),
     name,
@@ -2770,9 +2786,8 @@ function saveBooking() {
     createdAt: existing?.createdAt || new Date().toISOString()
   };
   if (_editId) {
-    const prev = Adapter.getBookings().find(x => x.id === _editId);
-    Adapter.updateBooking(_editId, b);
-    BookingService.updateBooking(prev, b);
+    const prev = BookingService.getBookings().find(x => x.id === _editId);
+    BookingService.updateBooking(_editId, b);
     toast('予約を更新しました');
     if (prev && prev.status !== b.status) {
       if (b.status === '確定') {
@@ -2798,7 +2813,7 @@ function saveBooking() {
    DETAIL MODAL
    ════════════════════════════════════════════════════════ */
 function openDetail(id) {
-  const b = Adapter.getBookings().find(b => b.id === id); if (!b) return;
+  const b = BookingService.getBookings().find(b => b.id === id); if (!b) return;
   document.getElementById('detailRef').textContent = b.id;
   const r = (l,v) => `<div style="display:flex;padding:8px 0;border-bottom:1px solid var(--line-2);gap:12px"><span style="font-size:12px;color:var(--gray-1);font-weight:500;width:110px;flex-shrink:0">${l}</span><span style="font-size:13px;color:var(--ink);flex:1">${esc(String(v||'—'))}</span></div>`;
   document.getElementById('detailBody').innerHTML =
@@ -2809,13 +2824,13 @@ function openDetail(id) {
     r('備考',b.notes) + r('受付日時',fmtDT(b.createdAt));
   document.getElementById('detailPrintBtn').onclick = () => printBooking(id);
   document.getElementById('detailEditBtn').onclick  = () => openEdit(id);
-  document.getElementById('detailDelBtn').onclick   = () => { if(confirm('削除しますか？')){ const _bk=Adapter.getBookings().find(b=>b.id===id); Adapter.deleteBooking(id); BookingService.releaseBooking(_bk); closeDetail(); renderBookings(); renderDash(); toast('削除しました'); }};
+  document.getElementById('detailDelBtn').onclick   = () => { if(confirm('削除しますか？')){ const _bk=BookingService.getBookings().find(b=>b.id===id); Adapter.deleteBooking(id); BookingService.releaseBooking(_bk); closeDetail(); renderBookings(); renderDash(); toast('削除しました'); }};
   document.getElementById('detailModal').classList.add('open');
 }
 function closeDetail() { document.getElementById('detailModal').classList.remove('open'); }
 
 function printBooking(id) {
-  const b = Adapter.getBookings().find(b => b.id === id); if (!b) return;
+  const b = BookingService.getBookings().find(b => b.id === id); if (!b) return;
   const e = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
   const STATUS_COLOR = {
@@ -3017,17 +3032,50 @@ const BookingService = {
     }));
   },
 
-  updateBooking(prev, next) {
-    if (this._occupies(prev)) this._adjustCount(prev.date, -1);
-    if (this._occupies(next))  this._adjustCount(next.date,  1);
-    const affected = [...new Set([prev.date, next.date].filter(Boolean))];
-    affected.forEach(date => this._syncDate(date));
-    document.dispatchEvent(new CustomEvent('booking:updated', { detail: { prev, next } }));
-    affected.forEach(date => {
+  getBookings() { return Adapter.getBookings(); },
+
+  // id + patch object — replaces the old (prev, next) signature.
+  // Supabase hook point: await adapter.update(id, patch) here.
+  updateBooking(id, patch) {
+    const prev = Adapter.getBookings().find(b => b.id === id);
+    if (!prev) return null;
+    Adapter.updateBooking(id, patch);
+    const next = { ...prev, ...patch };
+    const dateChanged  = prev.date   !== next.date;
+    const activeChanged = this._occupies(prev) !== this._occupies(next);
+    if (dateChanged || activeChanged) {
+      if (this._occupies(prev)) this._adjustCount(prev.date, -1);
+      if (this._occupies(next))  this._adjustCount(next.date,  1);
+      [...new Set([prev.date, next.date].filter(Boolean))].forEach(date => {
+        const status = this._syncDate(date);
+        document.dispatchEvent(new CustomEvent('calendar:updated', {
+          detail: { date, status, source: 'booking' }
+        }));
+      });
+    }
+    document.dispatchEvent(new CustomEvent('booking:updated', {
+      detail: { bookingId: id, move_date: next.date, status: next.status }
+    }));
+    return next;
+  },
+
+  // Sets status to キャンセル, releases the calendar slot, dispatches booking:cancelled.
+  // Supabase hook point: await adapter.update(id, { status: 'キャンセル' }) here.
+  cancelBooking(id) {
+    const bk = Adapter.getBookings().find(b => b.id === id);
+    if (!bk) return null;
+    Adapter.updateBooking(id, { status: 'キャンセル' });
+    if (this._occupies(bk)) {
+      this._adjustCount(bk.date, -1);
+      const status = this._syncDate(bk.date);
       document.dispatchEvent(new CustomEvent('calendar:updated', {
-        detail: { date, status: this.computeStatus(date), source: 'booking' }
+        detail: { date: bk.date, status, source: 'booking' }
       }));
-    });
+    }
+    document.dispatchEvent(new CustomEvent('booking:cancelled', {
+      detail: { bookingId: id, move_date: bk.date, status: 'キャンセル' }
+    }));
+    return { ...bk, status: 'キャンセル' };
   },
 
   recomputeAll() {
@@ -7648,22 +7696,6 @@ window.addEventListener('resize', () => {
   }, 150);
 });
 
-/* ════════════════════════════════════════════════════════
-   SEED DEMO DATA
-   ════════════════════════════════════════════════════════ */
-function seedDemo() {
-  if (Adapter.getBookings().length) return;
-  const today = todayStr();
-  const d = n => { const x=new Date(); x.setDate(x.getDate()+n); return `${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`; };
-  [
-    {id:'HM-'+today.replace(/-/g,'')+'A1B2',name:'田中 花子',email:'tanaka@example.com',service:'単身引越し',date:d(3),time:'午前 8:00〜12:00',fromAddr:'東京都渋谷区恵比寿1-1',toAddr:'東京都新宿区西新宿2-2',notes:'',status:'確定',createdAt:new Date(Date.now()-86400000*2).toISOString()},
-    {id:'HM-'+today.replace(/-/g,'')+'C3D4',name:'佐藤 太郎',email:'sato@example.com',service:'カップル・ご夫婦引越し',date:d(7),time:'午後 12:00〜17:00',fromAddr:'埼玉県さいたま市大宮区',toAddr:'東京都港区六本木3-3',notes:'ベッドの分解希望',status:'新規',createdAt:new Date(Date.now()-86400000).toISOString()},
-    {id:'HM-'+today.replace(/-/g,'')+'E5F6',name:'Mr. Miller',email:'miller@example.com',service:'単身引越し',date:d(12),time:'午前 8:00〜12:00',fromAddr:'東京都目黒区4-4',toAddr:'東京都品川区5-5',notes:'English support needed',status:'確認中',createdAt:new Date().toISOString()},
-    {id:'HM-'+today.replace(/-/g,'')+'G7H8',name:'中村 一郎',email:'nakamura@example.com',service:'不用品回収・処分サービス',date:d(-3),time:'夕方 17:00〜20:00',fromAddr:'東京都千代田区6-6',toAddr:'',notes:'ソファと冷蔵庫',status:'完了',createdAt:new Date(Date.now()-86400000*4).toISOString()},
-    {id:'HM-'+today.replace(/-/g,'')+'I9J0',name:'山田 美咲',email:'yamada@example.com',service:'学生・新生活引越し',date:d(-8),time:'午前 8:00〜12:00',fromAddr:'神奈川県横浜市7-7',toAddr:'東京都豊島区池袋8-8',notes:'',status:'キャンセル',createdAt:new Date(Date.now()-86400000*9).toISOString()},
-    {id:'HM-'+today.replace(/-/g,'')+'K1L2',name:'鈴木 健一',email:'suzuki@example.com',service:'当日・お急ぎ引越し',date:today,time:'午前 8:00〜12:00',fromAddr:'東京都江戸川区',toAddr:'東京都墨田区',notes:'急ぎのため',status:'確認中',createdAt:new Date().toISOString()},
-  ].forEach(b => Adapter.addBooking(b));
-}
 
 /* ════════════════════════════════════════════════════════
    INIT
@@ -7671,7 +7703,6 @@ function seedDemo() {
 function init() {
   Adapter.migrate();
   BookingService.bootstrap();
-  seedDemo();
   renderDash();
   Auth.startTimer();
 }
