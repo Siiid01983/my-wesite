@@ -414,6 +414,19 @@ html.dark .login-err-lock{color:#f59e0b}
 .hc-banner{max-width:380px;width:100%;margin-top:12px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.28);border-radius:12px;padding:12px 14px;color:#92400e}
 html.dark .hc-banner{background:rgba(245,158,11,.07);color:#fbbf24;border-color:rgba(245,158,11,.22)}
 
+/* ── In-App Health Banner ── */
+#hmHealthBanner{display:none}
+.hmhb-inner{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:12px;font-weight:500;line-height:1.4;flex-wrap:wrap}
+#hmHealthBanner.hmhb-healthy .hmhb-inner{background:rgba(16,185,129,.1);border-bottom:1px solid rgba(16,185,129,.25);color:#065f46}
+#hmHealthBanner.hmhb-warning .hmhb-inner{background:rgba(245,158,11,.1);border-bottom:1px solid rgba(245,158,11,.28);color:#92400e}
+#hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.08);border-bottom:1px solid rgba(239,68,68,.22);color:#991b1b}
+html.dark #hmHealthBanner.hmhb-healthy .hmhb-inner{background:rgba(16,185,129,.08);color:#34d399;border-color:rgba(16,185,129,.2)}
+html.dark #hmHealthBanner.hmhb-warning .hmhb-inner{background:rgba(245,158,11,.07);color:#fbbf24;border-color:rgba(245,158,11,.22)}
+html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07);color:#f87171;border-color:rgba(239,68,68,.2)}
+.hmhb-dismiss{margin-left:auto;background:none;border:none;cursor:pointer;font-size:18px;line-height:1;opacity:.55;color:inherit;padding:0 2px;flex-shrink:0}
+.hmhb-dismiss:hover{opacity:.9}
+.hmhb-link{background:none;border:none;cursor:pointer;font-size:11px;font-weight:700;color:inherit;text-decoration:underline;padding:0;font-family:inherit}
+
 /* ── Customer Management ── */
 .cust-avatar{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--blue-2));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0;user-select:none}
 .cust-avatar-lg{width:52px;height:52px;border-radius:14px;font-size:22px}
@@ -703,6 +716,9 @@ html.dark .hc-banner{background:rgba(245,158,11,.07);color:#fbbf24;border-color:
         <button class="sb-link" data-view="security" onclick="go('security')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4c1.4 0 2.8 1.1 2.8 2.5V9c.6 0 1.2.6 1.2 1.2v3.5c0 .7-.6 1.3-1.2 1.3H9.2C8.6 15 8 14.4 8 13.7v-3.5C8 9.6 8.6 9 9.2 9V7.5C9.2 6.1 10.6 5 12 5zm0 1.2c-.8 0-1.5.5-1.5 1.3V9h3V7.5c0-.8-.7-1.3-1.5-1.3z"/></svg>セキュリティ
         </button>
+        <button class="sb-link" data-view="health" onclick="go('health')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>システム健全性
+        </button>
         <div class="sb-section" style="margin-top:6px">その他</div>
         <button class="sb-link" onclick="toggleDark()">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>ダークモード
@@ -737,6 +753,9 @@ html.dark .hc-banner{background:rgba(245,158,11,.07);color:#fbbf24;border-color:
           </button>
         </div>
       </div>
+
+      <!-- In-App Health Banner — rendered by _applyAppHealthBanner() -->
+      <div id="hmHealthBanner"></div>
 
       <div class="content">
         <!-- 1. DASHBOARD -->
@@ -1726,6 +1745,30 @@ html.dark .hc-banner{background:rgba(245,158,11,.07);color:#fbbf24;border-color:
           </div>
         </div>
 
+        <!-- SYSTEM HEALTH -->
+        <div id="view-health" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">システム健全性チェック</span>
+              <button class="btn btn-ghost btn-sm" onclick="_refreshHealth()">
+                <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>再チェック
+              </button>
+            </div>
+            <div class="panel-body" id="healthViewBody">
+              <div style="text-align:center;padding:30px 0;color:var(--gray-2)">読み込み中...</div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">ヘルスチェックログ</span>
+              <button class="btn btn-ghost btn-sm" onclick="_clearHealthLog()">ログをクリア</button>
+            </div>
+            <div class="panel-body" id="healthLogBody">
+              <div style="text-align:center;padding:20px 0;color:var(--gray-2)">ログなし</div>
+            </div>
+          </div>
+        </div>
+
       </div><!-- /content -->
     </main>
   </div><!-- /layout -->
@@ -2045,6 +2088,7 @@ html.dark .hc-banner{background:rgba(245,158,11,.07);color:#fbbf24;border-color:
 <script src="js/services/fallbackLogger.js"></script>
 <script src="js/services/dataProvider.js"></script>
 <script src="js/services/serviceRegistry.js"></script>
+<script src="js/services/healthCheck.js"></script>
 
 <script>
 'use strict';
@@ -2269,6 +2313,9 @@ const Auth = {
   }
 };
 
+/* Expose Auth so healthCheck.js can verify session validation */
+window.Auth = Auth;
+
 /* ════════════════════════════════════════════════════════
    STORAGE ADAPTER — provided by js/services/supabaseAdapter.js
    All UI code calls Adapter.* only — never storage directly
@@ -2349,7 +2396,7 @@ const VIEW_TITLES = {
   dashboard:'ダッシュボード', bookings:'予約管理', quotes:'見積り管理',
   reviews:'レビュー管理', services:'サービス管理', faq:'FAQ編集', company:'会社情報編集', footer:'フッター編集', hero:'ヒーロー編集', calendar:'カレンダー管理', analytics:'分析',
   capacity:'容量設定', pricing:'料金管理', disposal:'不用品管理', actions:'クイック操作',
-  backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理', line:'LINE通知設定', email:'メール通知設定', changelog:'変更履歴', security:'セキュリティ'
+  backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理', line:'LINE通知設定', email:'メール通知設定', changelog:'変更履歴', security:'セキュリティ', health:'システム健全性'
 };
 
 /* ════════════════════════════════════════════════════════
@@ -2398,6 +2445,7 @@ function go(view) {
   if (view==='email') renderEmail();
   if (view==='changelog') renderChangelog();
   if (view==='security') renderSecurity();
+  if (view==='health')   renderHealth();
 }
 
 function toggleDark() {
@@ -3159,6 +3207,10 @@ const BookingService = {
     Object.keys(counts).forEach(date => this._syncDate(date));
   }
 };
+
+/* Expose so healthCheck.js can verify registration */
+window.BookingService  = BookingService;
+window.CalendarService = CalendarService;
 
 /* ════════════════════════════════════════════════════════
    CALENDAR MANAGEMENT
@@ -7717,6 +7769,137 @@ function renderSecurity() {
   </tr>`).join('');
 }
 
+/* ════════════════════════════════════════════════════════
+   SYSTEM HEALTH PAGE
+   ════════════════════════════════════════════════════════ */
+const _HC_SVC_LABEL = {
+  supabase:     'Supabase 接続',
+  dataProvider: 'データプロバイダー',
+  services:     'サービスレジストリ',
+  storage:      'ストレージ',
+  auth:         '認証サービス',
+};
+
+function renderHealth() {
+  const body    = document.getElementById('healthViewBody');
+  const logBody = document.getElementById('healthLogBody');
+  if (!body) return;
+
+  window.HealthCheck.getReport().then(report => {
+    if (!report) {
+      body.innerHTML = '<div style="text-align:center;padding:30px 0;color:var(--gray-2)">チェック未実行 — 「再チェック」ボタンを押してください</div>';
+      return;
+    }
+
+    const _statusBadge = s =>
+      s === 'healthy' ? `<span class="badge badge-confirmed">正常</span>`
+      : s === 'warning' ? `<span class="badge badge-review">警告</span>`
+      : `<span class="badge badge-cancel">エラー</span>`;
+
+    const _overallColor = report.status === 'healthy' ? 'var(--green)' : report.status === 'warning' ? 'var(--yellow)' : 'var(--red)';
+    const _overallLabel = report.status === 'healthy' ? '✓ 全サービス正常'
+      : report.status === 'warning' ? '⚠ 一部のサービスに警告があります'
+      : '✕ 重大な設定エラーが検出されました';
+    const _ts = new Date(report.ts).toLocaleString('ja-JP');
+
+    const rows = report.checks.map(c => `<tr>
+      <td style="font-weight:500;font-size:13px">${_HC_SVC_LABEL[c.service] || c.service}</td>
+      <td>${_statusBadge(c.status)}</td>
+      <td class="td-mono">${_ts}</td>
+      <td style="font-size:12px;color:var(--ink-2)">${esc(c.message)}</td>
+    </tr>`).join('');
+
+    body.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid var(--line)">
+        <span style="font-size:14px;font-weight:700;color:${_overallColor}">${_overallLabel}</span>
+        <span style="font-size:11px;color:var(--gray-2);margin-left:auto">最終チェック: ${_ts}</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>サービス</th><th>状態</th><th>チェック日時</th><th>詳細</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  });
+
+  if (!logBody) return;
+  const logs = window.HealthCheck.getLog();
+  if (!logs.length) {
+    logBody.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--gray-2)">ログなし</div>';
+    return;
+  }
+  const logRows = logs.slice(0, 100).map(l => {
+    const color = l.status === 'healthy' ? 'var(--green)' : l.status === 'warning' ? 'var(--yellow)' : 'var(--red)';
+    return `<tr>
+      <td class="td-mono">${new Date(l.ts).toLocaleString('ja-JP')}</td>
+      <td style="font-size:12px;font-weight:500;color:${color}">${_HC_SVC_LABEL[l.service] || l.service}</td>
+      <td><span class="badge ${l.status==='healthy'?'badge-confirmed':l.status==='warning'?'badge-review':'badge-cancel'}">${l.status==='healthy'?'正常':l.status==='warning'?'警告':'エラー'}</span></td>
+      <td style="font-size:12px">${esc(l.message)}</td>
+    </tr>`;
+  }).join('');
+  logBody.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>日時</th><th>サービス</th><th>状態</th><th>メッセージ</th></tr></thead>
+    <tbody>${logRows}</tbody>
+  </table></div>`;
+}
+
+async function _refreshHealth() {
+  const body = document.getElementById('healthViewBody');
+  if (body) body.innerHTML = '<div style="text-align:center;padding:30px 0;color:var(--gray-2)">チェック実行中...</div>';
+  const report = await window.HealthCheck.run();
+  _hcReport = report;
+  _applyHcBanner();
+  _applyAppHealthBanner(report);
+  renderHealth();
+  toast('ヘルスチェック完了');
+}
+
+function _clearHealthLog() {
+  window.HealthCheck.clearLog();
+  renderHealth();
+  toast('ログをクリアしました');
+}
+
+/* ════════════════════════════════════════════════════════
+   IN-APP HEALTH BANNER
+   ════════════════════════════════════════════════════════ */
+function _applyAppHealthBanner(report) {
+  const banner = document.getElementById('hmHealthBanner');
+  if (!banner || !report) return;
+
+  if (report.status === 'healthy') {
+    banner.className = 'hmhb-healthy';
+    banner.style.display = 'block';
+    banner.innerHTML = `<div class="hmhb-inner">
+      <svg viewBox="0 0 24 24" width="15" height="15" style="flex-shrink:0"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+      <span>システム正常 — 全サービス動作中</span>
+      <button class="hmhb-dismiss" onclick="document.getElementById('hmHealthBanner').style.display='none'">&#215;</button>
+    </div>`;
+    setTimeout(() => {
+      if (banner.classList.contains('hmhb-healthy')) banner.style.display = 'none';
+    }, 4000);
+    return;
+  }
+
+  const isError   = report.status === 'error';
+  banner.className = isError ? 'hmhb-error' : 'hmhb-warning';
+  banner.style.display = 'block';
+
+  const icon = isError
+    ? `<svg viewBox="0 0 24 24" width="15" height="15" style="flex-shrink:0"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`
+    : `<svg viewBox="0 0 24 24" width="15" height="15" style="flex-shrink:0"><path fill="currentColor" d="M12 2L1 21h22L12 2zm1 14h-2v-2h2v2zm0-4h-2V8h2v4z"/></svg>`;
+  const label   = isError ? '重大な設定エラーが検出されました' : '一部のサービスに問題があります';
+  const issues  = report.checks.filter(c => c.status !== 'healthy').length;
+
+  banner.innerHTML = `<div class="hmhb-inner">
+    ${icon}
+    <span>${label}</span>
+    <span style="opacity:.65;font-size:11px">${issues}件の問題</span>
+    <button class="hmhb-link" onclick="go('health')" style="margin-left:4px">詳細を確認</button>
+    <button class="hmhb-dismiss" onclick="document.getElementById('hmHealthBanner').style.display='none'">&#215;</button>
+  </div>`;
+}
+
 async function doChangePassword() {
   const cur = document.getElementById('secCurrentPass').value;
   const nw  = document.getElementById('secNewPass').value;
@@ -7954,45 +8137,27 @@ async function init() {
 }
 
 /* ════════════════════════════════════════════════════════
-   HEALTH CHECK — pre-flight credential verification
-   Checks env.js on every admin load; shows a non-blocking
-   banner on the login screen when credentials are missing
-   or contain placeholder values.
+   HEALTH BANNER — LOGIN SCREEN
+   Driven by the HealthCheck service (js/services/healthCheck.js).
+   Shows a non-blocking amber banner when Supabase is unreachable.
    ════════════════════════════════════════════════════════ */
-var HealthCheck = {
-  run() {
-    const url = window.SUPABASE_URL;
-    const key = window.SUPABASE_ANON_KEY;
-    const urlOk = !!url && !url.includes('<') && url.startsWith('https://');
-    const keyOk = !!key && !key.includes('<') && key.length > 20;
-    if (urlOk && keyOk) return { ok: true, checks: [] };
-
-    const bothMissing   = !url && !key;
-    const hasPlaceholder = (url && url.includes('<')) || (key && key.includes('<'));
-    const msg = bothMissing    ? 'env.js が読み込まれていません。env.example.js を env.js にコピーして認証情報を入力してください。'
-              : hasPlaceholder ? 'env.js にプレースホルダーが残っています（&lt;project-ref&gt; 等）。正しい値を設定してください。'
-              : !url            ? 'SUPABASE_URL が設定されていません（env.js を確認してください）。'
-              : !key            ? 'SUPABASE_ANON_KEY が設定されていません（env.js を確認してください）。'
-              :                   'Supabase 認証情報を確認してください（env.js）。';
-    return { ok: false, checks: [{ pass: false, msg }] };
-  }
-};
-
-var _hcResult = null;
+var _hcReport = null;
 
 function _applyHcBanner() {
   const banner = document.getElementById('hcBanner');
   if (!banner) return;
-  if (!_hcResult || _hcResult.ok) { banner.style.display = 'none'; return; }
-  const c = _hcResult.checks[0];
+  if (!_hcReport) { banner.style.display = 'none'; return; }
+  const sbCheck = _hcReport.checks.find(c => c.service === 'supabase');
+  if (!sbCheck || sbCheck.status === 'healthy') { banner.style.display = 'none'; return; }
+  const isError = sbCheck.status === 'error';
   banner.innerHTML = `
     <div style="display:flex;align-items:flex-start;gap:10px">
       <svg viewBox="0 0 24 24" width="18" height="18" style="flex-shrink:0;margin-top:1px">
         <path fill="currentColor" d="M12 2L1 21h22L12 2zm1 14h-2v-2h2v2zm0-4h-2V8h2v4z"/>
       </svg>
       <div style="flex:1">
-        <div style="font-weight:700;font-size:12px;margin-bottom:3px">設定の確認が必要です</div>
-        <div style="font-size:12px;line-height:1.5">${c.msg}</div>
+        <div style="font-weight:700;font-size:12px;margin-bottom:3px">${isError ? '設定の確認が必要です' : 'Supabase 接続の警告'}</div>
+        <div style="font-size:12px;line-height:1.5">${esc(sbCheck.message)}</div>
         <div style="font-size:11px;margin-top:5px;opacity:.75">Supabase との同期は機能しません。データはローカルキャッシュから読み込まれます。</div>
       </div>
       <button onclick="document.getElementById('hcBanner').style.display='none'"
@@ -8001,8 +8166,13 @@ function _applyHcBanner() {
   banner.style.display = 'block';
 }
 
+/* ════════════════════════════════════════════════════════
+   STARTUP
+   Sequence: Auth.initCreds → show screen → HealthCheck.run()
+   (async, non-blocking) → apply banners on completion.
+   Application never crashes — HealthCheck errors are caught.
+   ════════════════════════════════════════════════════════ */
 (async () => {
-  _hcResult = HealthCheck.run();
   await Auth.initCreds();
   if (window.location.hash === '#review') {
     showPublicReviewForm();
@@ -8011,6 +8181,15 @@ function _applyHcBanner() {
     else { showApp(); await init(); }
   } else {
     showLogin();
+  }
+
+  /* Run health check after the screen is shown — non-blocking */
+  if (window.HealthCheck) {
+    window.HealthCheck.run().then(report => {
+      _hcReport = report;
+      _applyHcBanner();
+      if (Auth.isLoggedIn()) _applyAppHealthBanner(report);
+    }).catch(e => console.warn('[HealthCheck] startup check failed:', e));
   }
 })();
 </script>
