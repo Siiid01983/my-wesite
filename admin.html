@@ -916,7 +916,7 @@ html.dark .login-err-lock{color:#f59e0b}
             <div class="panel-head">
               <span class="panel-title">見積りリクエスト</span>
               <div class="search-bar">
-                <select class="sel" id="qtSvcFilter" onchange="renderQuotes()">
+                <select class="sel" id="qtSvcFilter" onchange="_renderQuotesUI()">
                   <option value="">全サービス</option>
                   <option>単身引越し</option>
                   <option>カップル・ご夫婦引越し</option>
@@ -925,11 +925,11 @@ html.dark .login-err-lock{color:#f59e0b}
                   <option>不用品回収・処分サービス</option>
                   <option>家具組立・分解</option>
                 </select>
-                <select class="sel" id="qtSort" onchange="renderQuotes()">
+                <select class="sel" id="qtSort" onchange="_renderQuotesUI()">
                   <option value="desc">新しい順</option>
                   <option value="asc">古い順</option>
                 </select>
-                <input class="search-input" id="qtSearch" placeholder="名前・メール・サービスで検索..." oninput="renderQuotes()" style="min-width:200px" />
+                <input class="search-input" id="qtSearch" placeholder="名前・メール・サービスで検索..." oninput="_renderQuotesUI()" style="min-width:200px" />
                 <button class="btn btn-ghost btn-sm" onclick="exportQuotesCSV()">
                   <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>CSV出力
                 </button>
@@ -2229,7 +2229,7 @@ function go(view) {
   if (view==='capacity') loadCapacity();
   if (view==='pricing') renderPricing();
   if (view==='disposal') renderDisposal();
-  if (view==='quotes') renderQuotes();
+  if (view==='quotes') { renderQuotes(); _syncQuotesFromSupabase(); }
   if (view==='reviews') { renderReviews(); _syncReviewsFromSupabase(); }
   if (view==='services') renderServices();
   if (view==='faq') renderFaq();
@@ -4393,7 +4393,7 @@ function drawHBarChart(id, labels, data, dark) {
 /* ════════════════════════════════════════════════════════
    QUOTE MANAGEMENT
    ════════════════════════════════════════════════════════ */
-function renderQuotes() {
+function _renderQuotesUI() {
   const svcFilter = document.getElementById('qtSvcFilter')?.value || '';
   const sort      = document.getElementById('qtSort')?.value || 'desc';
   const q         = (document.getElementById('qtSearch')?.value || '').toLowerCase();
@@ -4448,6 +4448,17 @@ function renderQuotes() {
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
+}
+
+function renderQuotes() { _renderQuotesUI(); }
+
+function _syncQuotesFromSupabase() {
+  if (!Adapter.supabaseReady) return;
+  Adapter.syncQuotes().then(ok => {
+    if (ok && document.getElementById('view-quotes').classList.contains('active')) {
+      _renderQuotesUI();
+    }
+  });
 }
 
 function deleteQuote(id) {

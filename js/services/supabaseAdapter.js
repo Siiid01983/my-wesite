@@ -681,6 +681,20 @@
       return true;
     },
 
+    /* Pull hm_quotes from the hm_data KV table and refresh localStorage.
+       Lighter than syncFromSupabase() — use when quotes view is opened. */
+    async syncQuotes() {
+      if (!_sb) return false;
+      const { data, error } = await _sb
+        .from('hm_data')
+        .select('value')
+        .eq('key', 'hm_quotes')
+        .maybeSingle();
+      if (error) { console.warn('[Adapter] syncQuotes error:', error.message); return false; }
+      if (data?.value) _set('hm_quotes', data.value);
+      return true;
+    },
+
     /* Pull only the reviews table from Supabase and refresh localStorage.
        Lighter than syncFromSupabase() — use when reviews view is opened. */
     async syncReviews() {
