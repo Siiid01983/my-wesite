@@ -3776,25 +3776,8 @@ function renderAnalytics() {
   renderAnalyticsCharts();
 }
 
-function renderAnalyticsCharts() {
-  const isDark        = document.documentElement.classList.contains('dark');
-  const { from, to }  = getAnalyticsRange();
-  const bk            = Adapter.getBookings();
-  const quotes        = Adapter.getQuotes();
-  const prices        = Adapter.getPrices();
-  const fromD         = new Date(from + 'T00:00:00');
-  const toD           = new Date(to   + 'T00:00:00');
-  const days          = Math.round((toD - fromD) / 86400000) + 1;
-
-  /* ── Period label ── */
-  const periodLabel = _aPeriod === 'custom'
-    ? `${from.slice(5)} 〜 ${to.slice(5)}`
-    : (_A_PERIODS.find(p => p.key === _aPeriod)?.label || '');
-  const calIcon = `<svg viewBox="0 0 24 24" width="10" height="10" style="flex-shrink:0"><path fill="currentColor" d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>`;
-
-  /* ── KPI computations (period-filtered) ── */
-  const bkInRange  = bk.filter(b => b.date >= from && b.date <= to);
-  const qtInRange  = quotes.filter(q => (q.createdAt||'').slice(0,10) >= from && (q.createdAt||'').slice(0,10) <= to);
+/* ── Analytics helper: KPI grid ── */
+function _renderAnalyticsKPIs(bkInRange, qtInRange, prices, periodLabel, calIcon) {
   const activeBkR  = bkInRange.filter(b => b.status !== 'キャンセル');
   const totalBk    = bkInRange.length;
   const totalQt    = qtInRange.length;
@@ -3811,36 +3794,18 @@ function renderAnalyticsCharts() {
   });
 
   const dowCount = [0,0,0,0,0,0,0];
-  activeBkR.forEach(b => { dowCount[new Date(b.date + 'T00:00:00').getDay()]++; });
+  activeBkR.forEach(b => { if (b.date) dowCount[new Date(b.date+'T00:00:00').getDay()]++; });
   const maxDow = Math.max(...dowCount);
   const topDow = dowCount.indexOf(maxDow);
 
   const convColor = convRate >= 50 ? 'var(--green)' : (convRate >= 25 ? 'var(--yellow)' : 'var(--red)');
   const kpis = [
-    { label:'総予約数',
-      val: totalBk,
-      sub: `確定済み ${bkInRange.filter(b=>b.status==='確定').length}件`,
-      color: '', sm: false },
-    { label:'見積りリクエスト',
-      val: totalQt,
-      sub: '受付済み合計',
-      color: 'var(--blue)', sm: false },
-    { label:'転換率',
-      val: convRate + '%',
-      sub: '見積り → 予約 (キャンセル除く)',
-      color: convColor, sm: false },
-    { label:'人気サービス',
-      val: topSvcEntry ? (_SVC_SHORT[topSvcEntry[0]]||topSvcEntry[0]) : '—',
-      sub: topSvcEntry ? topSvcEntry[1]+'件のご依頼' : 'データなし',
-      color: '#8b5cf6', sm: true },
-    { label:'期間売上概算',
-      val: '¥' + periodRevenue.toLocaleString(),
-      sub: '基本料金ベース・キャンセル除く',
-      color: 'var(--green)', sm: true },
-    { label:'人気の引越し曜日',
-      val: maxDow > 0 ? _DOW_JP[topDow]+'曜日' : '—',
-      sub: maxDow > 0 ? maxDow+'件 最多予約曜日' : 'データなし',
-      color: 'var(--blue)', sm: true },
+    { label:'総予約数',         val: totalBk,                                                             sub: `確定済み ${bkInRange.filter(b=>b.status==='確定').length}件`, color: '',            sm: false },
+    { label:'見積りリクエスト', val: totalQt,                                                             sub: '受付済み合計',                                                color: 'var(--blue)', sm: false },
+    { label:'転換率',           val: convRate + '%',                                                      sub: '見積り → 予約 (キャンセル除く)',                              color: convColor,      sm: false },
+    { label:'人気サービス',     val: topSvcEntry ? (_SVC_SHORT[topSvcEntry[0]]||topSvcEntry[0]) : '—',  sub: topSvcEntry ? topSvcEntry[1]+'件のご依頼' : 'データなし',      color: '#8b5cf6',     sm: true  },
+    { label:'期間売上概算',     val: '¥' + periodRevenue.toLocaleString(),                               sub: '基本料金ベース・キャンセル除く',                               color: 'var(--green)', sm: true  },
+    { label:'人気の引越し曜日', val: maxDow > 0 ? _DOW_JP[topDow]+'曜日' : '—',                         sub: maxDow > 0 ? maxDow+'件 最多予約曜日' : 'データなし',            color: 'var(--blue)', sm: true  },
   ];
 
   document.getElementById('analyticsGrid').innerHTML = kpis.map(k =>
@@ -3851,8 +3816,10 @@ function renderAnalyticsCharts() {
       <div class="stat-period">${calIcon}${periodLabel}</div>
     </div>`
   ).join('');
+}
 
-  /* ── Chart 1: time-series with adaptive granularity ── */
+/* ── Analytics helper: chart drawing ── */
+function _drawAnalyticsCharts(bk, from, to, fromD, toD, days, isDark, chartPeriodLabel) {
   let c1Labels = [], c1Data = [], c1Title = '';
 
   if (days <= 14) {
@@ -3882,12 +3849,11 @@ function renderAnalyticsCharts() {
       const ym = `${cur.getFullYear()}-${pad(cur.getMonth()+1)}`;
       const thisYear = cur.getFullYear() === new Date().getFullYear();
       c1Labels.push(thisYear ? `${cur.getMonth()+1}月` : `${cur.getFullYear()}/${cur.getMonth()+1}`);
-      c1Data.push(bk.filter(b => b.date.startsWith(ym)).length);
+      c1Data.push(bk.filter(b => b.date && b.date.startsWith(ym)).length);
       cur.setMonth(cur.getMonth() + 1);
     }
   }
 
-  /* ── Chart 2: monthly breakdown in period ── */
   const c2Labels = [], c2Data = [];
   {
     let cur = new Date(fromD.getFullYear(), fromD.getMonth(), 1);
@@ -3895,25 +3861,19 @@ function renderAnalyticsCharts() {
     while (cur <= endM) {
       const ym = `${cur.getFullYear()}-${pad(cur.getMonth()+1)}`;
       c2Labels.push(`${cur.getMonth()+1}月`);
-      c2Data.push(bk.filter(b => b.date.startsWith(ym)).length);
+      c2Data.push(bk.filter(b => b.date && b.date.startsWith(ym)).length);
       cur.setMonth(cur.getMonth() + 1);
     }
   }
-  const c2Title = `月別予約数`;
+  }
 
-  /* ── Chart 3: service popularity (period-filtered, non-cancelled) ── */
   const c3SvcCount = {};
   bk.filter(b => b.date >= from && b.date <= to && b.status !== 'キャンセル').forEach(b => {
     c3SvcCount[b.service] = (c3SvcCount[b.service] || 0) + 1;
   });
-  const svcKeys   = Object.keys(c3SvcCount).sort((a,b) => c3SvcCount[b] - c3SvcCount[a]);
-  const c3Labels  = svcKeys.map(s => _SVC_SHORT[s] || s.slice(0, 6));
-  const c3Data    = svcKeys.map(s => c3SvcCount[s]);
-
-  /* ── Period label for chart titles ── */
-  const chartPeriodLabel = _aPeriod === 'custom'
-    ? `${from} 〜 ${to}`
-    : (_A_PERIODS.find(p => p.key === _aPeriod)?.label || '');
+  const svcKeys  = Object.keys(c3SvcCount).sort((a,b) => c3SvcCount[b] - c3SvcCount[a]);
+  const c3Labels = svcKeys.map(s => _SVC_SHORT[s] || s.slice(0, 6));
+  const c3Data   = svcKeys.map(s => c3SvcCount[s]);
 
   document.getElementById('analyticsCharts').innerHTML = `
     <div class="chart-card">
@@ -3921,7 +3881,7 @@ function renderAnalyticsCharts() {
       <canvas id="chartC1" class="chart-canvas"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">${c2Title}<span style="font-size:10px;color:var(--gray-2);margin-left:6px;font-weight:400">${chartPeriodLabel}</span></div>
+      <div class="chart-title">月別予約数<span style="font-size:10px;color:var(--gray-2);margin-left:6px;font-weight:400">${chartPeriodLabel}</span></div>
       <canvas id="chartC2" class="chart-canvas"></canvas>
     </div>
     <div class="chart-card">
@@ -3934,8 +3894,10 @@ function renderAnalyticsCharts() {
     drawBarChart('chartC2', c2Labels, c2Data, isDark);
     drawHBarChart('chartC3', c3Labels, c3Data, isDark);
   });
+}
 
-  /* ── Popular upcoming dates (period-filtered) ── */
+/* ── Analytics helper: popular dates panel ── */
+function _renderAnalyticsPopularDates(bk, from, to) {
   const today = todayStr();
   const dateCount = {};
   bk.filter(b => b.status !== 'キャンセル' && b.date >= from && b.date <= to && b.date >= today).forEach(b => {
@@ -3959,6 +3921,43 @@ function renderAnalyticsCharts() {
     extraEl.innerHTML = `<div class="panel"><div class="panel-head"><span class="panel-title">人気の引越し日（期間内・今後）</span></div><div class="panel-body">${rows}</div></div>`;
   } else {
     extraEl.innerHTML = `<div class="panel"><div class="panel-head"><span class="panel-title">人気の引越し日</span></div><div class="panel-body"><div class="empty" style="padding:20px"><p>期間内に今後の予約データがありません</p></div></div></div>`;
+  }
+}
+
+function renderAnalyticsCharts() {
+  const isDark = document.documentElement.classList.contains('dark');
+  const { from, to } = getAnalyticsRange();
+  const bk    = Adapter.getBookings();
+  const quotes = Adapter.getQuotes();
+  const prices = Adapter.getPrices();
+  const fromD  = new Date(from + 'T00:00:00');
+  const toD    = new Date(to   + 'T00:00:00');
+  const days   = Math.round((toD - fromD) / 86400000) + 1;
+
+  const periodLabel = _aPeriod === 'custom'
+    ? `${from.slice(5)} 〜 ${to.slice(5)}`
+    : (_A_PERIODS.find(p => p.key === _aPeriod)?.label || '');
+  const calIcon = `<svg viewBox="0 0 24 24" width="10" height="10" style="flex-shrink:0"><path fill="currentColor" d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>`;
+  const chartPeriodLabel = _aPeriod === 'custom'
+    ? `${from} 〜 ${to}`
+    : (_A_PERIODS.find(p => p.key === _aPeriod)?.label || '');
+
+  const bkInRange = bk.filter(b => b.date >= from && b.date <= to);
+  const qtInRange = quotes.filter(q => (q.createdAt||'').slice(0,10) >= from && (q.createdAt||'').slice(0,10) <= to);
+
+  /* Render immediately with local (localStorage) data */
+  _renderAnalyticsKPIs(bkInRange, qtInRange, prices, periodLabel, calIcon);
+  _drawAnalyticsCharts(bk, from, to, fromD, toD, days, isDark, chartPeriodLabel);
+  _renderAnalyticsPopularDates(bk, from, to);
+
+  /* Async: re-render with fresh Supabase data */
+  if (window.StatisticsService && StatisticsService.supabaseReady) {
+    StatisticsService.getAnalyticsData(from, to).then(sbBk => {
+      if (!sbBk || !document.getElementById('view-analytics').classList.contains('active')) return;
+      _renderAnalyticsKPIs(sbBk, qtInRange, prices, periodLabel, calIcon);
+      _drawAnalyticsCharts(sbBk, from, to, fromD, toD, days, isDark, chartPeriodLabel);
+      _renderAnalyticsPopularDates(sbBk, from, to);
+    });
   }
 }
 

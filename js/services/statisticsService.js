@@ -153,12 +153,31 @@
     if (_availChannel)    { _sb.removeChannel(_availChannel);    _availChannel    = null; }
   }
 
+  /* ── Analytics: lean projection for period ───────────── */
+  const _STATUS_LOCAL = { pending: '新規', confirmed: '確定', completed: '完了', cancelled: 'キャンセル' };
+
+  async function getAnalyticsData(from, to) {
+    if (!_sb) return null;
+    const { data, error } = await _sb
+      .from('bookings')
+      .select('move_date,service_type,status')
+      .gte('move_date', from)
+      .lte('move_date', to);
+    if (error) { console.warn('[StatisticsService] getAnalyticsData error:', error.message); return null; }
+    return (data || []).map(r => ({
+      date:    r.move_date    || '',
+      service: r.service_type || '',
+      status:  _STATUS_LOCAL[r.status] || r.status || '新規',
+    }));
+  }
+
   window.StatisticsService = {
     getDashboardStats,
     getTodayBookings,
     getWeeklyBookings,
     getMonthlyBookings,
     getOccupancyRate,
+    getAnalyticsData,
     initializeRealtime,
     destroyRealtime,
     supabaseReady: !!_sb,
