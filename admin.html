@@ -2230,7 +2230,7 @@ function go(view) {
   if (view==='pricing') renderPricing();
   if (view==='disposal') renderDisposal();
   if (view==='quotes') renderQuotes();
-  if (view==='reviews') renderReviews();
+  if (view==='reviews') { renderReviews(); _syncReviewsFromSupabase(); }
   if (view==='services') renderServices();
   if (view==='faq') renderFaq();
   if (view==='company') renderCompany();
@@ -4950,7 +4950,7 @@ function switchRevTab(tab) {
   renderReviews();
 }
 
-function renderReviews() {
+function _renderReviewsUI() {
   const meta = Adapter.getRevMeta();
   document.getElementById('revMetaEyebrow').value   = meta.eyebrow   || '';
   document.getElementById('revMetaTitle').value     = meta.title     || '';
@@ -5042,6 +5042,17 @@ function renderReviews() {
     </tr></thead><tbody>${rows}</tbody></table>`;
   liveRevPreview();
   renderRevHistory();
+}
+
+function renderReviews() { _renderReviewsUI(); }
+
+function _syncReviewsFromSupabase() {
+  if (!Adapter.supabaseReady) return;
+  Adapter.syncReviews().then(ok => {
+    if (ok && document.getElementById('view-reviews').classList.contains('active')) {
+      _renderReviewsUI();
+    }
+  });
 }
 
 function approveRev(id) {

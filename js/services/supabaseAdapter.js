@@ -681,6 +681,19 @@
       return true;
     },
 
+    /* Pull only the reviews table from Supabase and refresh localStorage.
+       Lighter than syncFromSupabase() — use when reviews view is opened. */
+    async syncReviews() {
+      if (!_sb) return false;
+      const { data, error } = await _sb
+        .from('reviews')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) { console.warn('[Adapter] syncReviews error:', error.message); return false; }
+      if (data) _set('hm_reviews', data.map(sbToReview));
+      return true;
+    },
+
     /* Pull only calendar_availability from Supabase and refresh localStorage.
        Lighter than syncFromSupabase() — use when calendar view is opened. */
     async syncAvailability() {
