@@ -668,6 +668,19 @@
       }
     },
 
+    /* Pull only the bookings table from Supabase and refresh localStorage.
+       Lighter than syncFromSupabase() — use when bookings view is opened. */
+    async syncBookings() {
+      if (!_sb) return false;
+      const { data, error } = await _sb
+        .from('bookings')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) { console.warn('[Adapter] syncBookings error:', error.message); return false; }
+      if (data) _set(K.bk, data.map(sbToBooking));
+      return true;
+    },
+
     /* Remove all active Realtime channels. Call on logout. */
     destroyRealtime() {
       if (!_sb) return;

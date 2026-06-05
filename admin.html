@@ -712,7 +712,7 @@ html.dark .login-err-lock{color:#f59e0b}
             <div class="panel-head">
               <span class="panel-title">予約一覧</span>
               <div class="search-bar">
-                <select class="sel" id="bkFilter" onchange="renderBookings()">
+                <select class="sel" id="bkFilter" onchange="_renderBookingsUI()">
                   <option value="">全ステータス</option>
                   <option value="新規">新規</option>
                   <option value="確認中">確認中</option>
@@ -720,7 +720,7 @@ html.dark .login-err-lock{color:#f59e0b}
                   <option value="完了">完了</option>
                   <option value="キャンセル">キャンセル</option>
                 </select>
-                <input class="search-input" id="bkSearch" placeholder="名前・メール・予約番号..." oninput="renderBookings()" />
+                <input class="search-input" id="bkSearch" placeholder="名前・メール・予約番号..." oninput="_renderBookingsUI()" />
                 <button class="btn btn-primary btn-sm" onclick="openAdd()">
                   <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>予約を追加
                 </button>
@@ -2419,7 +2419,7 @@ function renderQA() {
 /* ════════════════════════════════════════════════════════
    BOOKINGS TABLE
    ════════════════════════════════════════════════════════ */
-function renderBookings() {
+function _renderBookingsUI() {
   const filter = document.getElementById('bkFilter')?.value || '';
   const q      = (document.getElementById('bkSearch')?.value || '').toLowerCase();
   const all    = BookingService.getBookings();
@@ -2447,6 +2447,18 @@ function renderBookings() {
 
   document.getElementById('bookingsWrap').innerHTML =
     bk.length ? buildTable(bk, false) : emptyHTML('該当する予約がありません');
+}
+
+function renderBookings() {
+  _renderBookingsUI();
+
+  if (Adapter.supabaseReady) {
+    Adapter.syncBookings().then(ok => {
+      if (ok && document.getElementById('view-bookings').classList.contains('active')) {
+        _renderBookingsUI();
+      }
+    });
+  }
 }
 
 function buildTable(bk, compact) {
