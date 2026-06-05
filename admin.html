@@ -2234,7 +2234,7 @@ function go(view) {
   if (view==='services') { renderServices(); _syncServicesFromSupabase(); }
   if (view==='faq') { renderFaq(); _syncFaqFromSupabase(); }
   if (view==='company') { renderCompany(); _syncCompanyFromSupabase(); }
-  if (view==='footer') renderFooter();
+  if (view==='footer') { renderFooter(); _syncFooterFromSupabase(); }
   if (view==='hero') { renderHero(); _syncHeroFromSupabase(); }
   if (view==='backup') renderBackup();
   if (view==='media') renderMedia();
@@ -5433,7 +5433,7 @@ function _readFooterFromForm() {
   };
 }
 
-function renderFooter() {
+function _renderFooterUI() {
   const d = Adapter.getFooter();
   document.getElementById('footerBrandDesc').value = d.brand_desc || '';
   document.getElementById('footerCopyright').value = d.copyright  || '';
@@ -5465,6 +5465,17 @@ function saveFooterAll() {
   ind.style.opacity = '1';
   clearTimeout(ind._t);
   ind._t = setTimeout(() => { ind.style.opacity = '0'; }, 2400);
+}
+
+function renderFooter() { _renderFooterUI(); }
+
+function _syncFooterFromSupabase() {
+  if (!Adapter.supabaseReady) return;
+  Adapter.syncFooter().then(ok => {
+    if (ok && document.getElementById('view-footer').classList.contains('active')) {
+      _renderFooterUI();
+    }
+  });
 }
 
 function renderFooterHistory() {

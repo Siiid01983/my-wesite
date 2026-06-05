@@ -759,6 +759,20 @@
       return true;
     },
 
+    /* Pull hm_footer from hm_data KV and refresh localStorage.
+       Lighter than syncFromSupabase() — use when footer view is opened. */
+    async syncFooter() {
+      if (!_sb) return false;
+      const { data, error } = await _sb
+        .from('hm_data')
+        .select('value')
+        .eq('key', 'hm_footer')
+        .maybeSingle();
+      if (error) { console.warn('[Adapter] syncFooter error:', error.message); return false; }
+      if (data?.value) _set('hm_footer', data.value);
+      return true;
+    },
+
     /* Pull only the reviews table from Supabase and refresh localStorage.
        Lighter than syncFromSupabase() — use when reviews view is opened. */
     async syncReviews() {
