@@ -1,18 +1,24 @@
 /* ════════════════════════════════════════════════════════
-   SUPABASE ADAPTER  —  write-through cache over localStorage
+   SUPABASE ADAPTER
    ════════════════════════════════════════════════════════
-   Load order (all plain <script> tags, in order):
-     1. Supabase UMD  (sets window.supabase)
-     2. js/config/env.js  (sets window.SUPABASE_URL / ANON_KEY)
-     3. this file  (sets window.Adapter)
+   Wired tables (proper schema):
+     bookings              ← admin bookings
+     calendar_availability ← availability overrides
+     reviews               ← customer reviews
+     services              ← service listings
 
-   Strategy: reads always return from localStorage (sync, zero
-   latency). Every write goes to localStorage first, then fires
-   an async upsert to Supabase (fire-and-forget). On init,
-   Adapter.syncFromSupabase() pulls the full dataset from
-   Supabase into localStorage so the device is up to date.
+   Key-value store (hm_data):
+     everything else — prices, hero, FAQ, footer, etc.
 
-   Supabase table: hm_data  (key TEXT PK, value JSONB, updated_at TIMESTAMPTZ)
+   Strategy: reads return from localStorage (sync). Every write
+   goes to localStorage first (instant), then fires an async
+   upsert/delete to Supabase. syncFromSupabase() pulls the full
+   dataset on login so all devices stay in sync.
+
+   Load order (plain <script> tags, in order):
+     1. Supabase UMD  → window.supabase
+     2. js/config/env.js  → window.SUPABASE_URL / ANON_KEY
+     3. this file  → window.Adapter
    ════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -27,23 +33,36 @@
     catch (e) { console.warn('[Adapter] createClient failed:', e); return null; }
   })();
 
-  const TABLE = 'hm_data';
-
-  /* ── Storage helpers ──────────────────────────────────── */
+  /* ── localStorage helpers ─────────────────────────────── */
   const _ls  = (k, def) => { try { return JSON.parse(localStorage.getItem(k) ?? JSON.stringify(def)); } catch { return def; } };
   const _set = (k, v)   => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* no-op */ } };
 
-  function _push(key, value) {
+  /* ── Supabase write helpers ───────────────────────────── */
+  function _upsert(table, data, matchCol) {
     if (!_sb) return;
-    _sb.from(TABLE)
-      .upsert({ key, value, updated_at: new Date().toISOString() })
-      .then(({ error }) => { if (error) console.warn('[Adapter] write error', key, error.message); });
+    _sb.from(table)
+      .upsert(data, { onConflict: matchCol })
+      .then(({ error }) => { if (error) console.warn(`[Adapter] ${table} upsert error:`, error.message); });
   }
 
-  /* Write-through: localStorage first (sync) then Supabase (async) */
-  function wt(key, value) { _set(key, value); _push(key, value); }
+  function _del(table, col, val) {
+    if (!_sb) return;
+    _sb.from(table).delete().eq(col, val)
+      .then(({ error }) => { if (error) console.warn(`[Adapter] ${table} delete error:`, error.message); });
+  }
 
-  /* ── Key map (mirrors original Adapter) ──────────────── */
+  /* hm_data key-value writes */
+  function _kv(key, value) {
+    if (!_sb) return;
+    _sb.from('hm_data')
+      .upsert({ key, value, updated_at: new Date().toISOString() })
+      .then(({ error }) => { if (error) console.warn('[Adapter] hm_data write error:', key, error.message); });
+  }
+
+  /* Write-through: localStorage first, then Supabase hm_data */
+  function wt(key, value) { _set(key, value); _kv(key, value); }
+
+  /* ── Key map ──────────────────────────────────────────── */
   const K = {
     bk:      'hm_admin_bookings',
     av:      'hm_admin_avail',
@@ -59,46 +78,209 @@
     emaillog:'hm_emaillog',
   };
 
+  /* ── Status maps ──────────────────────────────────────── */
+  // Admin panel uses Japanese; Supabase schema uses English.
+  const BK_TO_SB = {
+    '新規': 'pending', '確認中': 'pending',
+    '確定': 'confirmed', '完了': 'completed', 'キャンセル': 'cancelled',
+  };
+  const BK_TO_LOCAL = {
+    pending: '新規', confirmed: '確定', completed: '完了', cancelled: 'キャンセル',
+  };
+  // Calendar: admin uses 'booked'; Supabase schema uses 'full'.
+  const CAL_TO_SB    = { booked: 'full' };
+  const CAL_TO_LOCAL = { full: 'booked' };
+
+  /* ── Data mappers ─────────────────────────────────────── */
+  function bookingToSb(b) {
+    return {
+      reference_id:  b.id,
+      customer_name: b.name        || '',
+      email:         b.email       || null,
+      phone:         b.phone       || null,
+      move_date:     b.date        || null,
+      move_from:     b.fromAddr    || null,
+      move_to:       b.toAddr      || null,
+      service_type:  b.service     || null,
+      status:        BK_TO_SB[b.status] || 'pending',
+      notes:         b.notes       || null,
+      time_slot:     b.time        || null,
+      created_at:    b.createdAt   || new Date().toISOString(),
+    };
+  }
+
+  function sbToBooking(r) {
+    return {
+      id:       r.reference_id || r.id,
+      name:     r.customer_name || '',
+      email:    r.email    || '',
+      phone:    r.phone    || '',
+      date:     r.move_date || '',
+      fromAddr: r.move_from || '',
+      toAddr:   r.move_to  || '',
+      service:  r.service_type || '',
+      status:   BK_TO_LOCAL[r.status] || '新規',
+      notes:    r.notes    || '',
+      time:     r.time_slot || '',
+      createdAt: r.created_at || new Date().toISOString(),
+    };
+  }
+
+  function reviewToSb(r) {
+    return {
+      reference_id:      r.id,
+      customer_name:     r.name       || '',
+      rating:            r.rating     || null,
+      review_text:       r.text       || null,
+      approved:          r.status === 'approved',
+      published:         r.published  || false,
+      headline:          r.headline   || null,
+      service:           r.service    || null,
+      date_label:        r.date_label || null,
+      location:          r.location   || null,
+      source:            r.source     || 'admin',
+      booking_reference: r.bookingId  || null,
+      created_at:        r.createdAt  || new Date().toISOString(),
+    };
+  }
+
+  function sbToReview(r) {
+    return {
+      id:         r.reference_id || r.id,
+      name:       r.customer_name || '',
+      rating:     r.rating,
+      text:       r.review_text || '',
+      status:     r.approved ? 'approved' : 'pending',
+      published:  r.published  || false,
+      headline:   r.headline   || '',
+      service:    r.service    || '',
+      date_label: r.date_label || '',
+      location:   r.location   || '',
+      source:     r.source     || 'admin',
+      bookingId:  r.booking_reference || null,
+      createdAt:  r.created_at || new Date().toISOString(),
+    };
+  }
+
+  function serviceToSb(s, order) {
+    return {
+      reference_id:  s.id,
+      title:         s.title       || '',
+      description:   s.description || null,
+      display_order: order !== undefined ? order : (s.display_order || 0),
+      active:        s.active !== false,
+      badge:         s.badge    || null,
+      cta_text:      s.cta_text || null,
+    };
+  }
+
+  function sbToService(r) {
+    return {
+      id:            r.reference_id || r.id,
+      title:         r.title        || '',
+      description:   r.description  || '',
+      badge:         r.badge        || '',
+      cta_text:      r.cta_text     || '無料お見積り →',
+      display_order: r.display_order || 0,
+      active:        r.active !== false,
+    };
+  }
+
   /* ── Adapter ──────────────────────────────────────────── */
   window.Adapter = {
 
-    /** True when the Supabase client is initialised. */
     supabaseReady: !!_sb,
 
-    /**
-     * Pull all rows from Supabase into localStorage.
-     * Call once during app init (before rendering) to ensure
-     * the local cache is up to date.
-     */
+    /* Pull all remote data into localStorage — called once at login.
+       Order: hm_data first (config baseline), then proper tables
+       (these overwrite the same keys so transactional data wins). */
     async syncFromSupabase() {
       if (!_sb) return;
-      const { data, error } = await _sb.from(TABLE).select('key, value');
-      if (error) throw error;
-      (data || []).forEach(({ key, value }) => _set(key, value));
+
+      const [bkRes, calRes, revRes, svcRes, kvRes] = await Promise.all([
+        _sb.from('bookings').select('*').order('created_at', { ascending: false }),
+        _sb.from('calendar_availability').select('*'),
+        _sb.from('reviews').select('*').order('created_at', { ascending: false }),
+        _sb.from('services').select('*').order('display_order'),
+        _sb.from('hm_data').select('key, value'),
+      ]);
+
+      // Config baseline
+      if (kvRes.data) kvRes.data.forEach(({ key, value }) => _set(key, value));
+
+      // Bookings
+      if (bkRes.data)  _set(K.bk, bkRes.data.map(sbToBooking));
+      else if (bkRes.error)  console.warn('[Adapter] bookings sync:', bkRes.error.message);
+
+      // Calendar overrides
+      if (calRes.data) {
+        const avail = {};
+        calRes.data.forEach(row => {
+          const local = CAL_TO_LOCAL[row.status] || row.status;
+          if (local !== 'available') avail[row.date] = local;
+        });
+        _set(K.av, avail);
+      }
+
+      // Reviews
+      if (revRes.data) _set('hm_reviews', revRes.data.map(sbToReview));
+      else if (revRes.error) console.warn('[Adapter] reviews sync:', revRes.error.message);
+
+      // Services (only overwrite if the table has rows)
+      if (svcRes.data && svcRes.data.length) _set('hm_services', svcRes.data.map(sbToService));
+      else if (svcRes.error) console.warn('[Adapter] services sync:', svcRes.error.message);
     },
 
     /* ── Bookings ─────────────────────────────────────── */
     getBookings: () => _ls(K.bk, []),
-    addBooking(b)        { const a = this.getBookings(); a.unshift(b); wt(K.bk, a); },
-    updateBooking(id, p) { wt(K.bk, this.getBookings().map(b => b.id === id ? { ...b, ...p } : b)); },
-    deleteBooking(id)    { wt(K.bk, this.getBookings().filter(b => b.id !== id)); },
+
+    addBooking(b) {
+      const a = this.getBookings(); a.unshift(b); _set(K.bk, a);
+      _upsert('bookings', bookingToSb(b), 'reference_id');
+    },
+
+    updateBooking(id, p) {
+      const list = this.getBookings().map(b => b.id === id ? { ...b, ...p } : b);
+      _set(K.bk, list);
+      const updated = list.find(b => b.id === id);
+      if (updated) _upsert('bookings', bookingToSb(updated), 'reference_id');
+    },
+
+    deleteBooking(id) {
+      _set(K.bk, this.getBookings().filter(b => b.id !== id));
+      _del('bookings', 'reference_id', id);
+    },
 
     /* ── Availability ─────────────────────────────────── */
     getAvail: () => _ls(K.av, {}),
+
     setDate(date, status) {
       const a = this.getAvail();
       if (status === 'available') delete a[date]; else a[date] = status;
-      wt(K.av, a);
+      _set(K.av, a);
+      // Keep hm_booked in sync for the public calendar
       let booked = _ls(K.booked, []);
       booked = booked.filter(d => d !== date);
       if (status === 'booked') booked.push(date);
-      wt(K.booked, booked);
+      _set(K.booked, booked);
+      // Supabase
+      const sbStatus = CAL_TO_SB[status] || status;
+      if (status === 'available') {
+        _del('calendar_availability', 'date', date);
+      } else {
+        _upsert('calendar_availability',
+          { date, status: sbStatus, updated_at: new Date().toISOString() }, 'date');
+      }
     },
+
     clearAvail() {
       localStorage.removeItem(K.av);
       localStorage.removeItem(K.booked);
       localStorage.removeItem(K.counts);
-      _push(K.av, {}); _push(K.booked, []); _push(K.counts, {});
+      if (_sb) {
+        _sb.from('calendar_availability').delete().not('date', 'is', null)
+          .then(({ error }) => { if (error) console.warn('[Adapter] clearAvail error:', error.message); });
+      }
     },
 
     /* ── Capacity ─────────────────────────────────────── */
@@ -137,13 +319,35 @@
       ];
       const v = _ls('hm_services', null);
       if (v) return v.map(s => ({ cta_text: '無料お見積り →', ...s }));
-      wt('hm_services', defaults);
+      _set('hm_services', defaults);
       return defaults;
     },
-    addService(s)        { const a = this.getServices(); a.push(s); wt('hm_services', a); },
-    updateService(id, p) { wt('hm_services', this.getServices().map(s => s.id === id ? { ...s, ...p } : s)); },
-    deleteService(id)    { wt('hm_services', this.getServices().filter(s => s.id !== id)); },
-    saveServices: (svcs) => wt('hm_services', svcs),
+
+    addService(s) {
+      const a = this.getServices(); a.push(s); _set('hm_services', a);
+      _upsert('services', serviceToSb(s, a.length - 1), 'reference_id');
+    },
+
+    updateService(id, p) {
+      const svcs = this.getServices().map(s => s.id === id ? { ...s, ...p } : s);
+      _set('hm_services', svcs);
+      const updated = svcs.find(s => s.id === id);
+      if (updated) _upsert('services', serviceToSb(updated, svcs.indexOf(updated)), 'reference_id');
+    },
+
+    deleteService(id) {
+      _set('hm_services', this.getServices().filter(s => s.id !== id));
+      _del('services', 'reference_id', id);
+    },
+
+    saveServices(svcs) {
+      _set('hm_services', svcs);
+      if (!_sb || !svcs.length) return;
+      _sb.from('services')
+        .upsert(svcs.map((s, i) => serviceToSb(s, i)), { onConflict: 'reference_id' })
+        .then(({ error }) => { if (error) console.warn('[Adapter] saveServices error:', error.message); });
+    },
+
     getSvcMeta: () => _ls('hm_services_section', { eyebrow:'Services', title:'承っている引越し', lead:'単身・カップル・学生・当日引越しまで対応。' }),
     saveSvcMeta: (v) => wt('hm_services_section', v),
     getSvcHistory: () => { try { return JSON.parse(localStorage.getItem('hm_svc_history') || '[]'); } catch { return []; } },
@@ -184,12 +388,27 @@
       reviews.forEach(r => {
         if (!r.status) { r.status = 'approved'; r.published = true; r.source = 'admin'; dirty = true; }
       });
-      if (dirty) wt('hm_reviews', reviews);
+      if (dirty) _set('hm_reviews', reviews);
       return reviews;
     },
-    addReview(r)        { const a = this.getReviews(); a.unshift(r); wt('hm_reviews', a); },
-    updateReview(id, p) { wt('hm_reviews', this.getReviews().map(r => r.id === id ? { ...r, ...p } : r)); },
-    deleteReview(id)    { wt('hm_reviews', this.getReviews().filter(r => r.id !== id)); },
+
+    addReview(r) {
+      const a = this.getReviews(); a.unshift(r); _set('hm_reviews', a);
+      _upsert('reviews', reviewToSb(r), 'reference_id');
+    },
+
+    updateReview(id, p) {
+      const list = this.getReviews().map(r => r.id === id ? { ...r, ...p } : r);
+      _set('hm_reviews', list);
+      const updated = list.find(r => r.id === id);
+      if (updated) _upsert('reviews', reviewToSb(updated), 'reference_id');
+    },
+
+    deleteReview(id) {
+      _set('hm_reviews', this.getReviews().filter(r => r.id !== id));
+      _del('reviews', 'reference_id', id);
+    },
+
     getRevMeta: () => _ls('hm_reviews_section', { eyebrow:'Customer Voices', title:'お客様からの、お声', lead:'これまでにご利用いただいたお客様より頂戴したご感想を、一部ご紹介いたします。', gmb_score:'4.9', gmb_count:'38件の口コミ' }),
     saveRevMeta: (v) => wt('hm_reviews_section', v),
     getRevHistory: () => { try { return JSON.parse(localStorage.getItem('hm_rev_history') || '[]'); } catch { return []; } },
@@ -274,10 +493,10 @@
             { text:'よくある質問',     href:'#faq' },
             { text:'会社情報',         href:'#company' }] },
           { title:'お問い合わせ', links:[
-            { text:'Live Chat',                   href:'#' },
-            { text:'受付：8:00 – 20:00',           href:'' },
-            { text:'対応エリア：日本全国',         href:'' },
-            { text:'対応言語：日本語 / English',   href:'' }] },
+            { text:'Live Chat',                 href:'#' },
+            { text:'受付：8:00 – 20:00',         href:'' },
+            { text:'対応エリア：日本全国',       href:'' },
+            { text:'対応言語：日本語 / English', href:'' }] },
         ],
         copyright: '© 2026 Hello Moving. All Rights Reserved.',
         license:   '国土交通省 認可運送事業者 第 431320058126 号 ／ Licensed Moving Company in Japan',
@@ -340,7 +559,7 @@
       const booked = _ls(K.booked, []);
       const avail  = this.getAvail();
       booked.forEach(d => { if (!avail[d]) avail[d] = 'booked'; });
-      wt(K.av, avail);
+      _set(K.av, avail);
     },
   };
 })();
