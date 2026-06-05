@@ -2232,7 +2232,7 @@ function go(view) {
   if (view==='quotes') { renderQuotes(); _syncQuotesFromSupabase(); }
   if (view==='reviews') { renderReviews(); _syncReviewsFromSupabase(); }
   if (view==='services') { renderServices(); _syncServicesFromSupabase(); }
-  if (view==='faq') renderFaq();
+  if (view==='faq') { renderFaq(); _syncFaqFromSupabase(); }
   if (view==='company') renderCompany();
   if (view==='footer') renderFooter();
   if (view==='hero') renderHero();
@@ -5658,7 +5658,7 @@ function restoreCompanyVersion(idx) {
    ════════════════════════════════════════════════════════ */
 let _faqId = null;
 
-function renderFaq() {
+function _renderFaqUI() {
   const meta = Adapter.getFaqMeta();
   document.getElementById('faqMetaEyebrow').value = meta.eyebrow || '';
   document.getElementById('faqMetaTitle').value   = meta.title   || '';
@@ -5693,6 +5693,17 @@ function renderFaq() {
   }
   liveFaqPreview();
   renderFaqHistory();
+}
+
+function renderFaq() { _renderFaqUI(); }
+
+function _syncFaqFromSupabase() {
+  if (!Adapter.supabaseReady) return;
+  Adapter.syncFaq().then(ok => {
+    if (ok && document.getElementById('view-faq').classList.contains('active')) {
+      _renderFaqUI();
+    }
+  });
 }
 
 function liveFaqPreview() {

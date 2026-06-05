@@ -719,6 +719,19 @@
       return true;
     },
 
+    /* Pull hm_faq and hm_faq_section from hm_data KV and refresh localStorage.
+       Lighter than syncFromSupabase() — use when FAQ view is opened. */
+    async syncFaq() {
+      if (!_sb) return false;
+      const { data, error } = await _sb
+        .from('hm_data')
+        .select('key,value')
+        .in('key', ['hm_faq', 'hm_faq_section']);
+      if (error) { console.warn('[Adapter] syncFaq error:', error.message); return false; }
+      if (data) data.forEach(({ key, value }) => { if (value) _set(key, value); });
+      return true;
+    },
+
     /* Pull only the reviews table from Supabase and refresh localStorage.
        Lighter than syncFromSupabase() — use when reviews view is opened. */
     async syncReviews() {
