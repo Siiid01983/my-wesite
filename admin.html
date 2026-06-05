@@ -2083,6 +2083,7 @@ const Auth = {
   logout() {
     this._addLog('logout', 'manual');
     sessionStorage.removeItem(this.KEY);
+    if (typeof Adapter !== 'undefined') Adapter.destroyRealtime();
     showLogin();
   },
 
@@ -2211,6 +2212,7 @@ const VIEW_TITLES = {
 };
 
 function go(view) {
+  Adapter.initializeRealtime(); // no-op if channels already active; re-connects if lost
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.sb-link').forEach(l => l.classList.remove('active'));
   document.getElementById('view-'+view).classList.add('active');
@@ -7433,6 +7435,7 @@ async function init() {
   }
   Adapter.migrate();
   BookingService.bootstrap();
+  Adapter.initializeRealtime();
   renderDash();
   Auth.startTimer();
 }

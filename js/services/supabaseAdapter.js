@@ -561,5 +561,124 @@
       booked.forEach(d => { if (!avail[d]) avail[d] = 'booked'; });
       _set(K.av, avail);
     },
+
+    /* ── Realtime ─────────────────────────────────────── */
+    _bookingsChannel:     null,
+    _availabilityChannel: null,
+
+    /* Subscribe to Supabase Realtime for bookings and calendar_availability.
+       Idempotent — safe to call multiple times; duplicate channels are skipped. */
+    initializeRealtime() {
+      if (!_sb) return;
+
+      // ── Reservation Management: bookings table ───────────
+      if (!this._bookingsChannel) {
+        this._bookingsChannel = _sb
+          .channel('admin-bookings-realtime')
+          .on('postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'bookings' },
+            (payload) => {
+              console.log('[Realtime] Booking inserted', payload.new);
+              const bk   = sbToBooking(payload.new);
+              const list = this.getBookings();
+              if (!list.find(b => b.id === bk.id)) {
+                list.unshift(bk);
+                _set(K.bk, list);
+              }
+              document.dispatchEvent(new CustomEvent('booking:created', {
+                detail: { booking: bk }
+              }));
+            })
+          .on('postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'bookings' },
+            (payload) => {
+              console.log('[Realtime] Booking updated', payload.new);
+              const bk   = sbToBooking(payload.new);
+              const list = this.getBookings().map(b => b.id === bk.id ? bk : b);
+              _set(K.bk, list);
+              document.dispatchEvent(new CustomEvent('booking:updated', {
+                detail: { bookingId: bk.id, booking: bk, status: bk.status }
+              }));
+            })
+          .on('postgres_changes',
+            { event: 'DELETE', schema: 'public', table: 'bookings' },
+            async (payload) => {
+              console.log('[Realtime] Booking updated', payload.old);
+              const refId = payload.old?.reference_id;
+              if (refId) {
+                _set(K.bk, this.getBookings().filter(b => b.id !== refId));
+              } else {
+                // REPLICA IDENTITY not FULL — re-fetch to stay in sync
+                const { data } = await _sb.from('bookings').select('*')
+                  .order('created_at', { ascending: false });
+                if (data) _set(K.bk, data.map(sbToBooking));
+              }
+              document.dispatchEvent(new CustomEvent('booking:updated', {
+                detail: { bookingId: refId }
+              }));
+            })
+          .subscribe();
+      }
+
+      // ── Calendar Management: calendar_availability table ─
+      if (!this._availabilityChannel) {
+        this._availabilityChannel = _sb
+          .channel('admin-availability-realtime')
+          .on('postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'calendar_availability' },
+            (payload) => {
+              console.log('[Realtime] Availability updated', payload.new);
+              const { date, status } = payload.new;
+              const localStatus = CAL_TO_LOCAL[status] || status;
+              const avail = this.getAvail();
+              if (localStatus === 'available') delete avail[date]; else avail[date] = localStatus;
+              _set(K.av, avail);
+              document.dispatchEvent(new CustomEvent('calendar:updated', {
+                detail: { date, status: localStatus, source: 'realtime' }
+              }));
+            })
+          .on('postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'calendar_availability' },
+            (payload) => {
+              console.log('[Realtime] Availability updated', payload.new);
+              const { date, status } = payload.new;
+              const localStatus = CAL_TO_LOCAL[status] || status;
+              const avail = this.getAvail();
+              if (localStatus === 'available') delete avail[date]; else avail[date] = localStatus;
+              _set(K.av, avail);
+              document.dispatchEvent(new CustomEvent('calendar:updated', {
+                detail: { date, status: localStatus, source: 'realtime' }
+              }));
+            })
+          .on('postgres_changes',
+            { event: 'DELETE', schema: 'public', table: 'calendar_availability' },
+            (payload) => {
+              console.log('[Realtime] Availability updated', payload.old);
+              const date = payload.old?.date;
+              if (date) {
+                const avail = this.getAvail();
+                delete avail[date];
+                _set(K.av, avail);
+              }
+              document.dispatchEvent(new CustomEvent('calendar:updated', {
+                detail: { date, source: 'realtime' }
+              }));
+            })
+          .subscribe();
+      }
+    },
+
+    /* Remove all active Realtime channels. Call on logout. */
+    destroyRealtime() {
+      if (!_sb) return;
+      if (this._bookingsChannel) {
+        _sb.removeChannel(this._bookingsChannel);
+        this._bookingsChannel = null;
+      }
+      if (this._availabilityChannel) {
+        _sb.removeChannel(this._availabilityChannel);
+        this._availabilityChannel = null;
+      }
+    },
   };
 })();
