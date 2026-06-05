@@ -5,7 +5,7 @@ const HOST = 'hello-moving.com'; // أو عنوان الـ FTP الخاص بك
 const USER = 'hellom41';
 const PASSWORD = 'Uscarugo2291@';
 const REMOTE = '/public_html';
-const FILES = ['index.html', 'styles.css', 'script.js', 'admin.html', 'googlec5d2ce7d783fdc89.html', 'sitemap.xml'];
+const FILES = ['index.html', 'styles.css', 'script.js', 'admin.html', 'bookingService.js', 'calendarService.js', 'googlec5d2ce7d783fdc89.html', 'sitemap.xml'];
 
 if (!HOST || !USER || !PASSWORD) {
   console.error('Missing credentials. Run as:\n');
