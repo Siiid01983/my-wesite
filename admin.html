@@ -2093,7 +2093,7 @@ const Auth = {
     if (!localStorage.getItem(this.CREDS_KEY)) {
       const salt = this._mkToken();
       const hash = await this._hash('hello2026', salt);
-      localStorage.setItem(this.CREDS_KEY, JSON.stringify({user:'admin@hello-moving.com', hash, salt, mustChange:true}));
+      localStorage.setItem(this.CREDS_KEY, JSON.stringify({user:'admin@hello-moving.com', hash, salt}));
     }
   },
 
@@ -2170,11 +2170,16 @@ const Auth = {
       const defaultHash = await this._hash('hello2026', fresh.salt || null);
       const isDefault   = this._safeEqual(defaultHash, fresh.hash);
       const mustChange  = isDefault || !!fresh.mustChange;
-      if (mustChange && !fresh.mustChange) {
-        localStorage.setItem(this.CREDS_KEY, JSON.stringify({...fresh, mustChange:true}));
+      /* Migrate: clean any legacy mustChange flag out of localStorage creds */
+      if (fresh.mustChange) {
+        localStorage.setItem(this.CREDS_KEY, JSON.stringify({user:fresh.user, hash:fresh.hash, salt:fresh.salt}));
       }
       localStorage.removeItem(this.LOCK_KEY);
-      sessionStorage.setItem(this.KEY, JSON.stringify({token:this._mkToken(), ts:Date.now()}));
+      /* mustChange is stored in the session token (sessionStorage) — not in localStorage.
+         This prevents the bypass of deleting the flag from localStorage via DevTools. */
+      const sess = {token:this._mkToken(), ts:Date.now()};
+      if (mustChange) sess.mustChange = true;
+      sessionStorage.setItem(this.KEY, JSON.stringify(sess));
       if (remember) localStorage.setItem('hm_admin_remember', JSON.stringify({user, exp: Date.now() + this.REMEMBER_MS}));
       else          localStorage.removeItem('hm_admin_remember');
       this._addLog('login', 'success');
@@ -2200,11 +2205,17 @@ const Auth = {
     } catch(e) { return false; }
   },
 
-  /* Rotate session token on every page navigation — prevents token fixation */
+  /* Rotate session token on every page navigation — prevents token fixation.
+     Preserves mustChange in the new token (though touch() is only reached
+     when mustChangePassword() is false — go() returns early otherwise). */
   touch() {
     try {
       const s = JSON.parse(sessionStorage.getItem(this.KEY)||'null');
-      if (s && s.token) sessionStorage.setItem(this.KEY, JSON.stringify({token:this._mkToken(), ts:Date.now()}));
+      if (s && s.token) {
+        const next = {token:this._mkToken(), ts:Date.now()};
+        if (s.mustChange) next.mustChange = true;
+        sessionStorage.setItem(this.KEY, JSON.stringify(next));
+      }
     } catch(e) {}
   },
 
@@ -2223,7 +2234,10 @@ const Auth = {
   },
 
   mustChangePassword() {
-    return !!this._getCreds()?.mustChange;
+    try {
+      const s = JSON.parse(sessionStorage.getItem(this.KEY) || 'null');
+      return !!s?.mustChange;
+    } catch { return false; }
   },
 
   async forceChangePassword(newPass) {
@@ -7766,6 +7780,8 @@ function showLogin() {
 }
 
 function showApp() {
+  /* Guard: redirect to gate if session still carries mustChange */
+  if (Auth.isLoggedIn() && Auth.mustChangePassword()) { showForceChange(); return; }
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('forceChangeScreen').style.display='none';
   document.getElementById('adminApp').style.display='block';
