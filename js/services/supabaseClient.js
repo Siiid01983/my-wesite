@@ -1,14 +1,30 @@
-// ES-module singleton — for module-based consumers.
-// env.js (plain script) must be loaded first to set window.SUPABASE_URL / ANON_KEY.
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+// Plain-script singleton — exposes window.SupabaseClient (Supabase JS client instance).
+// Load order: supabase UMD → js/config/env.js → this file
+(function () {
+  'use strict';
 
-const url = window.SUPABASE_URL;
-const key = window.SUPABASE_ANON_KEY;
+  const url = window.SUPABASE_URL;
+  const key = window.SUPABASE_ANON_KEY;
 
-if (!url || !key || url.includes('<') || key.includes('<')) {
-  throw new Error(
-    'supabaseClient: copy js/config/env.example.js → js/config/env.js and fill in credentials.'
-  );
-}
+  if (!url || !key || url.includes('<') || key.includes('<')) {
+    console.warn(
+      '[SupabaseClient] Missing or placeholder credentials — ' +
+      'copy js/config/env.example.js → js/config/env.js and fill in values.'
+    );
+    window.SupabaseClient = null;
+    return;
+  }
 
-export const supabase = createClient(url, key);
+  if (!window.supabase) {
+    console.warn('[SupabaseClient] Supabase UMD library not loaded — include it before this script.');
+    window.SupabaseClient = null;
+    return;
+  }
+
+  try {
+    window.SupabaseClient = window.supabase.createClient(url, key);
+  } catch (e) {
+    console.error('[SupabaseClient] createClient failed:', e);
+    window.SupabaseClient = null;
+  }
+})();
