@@ -695,6 +695,16 @@
       return true;
     },
 
+    /* Pull only the services table from Supabase and refresh localStorage.
+       Lighter than syncFromSupabase() — use when services view is opened. */
+    async syncServices() {
+      if (!_sb) return false;
+      const { data, error } = await _sb.from('services').select('*').order('display_order');
+      if (error) { console.warn('[Adapter] syncServices error:', error.message); return false; }
+      if (data && data.length) _set('hm_services', data.map(sbToService));
+      return true;
+    },
+
     /* Pull only the reviews table from Supabase and refresh localStorage.
        Lighter than syncFromSupabase() — use when reviews view is opened. */
     async syncReviews() {

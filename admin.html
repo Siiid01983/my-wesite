@@ -2231,7 +2231,7 @@ function go(view) {
   if (view==='disposal') renderDisposal();
   if (view==='quotes') { renderQuotes(); _syncQuotesFromSupabase(); }
   if (view==='reviews') { renderReviews(); _syncReviewsFromSupabase(); }
-  if (view==='services') renderServices();
+  if (view==='services') { renderServices(); _syncServicesFromSupabase(); }
   if (view==='faq') renderFaq();
   if (view==='company') renderCompany();
   if (view==='footer') renderFooter();
@@ -4587,7 +4587,7 @@ function exportQuotesCSV() {
    ════════════════════════════════════════════════════════ */
 let _svcId = null;
 
-function renderServices() {
+function _renderServicesUI() {
   const svcs = Adapter.getServices();
   const meta = Adapter.getSvcMeta();
   document.getElementById('svcMetaEyebrow').value = meta.eyebrow || '';
@@ -4623,6 +4623,17 @@ function renderServices() {
   }
   liveSvcPreview();
   renderSvcHistory();
+}
+
+function renderServices() { _renderServicesUI(); }
+
+function _syncServicesFromSupabase() {
+  if (!Adapter.supabaseReady) return;
+  Adapter.syncServices().then(ok => {
+    if (ok && document.getElementById('view-services').classList.contains('active')) {
+      _renderServicesUI();
+    }
+  });
 }
 
 function liveSvcPreview() {
