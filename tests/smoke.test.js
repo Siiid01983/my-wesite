@@ -123,21 +123,37 @@ describe('Login', () => {
     assert.ok(visible, 'login screen should be visible before login');
   });
 
-  it('logs in with default credentials and shows admin panel', async () => {
+  it('login with default password shows force-change screen', async () => {
     await page.fill('#loginEmail', 'admin@hello-moving.com');
     await page.fill('#loginPass',  'hello2026');
     await page.click('#loginBtn');
 
-    // Wait for init() to complete (syncFromSupabase + renderDash)
+    // Phase 10A: default password triggers the mandatory change gate
+    await page.waitForFunction(
+      () => document.getElementById('forceChangeScreen')?.style.display === 'flex',
+      { timeout: 10000 }
+    );
+    const forceVisible = await page.evaluate(
+      () => document.getElementById('forceChangeScreen')?.style.display === 'flex'
+    );
+    assert.ok(forceVisible, 'force-change screen should appear when using default password');
+  });
+
+  it('completing force-change shows admin panel', async () => {
+    // Force-change screen is already visible from the previous test
+    await page.fill('#fcNewPass',    'SmokeTest99!');
+    await page.fill('#fcConfirmPass','SmokeTest99!');
+    await page.click('#fcBtn');
+
+    // Wait for init() to complete after forced password change
     await page.waitForFunction(
       () => document.getElementById('adminApp')?.style.display === 'block',
       { timeout: 15000 }
     );
-
     const appVisible = await page.evaluate(
       () => document.getElementById('adminApp')?.style.display === 'block'
     );
-    assert.ok(appVisible, 'admin panel should be visible after login');
+    assert.ok(appVisible, 'admin panel should be visible after completing force-change');
   });
 
   it('session token is stored in sessionStorage with correct format', async () => {
