@@ -2873,6 +2873,10 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
 
 
 <script src="script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/config/env.js" onerror="console.warn('[Booking] js/config/env.js missing')"></script>
+<script src="js/services/supabaseClient.js"></script>
+<script src="bookingService.js"></script>
 <script>
 (function(){
 'use strict';
@@ -3160,7 +3164,7 @@ function buildConfTable(){
 // ═══════════════════════════════════════════
 var submitting=false;
 
-function doSubmit(){
+async function doSubmit(){
   if(submitting)return;
   var ds=BS.date;
   if(!ds||storage.getStatus(ds)==='booked'){
@@ -3170,7 +3174,9 @@ function doSubmit(){
   }
   submitting=true;
   var btn=document.getElementById('bkSubmitBtn');
+  var errEl=document.getElementById('bkSubmitErr');
   btn.disabled=true;btn.innerHTML='<span class="bk-spinner"></span>送信中...';
+  if(errEl)errEl.style.display='none';
 
   var time=document.querySelector('[name="booking_time"]:checked');
   var fromDetail=BS.fromAddr;
@@ -3178,6 +3184,28 @@ function doSubmit(){
   var toDetail=BS.toAddr;
   if(BS.toFloor)toDetail+=' ('+BS.toFloor+(BS.toEv?' / EV:'+BS.toEv:'')+')';
 
+  var ref;
+  try{
+    var booking=await BookingService.createBooking({
+      service: BS.service,
+      date:    ds,
+      time:    time?time.value:'',
+      fromAddr:fromDetail,
+      toAddr:  toDetail,
+      name:    BS.name,
+      email:   BS.email,
+      notes:   BS.notes,
+    });
+    ref=booking.id;
+  }catch(e){
+    console.error('[Booking] createBooking failed:',e);
+    btn.disabled=false;btn.innerHTML='予約リクエストを送信';
+    if(errEl){errEl.textContent='送信に失敗しました。お電話またはLINEにてご連絡ください。';errEl.style.display='';}
+    submitting=false;
+    return;
+  }
+
+  // Email notification — non-blocking
   var fd=new FormData();
   fd.append('service_type',BS.service);
   fd.append('booking_date',ds);
@@ -3189,27 +3217,25 @@ function doSubmit(){
   fd.append('customer_name',BS.name);
   fd.append('customer_email',BS.email);
   fd.append('customer_notes',BS.notes);
+  fd.append('booking_ref',ref);
   var photos=document.getElementById('bkPhotoUpload');
   if(photos&&photos.files){for(var i=0;i<Math.min(photos.files.length,5);i++)fd.append('photo_'+i,photos.files[i]);}
-
   fetch('https://formspree.io/f/xdajqzlo',{method:'POST',body:fd,headers:{'Accept':'application/json'}})
-    .catch(function(e){console.error('booking submit error',e);})
-    .finally(function(){
-      storage.book(ds);
-      sessionStorage.removeItem('hm_booking');
-      renderCal('hmCalBook',true);renderCal('hmCalAvail',false);
-      var ref=genRef(ds);
-      document.getElementById('bkRefCard').innerHTML=
-        '<span class="bk-ref-num">'+ref+'</span>'
-        +'<table class="bk-conf-table">'
-        +'<tr><td>サービス</td><td>'+BS.service+'</td></tr>'
-        +'<tr><td>希望日</td><td>'+fmtJp(ds)+'</td></tr>'
-        +'<tr><td>希望時間帯</td><td>'+(time?time.value:'')+'</td></tr>'
-        +'<tr><td>お名前</td><td>'+BS.name+'</td></tr>'
-        +'<tr><td>メールアドレス</td><td>'+BS.email+'</td></tr>'
-        +'</table>';
-      showSuccess();submitting=false;
-    });
+    .catch(function(e){console.error('[Booking] Formspree notification failed:',e);});
+
+  storage.book(ds);
+  sessionStorage.removeItem('hm_booking');
+  renderCal('hmCalBook',true);renderCal('hmCalAvail',false);
+  document.getElementById('bkRefCard').innerHTML=
+    '<span class="bk-ref-num">'+ref+'</span>'
+    +'<table class="bk-conf-table">'
+    +'<tr><td>サービス</td><td>'+BS.service+'</td></tr>'
+    +'<tr><td>希望日</td><td>'+fmtJp(ds)+'</td></tr>'
+    +'<tr><td>希望時間帯</td><td>'+(time?time.value:'')+'</td></tr>'
+    +'<tr><td>お名前</td><td>'+BS.name+'</td></tr>'
+    +'<tr><td>メールアドレス</td><td>'+BS.email+'</td></tr>'
+    +'</table>';
+  showSuccess();submitting=false;
 }
 
 // ═══════════════════════════════════════════
