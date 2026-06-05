@@ -1987,6 +1987,7 @@ html.dark .login-err-lock{color:#f59e0b}
 <script src="js/config/env.js" onerror="console.warn('[Admin] js/config/env.js missing — copy env.example.js to env.js')"></script>
 <script src="js/services/supabaseClient.js"></script>
 <script src="js/services/supabaseAdapter.js"></script>
+<script src="js/services/statisticsService.js"></script>
 
 <script>
 'use strict';
@@ -2253,41 +2254,94 @@ function toggleDark() {
 /* ════════════════════════════════════════════════════════
    DASHBOARD
    ════════════════════════════════════════════════════════ */
-function renderDash() {
-  const bk      = Adapter.getBookings();
-  const quotes  = Adapter.getQuotes();
-  const reviews = Adapter.getReviews();
-  const newCust = bk.filter(b => b.status === '新規').length;
-  const s = calcStats();
+
+/* Render stat grid from a StatisticsService stats object.
+   Falls back to calcStats() values when Supabase is unavailable. */
+function renderStatGrid(sbStats) {
+  const local = calcStats();
+  const bk    = Adapter.getBookings();
+  const s     = sbStats || {};
+
+  const today    = s.today    != null ? s.today    : local.todayBk;
+  const weekly   = s.weekly   != null ? s.weekly   : local.weekBk;
+  const monthly  = s.monthly  != null ? s.monthly  : local.monthBk;
+  const pending  = s.pending  != null ? s.pending  : bk.filter(b => b.status === '新規' || b.status === '確認中').length;
+  const confirmed= s.confirmed!= null ? s.confirmed: bk.filter(b => b.status === '確定').length;
+  const cancelled= s.cancelled!= null ? s.cancelled: bk.filter(b => b.status === 'キャンセル').length;
+  const occupancy= s.occupancy!= null ? s.occupancy: 0;
+  const avgDaily = s.avgDaily != null ? s.avgDaily : 0;
 
   document.getElementById('statGrid').innerHTML = `
     <div class="stat-card" style="cursor:pointer" onclick="go('bookings')">
-      <div class="stat-label">総予約数</div>
-      <div class="stat-val">${bk.length}</div>
-      <div class="stat-sub" style="color:var(--blue)">今月 ${s.monthBk}件</div>
-    </div>
-    <div class="stat-card" style="cursor:pointer" onclick="go('quotes')">
-      <div class="stat-label">見積りリクエスト</div>
-      <div class="stat-val" style="color:var(--blue)">${quotes.length}</div>
-      <div class="stat-sub">受付済み合計</div>
-    </div>
-    <div class="stat-card" style="cursor:pointer" onclick="go('reviews')">
-      <div class="stat-label">レビュー数</div>
-      <div class="stat-val" style="color:#8b5cf6">${reviews.filter(r=>r.status==='approved').length}</div>
-      <div class="stat-sub" style="${reviews.filter(r=>r.status==='pending').length?'color:#b45309;font-weight:600':''}">${reviews.filter(r=>r.status==='pending').length?'保留中 '+reviews.filter(r=>r.status==='pending').length+'件':'承認済み'}</div>
+      <div class="stat-label">今日の予約</div>
+      <div class="stat-val" style="color:var(--blue)">${today}</div>
+      <div class="stat-sub">今日</div>
     </div>
     <div class="stat-card" style="cursor:pointer" onclick="go('bookings')">
-      <div class="stat-label">新規顧客</div>
-      <div class="stat-val" style="color:var(--green)">${newCust}</div>
-      <div class="stat-sub">新規ステータス</div>
+      <div class="stat-label">今週の予約</div>
+      <div class="stat-val">${weekly}</div>
+      <div class="stat-sub">今週</div>
+    </div>
+    <div class="stat-card" style="cursor:pointer" onclick="go('bookings')">
+      <div class="stat-label">今月の予約</div>
+      <div class="stat-val">${monthly}</div>
+      <div class="stat-sub">今月</div>
+    </div>
+    <div class="stat-card" style="cursor:pointer" onclick="go('bookings')">
+      <div class="stat-label">保留中</div>
+      <div class="stat-val" style="color:var(--yellow)">${pending}</div>
+      <div class="stat-sub">未確定の予約</div>
+    </div>
+    <div class="stat-card" style="cursor:pointer" onclick="go('bookings')">
+      <div class="stat-label">確定済み</div>
+      <div class="stat-val" style="color:var(--green)">${confirmed}</div>
+      <div class="stat-sub">確認済み予約</div>
+    </div>
+    <div class="stat-card" style="cursor:pointer" onclick="go('bookings')">
+      <div class="stat-label">キャンセル</div>
+      <div class="stat-val" style="color:var(--red)">${cancelled}</div>
+      <div class="stat-sub">キャンセル済み</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">稼働率</div>
+      <div class="stat-val" style="color:${occupancy>=80?'var(--green)':occupancy>=50?'var(--yellow)':'var(--ink)'}">${occupancy}%</div>
+      <div class="stat-sub">今月の稼働率</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">日平均予約数</div>
+      <div class="stat-val" style="font-size:20px;line-height:1.3">${avgDaily}</div>
+      <div class="stat-sub">過去30日間</div>
     </div>
   `;
+}
+
+function renderDash() {
+  const bk = Adapter.getBookings();
+
+  /* Render immediately with local data so the UI is never blank */
+  renderStatGrid(null);
+
+  /* Kick off Supabase aggregated fetch; update grid when ready */
+  if (window.StatisticsService && StatisticsService.supabaseReady) {
+    StatisticsService.getDashboardStats().then(stats => {
+      if (stats && document.getElementById('view-dashboard').classList.contains('active')) {
+        renderStatGrid(stats);
+      }
+    });
+  }
 
   const recent = bk.slice(0, 5);
   document.getElementById('recentWrap').innerHTML = recent.length ? buildTable(recent, true) : emptyHTML('予約がありません');
   renderQA();
   renderActivity();
 }
+
+/* Refresh stat grid when Realtime fires a change */
+document.addEventListener('dashboard:stats-updated', function (e) {
+  if (document.getElementById('view-dashboard').classList.contains('active')) {
+    renderStatGrid(e.detail);
+  }
+});
 
 function renderActivity() {
   const bk      = Adapter.getBookings();
@@ -7436,6 +7490,7 @@ async function init() {
   Adapter.migrate();
   BookingService.bootstrap();
   Adapter.initializeRealtime();
+  if (window.StatisticsService) StatisticsService.initializeRealtime();
   renderDash();
   Auth.startTimer();
 }
