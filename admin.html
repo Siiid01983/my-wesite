@@ -2216,6 +2216,19 @@ const VIEW_TITLES = {
   backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理', line:'LINE通知設定', email:'メール通知設定', changelog:'変更履歴', security:'セキュリティ'
 };
 
+/* ════════════════════════════════════════════════════════
+   DATA PROVIDER SYNC HELPER
+   Routes page-open syncs through DataProvider so FallbackLogger
+   captures every Supabase attempt. If DataProvider confirms Supabase
+   is reachable, delegates to Adapter for domain mapping + storage.
+   ════════════════════════════════════════════════════════ */
+async function _dpSync(table, filters, adapterFn, viewId, rerenderFn) {
+  const { source } = await window.DataProvider.read(table, filters || undefined);
+  if (source !== 'supabase') return;
+  const ok = await adapterFn();
+  if (ok && document.getElementById(viewId)?.classList.contains('active')) rerenderFn();
+}
+
 function go(view) {
   Adapter.initializeRealtime(); // no-op if channels already active; re-connects if lost
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -2455,13 +2468,8 @@ function _renderBookingsUI() {
 
 function renderBookings() {
   _renderBookingsUI();
-
   if (Adapter.supabaseReady) {
-    Adapter.syncBookings().then(ok => {
-      if (ok && document.getElementById('view-bookings').classList.contains('active')) {
-        _renderBookingsUI();
-      }
-    });
+    _dpSync('bookings', null, () => Adapter.syncBookings(), 'view-bookings', _renderBookingsUI);
   }
 }
 
@@ -2947,19 +2955,28 @@ function refreshCalendarUI() { renderCalendar(); }
 function _syncCalendarFromSupabase() {
   if (!Adapter.supabaseReady) return;
   Promise.all([
-    Adapter.syncAvailability(),
-    Adapter.syncBookings(),
-  ]).then(([, bkOk]) => {
+    window.DataProvider.read('calendar_availability'),
+    window.DataProvider.read('bookings'),
+  ]).then(([calRes, bkRes]) => {
     if (!document.getElementById('view-calendar').classList.contains('active')) return;
-    if (bkOk) {
-      /* Rebuild booking counts from fresh data so limited/booked thresholds are accurate */
-      const counts = {};
-      Adapter.getBookings().forEach(bk => {
-        if (bk.date && bk.status !== 'キャンセル') counts[bk.date] = (counts[bk.date] || 0) + 1;
-      });
-      try { localStorage.setItem('hm_counts', JSON.stringify(counts)); } catch(e) {}
-    }
-    renderCalendar();
+    const calOk = calRes.source === 'supabase';
+    const bkOk  = bkRes.source  === 'supabase';
+    if (!calOk && !bkOk) return;
+    Promise.all([
+      calOk ? Adapter.syncAvailability() : Promise.resolve(false),
+      bkOk  ? Adapter.syncBookings()     : Promise.resolve(false),
+    ]).then(([, freshBkOk]) => {
+      if (!document.getElementById('view-calendar').classList.contains('active')) return;
+      if (freshBkOk) {
+        /* Rebuild booking counts from fresh data so limited/booked thresholds are accurate */
+        const counts = {};
+        Adapter.getBookings().forEach(bk => {
+          if (bk.date && bk.status !== 'キャンセル') counts[bk.date] = (counts[bk.date] || 0) + 1;
+        });
+        try { localStorage.setItem('hm_counts', JSON.stringify(counts)); } catch(e) {}
+      }
+      renderCalendar();
+    });
   });
 }
 
@@ -3148,11 +3165,7 @@ function loadCapacity() { _loadCapacityUI(); }
 
 function _syncCapacityFromSupabase() {
   if (!Adapter.supabaseReady) return;
-  Adapter.syncCapacity().then(ok => {
-    if (ok && document.getElementById('view-capacity').classList.contains('active')) {
-      _loadCapacityUI();
-    }
-  });
+  _dpSync('hm_data', {key:'hm_capacity'}, () => Adapter.syncCapacity(), 'view-capacity', _loadCapacityUI);
 }
 
 function saveCapacity() {
@@ -3341,11 +3354,7 @@ function renderPricing() { _renderPricingUI(); }
 
 function _syncPricingFromSupabase() {
   if (!Adapter.supabaseReady) return;
-  Adapter.syncPrices().then(ok => {
-    if (ok && document.getElementById('view-pricing').classList.contains('active')) {
-      _renderPricingUI();
-    }
-  });
+  _dpSync('hm_data', {key:'hm_prices'}, () => Adapter.syncPrices(), 'view-pricing', _renderPricingUI);
 }
 
 function switchPricingTab(idx) {
@@ -3560,11 +3569,7 @@ function renderDisposal() { _renderDisposalUI(); }
 
 function _syncDisposalFromSupabase() {
   if (!Adapter.supabaseReady) return;
-  Adapter.syncDisposal().then(ok => {
-    if (ok && document.getElementById('view-disposal').classList.contains('active')) {
-      _renderDisposalUI();
-    }
-  });
+  _dpSync('hm_data', {key:'hm_disposal'}, () => Adapter.syncDisposal(), 'view-disposal', _renderDisposalUI);
 }
 
 function updateDisposalTotal() {
@@ -4490,11 +4495,7 @@ function renderQuotes() { _renderQuotesUI(); }
 
 function _syncQuotesFromSupabase() {
   if (!Adapter.supabaseReady) return;
-  Adapter.syncQuotes().then(ok => {
-    if (ok && document.getElementById('view-quotes').classList.contains('active')) {
-      _renderQuotesUI();
-    }
-  });
+  _dpSync('hm_data', {key:'hm_quotes'}, () => Adapter.syncQuotes(), 'view-quotes', _renderQuotesUI);
 }
 
 function deleteQuote(id) {
@@ -4665,11 +4666,7 @@ function renderServices() { _renderServicesUI(); }
 
 function _syncServicesFromSupabase() {
   if (!Adapter.supabaseReady) return;
-  Adapter.syncServices().then(ok => {
-    if (ok && document.getElementById('view-services').classList.contains('active')) {
-      _renderServicesUI();
-    }
-  });
+  _dpSync('services', null, () => Adapter.syncServices(), 'view-services', _renderServicesUI);
 }
 
 function liveSvcPreview() {
@@ -4852,11 +4849,7 @@ function renderHero() { _renderHeroUI(); }
 
 function _syncHeroFromSupabase() {
   if (!Adapter.supabaseReady) return;
-  Adapter.syncHero().then(ok => {
-    if (ok && document.getElementById('view-hero').classList.contains('active')) {
-      _renderHeroUI();
-    }
-  });
+  _dpSync('hm_data', {key:'hm_hero'}, () => Adapter.syncHero(), 'view-hero', _renderHeroUI);
 }
 
 function _renderHeroBadgeList(badges) {
@@ -5117,11 +5110,7 @@ function renderReviews() { _renderReviewsUI(); }
 
 function _syncReviewsFromSupabase() {
   if (!Adapter.supabaseReady) return;
-  Adapter.syncReviews().then(ok => {
-    if (ok && document.getElementById('view-reviews').classList.contains('active')) {
-      _renderReviewsUI();
-    }
-  });
+  _dpSync('reviews', null, () => Adapter.syncReviews(), 'view-reviews', _renderReviewsUI);
 }
 
 function approveRev(id) {
@@ -5507,11 +5496,7 @@ function renderFooter() { _renderFooterUI(); }
 
 function _syncFooterFromSupabase() {
   if (!Adapter.supabaseReady) return;
-  Adapter.syncFooter().then(ok => {
-    if (ok && document.getElementById('view-footer').classList.contains('active')) {
-      _renderFooterUI();
-    }
-  });
+  _dpSync('hm_data', {key:'hm_footer'}, () => Adapter.syncFooter(), 'view-footer', _renderFooterUI);
 }
 
 function renderFooterHistory() {
@@ -5683,11 +5668,7 @@ function renderCompany() { _renderCompanyUI(); }
 
 function _syncCompanyFromSupabase() {
   if (!Adapter.supabaseReady) return;
-  Adapter.syncCompany().then(ok => {
-    if (ok && document.getElementById('view-company').classList.contains('active')) {
-      _renderCompanyUI();
-    }
-  });
+  _dpSync('hm_data', {key:'hm_company_rows'}, () => Adapter.syncCompany(), 'view-company', _renderCompanyUI);
 }
 
 function renderCompanyHistory() {
@@ -5768,11 +5749,7 @@ function renderFaq() { _renderFaqUI(); }
 
 function _syncFaqFromSupabase() {
   if (!Adapter.supabaseReady) return;
-  Adapter.syncFaq().then(ok => {
-    if (ok && document.getElementById('view-faq').classList.contains('active')) {
-      _renderFaqUI();
-    }
-  });
+  _dpSync('hm_data', {key:'hm_faq'}, () => Adapter.syncFaq(), 'view-faq', _renderFaqUI);
 }
 
 function liveFaqPreview() {
@@ -7071,12 +7048,20 @@ function _syncCustomersFromSupabase() {
   if (!Adapter.supabaseReady) return;
   /* Sync both customer profiles and bookings — booking counts enrich the customer list */
   Promise.all([
-    Adapter.syncCustomers(),
-    Adapter.syncBookings(),
-  ]).then(() => {
-    if (document.getElementById('view-customers').classList.contains('active')) {
-      _renderCustomersUI();
-    }
+    window.DataProvider.read('hm_data', {key:'hm_customers'}),
+    window.DataProvider.read('bookings'),
+  ]).then(([custRes, bkRes]) => {
+    const custOk = custRes.source === 'supabase';
+    const bkOk   = bkRes.source   === 'supabase';
+    if (!custOk && !bkOk) return;
+    Promise.all([
+      custOk ? Adapter.syncCustomers() : Promise.resolve(false),
+      bkOk   ? Adapter.syncBookings()  : Promise.resolve(false),
+    ]).then(() => {
+      if (document.getElementById('view-customers').classList.contains('active')) {
+        _renderCustomersUI();
+      }
+    });
   });
 }
 
