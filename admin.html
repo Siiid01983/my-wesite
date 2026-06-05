@@ -2227,7 +2227,7 @@ function go(view) {
   if (view==='calendar') { refreshCalendarUI(); _syncCalendarFromSupabase(); }
   if (view==='analytics') renderAnalytics();
   if (view==='capacity') loadCapacity();
-  if (view==='pricing') renderPricing();
+  if (view==='pricing') { renderPricing(); _syncPricingFromSupabase(); }
   if (view==='disposal') renderDisposal();
   if (view==='quotes') { renderQuotes(); _syncQuotesFromSupabase(); }
   if (view==='reviews') { renderReviews(); _syncReviewsFromSupabase(); }
@@ -3275,7 +3275,7 @@ const PRICING_FIELDS = [
 
 let _pricingActiveIdx = 0;
 
-function renderPricing() {
+function _renderPricingUI() {
   const prices = Adapter.getPrices();
 
   let tabs = '<div class="media-tabs" id="pricingTabs" style="margin:-16px -16px 0;padding:0 16px">';
@@ -3315,11 +3315,22 @@ function renderPricing() {
       <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
       保存して反映
     </button>
-    <button class="btn btn-ghost" onclick="_pricingActiveIdx=0;renderPricing()">リセット</button>
+    <button class="btn btn-ghost" onclick="_pricingActiveIdx=0;_renderPricingUI()">リセット</button>
     <span id="pricingSaveInd" style="font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;font-weight:500">✓ 保存しました</span>
   </div>`;
 
   document.getElementById('pricingBody').innerHTML = tabs + panels + actions;
+}
+
+function renderPricing() { _renderPricingUI(); }
+
+function _syncPricingFromSupabase() {
+  if (!Adapter.supabaseReady) return;
+  Adapter.syncPrices().then(ok => {
+    if (ok && document.getElementById('view-pricing').classList.contains('active')) {
+      _renderPricingUI();
+    }
+  });
 }
 
 function switchPricingTab(idx) {

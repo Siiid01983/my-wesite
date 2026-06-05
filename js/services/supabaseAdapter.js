@@ -773,6 +773,20 @@
       return true;
     },
 
+    /* Pull hm_prices from hm_data KV and refresh localStorage.
+       Lighter than syncFromSupabase() — use when pricing view is opened. */
+    async syncPrices() {
+      if (!_sb) return false;
+      const { data, error } = await _sb
+        .from('hm_data')
+        .select('value')
+        .eq('key', 'hm_prices')
+        .maybeSingle();
+      if (error) { console.warn('[Adapter] syncPrices error:', error.message); return false; }
+      if (data?.value) _set('hm_prices', data.value);
+      return true;
+    },
+
     /* Pull only the reviews table from Supabase and refresh localStorage.
        Lighter than syncFromSupabase() — use when reviews view is opened. */
     async syncReviews() {
