@@ -801,6 +801,20 @@
       return true;
     },
 
+    /* Pull hm_capacity from hm_data KV and refresh localStorage.
+       Lighter than syncFromSupabase() — use when capacity view is opened. */
+    async syncCapacity() {
+      if (!_sb) return false;
+      const { data, error } = await _sb
+        .from('hm_data')
+        .select('value')
+        .eq('key', 'hm_capacity')
+        .maybeSingle();
+      if (error) { console.warn('[Adapter] syncCapacity error:', error.message); return false; }
+      if (data?.value) _set('hm_capacity', data.value);
+      return true;
+    },
+
     /* Pull only the reviews table from Supabase and refresh localStorage.
        Lighter than syncFromSupabase() — use when reviews view is opened. */
     async syncReviews() {

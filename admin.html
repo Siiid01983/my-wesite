@@ -843,7 +843,7 @@ html.dark .login-err-lock{color:#f59e0b}
                 </div>
                 <div style="margin-top:16px;display:flex;gap:8px">
                   <button class="btn btn-primary" onclick="saveCapacity()">保存</button>
-                  <button class="btn btn-ghost" onclick="loadCapacity()">リセット</button>
+                  <button class="btn btn-ghost" onclick="_loadCapacityUI()">リセット</button>
                 </div>
               </div>
             </div>
@@ -2226,7 +2226,7 @@ function go(view) {
   if (view==='bookings') renderBookings();
   if (view==='calendar') { refreshCalendarUI(); _syncCalendarFromSupabase(); }
   if (view==='analytics') renderAnalytics();
-  if (view==='capacity') loadCapacity();
+  if (view==='capacity') { loadCapacity(); _syncCapacityFromSupabase(); }
   if (view==='pricing') { renderPricing(); _syncPricingFromSupabase(); }
   if (view==='disposal') { renderDisposal(); _syncDisposalFromSupabase(); }
   if (view==='quotes') { renderQuotes(); _syncQuotesFromSupabase(); }
@@ -3134,10 +3134,21 @@ function showFullBooked() {
 /* ════════════════════════════════════════════════════════
    CAPACITY SETTINGS
    ════════════════════════════════════════════════════════ */
-function loadCapacity() {
+function _loadCapacityUI() {
   const c = Adapter.getCapacity();
   document.getElementById('capMax').value = c.max || 5;
   document.getElementById('capLimited').value = c.limited || 3;
+}
+
+function loadCapacity() { _loadCapacityUI(); }
+
+function _syncCapacityFromSupabase() {
+  if (!Adapter.supabaseReady) return;
+  Adapter.syncCapacity().then(ok => {
+    if (ok && document.getElementById('view-capacity').classList.contains('active')) {
+      _loadCapacityUI();
+    }
+  });
 }
 
 function saveCapacity() {
