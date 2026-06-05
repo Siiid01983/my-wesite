@@ -3931,7 +3931,6 @@ function _drawAnalyticsCharts(bk, from, to, fromD, toD, days, isDark, chartPerio
       cur.setMonth(cur.getMonth() + 1);
     }
   }
-  }
 
   const c3SvcCount = {};
   bk.filter(b => b.date >= from && b.date <= to && b.status !== 'キャンセル').forEach(b => {
