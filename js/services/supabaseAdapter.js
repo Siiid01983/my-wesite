@@ -681,6 +681,23 @@
       return true;
     },
 
+    /* Pull only calendar_availability from Supabase and refresh localStorage.
+       Lighter than syncFromSupabase() — use when calendar view is opened. */
+    async syncAvailability() {
+      if (!_sb) return false;
+      const { data, error } = await _sb.from('calendar_availability').select('*');
+      if (error) { console.warn('[Adapter] syncAvailability error:', error.message); return false; }
+      if (data) {
+        const avail = {};
+        data.forEach(row => {
+          const local = CAL_TO_LOCAL[row.status] || row.status;
+          if (local !== 'available') avail[row.date] = local;
+        });
+        _set(K.av, avail);
+      }
+      return true;
+    },
+
     /* Remove all active Realtime channels. Call on logout. */
     destroyRealtime() {
       if (!_sb) return;

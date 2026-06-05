@@ -2224,7 +2224,7 @@ function go(view) {
   Auth.touch();
   if (view==='dashboard') renderDash();
   if (view==='bookings') renderBookings();
-  if (view==='calendar') refreshCalendarUI();
+  if (view==='calendar') { refreshCalendarUI(); _syncCalendarFromSupabase(); }
   if (view==='analytics') renderAnalytics();
   if (view==='capacity') loadCapacity();
   if (view==='pricing') renderPricing();
@@ -2937,6 +2937,27 @@ function renderCalendar() {
 }
 
 function refreshCalendarUI() { renderCalendar(); }
+
+/* Sync calendar_availability + bookings from Supabase, rebuild counts, re-render.
+   Called only on navigation to the calendar view — not on every date-click event. */
+function _syncCalendarFromSupabase() {
+  if (!Adapter.supabaseReady) return;
+  Promise.all([
+    Adapter.syncAvailability(),
+    Adapter.syncBookings(),
+  ]).then(([, bkOk]) => {
+    if (!document.getElementById('view-calendar').classList.contains('active')) return;
+    if (bkOk) {
+      /* Rebuild booking counts from fresh data so limited/booked thresholds are accurate */
+      const counts = {};
+      Adapter.getBookings().forEach(bk => {
+        if (bk.date && bk.status !== 'キャンセル') counts[bk.date] = (counts[bk.date] || 0) + 1;
+      });
+      try { localStorage.setItem('hm_counts', JSON.stringify(counts)); } catch(e) {}
+    }
+    renderCalendar();
+  });
+}
 
 function updateCalendarCounters() {
   document.getElementById('bulkCount').textContent = _bulkMode ? `${_bulkSel.size}日選択中` : '';
