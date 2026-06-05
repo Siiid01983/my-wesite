@@ -12,13 +12,13 @@
   /* ── Per-table TTL defaults (ms) ─────────────────────────────────────────
      Override per-table via window.HM_CONFIG.CACHE_TTL = { bookings: 60000 }  */
   const _TTL_DEFAULTS = {
-    bookings:              2 * 60 * 1000,   //  2 min — high-change transactional
-    calendar_availability: 2 * 60 * 1000,   //  2 min — high-change transactional
-    reviews:               5 * 60 * 1000,   //  5 min
-    services:             10 * 60 * 1000,   // 10 min — low-change config
-    hm_data:              10 * 60 * 1000,   // 10 min — low-change config
+    bookings:              2 * 60 * 1000,
+    calendar_availability: 2 * 60 * 1000,
+    reviews:               5 * 60 * 1000,
+    services:             10 * 60 * 1000,
+    hm_data:              10 * 60 * 1000,
   };
-  const _TTL_FALLBACK = 5 * 60 * 1000;     //  5 min default for unknown tables
+  const _TTL_FALLBACK = 5 * 60 * 1000;
 
   function _ttl(table) {
     const override = (_cfg().CACHE_TTL || {})[table];
@@ -49,7 +49,6 @@
     return (Date.now() - env.ts) < (env.ttl ?? _ttl(table));
   }
 
-  /* Stamp ts=0 to mark stale without losing data (data is still usable as fallback) */
   function _cacheInvalidate(table) {
     const env = _cacheGet(table);
     if (!env) return;
@@ -62,10 +61,56 @@
     return query;
   }
 
+  /* ── Retry helpers ────────────────────────────────────────────────────── */
+  function _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  /* ±25% jitter prevents thundering herd after shared outages */
+  function _jitter(ms) { return Math.round(ms * (0.75 + Math.random() * 0.5)); }
+
+  /* Retry on: network errors (no status), 429 rate-limit, 5xx server errors.
+     Do NOT retry: 4xx client errors (bad schema, auth, forbidden, not-found). */
+  function _isRetryable(err) {
+    if (!err) return false;
+    const status = err.status ?? err.statusCode ?? err.code;
+    if (status === undefined || status === null) return true;  // pure network error
+    if (status === 429) return true;                           // rate limit
+    if (typeof status === 'number' && status >= 500) return true; // server error
+    return false;
+  }
+
+  /* Wraps a Supabase fn() → {data, error} with exponential-backoff retries.
+     Returns the last response; caller checks result.error as before. */
+  async function _withRetry(sbFn, table, operation) {
+    const rc       = (_cfg().RETRY) || {};
+    const maxTries = (rc.maxAttempts ?? 3) + 1; // first attempt + retries
+    const base     = rc.baseDelayMs ?? 500;
+    const cap      = rc.maxDelayMs  ?? 10000;
+    const factor   = rc.factor      ?? 2;
+
+    let result;
+    for (let attempt = 0; attempt < maxTries; attempt++) {
+      try {
+        result = await sbFn();
+      } catch (thrown) {
+        result = { data: null, error: thrown };
+      }
+
+      const done = !result.error || !_isRetryable(result.error) || attempt === maxTries - 1;
+      if (done) return result;
+
+      _metrics.retries++;
+      _metrics.lastRetryTs = Date.now();
+      const delay = _jitter(Math.min(base * Math.pow(factor, attempt), cap));
+      console.warn(`[DataProvider] ${operation} on ${table}: retry ${attempt + 1}/${maxTries - 1} in ${delay}ms —`, result.error?.message || result.error);
+      await _sleep(delay);
+    }
+    return result;
+  }
+
   /* ── In-memory metrics (reset on page reload) ─────────────────────────── */
   const _metrics = {
-    reads: 0, cacheHits: 0, supabaseReads: 0, fallbacks: 0,
-    lastLatencyMs: null, lastSyncTs: null,
+    reads: 0, cacheHits: 0, supabaseReads: 0, fallbacks: 0, retries: 0,
+    lastLatencyMs: null, lastSyncTs: null, lastRetryTs: null,
   };
 
   const DataProvider = {
@@ -83,7 +128,10 @@
       if (sb && !_cfg().FORCE_FALLBACK) {
         try {
           const t0 = Date.now();
-          const { data, error } = await _applyFilters(sb.from(table).select('*'), filters);
+          const { data, error } = await _withRetry(
+            () => _applyFilters(sb.from(table).select('*'), filters),
+            table, 'read'
+          );
           _metrics.lastLatencyMs = Date.now() - t0;
           if (error) throw error;
           _metrics.supabaseReads++;
@@ -108,9 +156,9 @@
       const sb = _sb();
       if (sb && !_cfg().FORCE_FALLBACK) {
         try {
-          const { error } = await sb.from(table).insert(rows);
+          const { error } = await _withRetry(() => sb.from(table).insert(rows), table, 'write');
           if (error) throw error;
-          _cacheInvalidate(table); // force fresh fetch on next read
+          _cacheInvalidate(table);
           return { success: true, source: 'supabase', error: null };
         } catch (e) {
           _log('write', table, e, false);
@@ -127,7 +175,10 @@
       const sb = _sb();
       if (sb && !_cfg().FORCE_FALLBACK) {
         try {
-          const { error } = await sb.from(table).update(patch).eq('id', id);
+          const { error } = await _withRetry(
+            () => sb.from(table).update(patch).eq('id', id),
+            table, 'update'
+          );
           if (error) throw error;
           _cacheInvalidate(table);
           return { success: true, source: 'supabase', error: null };
@@ -146,7 +197,10 @@
       const sb = _sb();
       if (sb && !_cfg().FORCE_FALLBACK) {
         try {
-          const { error } = await sb.from(table).delete().eq('id', id);
+          const { error } = await _withRetry(
+            () => sb.from(table).delete().eq('id', id),
+            table, 'delete'
+          );
           if (error) throw error;
           _cacheInvalidate(table);
           return { success: true, source: 'supabase', error: null };
@@ -161,17 +215,14 @@
       return { success: true, source: 'localStorage', error: null };
     },
 
-    /* Explicitly bust a table's cache — call after external writes */
     invalidate(table) { _cacheInvalidate(table); },
 
-    /* Remove all DataProvider cache keys from localStorage */
     clearAllCache() {
       Object.keys(localStorage)
         .filter(k => k.startsWith('hm_dp_'))
         .forEach(k => localStorage.removeItem(k));
     },
 
-    /* Observability: [{table, age_s, ttl_s, valid, rows}] for all cached tables */
     cacheStatus() {
       return Object.keys(localStorage)
         .filter(k => k.startsWith('hm_dp_'))
@@ -191,7 +242,6 @@
         .filter(Boolean);
     },
 
-    /* Runtime metrics accumulated since page load */
     getMetrics() {
       const total = _metrics.reads || 1;
       return {
@@ -199,15 +249,18 @@
         cacheHits:     _metrics.cacheHits,
         supabaseReads: _metrics.supabaseReads,
         fallbacks:     _metrics.fallbacks,
+        retries:       _metrics.retries,
         hitRate:       Math.round((_metrics.cacheHits / total) * 100),
         lastLatencyMs: _metrics.lastLatencyMs,
         lastSyncTs:    _metrics.lastSyncTs,
+        lastRetryTs:   _metrics.lastRetryTs,
       };
     },
 
     resetMetrics() {
-      _metrics.reads = _metrics.cacheHits = _metrics.supabaseReads = _metrics.fallbacks = 0;
-      _metrics.lastLatencyMs = _metrics.lastSyncTs = null;
+      _metrics.reads = _metrics.cacheHits = _metrics.supabaseReads =
+        _metrics.fallbacks = _metrics.retries = 0;
+      _metrics.lastLatencyMs = _metrics.lastSyncTs = _metrics.lastRetryTs = null;
     },
   };
 

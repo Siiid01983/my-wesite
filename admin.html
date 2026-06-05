@@ -2483,6 +2483,11 @@ function renderObservability() {
           <div class="stat-val" style="color:${fbColor};font-size:22px">${m ? m.fallbacks : '—'}</div>
           <div class="stat-sub" style="margin-top:4px">キャッシュミス</div>
         </div>
+        <div class="stat-card" style="margin:0;padding:14px 16px">
+          <div class="stat-label">リトライ回数</div>
+          <div class="stat-val" style="color:${m?.retries > 0 ? 'var(--yellow)' : 'var(--green)'};font-size:22px">${m ? m.retries : '—'}</div>
+          <div class="stat-sub" style="margin-top:4px">自動再試行 (バックオフ)</div>
+        </div>
       </div>
 
       <div style="padding:0 16px 16px">
