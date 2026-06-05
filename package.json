@@ -1,6 +1,8 @@
 {
   "scripts": {
-    "test": "node --test tests/dataProvider.test.js"
+    "test":       "node --test tests/dataProvider.test.js",
+    "test:smoke": "node --test tests/smoke.test.js",
+    "test:all":   "node --test tests/dataProvider.test.js tests/smoke.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.107.0",
