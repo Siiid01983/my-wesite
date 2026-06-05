@@ -2233,7 +2233,7 @@ function go(view) {
   if (view==='reviews') { renderReviews(); _syncReviewsFromSupabase(); }
   if (view==='services') { renderServices(); _syncServicesFromSupabase(); }
   if (view==='faq') { renderFaq(); _syncFaqFromSupabase(); }
-  if (view==='company') renderCompany();
+  if (view==='company') { renderCompany(); _syncCompanyFromSupabase(); }
   if (view==='footer') renderFooter();
   if (view==='hero') { renderHero(); _syncHeroFromSupabase(); }
   if (view==='backup') renderBackup();
@@ -5503,7 +5503,7 @@ function restoreFooterVersion(idx) {
    ════════════════════════════════════════════════════════ */
 let _compRowId = null;
 
-function renderCompany() {
+function _renderCompanyUI() {
   const meta = Adapter.getCompanyMeta();
   document.getElementById('compMetaEyebrow').value = meta.eyebrow || '';
   document.getElementById('compMetaTitle').value   = meta.title   || '';
@@ -5630,6 +5630,17 @@ function saveCompanyAll() {
   ind.style.opacity = '1';
   clearTimeout(ind._t);
   ind._t = setTimeout(() => { ind.style.opacity = '0'; }, 2400);
+}
+
+function renderCompany() { _renderCompanyUI(); }
+
+function _syncCompanyFromSupabase() {
+  if (!Adapter.supabaseReady) return;
+  Adapter.syncCompany().then(ok => {
+    if (ok && document.getElementById('view-company').classList.contains('active')) {
+      _renderCompanyUI();
+    }
+  });
 }
 
 function renderCompanyHistory() {
