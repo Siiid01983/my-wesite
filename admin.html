@@ -573,6 +573,55 @@ html.dark .login-err-lock{color:#f59e0b}
   </div>
 </div>
 
+<!-- ── Force Password Change ── -->
+<div id="forceChangeScreen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div class="login-card" style="max-width:400px">
+    <div class="login-brand">
+      <div class="login-mark">H</div>
+      <div>
+        <div class="login-name">Hello Moving</div>
+        <div class="login-sub">ADMIN DASHBOARD</div>
+      </div>
+    </div>
+
+    <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:12px 14px;margin-bottom:22px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+        <svg viewBox="0 0 24 24" width="16" height="16" style="flex-shrink:0"><path fill="var(--red)" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        <span style="font-weight:700;font-size:13px;color:var(--red)">初期パスワードの変更が必要です</span>
+      </div>
+      <div style="font-size:12px;color:var(--ink-2);line-height:1.6">
+        現在、デフォルトのパスワードが使用されています。セキュリティ保護のため、新しいパスワードを設定するまで管理画面にアクセスできません。
+      </div>
+    </div>
+
+    <div class="login-field">
+      <label class="login-label" for="fcNewPass">
+        <span>新しいパスワード</span>
+        <span style="color:var(--gray-2);font-weight:400;font-size:11px">8文字以上</span>
+      </label>
+      <input class="login-input" id="fcNewPass" type="password"
+        placeholder="新しいパスワード（8文字以上）" autocomplete="new-password" />
+    </div>
+
+    <div class="login-field">
+      <label class="login-label" for="fcConfirmPass">確認用パスワード</label>
+      <input class="login-input" id="fcConfirmPass" type="password"
+        placeholder="パスワードを再入力" autocomplete="new-password" />
+    </div>
+
+    <div class="sec-pass-msg" id="fcMsg" style="min-height:18px;margin-bottom:10px"></div>
+
+    <button class="login-btn" id="fcBtn" type="button" onclick="doForceChange()">
+      <div class="login-spinner"></div>
+      <span class="login-btn-text">パスワードを変更して続ける</span>
+    </button>
+
+    <div style="text-align:center;margin-top:14px;font-size:11px;color:var(--gray-2)">
+      このステップはスキップできません
+    </div>
+  </div>
+</div>
+
 <!-- ── Admin App ── -->
 <div id="adminApp">
   <div class="layout">
@@ -2044,7 +2093,7 @@ const Auth = {
     if (!localStorage.getItem(this.CREDS_KEY)) {
       const salt = this._mkToken();
       const hash = await this._hash('hello2026', salt);
-      localStorage.setItem(this.CREDS_KEY, JSON.stringify({user:'admin@hello-moving.com', hash, salt}));
+      localStorage.setItem(this.CREDS_KEY, JSON.stringify({user:'admin@hello-moving.com', hash, salt, mustChange:true}));
     }
   },
 
@@ -2116,12 +2165,20 @@ const Auth = {
         const newHash = await this._hash(pass, salt);
         localStorage.setItem(this.CREDS_KEY, JSON.stringify({user:creds.user, hash:newHash, salt}));
       }
+      /* Detect default password — works for fresh installs and legacy credentials */
+      const fresh       = this._getCreds();
+      const defaultHash = await this._hash('hello2026', fresh.salt || null);
+      const isDefault   = this._safeEqual(defaultHash, fresh.hash);
+      const mustChange  = isDefault || !!fresh.mustChange;
+      if (mustChange && !fresh.mustChange) {
+        localStorage.setItem(this.CREDS_KEY, JSON.stringify({...fresh, mustChange:true}));
+      }
       localStorage.removeItem(this.LOCK_KEY);
       sessionStorage.setItem(this.KEY, JSON.stringify({token:this._mkToken(), ts:Date.now()}));
       if (remember) localStorage.setItem('hm_admin_remember', JSON.stringify({user, exp: Date.now() + this.REMEMBER_MS}));
       else          localStorage.removeItem('hm_admin_remember');
       this._addLog('login', 'success');
-      return {ok:true};
+      return {ok:true, mustChange};
     }
     this._recordFail();
     return {ok:false, locked:this.isLockedOut(), left:this.attemptsLeft()};
@@ -2162,6 +2219,22 @@ const Auth = {
     /* Issue new session token immediately after password change */
     sessionStorage.setItem(this.KEY, JSON.stringify({token:this._mkToken(), ts:Date.now()}));
     this._addLog('passwd_change', 'success');
+    return true;
+  },
+
+  mustChangePassword() {
+    return !!this._getCreds()?.mustChange;
+  },
+
+  async forceChangePassword(newPass) {
+    const creds = this._getCreds();
+    if (!creds) return false;
+    const salt    = this._mkToken();
+    const newHash = await this._hash(newPass, salt);
+    /* Omitting mustChange clears the gate */
+    localStorage.setItem(this.CREDS_KEY, JSON.stringify({user:creds.user, hash:newHash, salt}));
+    sessionStorage.setItem(this.KEY, JSON.stringify({token:this._mkToken(), ts:Date.now()}));
+    this._addLog('passwd_change', 'forced');
     return true;
   },
 
@@ -2277,6 +2350,7 @@ async function _dpSync(table, filters, adapterFn, viewId, rerenderFn) {
 
 function go(view) {
   if (!Auth.isLoggedIn()) { Auth.logout(); return; }
+  if (Auth.mustChangePassword()) { showForceChange(); return; }
   Adapter.initializeRealtime(); // no-op if channels already active; re-connects if lost
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.sb-link').forEach(l => l.classList.remove('active'));
@@ -7693,7 +7767,53 @@ function showLogin() {
 
 function showApp() {
   document.getElementById('loginScreen').style.display='none';
+  document.getElementById('forceChangeScreen').style.display='none';
   document.getElementById('adminApp').style.display='block';
+}
+
+function showForceChange() {
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('adminApp').style.display='none';
+  document.getElementById('forceChangeScreen').style.display='flex';
+  setTimeout(() => { const el = document.getElementById('fcNewPass'); if (el) el.focus(); }, 50);
+}
+
+async function doForceChange() {
+  const newPass = document.getElementById('fcNewPass').value;
+  const confirm = document.getElementById('fcConfirmPass').value;
+  const msgEl   = document.getElementById('fcMsg');
+  const btn     = document.getElementById('fcBtn');
+
+  msgEl.className = 'sec-pass-msg sec-pass-err';
+  msgEl.textContent = '';
+
+  if (!newPass || !confirm) {
+    msgEl.textContent = '全ての項目を入力してください'; return;
+  }
+  if (newPass.length < 8) {
+    msgEl.textContent = 'パスワードは8文字以上で設定してください'; return;
+  }
+  if (newPass !== confirm) {
+    msgEl.textContent = '新しいパスワードが一致しません'; return;
+  }
+
+  btn.disabled = true;
+  btn.classList.add('loading');
+  btn.querySelector('.login-btn-text').textContent = '変更中...';
+
+  const ok = await Auth.forceChangePassword(newPass);
+
+  btn.classList.remove('loading');
+  btn.disabled = false;
+  btn.querySelector('.login-btn-text').textContent = 'パスワードを変更して続ける';
+
+  if (ok) {
+    document.getElementById('fcNewPass').value = '';
+    document.getElementById('fcConfirmPass').value = '';
+    showApp(); init();
+  } else {
+    msgEl.textContent = 'エラーが発生しました。再試行してください。';
+  }
 }
 
 function logout() { Auth.logout(); }
@@ -7743,6 +7863,7 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
   btn.classList.remove('loading');
 
   if (result.ok) {
+    if (result.mustChange) { showForceChange(); return; }
     showApp(); init();
     return;
   }
@@ -7817,7 +7938,8 @@ async function init() {
   if (window.location.hash === '#review') {
     showPublicReviewForm();
   } else if (Auth.isLoggedIn()) {
-    showApp(); await init();
+    if (Auth.mustChangePassword()) { showForceChange(); }
+    else { showApp(); await init(); }
   } else {
     showLogin();
   }
