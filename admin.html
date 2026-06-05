@@ -691,6 +691,7 @@ html.dark .login-err-lock{color:#f59e0b}
         <div id="view-dashboard" class="view active">
           <div class="stat-grid" id="statGrid"></div>
           <div id="qaGrid"></div>
+          <div id="obsPanel"></div>
           <div class="dash-panels">
             <div class="panel" style="flex:1;min-width:0">
               <div class="panel-head">
@@ -2397,6 +2398,118 @@ function renderDash() {
   document.getElementById('recentWrap').innerHTML = recent.length ? buildTable(recent, true) : emptyHTML('予約がありません');
   renderQA();
   renderActivity();
+  renderObservability();
+}
+
+function renderObservability() {
+  const el = document.getElementById('obsPanel');
+  if (!el) return;
+
+  const m   = window.DataProvider ? DataProvider.getMetrics()  : null;
+  const cs  = window.DataProvider ? DataProvider.cacheStatus() : [];
+  const fl  = window.FallbackLogger ? FallbackLogger.getAll()  : [];
+  const sbOk = !!(window.Adapter && Adapter.supabaseReady);
+
+  const hitRate    = m ? m.hitRate : 0;
+  const hitColor   = hitRate >= 70 ? 'var(--green)' : hitRate >= 40 ? 'var(--yellow)' : 'var(--ink)';
+  const latColor   = !m?.lastLatencyMs ? 'var(--ink)'
+                   : m.lastLatencyMs < 500  ? 'var(--green)'
+                   : m.lastLatencyMs < 2000 ? 'var(--yellow)'
+                   : 'var(--red)';
+  const latStr     = m?.lastLatencyMs != null ? m.lastLatencyMs + 'ms' : '—';
+  const syncAgo    = m?.lastSyncTs
+                   ? _obsAgo(m.lastSyncTs)
+                   : '—';
+  const flCount    = fl.length;
+  const flColor    = flCount === 0 ? 'var(--green)' : flCount < 5 ? 'var(--yellow)' : 'var(--red)';
+  const fbColor    = !m || m.fallbacks === 0 ? 'var(--green)' : 'var(--red)';
+
+  const cacheRows = cs.length ? cs.map(s => {
+    const ageStr = s.age_s != null ? (s.age_s < 60 ? s.age_s + 's' : Math.round(s.age_s/60) + 'm') : '—';
+    const ttlStr = s.ttl_s != null ? Math.round(s.ttl_s/60) + 'm' : '—';
+    const badge  = s.valid
+      ? `<span class="badge badge-confirmed">有効</span>`
+      : `<span class="badge badge-cancel">期限切</span>`;
+    return `<tr>
+      <td style="font-family:monospace;font-size:12px">${s.table}</td>
+      <td style="text-align:center">${s.rows}</td>
+      <td style="text-align:center">${ageStr}</td>
+      <td style="text-align:center">${ttlStr}</td>
+      <td style="text-align:center">${badge}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="5" style="text-align:center;color:var(--gray-1);padding:12px">キャッシュなし</td></tr>`;
+
+  el.innerHTML = `
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">システム監視</span>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2)">
+            <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${sbOk ? 'var(--green)' : 'var(--red)'};display:inline-block"></span>
+            Supabase&nbsp;${sbOk ? 'オンライン' : 'オフライン'}
+          </span>
+          <button class="btn btn-ghost btn-sm" onclick="renderObservability()">更新</button>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;padding:16px 16px 8px">
+        <div class="stat-card" style="margin:0;padding:14px 16px">
+          <div class="stat-label">キャッシュヒット率</div>
+          <div class="stat-val" style="color:${hitColor};font-size:22px">${hitRate}%</div>
+          <div class="stat-sub" style="margin-top:4px">${m ? m.cacheHits + ' / ' + m.reads : '—'} reads</div>
+        </div>
+        <div class="stat-card" style="margin:0;padding:14px 16px">
+          <div class="stat-label">Supabaseリクエスト</div>
+          <div class="stat-val" style="font-size:22px">${m ? m.supabaseReads : '—'}</div>
+          <div class="stat-sub" style="margin-top:4px">直接フェッチ</div>
+        </div>
+        <div class="stat-card" style="margin:0;padding:14px 16px">
+          <div class="stat-label">最終レイテンシ</div>
+          <div class="stat-val" style="color:${latColor};font-size:22px">${latStr}</div>
+          <div class="stat-sub" style="margin-top:4px">最後のレスポンス</div>
+        </div>
+        <div class="stat-card" style="margin:0;padding:14px 16px">
+          <div class="stat-label">最終同期</div>
+          <div class="stat-val" style="font-size:18px;line-height:1.3">${syncAgo}</div>
+          <div class="stat-sub" style="margin-top:4px">Supabase読込</div>
+        </div>
+        <div class="stat-card" style="margin:0;padding:14px 16px">
+          <div class="stat-label">フォールバックログ</div>
+          <div class="stat-val" style="color:${flColor};font-size:22px">${flCount}</div>
+          <div class="stat-sub" style="margin-top:4px">FallbackLoggerエントリ</div>
+        </div>
+        <div class="stat-card" style="margin:0;padding:14px 16px">
+          <div class="stat-label">フォールバック失敗</div>
+          <div class="stat-val" style="color:${fbColor};font-size:22px">${m ? m.fallbacks : '—'}</div>
+          <div class="stat-sub" style="margin-top:4px">キャッシュミス</div>
+        </div>
+      </div>
+
+      <div style="padding:0 16px 16px">
+        <div class="stat-label" style="margin-bottom:8px">キャッシュ状態</div>
+        <div class="table-wrap">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead>
+              <tr style="border-bottom:1px solid var(--line)">
+                <th style="text-align:left;padding:6px 10px;font-weight:600;color:var(--gray-1)">テーブル</th>
+                <th style="text-align:center;padding:6px 10px;font-weight:600;color:var(--gray-1)">件数</th>
+                <th style="text-align:center;padding:6px 10px;font-weight:600;color:var(--gray-1)">経過</th>
+                <th style="text-align:center;padding:6px 10px;font-weight:600;color:var(--gray-1)">TTL</th>
+                <th style="text-align:center;padding:6px 10px;font-weight:600;color:var(--gray-1)">状態</th>
+              </tr>
+            </thead>
+            <tbody>${cacheRows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+}
+
+function _obsAgo(ts) {
+  const s = Math.round((Date.now() - ts) / 1000);
+  if (s < 60)   return s + '秒前';
+  if (s < 3600) return Math.round(s / 60) + '分前';
+  return Math.round(s / 3600) + '時間前';
 }
 
 /* Refresh stat grid when Realtime fires a change */

@@ -62,20 +62,32 @@
     return query;
   }
 
+  /* ── In-memory metrics (reset on page reload) ─────────────────────────── */
+  const _metrics = {
+    reads: 0, cacheHits: 0, supabaseReads: 0, fallbacks: 0,
+    lastLatencyMs: null, lastSyncTs: null,
+  };
+
   const DataProvider = {
 
     async read(table, filters) {
+      _metrics.reads++;
       const sb = _sb();
 
       /* Fresh cache — skip Supabase entirely */
       if (!_cfg().FORCE_FALLBACK && _cacheIsValid(table)) {
+        _metrics.cacheHits++;
         return { data: _cacheGet(table).data, source: 'cache', error: null };
       }
 
       if (sb && !_cfg().FORCE_FALLBACK) {
         try {
+          const t0 = Date.now();
           const { data, error } = await _applyFilters(sb.from(table).select('*'), filters);
+          _metrics.lastLatencyMs = Date.now() - t0;
           if (error) throw error;
+          _metrics.supabaseReads++;
+          _metrics.lastSyncTs = Date.now();
           _cacheSet(table, data);
           return { data, source: 'supabase', error: null };
         } catch (e) {
@@ -85,6 +97,7 @@
       }
 
       /* Serve stale cache if available rather than an empty array */
+      _metrics.fallbacks++;
       const env = _cacheGet(table);
       _log('read', table, null, true);
       return { data: env?.data ?? [], source: 'localStorage', error: null };
@@ -158,7 +171,7 @@
         .forEach(k => localStorage.removeItem(k));
     },
 
-    /* Observability: returns [{table, age_s, ttl_s, valid, rows}] for all cached tables */
+    /* Observability: [{table, age_s, ttl_s, valid, rows}] for all cached tables */
     cacheStatus() {
       return Object.keys(localStorage)
         .filter(k => k.startsWith('hm_dp_'))
@@ -176,6 +189,25 @@
           } catch { return null; }
         })
         .filter(Boolean);
+    },
+
+    /* Runtime metrics accumulated since page load */
+    getMetrics() {
+      const total = _metrics.reads || 1;
+      return {
+        reads:         _metrics.reads,
+        cacheHits:     _metrics.cacheHits,
+        supabaseReads: _metrics.supabaseReads,
+        fallbacks:     _metrics.fallbacks,
+        hitRate:       Math.round((_metrics.cacheHits / total) * 100),
+        lastLatencyMs: _metrics.lastLatencyMs,
+        lastSyncTs:    _metrics.lastSyncTs,
+      };
+    },
+
+    resetMetrics() {
+      _metrics.reads = _metrics.cacheHits = _metrics.supabaseReads = _metrics.fallbacks = 0;
+      _metrics.lastLatencyMs = _metrics.lastSyncTs = null;
     },
   };
 
