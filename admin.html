@@ -6771,7 +6771,18 @@ async function testLineNotif() {
    ════════════════════════════════════════════════════════ */
 const CHANGELOG = [
   {
-    version: 'v3.2', date: '2026-06-04', label: '最新',
+    version: 'v3.3', date: '2026-06-05', label: '最新',
+    entries: [
+      { type:'feat',    text:'強制パスワード変更ゲート（Phase 10A）：デフォルトパスワードのまま利用不可、初回ログイン時に新パスワード設定を義務化' },
+      { type:'feat',    text:'ログイン画面事前確認バナー（Phase 10B）：env.js 認証情報をページ読み込み時に検証、設定不備をアンバーバナーで即時通知' },
+      { type:'feat',    text:'本番グレード HealthCheck システム（Phase 10C）：Supabase 接続・DataProvider・サービスレジストリ・ストレージ・認証を起動時に並列チェック' },
+      { type:'feat',    text:'設定 → システム健全性ページ：サービス別ステータス・最終チェック日時・詳細メッセージの一覧表示、再チェック & ログクリアボタン' },
+      { type:'feat',    text:'インアプリ健全性バナー：ログイン後に正常（緑）/ 警告（黄）/ エラー（赤）バナーを表示、health:* カスタムイベント送出' },
+      { type:'feat',    text:'ヘルスチェックログ：hm_health_log に100件FIFOで記録、サービス・ステータス・メッセージ・タイムスタンプを保存' },
+    ]
+  },
+  {
+    version: 'v3.2', date: '2026-06-04',
     entries: [
       { type:'feat',    text:'メール通知連携：EmailJS REST APIを使用して新規予約・ステータス変更時に管理者へ自動メール送信（SDKなし）' },
       { type:'feat',    text:'メール通知設定ページ：通知先メール・EmailJS認証情報・トリガー別ON/OFF・テンプレート変数リスト・送信ログ・テスト送信' },
