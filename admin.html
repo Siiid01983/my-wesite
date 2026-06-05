@@ -737,12 +737,12 @@ html.dark .login-err-lock{color:#f59e0b}
             <div class="panel-head">
               <span class="panel-title">顧客一覧</span>
               <div class="search-bar">
-                <select class="sel" id="custFilter" onchange="renderCustomers()">
+                <select class="sel" id="custFilter" onchange="_renderCustomersUI()">
                   <option value="">全顧客</option>
                   <option value="with">予約あり</option>
                   <option value="none">予約なし</option>
                 </select>
-                <input class="search-input" id="custSearch" placeholder="名前・メール・電話・顧客ID..." oninput="renderCustomers()" style="min-width:220px" />
+                <input class="search-input" id="custSearch" placeholder="名前・メール・電話・顧客ID..." oninput="_renderCustomersUI()" style="min-width:220px" />
               </div>
             </div>
             <div class="cust-stats-bar" id="custStatsBar"></div>
@@ -2238,7 +2238,7 @@ function go(view) {
   if (view==='hero') renderHero();
   if (view==='backup') renderBackup();
   if (view==='media') renderMedia();
-  if (view==='customers') renderCustomers();
+  if (view==='customers') { renderCustomers(); _syncCustomersFromSupabase(); }
   if (view==='line') renderLine();
   if (view==='email') renderEmail();
   if (view==='changelog') renderChangelog();
@@ -6911,7 +6911,7 @@ function _syncCustomers() {
   return stored;
 }
 
-function renderCustomers() {
+function _renderCustomersUI() {
   const all      = _syncCustomers();
   const bookings = Adapter.getBookings();
   const filter   = document.getElementById('custFilter')?.value || '';
@@ -6983,6 +6983,21 @@ function renderCustomers() {
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
+}
+
+function renderCustomers() { _renderCustomersUI(); }
+
+function _syncCustomersFromSupabase() {
+  if (!Adapter.supabaseReady) return;
+  /* Sync both customer profiles and bookings — booking counts enrich the customer list */
+  Promise.all([
+    Adapter.syncCustomers(),
+    Adapter.syncBookings(),
+  ]).then(() => {
+    if (document.getElementById('view-customers').classList.contains('active')) {
+      _renderCustomersUI();
+    }
+  });
 }
 
 function openCustModal(id) {

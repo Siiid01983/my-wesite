@@ -705,6 +705,20 @@
       return true;
     },
 
+    /* Pull hm_customers from the hm_data KV table and refresh localStorage.
+       Lighter than syncFromSupabase() — use when customers view is opened. */
+    async syncCustomers() {
+      if (!_sb) return false;
+      const { data, error } = await _sb
+        .from('hm_data')
+        .select('value')
+        .eq('key', 'hm_customers')
+        .maybeSingle();
+      if (error) { console.warn('[Adapter] syncCustomers error:', error.message); return false; }
+      if (data?.value) _set('hm_customers', data.value);
+      return true;
+    },
+
     /* Pull only the reviews table from Supabase and refresh localStorage.
        Lighter than syncFromSupabase() — use when reviews view is opened. */
     async syncReviews() {
