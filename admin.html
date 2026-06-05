@@ -2235,7 +2235,7 @@ function go(view) {
   if (view==='faq') { renderFaq(); _syncFaqFromSupabase(); }
   if (view==='company') renderCompany();
   if (view==='footer') renderFooter();
-  if (view==='hero') renderHero();
+  if (view==='hero') { renderHero(); _syncHeroFromSupabase(); }
   if (view==='backup') renderBackup();
   if (view==='media') renderMedia();
   if (view==='customers') { renderCustomers(); _syncCustomersFromSupabase(); }
@@ -4794,7 +4794,7 @@ function _readHeroFromForm() {
   };
 }
 
-function renderHero() {
+function _renderHeroUI() {
   const h = Adapter.getHero();
   document.getElementById('heroHdJa').value        = h.headline_ja   || '';
   document.getElementById('heroHdEn').value        = h.headline_en   || '';
@@ -4810,6 +4810,17 @@ function renderHero() {
   _updateHeroBgThumb(h.bg_image || '');
   _updateHeroPrev(h);
   renderHeroHistory();
+}
+
+function renderHero() { _renderHeroUI(); }
+
+function _syncHeroFromSupabase() {
+  if (!Adapter.supabaseReady) return;
+  Adapter.syncHero().then(ok => {
+    if (ok && document.getElementById('view-hero').classList.contains('active')) {
+      _renderHeroUI();
+    }
+  });
 }
 
 function _renderHeroBadgeList(badges) {
