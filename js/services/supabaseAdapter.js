@@ -787,6 +787,20 @@
       return true;
     },
 
+    /* Pull hm_disposal from hm_data KV and refresh localStorage.
+       Lighter than syncFromSupabase() — use when disposal view is opened. */
+    async syncDisposal() {
+      if (!_sb) return false;
+      const { data, error } = await _sb
+        .from('hm_data')
+        .select('value')
+        .eq('key', 'hm_disposal')
+        .maybeSingle();
+      if (error) { console.warn('[Adapter] syncDisposal error:', error.message); return false; }
+      if (data?.value) _set('hm_disposal', data.value);
+      return true;
+    },
+
     /* Pull only the reviews table from Supabase and refresh localStorage.
        Lighter than syncFromSupabase() — use when reviews view is opened. */
     async syncReviews() {

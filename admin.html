@@ -2228,7 +2228,7 @@ function go(view) {
   if (view==='analytics') renderAnalytics();
   if (view==='capacity') loadCapacity();
   if (view==='pricing') { renderPricing(); _syncPricingFromSupabase(); }
-  if (view==='disposal') renderDisposal();
+  if (view==='disposal') { renderDisposal(); _syncDisposalFromSupabase(); }
   if (view==='quotes') { renderQuotes(); _syncQuotesFromSupabase(); }
   if (view==='reviews') { renderReviews(); _syncReviewsFromSupabase(); }
   if (view==='services') { renderServices(); _syncServicesFromSupabase(); }
@@ -3457,7 +3457,7 @@ function calcDisposalTotal(data) {
     sum + cat.items.filter(i => i.enabled).reduce((s, i) => s + (i.fee || 0), 0), 0);
 }
 
-function renderDisposal() {
+function _renderDisposalUI() {
   const data = Adapter.getDisposal();
   const total = calcDisposalTotal(data);
 
@@ -3539,6 +3539,17 @@ function renderDisposal() {
   }
 
   document.getElementById('disposalContent').innerHTML = h;
+}
+
+function renderDisposal() { _renderDisposalUI(); }
+
+function _syncDisposalFromSupabase() {
+  if (!Adapter.supabaseReady) return;
+  Adapter.syncDisposal().then(ok => {
+    if (ok && document.getElementById('view-disposal').classList.contains('active')) {
+      _renderDisposalUI();
+    }
+  });
 }
 
 function updateDisposalTotal() {
