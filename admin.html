@@ -721,8 +721,12 @@ html.dark .login-err-lock{color:#f59e0b}
                   <option value="キャンセル">キャンセル</option>
                 </select>
                 <input class="search-input" id="bkSearch" placeholder="名前・メール・予約番号..." oninput="renderBookings()" />
+                <button class="btn btn-primary btn-sm" onclick="openAdd()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>予約を追加
+                </button>
               </div>
             </div>
+            <div class="cust-stats-bar" id="bkStatsBar"></div>
             <div class="table-wrap" id="bookingsWrap"></div>
           </div>
         </div>
@@ -2652,28 +2656,41 @@ function renderQA() {
    ════════════════════════════════════════════════════════ */
 function renderBookings() {
   const filter = document.getElementById('bkFilter')?.value || '';
-  const q = (document.getElementById('bkSearch')?.value || '').toLowerCase();
-  let bk = BookingService.getBookings();
+  const q      = (document.getElementById('bkSearch')?.value || '').toLowerCase();
+  const all    = BookingService.getBookings();
+
+  let bk = all;
   if (filter) bk = bk.filter(b => b.status === filter);
   if (q) bk = bk.filter(b =>
     (b.name||'').toLowerCase().includes(q) ||
     (b.email||'').toLowerCase().includes(q) ||
     (b.id||'').toLowerCase().includes(q)
   );
-  document.getElementById('bookingsWrap').innerHTML = bk.length ? buildTable(bk, false) : emptyHTML('該当する予約がありません');
+
+  const statsEl = document.getElementById('bkStatsBar');
+  if (statsEl) {
+    const count = st => all.filter(b => b.status === st).length;
+    statsEl.innerHTML =
+      `<span>合計 <strong>${all.length}</strong> 件</span>` +
+      `<span>新規 <strong>${count('新規')}</strong></span>` +
+      `<span>確認中 <strong>${count('確認中')}</strong></span>` +
+      `<span>確定 <strong>${count('確定')}</strong></span>` +
+      `<span>完了 <strong>${count('完了')}</strong></span>` +
+      `<span>キャンセル <strong>${count('キャンセル')}</strong></span>` +
+      `<span style="margin-left:auto">表示中 <strong>${bk.length}</strong> 件</span>`;
+  }
+
+  document.getElementById('bookingsWrap').innerHTML =
+    bk.length ? buildTable(bk, false) : emptyHTML('該当する予約がありません');
 }
 
 function buildTable(bk, compact) {
   const rows = bk.map(b => `<tr>
-    <td class="td-mono">${esc(b.id||'—')}</td>
-    <td>${fmtD(b.date)}<br><span class="td-sm">${esc(b.time||'')}</span></td>
-    <td>${esc(b.service||'—')}</td>
-    <td>
-      <strong>${esc(b.name||'—')}</strong>
-      ${!compact?`<br><span class="td-sm">${esc(b.email||'—')}</span><br><span class="td-sm">${esc(b.phone||'—')}</span>`:''}
-    </td>
-    ${!compact?`<td class="td-sm">${fmtDT(b.createdAt)}</td>`:''}
+    <td class="td-mono" style="font-size:11px">${esc(b.id||'—')}</td>
+    <td><strong>${esc(b.name||'—')}</strong>${!compact&&b.email?`<br><span class="td-sm">${esc(b.email)}</span>`:''}</td>
+    <td>${fmtD(b.date)}</td>
     <td>${badge(b.status||'新規')}</td>
+    ${!compact?`<td class="td-sm">${fmtDT(b.createdAt)}</td>`:''}
     <td>
       <div style="display:flex;gap:4px;align-items:center">
         <button class="btn btn-ghost btn-sm btn-icon" onclick="openDetail('${esc(b.id)}')" title="詳細"><svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></button>
@@ -2690,9 +2707,9 @@ function buildTable(bk, compact) {
   </tr>`).join('');
 
   return `<table><thead><tr>
-    <th>予約番号</th><th>引越し日時</th><th>引越し種別</th><th>お客様名</th>
+    <th>予約番号</th><th>お客様名</th><th>引越し日</th><th>ステータス</th>
     ${!compact?'<th>受付日時</th>':''}
-    <th>ステータス</th><th>操作</th>
+    <th>操作</th>
   </tr></thead><tbody>${rows}</tbody></table>`;
 }
 
