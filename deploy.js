@@ -5,7 +5,7 @@ const HOST = 'hello-moving.com'; // أو عنوان الـ FTP الخاص بك
 const USER = 'hellom41';
 const PASSWORD = 'Uscarugo2291@';
 const REMOTE = '/public_html';
-const FILES = ['index.html', 'styles.css', 'script.js', 'admin.html', 'bookingService.js', 'calendarService.js', 'googlec5d2ce7d783fdc89.html', 'sitemap.xml'];
+const FILES = ['index.html', 'styles.css', 'script.js', 'admin.html', 'bookingService.js', 'calendarService.js', 'googlec5d2ce7d783fdc89.html', 'sitemap.xml', 'js/services/supabaseAdapter.js', 'js/config/env.example.js'];
 
 if (!HOST || !USER || !PASSWORD) {
   console.error('Missing credentials. Run as:\n');
@@ -28,6 +28,9 @@ if (!HOST || !USER || !PASSWORD) {
     for (const file of FILES) {
       const local = path.join(__dirname, file);
       const remote = REMOTE + '/' + file;
+      const remoteDir = path.posix.dirname(remote);
+      if (remoteDir !== REMOTE) await client.ensureDir(remoteDir);
+      await client.ensureDir(REMOTE);
       process.stdout.write(`  Uploading ${file}... `);
       await client.uploadFrom(local, remote);
       console.log('done');

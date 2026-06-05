@@ -1,3 +1,4 @@
 node_modules/
 .claude/
 *.png
+js/config/env.js
