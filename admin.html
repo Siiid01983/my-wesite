@@ -467,6 +467,51 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 .media-preview-name{color:rgba(255,255,255,.6);font-size:12px;margin-top:10px;text-align:center;max-width:80vw;word-break:break-all}
 @media(max-width:768px){.media-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:380px){.media-grid{grid-template-columns:1fr}}
+
+/* ── Website Content Tabs ── */
+.wc-tabs{display:flex;gap:2px;margin-bottom:18px;background:var(--bg-soft-2);border-radius:10px;padding:4px;flex-wrap:wrap}
+.wc-tab{padding:7px 14px;border:none;background:none;border-radius:7px;font-size:12px;font-weight:600;color:var(--gray-1);cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
+.wc-tab.active{background:var(--bg);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.wc-tab:hover:not(.active){color:var(--ink)}
+.wc-tab-panel{display:none}
+.wc-tab-panel.active{display:block}
+.wc-save-ind{font-size:12px;color:var(--green);font-weight:600;opacity:0;transition:opacity .4s}
+.wc-save-ind.vis{opacity:1}
+.wc-prev-box{background:var(--bg-soft-2);border:1px solid var(--line);border-radius:10px;padding:14px;font-size:12px;line-height:1.6;min-height:80px}
+.wc-prev-title{font-size:10px;font-weight:600;color:var(--gray-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.wc-prev-row{display:flex;gap:6px;margin-bottom:6px;font-size:12px}
+.wc-prev-key{color:var(--gray-2);flex-shrink:0;min-width:110px;font-weight:500}
+.wc-prev-val{color:var(--ink);word-break:break-word}
+
+/* ── BI Dashboard — Phase 13 ── */
+.bi-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:768px){.bi-row{grid-template-columns:1fr}}
+.kpi-growth{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;margin-top:6px;padding-top:6px;border-top:1px solid var(--line-2)}
+.kpi-up{color:var(--green)}.kpi-down{color:var(--red)}.kpi-flat{color:var(--gray-2)}
+.bi-chart-canvas{width:100%;height:160px;display:block}
+.bi-section-header{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gray-2);margin:4px 0 12px}
+.bi-metric-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line-2)}
+.bi-metric-row:last-child{border-bottom:none;padding-bottom:0}
+.bi-metric-label{font-size:12px;color:var(--gray-1)}
+.bi-metric-val{font-size:13px;font-weight:700;color:var(--ink)}
+.bi-metric-val.green{color:var(--green)}.bi-metric-val.blue{color:var(--blue)}.bi-metric-val.red{color:var(--red)}
+.bi-trend-btns{display:flex;gap:4px;margin-bottom:12px}
+.bi-trend-btn{padding:4px 10px;border:1px solid var(--line);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:none;color:var(--gray-1);font-family:inherit;transition:.12s}
+.bi-trend-btn:hover{border-color:var(--blue);color:var(--blue)}
+.bi-trend-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.bi-svc-bar-wrap{margin-bottom:8px}
+.bi-svc-bar-label{display:flex;justify-content:space-between;font-size:11px;color:var(--gray-1);margin-bottom:3px}
+.bi-svc-bar-track{height:7px;background:var(--bg-soft-2);border-radius:4px;overflow:hidden}
+.bi-svc-bar-fill{height:100%;border-radius:4px;background:var(--blue);transition:width .4s}
+.bi-svc-bar-fill.c1{background:#2563eb}.bi-svc-bar-fill.c2{background:#10b981}.bi-svc-bar-fill.c3{background:#f59e0b}.bi-svc-bar-fill.c4{background:#8b5cf6}.bi-svc-bar-fill.c5{background:#ef4444}
+.bi-export-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+.bi-customer-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line-2)}
+.bi-customer-row:last-child{border-bottom:none;padding-bottom:0}
+.bi-customer-avatar{width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.bi-customer-name{font-size:12px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bi-customer-sub{font-size:11px;color:var(--gray-2)}
+.bi-occ-bar{display:flex;height:22px;border-radius:6px;overflow:hidden;margin-bottom:12px;background:var(--bg-soft-2)}
+.bi-occ-seg{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;transition:width .4s;white-space:nowrap;overflow:hidden}
 </style>
 </head>
 <body>
@@ -719,6 +764,9 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
         <button class="sb-link" data-view="health" onclick="go('health')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>システム健全性
         </button>
+        <button class="sb-link" data-view="webcontent" onclick="go('webcontent')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 12H4v-4h11v4zm0-5H4V9h11v2zm5 5h-4V9h4v7z"/></svg>ウェブサイト管理
+        </button>
         <div class="sb-section" style="margin-top:6px">その他</div>
         <button class="sb-link" onclick="toggleDark()">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>ダークモード
@@ -763,6 +811,25 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
           <div class="stat-grid" id="statGrid"></div>
           <div id="qaGrid"></div>
           <div id="obsPanel"></div>
+
+          <!-- BI Row 1: Revenue + Booking Trend -->
+          <div class="bi-row" id="biRow1">
+            <div id="biRevenuePanel"></div>
+            <div id="biTrendPanel"></div>
+          </div>
+
+          <!-- BI Row 2: Service Popularity + Customer Analytics -->
+          <div class="bi-row" id="biRow2">
+            <div id="biServicePanel"></div>
+            <div id="biCustomerPanel"></div>
+          </div>
+
+          <!-- BI Row 3: Operational Analytics (full width) -->
+          <div id="biOperationalPanel"></div>
+
+          <!-- BI Export Panel -->
+          <div id="biExportPanel"></div>
+
           <div class="dash-panels">
             <div class="panel" style="flex:1;min-width:0">
               <div class="panel-head">
@@ -1769,6 +1836,248 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
           </div>
         </div>
 
+        <!-- WEBSITE CONTENT MANAGEMENT -->
+        <div id="view-webcontent" class="view">
+          <div class="wc-tabs" id="wcTabs">
+            <button class="wc-tab active" data-tab="header"       onclick="switchWcTab('header')">ヘッダー</button>
+            <button class="wc-tab"        data-tab="hero"         onclick="switchWcTab('hero')">ヒーロー</button>
+            <button class="wc-tab"        data-tab="services"     onclick="switchWcTab('services')">サービス</button>
+            <button class="wc-tab"        data-tab="testimonials" onclick="switchWcTab('testimonials')">お客様の声</button>
+            <button class="wc-tab"        data-tab="footer"       onclick="switchWcTab('footer')">フッター</button>
+            <button class="wc-tab"        data-tab="contact"      onclick="switchWcTab('contact')">お問い合わせ</button>
+            <button class="wc-tab"        data-tab="seo"          onclick="switchWcTab('seo')">SEO</button>
+          </div>
+
+          <!-- HEADER TAB -->
+          <div id="wc-tab-header" class="wc-tab-panel active">
+            <div class="hero-layout">
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <div class="panel">
+                  <div class="panel-head"><span class="panel-title">ブランド設定</span></div>
+                  <div class="panel-body">
+                    <div class="m-field"><label class="m-label">ロゴURL</label><input class="m-input" id="wcHeaderLogoUrl" placeholder="https://..." oninput="wcLivePreview('header')" /></div>
+                    <div class="m-field"><label class="m-label">会社名</label><input class="m-input" id="wcHeaderCompanyName" placeholder="Hello Moving" oninput="wcLivePreview('header')" /></div>
+                    <div class="m-field" style="margin-bottom:0"><label class="m-label">電話番号</label><input class="m-input" id="wcHeaderPhone" placeholder="03-1234-5678" oninput="wcLivePreview('header')" /></div>
+                  </div>
+                </div>
+                <div class="panel">
+                  <div class="panel-head"><span class="panel-title">CTAボタン</span></div>
+                  <div class="panel-body">
+                    <div class="m-field" style="margin-bottom:0"><label class="m-label">ボタンテキスト</label><input class="m-input" id="wcHeaderCtaText" placeholder="無料で見積りを依頼" oninput="wcLivePreview('header')" /></div>
+                  </div>
+                </div>
+                <div class="panel">
+                  <div class="panel-head"><span class="panel-title">ナビゲーション</span></div>
+                  <div class="panel-body">
+                    <div class="m-field"><label class="m-label">ホーム</label><input class="m-input" id="wcHeaderNavHome" placeholder="ホーム" oninput="wcLivePreview('header')" /></div>
+                    <div class="m-field"><label class="m-label">サービス</label><input class="m-input" id="wcHeaderNavServices" placeholder="サービス" oninput="wcLivePreview('header')" /></div>
+                    <div class="m-field"><label class="m-label">会社案内</label><input class="m-input" id="wcHeaderNavAbout" placeholder="会社案内" oninput="wcLivePreview('header')" /></div>
+                    <div class="m-field"><label class="m-label">お問い合わせ</label><input class="m-input" id="wcHeaderNavContact" placeholder="お問い合わせ" oninput="wcLivePreview('header')" /></div>
+                    <div class="m-field" style="margin-bottom:0"><label class="m-label">FAQ</label><input class="m-input" id="wcHeaderNavFaq" placeholder="よくある質問" oninput="wcLivePreview('header')" /></div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <button class="btn btn-primary" onclick="wcSaveSection('header')">
+                    <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>保存
+                  </button>
+                  <span class="wc-save-ind" id="wcSaveInd-header"></span>
+                </div>
+              </div>
+              <div>
+                <div class="wc-prev-title">ライブプレビュー</div>
+                <div class="wc-prev-box" id="wcPrev-header"><span style="color:var(--gray-2);font-size:11px">フィールドに入力するとここに表示されます</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- HERO TAB -->
+          <div id="wc-tab-hero" class="wc-tab-panel">
+            <div class="hero-layout">
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <div class="panel">
+                  <div class="panel-head"><span class="panel-title">見出し</span></div>
+                  <div class="panel-body">
+                    <div class="m-field"><label class="m-label">日本語</label><input class="m-input" id="wcHeroHeadlineJa" placeholder="新しい暮らしへ、丁寧に。" oninput="wcLivePreview('hero')" /></div>
+                    <div class="m-field" style="margin-bottom:0"><label class="m-label">English</label><input class="m-input" id="wcHeroHeadlineEn" placeholder="Premium Moving Service" oninput="wcLivePreview('hero')" /></div>
+                  </div>
+                </div>
+                <div class="panel">
+                  <div class="panel-head"><span class="panel-title">サブテキスト</span></div>
+                  <div class="panel-body">
+                    <div class="m-field"><label class="m-label">プライマリ</label><input class="m-input" id="wcHeroSubPrimary" oninput="wcLivePreview('hero')" /></div>
+                    <div class="m-field" style="margin-bottom:0"><label class="m-label">セカンダリ</label><input class="m-input" id="wcHeroSubSecondary" oninput="wcLivePreview('hero')" /></div>
+                  </div>
+                </div>
+                <div class="panel">
+                  <div class="panel-head"><span class="panel-title">CTAボタン</span></div>
+                  <div class="panel-body">
+                    <div class="m-field"><label class="m-label">予約ボタン</label><input class="m-input" id="wcHeroCtaBook" oninput="wcLivePreview('hero')" /></div>
+                    <div class="m-field"><label class="m-label">見積りボタン</label><input class="m-input" id="wcHeroCtaQuote" oninput="wcLivePreview('hero')" /></div>
+                    <div class="m-field" style="margin-bottom:0"><label class="m-label">LINEボタン</label><input class="m-input" id="wcHeroCtaLine" oninput="wcLivePreview('hero')" /></div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <button class="btn btn-primary" onclick="wcSaveSection('hero')">
+                    <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>保存
+                  </button>
+                  <span class="wc-save-ind" id="wcSaveInd-hero"></span>
+                </div>
+              </div>
+              <div>
+                <div class="wc-prev-title">ライブプレビュー</div>
+                <div class="wc-prev-box" id="wcPrev-hero"><span style="color:var(--gray-2);font-size:11px">フィールドに入力するとここに表示されます</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SERVICES TAB -->
+          <div id="wc-tab-services" class="wc-tab-panel">
+            <div class="hero-layout">
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <div class="panel">
+                  <div class="panel-head"><span class="panel-title">サービスセクション見出し</span></div>
+                  <div class="panel-body">
+                    <div class="m-field"><label class="m-label">Eyebrow</label><input class="m-input" id="wcServicesEyebrow" oninput="wcLivePreview('services')" /></div>
+                    <div class="m-field"><label class="m-label">タイトル</label><input class="m-input" id="wcServicesTitle" oninput="wcLivePreview('services')" /></div>
+                    <div class="m-field" style="margin-bottom:0"><label class="m-label">サブタイトル</label><input class="m-input" id="wcServicesSubtitle" oninput="wcLivePreview('services')" /></div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <button class="btn btn-primary" onclick="wcSaveSection('services')">
+                    <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>保存
+                  </button>
+                  <span class="wc-save-ind" id="wcSaveInd-services"></span>
+                </div>
+              </div>
+              <div>
+                <div class="wc-prev-title">ライブプレビュー</div>
+                <div class="wc-prev-box" id="wcPrev-services"><span style="color:var(--gray-2);font-size:11px">フィールドに入力するとここに表示されます</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TESTIMONIALS TAB -->
+          <div id="wc-tab-testimonials" class="wc-tab-panel">
+            <div class="hero-layout">
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <div class="panel">
+                  <div class="panel-head"><span class="panel-title">お客様の声セクション</span></div>
+                  <div class="panel-body">
+                    <div class="m-field"><label class="m-label">Eyebrow</label><input class="m-input" id="wcTestimonialsEyebrow" oninput="wcLivePreview('testimonials')" /></div>
+                    <div class="m-field"><label class="m-label">タイトル</label><input class="m-input" id="wcTestimonialsTitle" oninput="wcLivePreview('testimonials')" /></div>
+                    <div class="m-field" style="margin-bottom:0"><label class="m-label">サブタイトル</label><input class="m-input" id="wcTestimonialsSubtitle" oninput="wcLivePreview('testimonials')" /></div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <button class="btn btn-primary" onclick="wcSaveSection('testimonials')">
+                    <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>保存
+                  </button>
+                  <span class="wc-save-ind" id="wcSaveInd-testimonials"></span>
+                </div>
+              </div>
+              <div>
+                <div class="wc-prev-title">ライブプレビュー</div>
+                <div class="wc-prev-box" id="wcPrev-testimonials"><span style="color:var(--gray-2);font-size:11px">フィールドに入力するとここに表示されます</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- FOOTER TAB -->
+          <div id="wc-tab-footer" class="wc-tab-panel">
+            <div class="hero-layout">
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <div class="panel">
+                  <div class="panel-head"><span class="panel-title">フッター情報</span></div>
+                  <div class="panel-body">
+                    <div class="m-field"><label class="m-label">住所</label><input class="m-input" id="wcFooterAddress" oninput="wcLivePreview('footer')" /></div>
+                    <div class="m-field"><label class="m-label">電話番号</label><input class="m-input" id="wcFooterPhone" oninput="wcLivePreview('footer')" /></div>
+                    <div class="m-field"><label class="m-label">メールアドレス</label><input class="m-input" id="wcFooterEmail" type="email" oninput="wcLivePreview('footer')" /></div>
+                    <div class="m-field" style="margin-bottom:0"><label class="m-label">著作権テキスト</label><input class="m-input" id="wcFooterCopyright" oninput="wcLivePreview('footer')" /></div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <button class="btn btn-primary" onclick="wcSaveSection('footer')">
+                    <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>保存
+                  </button>
+                  <span class="wc-save-ind" id="wcSaveInd-footer"></span>
+                </div>
+              </div>
+              <div>
+                <div class="wc-prev-title">ライブプレビュー</div>
+                <div class="wc-prev-box" id="wcPrev-footer"><span style="color:var(--gray-2);font-size:11px">フィールドに入力するとここに表示されます</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CONTACT TAB -->
+          <div id="wc-tab-contact" class="wc-tab-panel">
+            <div class="hero-layout">
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <div class="panel">
+                  <div class="panel-head"><span class="panel-title">連絡先情報</span></div>
+                  <div class="panel-body">
+                    <div class="m-field"><label class="m-label">WhatsApp番号</label><input class="m-input" id="wcContactWhatsapp" placeholder="+81-90-1234-5678" oninput="wcLivePreview('contact')" /></div>
+                    <div class="m-field"><label class="m-label">電話番号</label><input class="m-input" id="wcContactPhone" oninput="wcLivePreview('contact')" /></div>
+                    <div class="m-field" style="margin-bottom:0"><label class="m-label">メールアドレス</label><input class="m-input" id="wcContactEmail" type="email" oninput="wcLivePreview('contact')" /></div>
+                  </div>
+                </div>
+                <div class="panel">
+                  <div class="panel-head"><span class="panel-title">営業時間</span></div>
+                  <div class="panel-body">
+                    <div class="m-field"><label class="m-label">平日</label><input class="m-input" id="wcContactHoursWeekday" placeholder="月〜金 9:00〜18:00" oninput="wcLivePreview('contact')" /></div>
+                    <div class="m-field"><label class="m-label">土日祝</label><input class="m-input" id="wcContactHoursWeekend" placeholder="土日祝 10:00〜17:00" oninput="wcLivePreview('contact')" /></div>
+                    <div class="m-field" style="margin-bottom:0"><label class="m-label">補足</label><input class="m-input" id="wcContactHoursNote" oninput="wcLivePreview('contact')" /></div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <button class="btn btn-primary" onclick="wcSaveSection('contact')">
+                    <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>保存
+                  </button>
+                  <span class="wc-save-ind" id="wcSaveInd-contact"></span>
+                </div>
+              </div>
+              <div>
+                <div class="wc-prev-title">ライブプレビュー</div>
+                <div class="wc-prev-box" id="wcPrev-contact"><span style="color:var(--gray-2);font-size:11px">フィールドに入力するとここに表示されます</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SEO TAB -->
+          <div id="wc-tab-seo" class="wc-tab-panel">
+            <div class="hero-layout">
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <div class="panel">
+                  <div class="panel-head"><span class="panel-title">検索エンジン最適化</span></div>
+                  <div class="panel-body">
+                    <div class="m-field"><label class="m-label">ページタイトル <span style="font-weight:400;color:var(--gray-2)">(〜60文字推奨)</span></label><input class="m-input" id="wcSeoPageTitle" oninput="wcLivePreview('seo')" /></div>
+                    <div class="m-field" style="margin-bottom:0"><label class="m-label">メタ説明文 <span style="font-weight:400;color:var(--gray-2)">(〜160文字推奨)</span></label><textarea class="m-ta" id="wcSeoDescription" rows="3" oninput="wcLivePreview('seo')"></textarea></div>
+                  </div>
+                </div>
+                <div class="panel">
+                  <div class="panel-head"><span class="panel-title">Open Graph（SNS共有）</span></div>
+                  <div class="panel-body">
+                    <div class="m-field"><label class="m-label">OGタイトル</label><input class="m-input" id="wcSeoOgTitle" oninput="wcLivePreview('seo')" /></div>
+                    <div class="m-field"><label class="m-label">OG説明文</label><textarea class="m-ta" id="wcSeoOgDescription" rows="3" oninput="wcLivePreview('seo')"></textarea></div>
+                    <div class="m-field" style="margin-bottom:0"><label class="m-label">OG画像URL</label><input class="m-input" id="wcSeoOgImage" placeholder="https://..." oninput="wcLivePreview('seo')" /></div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <button class="btn btn-primary" onclick="wcSaveSection('seo')">
+                    <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>保存
+                  </button>
+                  <span class="wc-save-ind" id="wcSaveInd-seo"></span>
+                </div>
+              </div>
+              <div>
+                <div class="wc-prev-title">検索結果プレビュー</div>
+                <div class="wc-prev-box" id="wcPrev-seo"><span style="color:var(--gray-2);font-size:11px">タイトルと説明文を入力すると検索プレビューが表示されます</span></div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /view-webcontent -->
+
       </div><!-- /content -->
     </main>
   </div><!-- /layout -->
@@ -2087,6 +2396,7 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 <script src="js/services/statisticsService.js"></script>
 <script src="js/services/fallbackLogger.js"></script>
 <script src="js/services/dataProvider.js"></script>
+<script src="js/services/contentService.js"></script>
 <script src="js/services/serviceRegistry.js"></script>
 <script src="js/services/healthCheck.js"></script>
 
@@ -2396,7 +2706,8 @@ const VIEW_TITLES = {
   dashboard:'ダッシュボード', bookings:'予約管理', quotes:'見積り管理',
   reviews:'レビュー管理', services:'サービス管理', faq:'FAQ編集', company:'会社情報編集', footer:'フッター編集', hero:'ヒーロー編集', calendar:'カレンダー管理', analytics:'分析',
   capacity:'容量設定', pricing:'料金管理', disposal:'不用品管理', actions:'クイック操作',
-  backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理', line:'LINE通知設定', email:'メール通知設定', changelog:'変更履歴', security:'セキュリティ', health:'システム健全性'
+  backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理', line:'LINE通知設定', email:'メール通知設定', changelog:'変更履歴', security:'セキュリティ', health:'システム健全性',
+  webcontent:'ウェブサイト管理'
 };
 
 /* ════════════════════════════════════════════════════════
@@ -2444,8 +2755,9 @@ function go(view) {
   if (view==='line') renderLine();
   if (view==='email') renderEmail();
   if (view==='changelog') renderChangelog();
-  if (view==='security') renderSecurity();
-  if (view==='health')   renderHealth();
+  if (view==='security')    renderSecurity();
+  if (view==='health')      renderHealth();
+  if (view==='webcontent')  { renderWebContent(); _syncWebContentFromSupabase(); }
 }
 
 function toggleDark() {
@@ -2458,37 +2770,52 @@ function toggleDark() {
    DASHBOARD
    ════════════════════════════════════════════════════════ */
 
-/* Render stat grid from a StatisticsService stats object.
+/* ── Growth indicator helper ── */
+function _growthHTML(g) {
+  if (!g) return '';
+  const cls  = g.pct > 0 ? 'kpi-up' : g.pct < 0 ? 'kpi-down' : 'kpi-flat';
+  const icon = g.pct > 0 ? '↑' : g.pct < 0 ? '↓' : '→';
+  const txt  = g.pct !== 0 ? `${icon} ${Math.abs(g.pct)}% ${g.label}` : `→ 変化なし`;
+  return `<div class="kpi-growth ${cls}">${txt}</div>`;
+}
+
+/* Render stat grid from StatisticsService stats + optional growth data.
    Falls back to calcStats() values when Supabase is unavailable. */
-function renderStatGrid(sbStats) {
+function renderStatGrid(sbStats, growthStats) {
   const local = calcStats();
   const bk    = Adapter.getBookings();
   const s     = sbStats || {};
+  const g     = growthStats || null;
 
-  const today    = s.today    != null ? s.today    : local.todayBk;
-  const weekly   = s.weekly   != null ? s.weekly   : local.weekBk;
-  const monthly  = s.monthly  != null ? s.monthly  : local.monthBk;
-  const pending  = s.pending  != null ? s.pending  : bk.filter(b => b.status === '新規' || b.status === '確認中').length;
-  const confirmed= s.confirmed!= null ? s.confirmed: bk.filter(b => b.status === '確定').length;
-  const cancelled= s.cancelled!= null ? s.cancelled: bk.filter(b => b.status === 'キャンセル').length;
-  const occupancy= s.occupancy!= null ? s.occupancy: 0;
-  const avgDaily = s.avgDaily != null ? s.avgDaily : 0;
+  const today         = s.today          != null ? s.today          : local.todayBk;
+  const weekly        = s.weekly         != null ? s.weekly         : local.weekBk;
+  const monthly       = s.monthly        != null ? s.monthly        : local.monthBk;
+  const pending       = s.pending        != null ? s.pending        : bk.filter(b => b.status === '新規' || b.status === '確認中').length;
+  const confirmed     = s.confirmed      != null ? s.confirmed      : bk.filter(b => b.status === '確定').length;
+  const cancelled     = s.cancelled      != null ? s.cancelled      : bk.filter(b => b.status === 'キャンセル').length;
+  const occupancy     = s.occupancy      != null ? s.occupancy      : 0;
+  const avgDaily      = s.avgDaily       != null ? s.avgDaily       : 0;
+  const totalCustomers= s.totalCustomers != null ? s.totalCustomers : new Set(bk.map(b=>b.email).filter(Boolean)).size;
+  const approvedRevs  = s.approvedReviews!= null ? s.approvedReviews: Adapter.getReviews().filter(r=>r.status==='approved').length;
 
   document.getElementById('statGrid').innerHTML = `
     <div class="stat-card" style="cursor:pointer" onclick="go('bookings')">
       <div class="stat-label">今日の予約</div>
       <div class="stat-val" style="color:var(--blue)">${today}</div>
       <div class="stat-sub">今日</div>
+      ${_growthHTML(g && g.today)}
     </div>
     <div class="stat-card" style="cursor:pointer" onclick="go('bookings')">
       <div class="stat-label">今週の予約</div>
       <div class="stat-val">${weekly}</div>
       <div class="stat-sub">今週</div>
+      ${_growthHTML(g && g.week)}
     </div>
     <div class="stat-card" style="cursor:pointer" onclick="go('bookings')">
       <div class="stat-label">今月の予約</div>
       <div class="stat-val">${monthly}</div>
       <div class="stat-sub">今月</div>
+      ${_growthHTML(g && g.month)}
     </div>
     <div class="stat-card" style="cursor:pointer" onclick="go('bookings')">
       <div class="stat-label">保留中</div>
@@ -2505,6 +2832,16 @@ function renderStatGrid(sbStats) {
       <div class="stat-val" style="color:var(--red)">${cancelled}</div>
       <div class="stat-sub">キャンセル済み</div>
     </div>
+    <div class="stat-card" style="cursor:pointer" onclick="go('customers')">
+      <div class="stat-label">総顧客数</div>
+      <div class="stat-val" style="color:var(--blue)">${totalCustomers}</div>
+      <div class="stat-sub">ユニーク顧客</div>
+    </div>
+    <div class="stat-card" style="cursor:pointer" onclick="go('reviews')">
+      <div class="stat-label">承認済みレビュー</div>
+      <div class="stat-val" style="color:var(--green)">${approvedRevs}</div>
+      <div class="stat-sub">公開レビュー数</div>
+    </div>
     <div class="stat-card">
       <div class="stat-label">稼働率</div>
       <div class="stat-val" style="color:${occupancy>=80?'var(--green)':occupancy>=50?'var(--yellow)':'var(--ink)'}">${occupancy}%</div>
@@ -2518,20 +2855,42 @@ function renderStatGrid(sbStats) {
   `;
 }
 
+/* ── BI trend period state ── */
+var _biTrendPeriod = 30;
+
 function renderDash() {
   const bk = Adapter.getBookings();
 
   /* Render immediately with local data so the UI is never blank */
-  renderStatGrid(null);
+  renderStatGrid(null, null);
 
-  /* Kick off Supabase aggregated fetch; update grid when ready */
+  /* Kick off all async BI fetches in parallel */
   if (window.StatisticsService && StatisticsService.supabaseReady) {
-    StatisticsService.getDashboardStats().then(stats => {
-      if (stats && document.getElementById('view-dashboard').classList.contains('active')) {
-        renderStatGrid(stats);
-      }
+    const isActive = () => document.getElementById('view-dashboard').classList.contains('active');
+
+    Promise.all([
+      StatisticsService.getDashboardStats(),
+      StatisticsService.getGrowthStats(),
+    ]).then(([stats, growth]) => {
+      if (!isActive()) return;
+      renderStatGrid(stats || null, growth || null);
     });
+
+    StatisticsService.getRevenueStats().then(rev  => { if (isActive()) _renderBIRevenue(rev); });
+    StatisticsService.getTrendData(_biTrendPeriod).then(td => { if (isActive()) _renderBITrendData(td); });
+    StatisticsService.getServicePopularity().then(sp => { if (isActive()) _renderBIService(sp); });
+    StatisticsService.getCustomerStats().then(cs  => { if (isActive()) _renderBICustomer(cs); });
+    StatisticsService.getOperationalStats().then(op => { if (isActive()) _renderBIOperational(op); });
+    StatisticsService.getRecentActivity(10).then(act=> { if (isActive()) _renderBIActivity(act); });
   }
+
+  /* Render BI skeletons immediately so layout doesn't jump */
+  _renderBIRevenue(null);
+  _renderBITrend();
+  _renderBIService(null);
+  _renderBICustomer(null);
+  _renderBIOperational(null);
+  _renderBIExport();
 
   const recent = bk.slice(0, 5);
   document.getElementById('recentWrap').innerHTML = recent.length ? buildTable(recent, true) : emptyHTML('予約がありません');
@@ -2658,8 +3017,13 @@ function _obsAgo(ts) {
 
 /* Refresh stat grid when Realtime fires a change */
 document.addEventListener('dashboard:stats-updated', function (e) {
-  if (document.getElementById('view-dashboard').classList.contains('active')) {
-    renderStatGrid(e.detail);
+  const isActive = document.getElementById('view-dashboard').classList.contains('active');
+  if (!isActive) return;
+  renderStatGrid(e.detail);
+  if (window.StatisticsService && StatisticsService.supabaseReady) {
+    StatisticsService.getGrowthStats().then(g => { if (g) renderStatGrid(e.detail, g); });
+    StatisticsService.getRevenueStats().then(r => _renderBIRevenue(r));
+    StatisticsService.getOperationalStats().then(o => _renderBIOperational(o));
   }
 });
 
@@ -2711,6 +3075,324 @@ function renderActivity() {
         <div class="activity-meta">${it.meta}</div>
       </div>
     </div>`).join('');
+}
+
+/* ════════════════════════════════════════════════════════
+   BI DASHBOARD — Phase 13 render functions
+   ════════════════════════════════════════════════════════ */
+
+/* ── 1. Revenue Analytics ── */
+function _renderBIRevenue(rev) {
+  const el = document.getElementById('biRevenuePanel');
+  if (!el) return;
+  const fmt = n => n != null ? '¥' + n.toLocaleString() : '—';
+  const r = rev || {};
+
+  el.innerHTML = `
+    <div class="panel" style="margin-bottom:0;height:100%">
+      <div class="panel-head">
+        <span class="panel-title">売上分析</span>
+        <span style="font-size:11px;color:var(--gray-2)">基本料金ベース</span>
+      </div>
+      <div class="panel-body">
+        <div class="bi-metric-row">
+          <span class="bi-metric-label">今日の売上</span>
+          <span class="bi-metric-val green">${fmt(r.todayRevenue)}</span>
+        </div>
+        <div class="bi-metric-row">
+          <span class="bi-metric-label">今週の売上</span>
+          <span class="bi-metric-val">${fmt(r.weeklyRevenue)}</span>
+        </div>
+        <div class="bi-metric-row">
+          <span class="bi-metric-label">今月の売上</span>
+          <span class="bi-metric-val blue">${fmt(r.monthlyRevenue)}</span>
+        </div>
+        <div class="bi-metric-row">
+          <span class="bi-metric-label">平均予約単価</span>
+          <span class="bi-metric-val">${fmt(r.averageBookingValue)}</span>
+        </div>
+        <div class="bi-metric-row">
+          <span class="bi-metric-label">今月の予測売上</span>
+          <span class="bi-metric-val" style="color:var(--yellow)">${fmt(r.projectedMonthlyRevenue)}</span>
+        </div>
+        <div class="bi-metric-row">
+          <span class="bi-metric-label">売上累計</span>
+          <span class="bi-metric-val">${fmt(r.totalRevenue)}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ── 2. Booking Trend Chart ── */
+function _renderBITrend() {
+  const el = document.getElementById('biTrendPanel');
+  if (!el) return;
+  const p = _biTrendPeriod;
+  el.innerHTML = `
+    <div class="panel" style="margin-bottom:0;height:100%">
+      <div class="panel-head">
+        <span class="panel-title">予約トレンド</span>
+        <div class="bi-trend-btns">
+          ${[7,30,90].map(d => `<button class="bi-trend-btn${d===p?' active':''}" onclick="biSetTrend(${d})">${d}日</button>`).join('')}
+        </div>
+      </div>
+      <div class="panel-body">
+        <canvas id="biTrendCanvas" class="bi-chart-canvas"></canvas>
+        <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">
+          <div style="flex:1;text-align:center">
+            <div class="stat-val" id="biTrendTotal" style="font-size:20px;line-height:1.2">—</div>
+            <div class="stat-sub">総予約数</div>
+          </div>
+          <div style="flex:1;text-align:center">
+            <div class="stat-val" id="biTrendAvg" style="font-size:20px;line-height:1.2">—</div>
+            <div class="stat-sub">日平均</div>
+          </div>
+          <div style="flex:1;text-align:center">
+            <div class="stat-val" id="biTrendGrowth" style="font-size:20px;line-height:1.2">—</div>
+            <div class="stat-sub">期間成長率</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function _renderBITrendData(td) {
+  if (!td) return;
+  window._biLastTrendData = td;
+  const isDark = document.documentElement.classList.contains('dark');
+  const DOW = ['日','月','火','水','木','金','土'];
+
+  const n      = td.trend.length;
+  const step   = n <= 14 ? 1 : n <= 31 ? 3 : 7;
+  const labels = td.trend.map((r, i) => {
+    if (i % step !== 0) return '';
+    const d = new Date(r.date + 'T00:00:00');
+    return td.days <= 7 ? DOW[d.getDay()] : `${d.getMonth()+1}/${d.getDate()}`;
+  });
+  const data = td.trend.map(r => r.count);
+
+  drawBarChart('biTrendCanvas', labels, data, isDark);
+
+  const totalEl  = document.getElementById('biTrendTotal');
+  const avgEl    = document.getElementById('biTrendAvg');
+  const growthEl = document.getElementById('biTrendGrowth');
+
+  if (totalEl)  totalEl.textContent  = td.total;
+  if (avgEl)    avgEl.textContent    = td.avgDay + '件';
+  if (growthEl) {
+    const pct = td.growth;
+    growthEl.textContent   = pct > 0 ? `↑ ${pct}%` : pct < 0 ? `↓ ${Math.abs(pct)}%` : '→ 0%';
+    growthEl.style.color   = pct > 0 ? 'var(--green)' : pct < 0 ? 'var(--red)' : 'var(--gray-1)';
+  }
+}
+
+function biSetTrend(days) {
+  _biTrendPeriod = days;
+  _renderBITrend();
+  if (window.StatisticsService && StatisticsService.supabaseReady) {
+    StatisticsService.getTrendData(days).then(td => {
+      if (document.getElementById('view-dashboard')?.classList.contains('active')) _renderBITrendData(td);
+    });
+  }
+}
+
+/* ── 3. Service Popularity ── */
+function _renderBIService(sp) {
+  const el = document.getElementById('biServicePanel');
+  if (!el) return;
+
+  const _SVC_SHORT2 = {
+    '単身引越し':'単身', 'カップル・ご夫婦引越し':'カップル', '学生・新生活引越し':'学生',
+    '当日・お急ぎ引越しプラン':'当日', '不用品回収・処分':'不用品', '不用品回収・処分サービス':'不用品',
+    '家具組立・分解':'家具', 'その他':'その他',
+  };
+  const colors = ['c1','c2','c3','c4','c5'];
+
+  const rows = (sp && sp.length)
+    ? sp.slice(0, 5).map((s, i) => `
+        <div class="bi-svc-bar-wrap">
+          <div class="bi-svc-bar-label">
+            <span>${esc(_SVC_SHORT2[s.service] || s.service || 'その他')}</span>
+            <span>${s.count}件 (${s.percentage}%)</span>
+          </div>
+          <div class="bi-svc-bar-track">
+            <div class="bi-svc-bar-fill ${colors[i]}" style="width:${s.percentage}%"></div>
+          </div>
+        </div>`).join('')
+    : `<div class="empty" style="padding:20px 0"><p>${sp === null ? '読み込み中…' : 'データなし'}</p></div>`;
+
+  el.innerHTML = `
+    <div class="panel" style="margin-bottom:0;height:100%">
+      <div class="panel-head">
+        <span class="panel-title">サービス人気度</span>
+        <span style="font-size:11px;color:var(--gray-2)">過去30日間</span>
+      </div>
+      <div class="panel-body">${rows}</div>
+    </div>`;
+}
+
+/* ── 4. Customer Analytics ── */
+function _renderBICustomer(cs) {
+  const el = document.getElementById('biCustomerPanel');
+  if (!el) return;
+
+  const initials = name => {
+    const parts = (name || '—').split(/[\s　]+/);
+    return parts.map(p => p[0] || '').join('').slice(0, 2).toUpperCase() || '—';
+  };
+
+  const topList = cs && cs.topCustomers && cs.topCustomers.length
+    ? cs.topCustomers.slice(0, 4).map(c => `
+        <div class="bi-customer-row">
+          <div class="bi-customer-avatar">${esc(initials(c.name))}</div>
+          <div style="flex:1;min-width:0">
+            <div class="bi-customer-name">${esc(c.name || '—')}</div>
+            <div class="bi-customer-sub">${c.bookings}件の予約</div>
+          </div>
+        </div>`).join('')
+    : '';
+
+  const metrics = cs ? `
+    <div class="bi-metric-row"><span class="bi-metric-label">総顧客数</span><span class="bi-metric-val blue">${cs.totalCustomers}</span></div>
+    <div class="bi-metric-row"><span class="bi-metric-label">今日の新規</span><span class="bi-metric-val">${cs.newToday}</span></div>
+    <div class="bi-metric-row"><span class="bi-metric-label">今月の新規</span><span class="bi-metric-val">${cs.newThisMonth}</span></div>
+    <div class="bi-metric-row"><span class="bi-metric-label">リピーター</span><span class="bi-metric-val">${cs.returningCustomers}</span></div>
+    <div class="bi-metric-row"><span class="bi-metric-label">リテンション率</span>
+      <span class="bi-metric-val" style="color:${cs.retentionRate>=50?'var(--green)':cs.retentionRate>=20?'var(--yellow)':'var(--red)'}">${cs.retentionRate}%</span>
+    </div>` : `<div class="empty" style="padding:20px 0"><p>読み込み中…</p></div>`;
+
+  el.innerHTML = `
+    <div class="panel" style="margin-bottom:0;height:100%">
+      <div class="panel-head">
+        <span class="panel-title">顧客分析</span>
+        <button class="btn btn-ghost btn-sm" onclick="go('customers')">一覧 →</button>
+      </div>
+      <div class="panel-body">
+        ${metrics}
+        ${topList ? `<div class="bi-section-header" style="margin-top:14px">トップ顧客</div>${topList}` : ''}
+      </div>
+    </div>`;
+}
+
+/* ── 5. Operational Analytics ── */
+function _renderBIOperational(op) {
+  const el = document.getElementById('biOperationalPanel');
+  if (!el) return;
+
+  if (!op) {
+    el.innerHTML = `
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">稼働状況（今月）</span></div>
+        <div class="panel-body"><div class="empty" style="padding:16px 0"><p>読み込み中…</p></div></div>
+      </div>`;
+    return;
+  }
+
+  const total = op.daysInMonth || 1;
+  const availPct   = Math.round((op.availableDays / total) * 100);
+  const limitedPct = Math.round((op.limitedDays / total) * 100);
+  const bookedPct  = Math.round((op.bookedDays / total) * 100);
+
+  el.innerHTML = `
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">稼働状況（今月）</span>
+        <span style="font-size:11px;color:var(--gray-2)">${op.daysInMonth}日間</span>
+      </div>
+      <div class="panel-body">
+        <div style="margin-bottom:8px;font-size:12px;color:var(--gray-1)">稼働率 <strong style="color:${op.utilisationRate>=80?'var(--green)':op.utilisationRate>=50?'var(--yellow)':'var(--ink)'}">${op.utilisationRate}%</strong></div>
+        <div class="bi-occ-bar" style="margin-bottom:16px">
+          ${bookedPct > 0  ? `<div class="bi-occ-seg" style="width:${bookedPct}%;background:#ef4444">${bookedPct>8?bookedPct+'%':''}</div>` : ''}
+          ${limitedPct > 0 ? `<div class="bi-occ-seg" style="width:${limitedPct}%;background:#f59e0b">${limitedPct>8?limitedPct+'%':''}</div>` : ''}
+          ${availPct > 0   ? `<div class="bi-occ-seg" style="width:${availPct}%;background:#10b981">${availPct>8?availPct+'%':''}</div>` : ''}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px">
+          <div class="stat-card" style="margin:0;padding:12px 14px">
+            <div class="stat-label">満了日数</div>
+            <div class="stat-val" style="font-size:22px;color:var(--red)">${op.bookedDays}</div>
+            <div class="stat-sub">${bookedPct}% of month</div>
+          </div>
+          <div class="stat-card" style="margin:0;padding:12px 14px">
+            <div class="stat-label">残りわずか</div>
+            <div class="stat-val" style="font-size:22px;color:var(--yellow)">${op.limitedDays}</div>
+            <div class="stat-sub">${limitedPct}% of month</div>
+          </div>
+          <div class="stat-card" style="margin:0;padding:12px 14px">
+            <div class="stat-label">空き日数</div>
+            <div class="stat-val" style="font-size:22px;color:var(--green)">${op.availableDays}</div>
+            <div class="stat-sub">${availPct}% of month</div>
+          </div>
+          <div class="stat-card" style="margin:0;padding:12px 14px">
+            <div class="stat-label">今月の予約数</div>
+            <div class="stat-val" style="font-size:22px">${op.totalBookingsMonth}</div>
+            <div class="stat-sub">カレンダー登録</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:10px;font-size:11px;color:var(--gray-2)">
+          <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#ef4444;margin-right:4px"></span>満了</span>
+          <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#f59e0b;margin-right:4px"></span>残りわずか</span>
+          <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#10b981;margin-right:4px"></span>空き</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ── 6. Live Activity Feed (Supabase) ── */
+function _renderBIActivity(items) {
+  const el = document.getElementById('activityWrap');
+  if (!el || !items || !items.length) return;
+
+  const iconMap = {
+    booking: { cls: 'ai-blue',   svg: '<path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>' },
+    review:  { cls: 'ai-purple', svg: '<path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>' },
+  };
+
+  el.innerHTML = items.map(it => {
+    const ic   = iconMap[it.type] || iconMap.booking;
+    const tsStr = it.ts ? fmtDT(it.ts) : '—';
+    return `
+      <div class="activity-item">
+        <div class="activity-icon ${ic.cls}">
+          <svg viewBox="0 0 24 24" width="16" height="16">${ic.svg}</svg>
+        </div>
+        <div class="activity-body">
+          <div class="activity-title">${esc(it.action)} — ${esc(it.name)}</div>
+          <div class="activity-meta">${tsStr}${it.detail ? '　' + esc(it.detail) : ''}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ── 7. Export Panel ── */
+function _renderBIExport() {
+  const el = document.getElementById('biExportPanel');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">データエクスポート</span>
+      </div>
+      <div class="panel-body">
+        <div class="bi-export-grid">
+          <button class="btn btn-ghost" onclick="exportCSV()" style="justify-content:flex-start">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            予約 CSV
+          </button>
+          <button class="btn btn-ghost" onclick="exportBookingsJSON()" style="justify-content:flex-start">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            予約 JSON
+          </button>
+          <button class="btn btn-ghost" onclick="exportCustomersCSV()" style="justify-content:flex-start">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            顧客 CSV
+          </button>
+          <button class="btn btn-ghost" onclick="exportStatisticsJSON()" style="justify-content:flex-start">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            統計 JSON
+          </button>
+        </div>
+      </div>
+    </div>`;
 }
 
 function renderQA() {
@@ -6313,6 +6995,75 @@ function exportFullBackup() {
   toast('フルバックアップをエクスポートしました');
 }
 
+/* ── BI Export helpers ── */
+function exportCustomersCSV() {
+  const bk = Adapter.getBookings();
+  if (!bk.length) { toast('顧客データがありません'); return; }
+
+  const byEmail = {};
+  bk.forEach(b => {
+    const key = (b.email || '').toLowerCase() || '__' + b.name;
+    if (!byEmail[key]) byEmail[key] = { name: b.name, email: b.email, phone: b.phone, bookings: 0, firstDate: b.createdAt, lastDate: b.createdAt };
+    byEmail[key].bookings++;
+    if ((b.createdAt || '') < byEmail[key].firstDate) byEmail[key].firstDate = b.createdAt;
+    if ((b.createdAt || '') > byEmail[key].lastDate)  byEmail[key].lastDate  = b.createdAt;
+  });
+
+  const h = ['お客様名','メール','電話','予約件数','初回予約日','最終予約日'];
+  const rows = Object.values(byEmail).map(c =>
+    [c.name, c.email, c.phone, c.bookings, c.firstDate, c.lastDate]
+    .map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',')
+  );
+  const csv = '﻿' + [h.join(','), ...rows].join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+  a.download = `hm-customers-${todayStr()}.csv`;
+  a.click();
+  toast('顧客CSVをエクスポートしました');
+}
+
+async function exportStatisticsJSON() {
+  const local  = calcStats();
+  const bk     = Adapter.getBookings();
+  const prices = Adapter.getPrices();
+
+  const svcCount = {};
+  bk.filter(b => b.status !== 'キャンセル').forEach(b => { svcCount[b.service] = (svcCount[b.service]||0) + 1; });
+
+  const payload = {
+    exportedAt:       new Date().toISOString(),
+    period:           todayStr(),
+    kpi: {
+      todayBookings:   local.todayBk,
+      weeklyBookings:  local.weekBk,
+      monthlyBookings: local.monthBk,
+      totalBookings:   bk.length,
+      pending:         bk.filter(b => b.status === '新規' || b.status === '確認中').length,
+      confirmed:       bk.filter(b => b.status === '確定').length,
+      cancelled:       bk.filter(b => b.status === 'キャンセル').length,
+      estimatedRevenue:local.revenue,
+    },
+    serviceBreakdown: Object.entries(svcCount).sort((a,b)=>b[1]-a[1]).map(([s,n])=>({service:s,count:n})),
+    uniqueCustomers:  new Set(bk.map(b=>b.email).filter(Boolean)).size,
+  };
+
+  if (window.StatisticsService && StatisticsService.supabaseReady) {
+    try {
+      const [growth, rev, op] = await Promise.all([
+        StatisticsService.getGrowthStats(),
+        StatisticsService.getRevenueStats(),
+        StatisticsService.getOperationalStats(),
+      ]);
+      if (growth) payload.growth = growth;
+      if (rev)    payload.revenue = rev;
+      if (op)     payload.operational = op;
+    } catch(e) { console.warn('[Export] Supabase stats unavailable:', e.message); }
+  }
+
+  _dlJSON(`hm-statistics-${todayStr()}.json`, payload);
+  toast('統計データをエクスポートしました');
+}
+
 function _setImportMsg(id, type, msg) {
   const el = document.getElementById(id + 'Msg');
   if (!el) return;
@@ -8127,6 +8878,9 @@ window.addEventListener('resize', () => {
   clearTimeout(_resizeT);
   _resizeT = setTimeout(() => {
     if (document.getElementById('view-analytics').classList.contains('active')) renderAnalyticsCharts();
+    if (document.getElementById('view-dashboard').classList.contains('active')) {
+      if (window._biLastTrendData) _renderBITrendData(window._biLastTrendData);
+    }
   }, 150);
 });
 
@@ -8203,6 +8957,163 @@ function _applyHcBanner() {
     }).catch(e => console.warn('[HealthCheck] startup check failed:', e));
   }
 })();
+
+/* ════════════════════════════════════════════════════════
+   WEBSITE CONTENT MANAGEMENT — Phase 11
+   Reads/writes via ContentService → ui_content table.
+   Each tab section maps to a set of content_key fields.
+   ════════════════════════════════════════════════════════ */
+
+const WC_FIELDS = {
+  header: [
+    { id:'wcHeaderLogoUrl',      key:'logo_url',      label:'ロゴURL' },
+    { id:'wcHeaderCompanyName',  key:'company_name',  label:'会社名' },
+    { id:'wcHeaderPhone',        key:'phone',         label:'電話番号' },
+    { id:'wcHeaderCtaText',      key:'cta_text',      label:'CTAボタン' },
+    { id:'wcHeaderNavHome',      key:'nav_home',      label:'ナビ：ホーム' },
+    { id:'wcHeaderNavServices',  key:'nav_services',  label:'ナビ：サービス' },
+    { id:'wcHeaderNavAbout',     key:'nav_about',     label:'ナビ：会社案内' },
+    { id:'wcHeaderNavContact',   key:'nav_contact',   label:'ナビ：お問い合わせ' },
+    { id:'wcHeaderNavFaq',       key:'nav_faq',       label:'ナビ：FAQ' },
+  ],
+  hero: [
+    { id:'wcHeroHeadlineJa',    key:'headline_ja',    label:'見出し（日）' },
+    { id:'wcHeroHeadlineEn',    key:'headline_en',    label:'見出し（英）' },
+    { id:'wcHeroSubPrimary',    key:'sub_primary',    label:'サブ（プライマリ）' },
+    { id:'wcHeroSubSecondary',  key:'sub_secondary',  label:'サブ（セカンダリ）' },
+    { id:'wcHeroCtaBook',       key:'cta_book',       label:'予約ボタン' },
+    { id:'wcHeroCtaQuote',      key:'cta_quote',      label:'見積りボタン' },
+    { id:'wcHeroCtaLine',       key:'cta_line',       label:'LINEボタン' },
+  ],
+  services: [
+    { id:'wcServicesEyebrow',   key:'eyebrow',   label:'Eyebrow' },
+    { id:'wcServicesTitle',     key:'title',     label:'タイトル' },
+    { id:'wcServicesSubtitle',  key:'subtitle',  label:'サブタイトル' },
+  ],
+  testimonials: [
+    { id:'wcTestimonialsEyebrow',   key:'eyebrow',   label:'Eyebrow' },
+    { id:'wcTestimonialsTitle',     key:'title',     label:'タイトル' },
+    { id:'wcTestimonialsSubtitle',  key:'subtitle',  label:'サブタイトル' },
+  ],
+  footer: [
+    { id:'wcFooterAddress',    key:'address',    label:'住所' },
+    { id:'wcFooterPhone',      key:'phone',      label:'電話番号' },
+    { id:'wcFooterEmail',      key:'email',      label:'メール' },
+    { id:'wcFooterCopyright',  key:'copyright',  label:'著作権' },
+  ],
+  contact: [
+    { id:'wcContactWhatsapp',       key:'whatsapp',       label:'WhatsApp' },
+    { id:'wcContactPhone',          key:'phone',          label:'電話番号' },
+    { id:'wcContactEmail',          key:'email',          label:'メール' },
+    { id:'wcContactHoursWeekday',   key:'hours_weekday',  label:'営業時間（平日）' },
+    { id:'wcContactHoursWeekend',   key:'hours_weekend',  label:'営業時間（土日祝）' },
+    { id:'wcContactHoursNote',      key:'hours_note',     label:'補足' },
+  ],
+  seo: [
+    { id:'wcSeoPageTitle',      key:'page_title',      label:'ページタイトル', maxLen:60  },
+    { id:'wcSeoDescription',    key:'description',     label:'メタ説明文',     maxLen:160, ta:true },
+    { id:'wcSeoOgTitle',        key:'og_title',        label:'OGタイトル' },
+    { id:'wcSeoOgDescription',  key:'og_description',  label:'OG説明文',       ta:true },
+    { id:'wcSeoOgImage',        key:'og_image',        label:'OG画像URL' },
+  ],
+};
+
+function switchWcTab(tab) {
+  document.querySelectorAll('.wc-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.wc-tab-panel').forEach(p => p.classList.toggle('active', p.id === 'wc-tab-' + tab));
+}
+
+function _wcGetValues(section) {
+  const out = {};
+  (WC_FIELDS[section] || []).forEach(f => {
+    const el = document.getElementById(f.id);
+    if (el) out[f.key] = el.value;
+  });
+  return out;
+}
+
+function _wcSetValues(section, data) {
+  (WC_FIELDS[section] || []).forEach(f => {
+    const el = document.getElementById(f.id);
+    if (el && data[f.key] != null) el.value = data[f.key];
+  });
+}
+
+function wcLivePreview(section) {
+  const box = document.getElementById('wcPrev-' + section);
+  if (!box) return;
+  const vals   = _wcGetValues(section);
+  const fields = WC_FIELDS[section] || [];
+  const empty  = '<span style="color:var(--gray-2);font-size:11px">フィールドに入力するとここに表示されます</span>';
+
+  if (section === 'seo') {
+    const title = vals.page_title || '';
+    const desc  = vals.description || '';
+    const ogT   = vals.og_title || '';
+    const ogD   = vals.og_description || '';
+    const lenT  = title.length;
+    const lenD  = desc.length;
+    if (!title && !desc) { box.innerHTML = empty; return; }
+    box.innerHTML = `
+      <div style="margin-bottom:14px">
+        <div style="font-size:10px;font-weight:600;color:var(--gray-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Google 検索プレビュー</div>
+        <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px">
+          <div style="font-size:15px;color:#1a0dab;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(title||'（タイトル未設定）')}</div>
+          <div style="font-size:12px;color:#006621;margin-bottom:4px">hello-moving.com</div>
+          <div style="font-size:13px;color:#545454;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(desc)}</div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:4px">
+          <span style="font-size:10px;color:${lenT>60?'var(--red)':'var(--gray-2)'}">タイトル ${lenT}/60</span>
+          <span style="font-size:10px;color:${lenD>160?'var(--red)':'var(--gray-2)'}">説明文 ${lenD}/160</span>
+        </div>
+      </div>
+      ${ogT||ogD ? `<div>
+        <div style="font-size:10px;font-weight:600;color:var(--gray-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">OGカードプレビュー</div>
+        <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:3px">${esc(ogT)}</div>
+          <div style="font-size:12px;color:var(--gray-1);line-height:1.5">${esc(ogD)}</div>
+        </div>
+      </div>` : ''}`;
+    return;
+  }
+
+  const rows = fields.map(f => {
+    const v = vals[f.key];
+    if (!v) return '';
+    return `<div class="wc-prev-row"><span class="wc-prev-key">${esc(f.label)}</span><span class="wc-prev-val">${esc(v)}</span></div>`;
+  }).join('');
+  box.innerHTML = rows || empty;
+}
+
+async function renderWebContent() {
+  if (!window.ContentService) return;
+  const all = await ContentService.load();
+  Object.keys(WC_FIELDS).forEach(section => {
+    _wcSetValues(section, all[section] || {});
+    wcLivePreview(section);
+  });
+}
+
+async function wcSaveSection(section) {
+  if (!window.ContentService) { toast('ContentServiceが利用できません'); return; }
+  const data = _wcGetValues(section);
+  const ind  = document.getElementById('wcSaveInd-' + section);
+  if (ind) { ind.textContent = '保存中...'; ind.classList.add('vis'); }
+  const { success, source } = await ContentService.saveSection(section, data);
+  wcLivePreview(section);
+  if (ind) {
+    ind.textContent = success ? '保存しました ✓' : 'ローカル保存 ✓';
+    ind.style.color = success ? 'var(--green)' : 'var(--yellow)';
+    setTimeout(() => ind.classList.remove('vis'), 3000);
+  }
+  toast(success ? `${section} を保存しました` : 'オフライン — ローカルに保存しました');
+}
+
+async function _syncWebContentFromSupabase() {
+  if (!window.ContentService || !window.SupabaseClient) return;
+  const ok = await ContentService.syncToLocalStorage();
+  if (ok && document.getElementById('view-webcontent')?.classList.contains('active')) renderWebContent();
+}
 </script>
 </body>
 </html>
