@@ -34,10 +34,8 @@
   function _invalidateKPI() {
     _cDel('growth', 'revenue', 'customers', 'operational', 'raw_bk');
     _cDel('trend_7', 'trend_30', 'trend_90');
-    const now = new Date();
-    const f = `${now.getFullYear()}-${_pad(now.getMonth()+1)}-01`;
-    const t = _todayISO();
-    _cDel(`svp_${f}_${t}`);
+    // Key must match getServicePopularity()'s default: _nDaysAgoISO(30) / _todayISO()
+    _cDel(`svp_${_nDaysAgoISO(30)}_${_todayISO()}`);
   }
 
   function _invalidateActivity() { _cDel('activity'); }
@@ -152,27 +150,43 @@
 
   async function getDashboardStats() {
     if (!_sb) return null;
-    const [today, weekly, monthly, pending, confirmed, cancelled, occupancy, last30, totalCustomers, approvedReviews] =
-      await Promise.all([
-        getTodayBookings(),
-        getWeeklyBookings(),
-        getMonthlyBookings(),
-        _count('bookings', [['eq', 'status', 'pending']]),
-        _count('bookings', [['eq', 'status', 'confirmed']]),
-        _count('bookings', [['eq', 'status', 'cancelled']]),
-        getOccupancyRate(),
-        _count('bookings', [['gte', 'move_date', _nDaysAgoISO(30)]]),
-        _countDistinctCustomers(),
-        _count('reviews', [['eq', 'approved', true]]),
-      ]);
-    const avgDaily = Math.round((last30 / 30) * 10) / 10;
-    return { today, weekly, monthly, pending, confirmed, cancelled, occupancy, avgDaily, totalCustomers, approvedReviews };
-  }
 
-  async function _countDistinctCustomers() {
-    if (!_sb) return 0;
-    const data = await _getBookingsRaw();
-    return new Set(data.map(r => r.email).filter(Boolean)).size;
+    // Fire bookings (shared), occupancy, and reviews in parallel.
+    // _getBookingsRaw() is deduplicated across all concurrent BI callers via _rawBkInflight.
+    const [data, occupancy, approvedReviews] = await Promise.all([
+      _getBookingsRaw(),
+      getOccupancyRate(),
+      _count('reviews', [['eq', 'approved', true]]),
+    ]);
+
+    const today      = _todayISO();
+    const weekStart  = _weekStartISO();
+    const monthStart = _monthStartISO();
+    const last30From = _nDaysAgoISO(30);
+
+    // replaces: getTodayBookings()  → COUNT bookings WHERE move_date = today
+    const todayCount     = data.filter(r => r.move_date === today).length;
+    // replaces: getWeeklyBookings() → COUNT bookings WHERE move_date >= weekStart
+    const weeklyCount    = data.filter(r => r.move_date >= weekStart).length;
+    // replaces: getMonthlyBookings()→ COUNT bookings WHERE move_date >= monthStart
+    const monthlyCount   = data.filter(r => r.move_date >= monthStart).length;
+    // replaces: COUNT bookings WHERE status = 'pending'
+    const pendingCount   = data.filter(r => r.status === 'pending').length;
+    // replaces: COUNT bookings WHERE status = 'confirmed'
+    const confirmedCount = data.filter(r => r.status === 'confirmed').length;
+    // replaces: COUNT bookings WHERE status = 'cancelled'
+    const cancelledCount = data.filter(r => r.status === 'cancelled').length;
+    // replaces: COUNT bookings WHERE move_date >= 30 days ago
+    const last30Count    = data.filter(r => r.move_date >= last30From).length;
+    // replaces: _countDistinctCustomers() → COUNT DISTINCT email
+    const totalCustomers = new Set(data.map(r => r.email).filter(Boolean)).size;
+
+    const avgDaily = Math.round((last30Count / 30) * 10) / 10;
+    return {
+      today: todayCount, weekly: weeklyCount, monthly: monthlyCount,
+      pending: pendingCount, confirmed: confirmedCount, cancelled: cancelledCount,
+      occupancy, avgDaily, totalCustomers, approvedReviews,
+    };
   }
 
   /* ════════════════════════════════════════════════════════
@@ -183,19 +197,28 @@
     if (cached) return cached;
     if (!_sb) return null;
 
+    // Single shared fetch — covers all six period counts below
+    const data = await _getBookingsRaw();
+
+    const today         = _todayISO();
+    const yesterday     = _yesterdayISO();
     const weekStart     = _weekStartISO();
     const lastWeekStart = _lastWeekStartISO();
     const monthStart    = _monthStartISO();
     const lastMonthStart= _lastMonthStartISO();
 
-    const [todayN, yestN, weekN, lastWeekN, monthN, lastMonthN] = await Promise.all([
-      _count('bookings', [['eq', 'move_date', _todayISO()]]),
-      _count('bookings', [['eq', 'move_date', _yesterdayISO()]]),
-      _count('bookings', [['gte', 'move_date', weekStart]]),
-      _count('bookings', [['gte', 'move_date', lastWeekStart], ['lt', 'move_date', weekStart]]),
-      _count('bookings', [['gte', 'move_date', monthStart]]),
-      _count('bookings', [['gte', 'move_date', lastMonthStart], ['lt', 'move_date', monthStart]]),
-    ]);
+    // replaces: COUNT bookings WHERE move_date = today
+    const todayN     = data.filter(r => r.move_date === today).length;
+    // replaces: COUNT bookings WHERE move_date = yesterday
+    const yestN      = data.filter(r => r.move_date === yesterday).length;
+    // replaces: COUNT bookings WHERE move_date >= weekStart
+    const weekN      = data.filter(r => r.move_date >= weekStart).length;
+    // replaces: COUNT bookings WHERE move_date >= lastWeekStart AND move_date < weekStart
+    const lastWeekN  = data.filter(r => r.move_date >= lastWeekStart && r.move_date < weekStart).length;
+    // replaces: COUNT bookings WHERE move_date >= monthStart
+    const monthN     = data.filter(r => r.move_date >= monthStart).length;
+    // replaces: COUNT bookings WHERE move_date >= lastMonthStart AND move_date < monthStart
+    const lastMonthN = data.filter(r => r.move_date >= lastMonthStart && r.move_date < monthStart).length;
 
     const result = {
       today: { val: todayN, prev: yestN,     pct: _pct(todayN, yestN),     label: '昨日比' },
@@ -514,9 +537,10 @@
   }
 
   /* ── Cache invalidation via domain events ──────────────── */
-  document.addEventListener('booking:created', () => { _invalidateKPI(); _invalidateActivity(); });
-  document.addEventListener('booking:updated', () => { _invalidateKPI(); _invalidateActivity(); });
-  document.addEventListener('calendar:updated', () => { _cDel('operational'); });
+  document.addEventListener('booking:created',   () => { _invalidateKPI(); _invalidateActivity(); });
+  document.addEventListener('booking:updated',   () => { _invalidateKPI(); _invalidateActivity(); });
+  document.addEventListener('booking:cancelled', () => { _invalidateKPI(); _invalidateActivity(); });
+  document.addEventListener('calendar:updated',  () => { _cDel('operational'); });
 
   /* ════════════════════════════════════════════════════════
      PUBLIC API
