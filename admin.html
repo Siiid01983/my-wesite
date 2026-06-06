@@ -9120,10 +9120,9 @@ async function wcSaveSection(section) {
   toast(success ? `${section} を保存しました` : 'オフライン — ローカルに保存しました');
 }
 
-async function _syncWebContentFromSupabase() {
-  if (!window.ContentService || !window.SupabaseClient) return;
-  const ok = await ContentService.syncToLocalStorage();
-  if (ok && document.getElementById('view-webcontent')?.classList.contains('active')) renderWebContent();
+function _syncWebContentFromSupabase() {
+  if (!Adapter.supabaseReady) return;
+  _dpSync('ui_content', null, () => ContentService.syncToLocalStorage(), 'view-webcontent', renderWebContent);
 }
 </script>
 </body>

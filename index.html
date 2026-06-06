@@ -1008,7 +1008,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
     <a href="/" class="brand" aria-label="Hello Moving ホーム">
       <span class="brand-mark">H</span>
       <span class="brand-text">
-        <span class="brand-name">Hello Moving</span>
+        <span class="brand-name" id="headerBrandNameEl">Hello Moving</span>
         <span class="brand-sub">14+ Years — Tokyo</span>
       </span>
     </a>
@@ -1043,7 +1043,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
         <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.36-6.36-.71.71M6.34 17.66l-.7.7M17.66 17.66l.7.7M6.34 6.34l-.7-.7M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
       </button>
-      <a href="#quote" class="btn btn-primary">無料見積り</a>
+      <a href="#quote" class="btn btn-primary" id="headerCtaBtnEl">無料見積り</a>
     </div>
     <button class="nav-toggle" id="navToggle" aria-label="メニューを開く" aria-expanded="false">
       <span></span><span></span><span></span>
@@ -2437,7 +2437,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
           <span class="cc-icon cc-icon-line" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.6 1.6 4.9 4 6.4-.1.5-.6 2.1-.7 2.5 0 0 0 .3.2.4.2.1.4 0 .4 0 .6-.1 3-2 3.6-2.4.8.1 1.6.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3Z"/></svg></span>
           <span class="cc-text"><em>LINEで</em><strong>友だち追加して相談</strong><small>24時間受付</small></span>
         </a>
-        <a href="mailto:hellomoving1@gmail.com" class="cta-channel">
+        <a href="mailto:hellomoving1@gmail.com" id="contactEmailLinkEl" class="cta-channel">
           <span class="cc-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg></span>
           <span class="cc-text"><em>Email</em><strong>メールで問い合わせ</strong><small>hellomoving1@gmail.com</small></span>
         </a>
@@ -2457,6 +2457,11 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
         <span class="brand-text"><span class="brand-name">Hello Moving</span><span class="brand-sub">14+ Years — Tokyo</span></span>
       </a>
       <p class="footer-desc" id="footerDescEl">東京を拠点に、丁寧で安心の引越しを承っております。日本語・英語対応。</p>
+      <p id="footerAddressEl" style="font-size:13px;color:var(--gray-1);margin-top:6px;display:none"></p>
+      <p id="footerContactLineEl" style="font-size:13px;color:var(--gray-1);margin-top:4px;display:none">
+        <a id="footerPhoneEl" href="#" style="color:inherit;display:none"></a>
+        <a id="footerEmailEl" href="#" style="color:inherit;display:none"></a>
+      </p>
     </div>
     <div class="footer-col" id="footerCol0El">
       <h4 id="footerCol0TitleEl">サービス</h4>
@@ -2483,7 +2488,9 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
       <h4 id="footerCol2TitleEl">お問い合わせ</h4>
       <ul id="footerCol2LinksEl">
         <li><a href="#" class="liveChatTrigger">Live Chat</a></li>
-        <li>受付：8:00 – 20:00</li>
+        <li id="footerHoursWeekdayEl">受付：8:00 – 20:00</li>
+        <li id="footerHoursWeekendEl" style="display:none"></li>
+        <li id="footerHoursNoteEl" style="display:none"></li>
         <li>対応エリア：日本全国</li>
         <li>対応言語：日本語 / English</li>
       </ul>
@@ -2881,6 +2888,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
 <script src="js/services/dataProvider.js"></script>
 <script src="js/services/serviceRegistry.js"></script>
 <script src="bookingService.js"></script>
+<script src="js/services/contentLoader.js"></script>
 <script>
 (function(){
 'use strict';

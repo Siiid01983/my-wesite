@@ -11,7 +11,7 @@ _admin_script_extract.js
 _test_booking.js
 components/
 lib/
-services/
+/services/
 types/
 *.zip
 %TEMP%*
