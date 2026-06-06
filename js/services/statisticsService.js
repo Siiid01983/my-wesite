@@ -25,13 +25,14 @@
   const _mem = {};
   const _TTL_KPI = 5 * 60 * 1000;
   const _TTL_ACT = 60 * 1000;
+  const _TTL_RAW = 30 * 1000; // shared raw bookings fetch — covers one renderDash cycle
 
   function _cGet(k)         { const c = _mem[k]; return (c && Date.now() < c.e) ? c.d : null; }
   function _cSet(k, d, ttl) { _mem[k] = { d, e: Date.now() + ttl }; }
   function _cDel(...keys)   { keys.forEach(k => delete _mem[k]); }
 
   function _invalidateKPI() {
-    _cDel('growth', 'revenue', 'customers', 'operational');
+    _cDel('growth', 'revenue', 'customers', 'operational', 'raw_bk');
     _cDel('trend_7', 'trend_30', 'trend_90');
     const now = new Date();
     const f = `${now.getFullYear()}-${_pad(now.getMonth()+1)}-01`;
@@ -40,6 +41,35 @@
   }
 
   function _invalidateActivity() { _cDel('activity'); }
+
+  /* ── Shared raw bookings fetch (30 s TTL) ──────────────────
+     All row-level BI functions (revenue, trend, service, customer)
+     share this single fetch per renderDash cycle, cutting parallel
+     Supabase round-trips from 4+ down to 1.
+     ─────────────────────────────────────────────────────────── */
+  let _rawBkInflight = null; // deduplicate concurrent callers
+
+  async function _getBookingsRaw() {
+    const cached = _cGet('raw_bk');
+    if (cached) return cached;
+    if (!_sb) return [];
+
+    // If a fetch is already in flight, wait for it instead of launching another
+    if (_rawBkInflight) return _rawBkInflight;
+
+    _rawBkInflight = (async () => {
+      const { data, error } = await _sb
+        .from('bookings')
+        .select('reference_id,move_date,service_type,status,email,customer_name,created_at')
+        .order('created_at', { ascending: false });
+      _rawBkInflight = null;
+      if (error || !data) return [];
+      _cSet('raw_bk', data, _TTL_RAW);
+      return data;
+    })();
+
+    return _rawBkInflight;
+  }
 
   /* ── Date helpers ──────────────────────────────────────── */
   const _pad = n => String(n).padStart(2, '0');
@@ -141,10 +171,8 @@
 
   async function _countDistinctCustomers() {
     if (!_sb) return 0;
-    const { data, error } = await _sb.from('bookings').select('email');
-    if (error || !data) return 0;
-    const unique = new Set(data.map(r => r.email).filter(Boolean));
-    return unique.size;
+    const data = await _getBookingsRaw();
+    return new Set(data.map(r => r.email).filter(Boolean)).size;
   }
 
   /* ════════════════════════════════════════════════════════
@@ -187,18 +215,15 @@
     if (cached) return cached;
     if (!_sb) return null;
 
-    const { data, error } = await _sb
-      .from('bookings')
-      .select('move_date,service_type,status,created_at');
+    const data = await _getBookingsRaw();
+    if (!data.length && !_cGet('raw_bk')) return null; // error during fetch
 
-    if (error || !data) return null;
-
-    const prices    = window.Adapter ? window.Adapter.getPrices() : {};
-    const today     = _todayISO();
-    const weekStart = _weekStartISO();
-    const monthStart= _monthStartISO();
-    const dayOfMonth= new Date().getDate();
-    const dIM       = _daysInMonth();
+    const prices     = window.Adapter ? window.Adapter.getPrices() : {};
+    const today      = _todayISO();
+    const weekStart  = _weekStartISO();
+    const monthStart = _monthStartISO();
+    const dayOfMonth = new Date().getDate();
+    const dIM        = _daysInMonth();
 
     const priceFor = svc => {
       const p = prices[svc];
@@ -236,28 +261,23 @@
     if (!_sb) return null;
 
     const from = _nDaysAgoISO(days - 1);
-    const to   = _todayISO();
+    const data = await _getBookingsRaw();
 
-    const { data, error } = await _sb
-      .from('bookings')
-      .select('move_date,status')
-      .gte('move_date', from)
-      .lte('move_date', to);
-
-    if (error || !data) return null;
+    // Filter to window in JS — no extra Supabase round-trip
+    const inWindow = data.filter(r => r.move_date >= from);
 
     const trend = [];
     for (let i = days - 1; i >= 0; i--) {
       const d   = new Date(); d.setDate(d.getDate() - i);
       const iso = _iso(d);
-      trend.push({ date: iso, count: data.filter(r => r.move_date === iso).length });
+      trend.push({ date: iso, count: inWindow.filter(r => r.move_date === iso).length });
     }
 
-    const total   = trend.reduce((s, r) => s + r.count, 0);
-    const avgDay  = trend.length > 0 ? Math.round((total / trend.length) * 10) / 10 : 0;
-    const first   = trend.length > 1 ? trend[0].count : 0;
-    const last    = trend.length > 1 ? trend[trend.length - 1].count : 0;
-    const growth  = _pct(last, first);
+    const total  = trend.reduce((s, r) => s + r.count, 0);
+    const avgDay = trend.length > 0 ? Math.round((total / trend.length) * 10) / 10 : 0;
+    const first  = trend.length > 1 ? trend[0].count : 0;
+    const last   = trend.length > 1 ? trend[trend.length - 1].count : 0;
+    const growth = _pct(last, first);
 
     const result = { days, trend, total, avgDay, growth };
     _cSet(key, result, _TTL_KPI);
@@ -275,19 +295,15 @@
     if (cached) return cached;
     if (!_sb) return [];
 
-    const { data, error } = await _sb
-      .from('bookings')
-      .select('service_type,status')
-      .gte('move_date', f)
-      .lte('move_date', t);
-
-    if (error || !data) return [];
+    const data = await _getBookingsRaw();
 
     const counts = {};
-    data.filter(r => r.status !== 'cancelled').forEach(r => {
-      const s = r.service_type || 'その他';
-      counts[s] = (counts[s] || 0) + 1;
-    });
+    data
+      .filter(r => r.move_date >= f && r.move_date <= t && r.status !== 'cancelled')
+      .forEach(r => {
+        const s = r.service_type || 'その他';
+        counts[s] = (counts[s] || 0) + 1;
+      });
     const total = Object.values(counts).reduce((s, n) => s + n, 0);
 
     const result = Object.entries(counts)
@@ -313,12 +329,8 @@
     const today      = _todayISO();
     const monthStart = _monthStartISO();
 
-    const { data, error } = await _sb
-      .from('bookings')
-      .select('email,customer_name,created_at,status')
-      .order('created_at', { ascending: false });
-
-    if (error || !data) return null;
+    // Raw cache is already ordered by created_at DESC
+    const data = await _getBookingsRaw();
 
     const byEmail = {};
     data.forEach(b => {
@@ -392,18 +404,17 @@
     if (!_sb) return [];
 
     const n = limit || 10;
-    const [bkRes, revRes] = await Promise.all([
-      _sb.from('bookings')
-         .select('reference_id,customer_name,status,service_type,created_at')
-         .order('created_at', { ascending: false }).limit(n),
-      _sb.from('reviews')
-         .select('reference_id,customer_name,rating,approved,created_at')
-         .order('created_at', { ascending: false }).limit(5),
-    ]);
+
+    // Bookings leg: use raw cache (already ordered by created_at DESC) — no extra fetch
+    const rawBk = await _getBookingsRaw();
+    const revRes = await _sb
+      .from('reviews')
+      .select('reference_id,customer_name,rating,approved,created_at')
+      .order('created_at', { ascending: false }).limit(5);
 
     const items = [];
 
-    (bkRes.data || []).forEach(b => items.push({
+    rawBk.slice(0, n).forEach(b => items.push({
       type:   'booking',
       id:     b.reference_id,
       name:   b.customer_name || '—',
@@ -413,7 +424,7 @@
       ts:     b.created_at,
     }));
 
-    (revRes.data || []).forEach(r => items.push({
+    ((revRes && revRes.data) || []).forEach(r => items.push({
       type:   'review',
       id:     r.reference_id,
       name:   r.customer_name || '—',
