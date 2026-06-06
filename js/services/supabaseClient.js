@@ -1,5 +1,6 @@
-// Plain-script singleton — exposes window.SupabaseClient (Supabase JS client instance).
-// Load order: supabase UMD → js/config/env.js → this file
+// Single source of truth for the Supabase client.
+// ALL services must read window.SupabaseClient — never call createClient() elsewhere.
+// Load order: supabase UMD → js/config/env.js → this file → (all other services)
 (function () {
   'use strict';
 

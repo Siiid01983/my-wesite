@@ -16,22 +16,16 @@
    dataset on login so all devices stay in sync.
 
    Load order (plain <script> tags, in order):
-     1. Supabase UMD  → window.supabase
-     2. js/config/env.js  → window.SUPABASE_URL / ANON_KEY
-     3. this file  → window.Adapter
+     1. Supabase UMD       → window.supabase
+     2. js/config/env.js   → window.SUPABASE_URL / ANON_KEY
+     3. supabaseClient.js  → window.SupabaseClient (shared singleton)
+     4. this file          → window.Adapter
    ════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
 
-  /* ── Supabase client ──────────────────────────────────── */
-  const _sb = (function () {
-    const url = window.SUPABASE_URL;
-    const key = window.SUPABASE_ANON_KEY;
-    if (!url || !key || url.includes('<') || key.includes('<')) return null;
-    if (!window.supabase) { console.warn('[Adapter] Supabase UMD not loaded'); return null; }
-    try { return window.supabase.createClient(url, key); }
-    catch (e) { console.warn('[Adapter] createClient failed:', e); return null; }
-  })();
+  /* ── Shared Supabase client (single instance for the whole app) ─── */
+  const _sb = window.SupabaseClient || null;
 
   /* ── localStorage helpers ─────────────────────────────── */
   const _ls  = (k, def) => { try { return JSON.parse(localStorage.getItem(k) ?? JSON.stringify(def)); } catch { return def; } };
