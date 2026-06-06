@@ -45,7 +45,7 @@ my-website/
 │   └── dataProvider.test.js    # 20-case unit test suite (node:test + Playwright)
 │
 ├── package.json            # Dependencies: playwright, @supabase/supabase-js
-└── serve.js                # Local dev server on :8787
+└── serve.js                # Local dev server on :5050
 ```
 
 ---
@@ -327,11 +327,11 @@ Tables used by `Adapter`:
 ## Running locally
 
 ```bash
-# Start dev server on http://localhost:8787
+# Start dev server on http://localhost:5050
 node serve.js
 
-# Public site:  http://localhost:8787/
-# Admin panel:  http://localhost:8787/admin.html
+# Public site:  http://localhost:5050/
+# Admin panel:  http://localhost:5050/admin.html
 ```
 
 The server must be running for the test suite.
@@ -345,7 +345,7 @@ npm test
 # or: node --test tests/dataProvider.test.js
 ```
 
-Requires the dev server to be running on `:8787`.
+Requires the dev server to be running on `:5050`.
 Tests use Playwright headless Chromium + `node:test`.
 All 20 tests are deterministic (fake Supabase via `window.__withFakeSb`).
 
