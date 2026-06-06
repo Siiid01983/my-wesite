@@ -497,22 +497,16 @@
 
   /* ════════════════════════════════════════════════════════
      REALTIME SUBSCRIPTIONS
-     bookings + calendar_availability + reviews
+     calendar_availability + reviews only.
+     Bookings are handled via DOM events dispatched by Adapter's
+     own Realtime channel, avoiding a duplicate subscription to
+     the same table and the cascade of double re-renders.
      ════════════════════════════════════════════════════════ */
-  let _bookingsChannel  = null;
   let _availChannel     = null;
   let _reviewsChannel   = null;
 
   function initializeRealtime() {
     if (!_sb) return;
-
-    if (!_bookingsChannel) {
-      _bookingsChannel = _sb.channel('stats-bookings')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bookings' }, () => { _invalidateKPI(); _invalidateActivity(); _refresh(); })
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bookings' }, () => { _invalidateKPI(); _invalidateActivity(); _refresh(); })
-        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'bookings' }, () => { _invalidateKPI(); _invalidateActivity(); _refresh(); })
-        .subscribe();
-    }
 
     if (!_availChannel) {
       _availChannel = _sb.channel('stats-availability')
@@ -531,9 +525,8 @@
 
   function destroyRealtime() {
     if (!_sb) return;
-    if (_bookingsChannel) { _sb.removeChannel(_bookingsChannel); _bookingsChannel = null; }
-    if (_availChannel)    { _sb.removeChannel(_availChannel);    _availChannel    = null; }
-    if (_reviewsChannel)  { _sb.removeChannel(_reviewsChannel);  _reviewsChannel  = null; }
+    if (_availChannel)   { _sb.removeChannel(_availChannel);   _availChannel   = null; }
+    if (_reviewsChannel) { _sb.removeChannel(_reviewsChannel); _reviewsChannel = null; }
   }
 
   /* ── Cache invalidation via domain events ──────────────── */
