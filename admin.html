@@ -7522,7 +7522,18 @@ async function testLineNotif() {
    ════════════════════════════════════════════════════════ */
 const CHANGELOG = [
   {
-    version: 'v3.3', date: '2026-06-05', label: '最新',
+    version: 'v3.4', date: '2026-06-06', label: '最新',
+    entries: [
+      { type:'improve', text:'getDashboardStats(): 7件のbookings COUNTクエリをArray.filter()に置き換え。_getBookingsRaw()キャッシュを共有利用し、renderDash()のSupabaseリクエスト数を22→9に削減' },
+      { type:'improve', text:'getGrowthStats(): 6件のbookings COUNTクエリをArray.filter()に置き換え。同一_rawBkInflightプロミスを共有するため追加リクエスト0件で動作' },
+      { type:'fix',     text:'_invalidateKPI()のサービス人気度キャッシュキー不一致バグを修正：monthStartではなくnDaysAgoISO(30)を使用するように統一し、KPI無効化後も古いデータが5分間残り続ける問題を解消' },
+      { type:'fix',     text:'booking:cancelledリスナーの欠落を修正：キャンセル操作後にKPI・アクティビティキャッシュが即時無効化されず古い売上・成長率データが最大5分間表示され続けていた問題を解消' },
+      { type:'fix',     text:'StatisticsServiceのbookings Realtimeチャンネル重複を削除：bookingsテーブルへの二重購読により1件のINSERTで最大31クエリ・二重再描画が発火していた問題を修正。AdapterのDOMイベント経由に一本化' },
+      { type:'improve', text:'SupabaseAdapterをwindow.SupabaseClientシングルトンに統合：アプリ全体でクライアントインスタンスを1つに統一' },
+    ]
+  },
+  {
+    version: 'v3.3', date: '2026-06-05',
     entries: [
       { type:'feat',    text:'強制パスワード変更ゲート（Phase 10A）：デフォルトパスワードのまま利用不可、初回ログイン時に新パスワード設定を義務化' },
       { type:'feat',    text:'ログイン画面事前確認バナー（Phase 10B）：env.js 認証情報をページ読み込み時に検証、設定不備をアンバーバナーで即時通知' },
