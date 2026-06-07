@@ -182,7 +182,7 @@ document.getElementById('svcModal').addEventListener('click', e => { if(e.target
 document.getElementById('custModal').addEventListener('click', e => { if(e.target===e.currentTarget)closeCustModal(); });
 
 document.addEventListener('keydown', e => {
-  if (e.key==='Escape') { closeEdit(); closeDetail(); closeRevModal(); closeSvcModal(); closeCustModal(); closeMediaPreview(); document.getElementById('reportModal').classList.remove('open'); }
+  if (e.key==='Escape') { closeEdit(); closeDetail(); closeRevModal(); closeSvcModal(); closeCustModal(); closeMediaPreview(); document.getElementById('reportModal').classList.remove('open'); if (window.AutomationUI) AutomationUI.closeModal(); }
   Auth.touch();
 });
 document.addEventListener('click', () => Auth.touch());
@@ -216,6 +216,8 @@ async function init() {
   Auth.startTimer();
   /* Check follow-ups after sync settles — fire-and-forget, never blocks init */
   if (window.FollowUp) setTimeout(() => FollowUp.checkAndSend(true), 4000);
+  /* Start automation engine after data is ready */
+  if (window.AutomationEngine) setTimeout(() => AutomationEngine.init(), 5000);
 }
 
 /* ════════════════════════════════════════════════════════
