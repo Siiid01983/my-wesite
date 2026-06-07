@@ -110,8 +110,16 @@ my-website/
 │       │   └── invoices.js     # window.InvoiceManager — generate, preview modal, PDF download (hm_invoices)
 │       ├── search/
 │       │   └── globalSearch.js # window.GlobalSearch — Ctrl+K overlay, multi-type search, keyboard nav
-│       └── audit/
-│           └── auditLog.js     # window.AuditLog — ring buffer, Adapter patches, 監査ログ view (hm_audit_log)
+│       ├── audit/
+│       │   └── auditLog.js     # window.AuditLog — ring buffer, Adapter patches, 監査ログ view (hm_audit_log)
+│       └── analytics/
+│           ├── analyticsEngine.js    # window.AnalyticsEngine — linearRegression, movingAverage, detectAnomalies, forecastNext, aggregateMonthly
+│           ├── revenueForecast.js    # window.RevenueForecast — 3-month revenue projection via linear regression
+│           ├── servicePerformance.js # window.ServicePerformance — composite score (volume 40% + revenue 40% + growth 20%)
+│           ├── customerInsights.js   # window.CustomerInsights — CLV, churn risk, cohort, repeat rate
+│           ├── conversionAnalytics.js# window.ConversionAnalytics — quote→booking funnel, time-to-convert, per-service rates
+│           ├── analyticsWidgets.js   # window.AnalyticsWidgets — demand forecast chart, DOW heatmap, insight cards
+│           └── analyticsUI.js        # window.AnalyticsUI — wraps renderAnalytics(), injects #analyticsAdvanced section
 │
 ├── tests/
 │   └── dataProvider.test.js    # 20-case unit test suite (node:test + Playwright)
@@ -169,6 +177,15 @@ Feature modules — dashboard customisation chain (MUST load in this order)
   js/modules/dashboard/dashboardReorder.js   ← patches renderDash (2nd wrapper)
   js/modules/dashboard/kpiManager.js         ← patches renderDash + renderStatGrid (3rd wrapper)
   js/modules/dashboard/dashboardProfiles.js  ← patches renderDash (outermost wrapper)
+
+Analytics BI modules (Phase 23 — must load after admin-analytics.js)
+  js/modules/analytics/analyticsEngine.js    ← pure math, no dependencies
+  js/modules/analytics/revenueForecast.js    ← depends on AnalyticsEngine
+  js/modules/analytics/servicePerformance.js ← depends on AnalyticsEngine
+  js/modules/analytics/customerInsights.js   ← depends on AnalyticsEngine
+  js/modules/analytics/conversionAnalytics.js← depends on AnalyticsEngine
+  js/modules/analytics/analyticsWidgets.js   ← depends on AnalyticsEngine + drawBarChart
+  js/modules/analytics/analyticsUI.js        ← wraps renderAnalytics (outermost)
 
 Feature modules — remaining (any order relative to each other)
   js/modules/calendar/calendar.js
@@ -260,6 +277,13 @@ subsequent scripts.
 | `InvoiceManager` | `js/modules/invoices/invoices.js` | Invoice generate/preview/PDF; `hm_invoices` stores number per booking |
 | `GlobalSearch` | `js/modules/search/globalSearch.js` | Ctrl+K search overlay across all local Adapter data |
 | `AuditLog` | `js/modules/audit/auditLog.js` | Ring-buffer action log; patches Adapter writes; `hm_audit_log` |
+| `AnalyticsEngine` | `js/modules/analytics/analyticsEngine.js` | Pure math: linearRegression, movingAverage, detectAnomalies, forecastNext, aggregateMonthly |
+| `RevenueForecast` | `js/modules/analytics/revenueForecast.js` | 3-month revenue projection; `compute(bk)` → `{monthly, forecast, isGrowing, growthPct, confidence, anomalyMonths}` |
+| `ServicePerformance` | `js/modules/analytics/servicePerformance.js` | Composite service score; `compute(bk)` → ranked array with score, growth, label |
+| `CustomerInsights` | `js/modules/analytics/customerInsights.js` | CLV, churn risk, cohort; `compute(bk)` → `{avgCLV, atRiskCount, cohortList, repeatRate, topByClv}` |
+| `ConversionAnalytics` | `js/modules/analytics/conversionAnalytics.js` | Quote→booking funnel; `compute(bk, qt)` → `{funnel, convRate, avgConvertH, svcRates, trend}` |
+| `AnalyticsWidgets` | `js/modules/analytics/analyticsWidgets.js` | `renderDemandForecast`, `renderDowHeatmap`, `renderInsightCards` |
+| `AnalyticsUI` | `js/modules/analytics/analyticsUI.js` | Wraps `renderAnalytics()`; injects `#analyticsAdvanced` div after `#analyticsExtra` |
 
 ---
 
@@ -638,6 +662,7 @@ applies on every grid render including Realtime-triggered updates.
 
 | Phase | Commit | What was built |
 |---|---|---|
+| 23 | `—` | Advanced Analytics & BI: AnalyticsEngine (regression/forecasting), RevenueForecast (3-month projection), ServicePerformance (composite score), CustomerInsights (CLV/churn), ConversionAnalytics (funnel), AnalyticsWidgets (demand chart/DOW heatmap/insight cards), AnalyticsUI (orchestrator wrapper) |
 | 22 | `e9505ac` | Invoice generator (InvoiceManager, hm_invoices, 請求書 button in booking detail); global search (GlobalSearch, Ctrl+K, searches all local data); audit log (AuditLog, hm_audit_log ring buffer, Adapter auto-patches, 監査ログ view) |
 | 21 | `e33a779` | Dashboard customisation suite (A–E): layout storage, widget visibility modal, HTML5 DnD reordering, KPI card manager, Owner/Operations/Marketing profiles |
 | 1 | `14af5d5` | Infrastructure: appConfig, fallbackLogger, dataProvider, serviceRegistry |
