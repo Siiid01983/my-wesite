@@ -2153,6 +2153,7 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 
 <div id="toast"></div>
 
+<!-- ── Infrastructure ── -->
 <script src="js/lib/supabase.js"></script>
 <script src="js/config/appConfig.js"></script>
 <script src="js/config/env.js" onerror="console.warn('[Admin] js/config/env.js missing — copy env.example.js to env.js')"></script>
@@ -2161,14 +2162,57 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 <script src="js/services/statisticsService.js"></script>
 <script src="js/services/fallbackLogger.js"></script>
 <script src="js/services/dataProvider.js"></script>
-<script src="js/services/serviceRegistry.js"></script>
 <script src="js/services/healthCheck.js"></script>
 
+<!-- ── Core Layer ── -->
+<script src="js/core/auth.js"></script>
+<script src="js/core/eventBus.js"></script>
+<script src="js/core/stateManager.js"></script>
+
+<!-- ── Utilities ── -->
+<script src="js/utils/formatters.js"></script>
+<script src="js/utils/dom.js"></script>
+<script src="js/utils/storage.js"></script>
+<script src="js/utils/validators.js"></script>
+<script src="js/utils/pdf.js"></script>
+
+<!-- ── CDN: PDF generation ── -->
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
+<!-- ── Data modules ── -->
 <script src="admin-bookings.js"></script>
 <script src="admin-analytics.js"></script>
-<script src="admin-ui.js"></script>
+
+<!-- ── Core navigation (lazy — all render fns must be defined before first user action) ── -->
+<script src="js/core/navigation.js"></script>
+
+<!-- ── Feature modules ── -->
+<script src="js/modules/dashboard/dashboard.js"></script>
+<script src="js/modules/calendar/calendar.js"></script>
+<script src="js/modules/capacity/capacity.js"></script>
+<script src="js/modules/pricing/pricing.js"></script>
+<script src="js/modules/disposal/disposal.js"></script>
+<script src="js/modules/quotes/quotes.js"></script>
+<script src="js/modules/services/servicesEditor.js"></script>
+<script src="js/modules/hero/hero.js"></script>
+<script src="js/modules/reviews/reviewsEditor.js"></script>
+<script src="js/modules/footer/footer.js"></script>
+<script src="js/modules/company/company.js"></script>
+<script src="js/modules/faq/faq.js"></script>
+<script src="js/modules/backup/backup.js"></script>
+<script src="js/modules/backup/csvReport.js"></script>
+<script src="js/modules/notifications/email.js"></script>
+<script src="js/modules/notifications/line.js"></script>
+<script src="js/modules/changelog/changelog.js"></script>
+<script src="js/modules/customers/customers.js"></script>
+<script src="js/modules/media/media.js"></script>
+<script src="js/modules/security/security.js"></script>
+
+<!-- ── Service registry (populated after all services/core/utils are loaded) ── -->
+<script src="js/services/serviceRegistry.js"></script>
+
+<!-- ── App bootstrap (startup IIFE — must load last) ── -->
+<script src="js/core/appBootstrap.js"></script>
 </body>
 </html>
