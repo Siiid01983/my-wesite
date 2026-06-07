@@ -3980,7 +3980,13 @@ async function testLineNotif() {
    ════════════════════════════════════════════════════════ */
 const CHANGELOG = [
   {
-    version: 'v3.4', date: '2026-06-06', label: '最新',
+    version: 'v3.5', date: '2026-06-07', label: '最新',
+    entries: [
+      { type:'improve', text:'ウェブサイト管理（Phase 11）をadminから完全削除：#view-webcontent HTML、.wc-* CSS、WC_FIELDS・switchWcTab・renderWebContent等8関数、contentService.jsをリポジトリごと除去' },
+    ]
+  },
+  {
+    version: 'v3.4', date: '2026-06-06',
     entries: [
       { type:'improve', text:'getDashboardStats(): 7件のbookings COUNTクエリをArray.filter()に置き換え。_getBookingsRaw()キャッシュを共有利用し、renderDash()のSupabaseリクエスト数を22→9に削減' },
       { type:'improve', text:'getGrowthStats(): 6件のbookings COUNTクエリをArray.filter()に置き換え。同一_rawBkInflightプロミスを共有するため追加リクエスト0件で動作' },
