@@ -8962,7 +8962,7 @@ function _applyHcBanner() {
         localStorage.removeItem('hm_admin_bypass');
         sessionStorage.setItem(Auth.KEY, JSON.stringify({ token: Auth._mkToken(), ts: Date.now() }));
       }
-    } catch {}
+    } catch(e) { /* bypass read failed — continue to normal login flow */ }
   }
 
   if (window.location.hash === '#review') {
