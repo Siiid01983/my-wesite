@@ -36,8 +36,23 @@ const VIEW_TITLES = {
   dashboard:'ダッシュボード', bookings:'予約管理', quotes:'見積り管理',
   reviews:'レビュー管理', services:'サービス管理', faq:'FAQ編集', company:'会社情報編集', footer:'フッター編集', hero:'ヒーロー編集', calendar:'カレンダー管理', analytics:'分析',
   capacity:'容量設定', pricing:'料金管理', disposal:'不用品管理', actions:'クイック操作',
-  backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理', line:'LINE通知設定', email:'メール通知設定', changelog:'変更履歴', security:'セキュリティ', health:'システム健全性'
+  backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理', line:'LINE通知設定', email:'メール通知設定', changelog:'変更履歴', security:'セキュリティ', health:'システム健全性',
+  staff:'スタッフ管理',
 };
+
+/* Views only accessible to the admin role */
+const _ADMIN_ONLY = new Set(['pricing','disposal','services','faq','company','footer','hero','backup','email','line','security','staff']);
+
+function _applyRoleToSidebar() {
+  const role = Auth.getRole ? Auth.getRole() : 'admin';
+  document.querySelectorAll('[data-view]').forEach(el => { el.style.display = ''; });
+  if (role !== 'admin') {
+    _ADMIN_ONLY.forEach(view => {
+      const el = document.querySelector(`[data-view="${view}"]`);
+      if (el) el.style.display = 'none';
+    });
+  }
+}
 
 /* ════════════════════════════════════════════════════════
    DATA PROVIDER SYNC HELPER
@@ -55,6 +70,10 @@ async function _dpSync(table, filters, adapterFn, viewId, rerenderFn) {
 function go(view) {
   if (!Auth.isLoggedIn()) { Auth.logout(); return; }
   if (Auth.mustChangePassword()) { showForceChange(); return; }
+  if (_ADMIN_ONLY.has(view) && Auth.getRole && Auth.getRole() !== 'admin') {
+    toast('このページへのアクセス権限がありません');
+    return;
+  }
   Adapter.initializeRealtime(); // no-op if channels already active; re-connects if lost
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.sb-link').forEach(l => l.classList.remove('active'));
@@ -86,6 +105,7 @@ function go(view) {
   if (view==='changelog') renderChangelog();
   if (view==='security')    renderSecurity();
   if (view==='health')      renderHealth();
+  if (view==='staff')       renderStaff();
   if (window.I18n) I18n.applyToDOM(document.getElementById('adminApp'));
 }
 

@@ -31,8 +31,23 @@
   const _ls  = (k, def) => { try { return JSON.parse(localStorage.getItem(k) ?? JSON.stringify(def)); } catch { return def; } };
   const _set = (k, v)   => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* no-op */ } };
 
+  /* ── Read-only guard ─────────────────────────────────── */
+  let _roToastPending = false;
+  function _checkCanWrite() {
+    if (window.Auth && typeof Auth.getRole === 'function' && Auth.getRole() === 'read-only') {
+      if (!_roToastPending) {
+        _roToastPending = true;
+        setTimeout(() => { _roToastPending = false; }, 1500);
+        if (typeof toast === 'function') toast('読み取り専用モードです');
+      }
+      return false;
+    }
+    return true;
+  }
+
   /* ── Supabase write helpers ───────────────────────────── */
   function _upsert(table, data, matchCol) {
+    if (window.Auth && typeof Auth.getRole === 'function' && Auth.getRole() === 'read-only') return;
     if (!_sb) return;
     _sb.from(table)
       .upsert(data, { onConflict: matchCol })
@@ -40,6 +55,7 @@
   }
 
   function _del(table, col, val) {
+    if (window.Auth && typeof Auth.getRole === 'function' && Auth.getRole() === 'read-only') return;
     if (!_sb) return;
     _sb.from(table).delete().eq(col, val)
       .then(({ error }) => { if (error) console.warn(`[Adapter] ${table} delete error:`, error.message); });
@@ -54,7 +70,7 @@
   }
 
   /* Write-through: localStorage first, then Supabase hm_data */
-  function wt(key, value) { _set(key, value); _kv(key, value); }
+  function wt(key, value) { if (!_checkCanWrite()) return; _set(key, value); _kv(key, value); }
 
   /* ── Key map ──────────────────────────────────────────── */
   const K = {
@@ -233,11 +249,13 @@
     getBookings: () => _ls(K.bk, []),
 
     addBooking(b) {
+      if (!_checkCanWrite()) return;
       const a = this.getBookings(); a.unshift(b); _set(K.bk, a);
       _upsert('bookings', bookingToSb(b), 'reference_id');
     },
 
     updateBooking(id, p) {
+      if (!_checkCanWrite()) return;
       const list = this.getBookings().map(b => b.id === id ? { ...b, ...p } : b);
       _set(K.bk, list);
       const updated = list.find(b => b.id === id);
@@ -245,6 +263,7 @@
     },
 
     deleteBooking(id) {
+      if (!_checkCanWrite()) return;
       _set(K.bk, this.getBookings().filter(b => b.id !== id));
       _del('bookings', 'reference_id', id);
     },
@@ -252,7 +271,7 @@
     /* ── Availability ─────────────────────────────────── */
     getAvail: () => _ls(K.av, {}),
 
-    setDate(date, status) {
+    setDate(date, status) { if (!_checkCanWrite()) return;
       const a = this.getAvail();
       if (status === 'available') delete a[date]; else a[date] = status;
       _set(K.av, a);
@@ -272,6 +291,7 @@
     },
 
     clearAvail() {
+      if (!_checkCanWrite()) return;
       localStorage.removeItem(K.av);
       localStorage.removeItem(K.booked);
       localStorage.removeItem(K.counts);
@@ -322,11 +342,13 @@
     },
 
     addService(s) {
+      if (!_checkCanWrite()) return;
       const a = this.getServices(); a.push(s); _set('hm_services', a);
       _upsert('services', serviceToSb(s, a.length - 1), 'reference_id');
     },
 
     updateService(id, p) {
+      if (!_checkCanWrite()) return;
       const svcs = this.getServices().map(s => s.id === id ? { ...s, ...p } : s);
       _set('hm_services', svcs);
       const updated = svcs.find(s => s.id === id);
@@ -334,11 +356,13 @@
     },
 
     deleteService(id) {
+      if (!_checkCanWrite()) return;
       _set('hm_services', this.getServices().filter(s => s.id !== id));
       _del('services', 'reference_id', id);
     },
 
     saveServices(svcs) {
+      if (!_checkCanWrite()) return;
       _set('hm_services', svcs);
       if (!_sb || !svcs.length) return;
       _sb.from('services')
@@ -391,11 +415,13 @@
     },
 
     addReview(r) {
+      if (!_checkCanWrite()) return;
       const a = this.getReviews(); a.unshift(r); _set('hm_reviews', a);
       _upsert('reviews', reviewToSb(r), 'reference_id');
     },
 
     updateReview(id, p) {
+      if (!_checkCanWrite()) return;
       const list = this.getReviews().map(r => r.id === id ? { ...r, ...p } : r);
       _set('hm_reviews', list);
       const updated = list.find(r => r.id === id);
@@ -403,6 +429,7 @@
     },
 
     deleteReview(id) {
+      if (!_checkCanWrite()) return;
       _set('hm_reviews', this.getReviews().filter(r => r.id !== id));
       _del('reviews', 'reference_id', id);
     },

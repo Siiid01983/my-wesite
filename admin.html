@@ -751,6 +751,9 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
         <button class="sb-link" data-view="health" onclick="go('health')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>システム健全性
         </button>
+        <button class="sb-link" data-view="staff" onclick="go('staff')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>スタッフ管理
+        </button>
         <div class="sb-section" style="margin-top:6px">その他</div>
         <button class="sb-link" onclick="toggleDark()">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>ダークモード
@@ -1845,6 +1848,11 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
           </div>
         </div>
 
+        <!-- STAFF MANAGEMENT -->
+        <div id="view-staff" class="view">
+          <div id="staffContent"></div>
+        </div>
+
       </div><!-- /content -->
     </main>
   </div><!-- /layout -->
@@ -2219,6 +2227,7 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 <script src="js/modules/customers/customers.js"></script>
 <script src="js/modules/media/media.js"></script>
 <script src="js/modules/security/security.js"></script>
+<script src="js/modules/security/staff.js"></script>
 
 <!-- ── Service registry (populated after all services/core/utils are loaded) ── -->
 <script src="js/services/serviceRegistry.js"></script>

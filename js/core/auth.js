@@ -20,6 +20,7 @@ const Auth = {
   CREDS_KEY:    'hm_admin_creds',
   LOCK_KEY:     'hm_admin_lock',
   LOG_KEY:      'hm_admin_log',
+  STAFF_KEY:    'hm_staff',
   TIMEOUT:      30 * 60 * 1000,
   MAX_ATTEMPTS: 5,
   LOCKOUT_MS:   15 * 60 * 1000,
@@ -136,7 +137,7 @@ const Auth = {
       localStorage.removeItem(this.LOCK_KEY);
       /* mustChange is stored in the session token (sessionStorage) — not in localStorage.
          This prevents the bypass of deleting the flag from localStorage via DevTools. */
-      const sess = {token:this._mkToken(), ts:Date.now()};
+      const sess = {token:this._mkToken(), ts:Date.now(), role:'admin', userId:'admin', userName:'Admin'};
       if (mustChange) sess.mustChange = true;
       sessionStorage.setItem(this.KEY, JSON.stringify(sess));
       if (remember) localStorage.setItem('hm_admin_remember', JSON.stringify({user, exp: Date.now() + this.REMEMBER_MS}));
@@ -144,6 +145,24 @@ const Auth = {
       this._addLog('login', 'success');
       return {ok:true, mustChange};
     }
+    /* Check staff accounts */
+    const staffList = this._getStaff();
+    for (const s of staffList) {
+      if (!s.active) continue;
+      const sHash = await this._hash(pass, s.salt || null);
+      if (this._safeEqual(user, s.email) && this._safeEqual(sHash, s.hash)) {
+        localStorage.removeItem(this.LOCK_KEY);
+        sessionStorage.setItem(this.KEY, JSON.stringify({
+          token: this._mkToken(), ts: Date.now(),
+          role: s.role, userId: s.id, userName: s.name,
+        }));
+        s.lastLogin = new Date().toISOString();
+        this._saveStaff(staffList);
+        this._addLog('login', 'staff:' + s.name);
+        return { ok: true, mustChange: false };
+      }
+    }
+
     this._recordFail();
     return {ok:false, locked:this.isLockedOut(), left:this.attemptsLeft()};
   },
@@ -165,14 +184,16 @@ const Auth = {
   },
 
   /* Rotate session token on every page navigation — prevents token fixation.
-     Preserves mustChange in the new token (though touch() is only reached
-     when mustChangePassword() is false — go() returns early otherwise). */
+     Preserves mustChange, role, userId, and userName in the new token. */
   touch() {
     try {
       const s = JSON.parse(sessionStorage.getItem(this.KEY)||'null');
       if (s && s.token) {
         const next = {token:this._mkToken(), ts:Date.now()};
         if (s.mustChange) next.mustChange = true;
+        if (s.role)     next.role     = s.role;
+        if (s.userId)   next.userId   = s.userId;
+        if (s.userName) next.userName = s.userName;
         sessionStorage.setItem(this.KEY, JSON.stringify(next));
       }
     } catch(e) {}
@@ -222,7 +243,77 @@ const Auth = {
         if (remaining === 0) { this._addLog('logout','timeout'); this.logout(); }
       } catch(e) {}
     }, 30000);
-  }
+  },
+
+  /* ── Role & user helpers ───────────────────────────── */
+  getRole() {
+    try { return JSON.parse(sessionStorage.getItem(this.KEY)||'null')?.role || 'admin'; } catch { return 'admin'; }
+  },
+
+  getUser() {
+    try {
+      const s = JSON.parse(sessionStorage.getItem(this.KEY)||'null');
+      return { id: s?.userId||'admin', name: s?.userName||'Admin', role: s?.role||'admin' };
+    } catch { return { id:'admin', name:'Admin', role:'admin' }; }
+  },
+
+  canWrite() { return this.getRole() !== 'read-only'; },
+
+  /* ── Staff CRUD ────────────────────────────────────── */
+  _getStaff() {
+    try { return JSON.parse(localStorage.getItem(this.STAFF_KEY)||'[]'); } catch { return []; }
+  },
+
+  _saveStaff(arr) {
+    try { localStorage.setItem(this.STAFF_KEY, JSON.stringify(arr)); } catch {}
+  },
+
+  getStaff() { return this._getStaff(); },
+
+  async addStaffMember({ name, email, role, password }) {
+    const salt = this._mkToken();
+    const hash = await this._hash(password, salt);
+    const member = {
+      id: 'staff_' + Date.now().toString(36),
+      name, email: email.toLowerCase(), hash, salt,
+      role: role || 'staff',
+      active: true,
+      createdAt: new Date().toISOString(),
+      lastLogin: null,
+    };
+    const staff = this._getStaff();
+    staff.push(member);
+    this._saveStaff(staff);
+    return member;
+  },
+
+  updateStaffMember(id, patch) {
+    const staff = this._getStaff();
+    const idx = staff.findIndex(s => s.id === id);
+    if (idx === -1) return false;
+    Object.assign(staff[idx], patch);
+    this._saveStaff(staff);
+    return true;
+  },
+
+  async resetStaffPassword(id, newPass) {
+    const staff = this._getStaff();
+    const m = staff.find(s => s.id === id);
+    if (!m) return false;
+    const salt = this._mkToken();
+    m.hash = await this._hash(newPass, salt);
+    m.salt = salt;
+    this._saveStaff(staff);
+    return true;
+  },
+
+  deleteStaffMember(id) {
+    const staff = this._getStaff();
+    const next = staff.filter(s => s.id !== id);
+    if (next.length === staff.length) return false;
+    this._saveStaff(next);
+    return true;
+  },
 };
 
 /* Expose Auth so healthCheck.js can verify session validation */

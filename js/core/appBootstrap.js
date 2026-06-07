@@ -48,6 +48,7 @@ function showApp() {
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('forceChangeScreen').style.display='none';
   document.getElementById('adminApp').style.display='block';
+  if (typeof _applyRoleToSidebar === 'function') _applyRoleToSidebar();
 }
 
 function showForceChange() {
