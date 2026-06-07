@@ -508,6 +508,11 @@ ${d.bkInRange.length ? `<div class="pg">
   w.document.close();
 }
 
+async function downloadPDFAnalytics() {
+  const h = _capturePrintHtml(printAnalytics);
+  if (h) await _pdfDownload(h, '分析レポート.pdf');
+}
+
 /* ── Vertical bar chart ── */
 function drawBarChart(id, labels, data, dark) {
   const canvas = document.getElementById(id);

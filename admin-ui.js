@@ -273,6 +273,77 @@ function toast(msg, dur=2400) {
 }
 
 /* ════════════════════════════════════════════════════════
+   PDF DOWNLOAD — Phase 12
+   _capturePrintHtml: monkey-patches window.open to capture
+   the HTML any print function would write, without opening
+   a visible popup.
+   _pdfDownload: renders captured HTML in an off-screen
+   iframe, captures via html2canvas, exports with jsPDF.
+   ════════════════════════════════════════════════════════ */
+function _capturePrintHtml(printFn) {
+  let captured = null;
+  const orig = window.open;
+  window.open = function() {
+    window.open = orig;
+    let html = '';
+    return { document: { write(s) { html += s; }, close() { captured = html; } }, close() {} };
+  };
+  printFn();
+  window.open = orig;
+  return captured;
+}
+
+async function _pdfDownload(html, filename) {
+  if (!window.html2canvas || !window.jspdf) {
+    toast('PDFライブラリを読み込み中です。しばらく待ってから再試行してください'); return;
+  }
+  toast('PDF生成中...');
+  const safeHtml = html.replace(/<script[\s\S]*?<\/script>/gi, '');
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;top:0;left:-9999px;width:794px;height:1123px;border:none';
+  document.body.appendChild(iframe);
+  iframe.contentDocument.open();
+  iframe.contentDocument.write(safeHtml);
+  iframe.contentDocument.close();
+  await new Promise(r => setTimeout(r, 700));
+  try {
+    const { jsPDF } = window.jspdf;
+    const canvas = await html2canvas(iframe.contentDocument.body, {
+      scale: 2, useCORS: true, allowTaint: true,
+      backgroundColor: '#ffffff', windowWidth: 794, scrollX: 0, scrollY: 0,
+    });
+    const imgData = canvas.toDataURL('image/jpeg', 0.93);
+    const A4W = 210, A4H = 297;
+    const imgH = (canvas.height / canvas.width) * A4W;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+    let y = 0;
+    while (y < imgH) {
+      if (y > 0) pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, -y, A4W, imgH);
+      y += A4H;
+    }
+    pdf.save(filename);
+    toast(`✓ ${filename}`);
+  } catch(e) {
+    console.error('[PDF]', e);
+    toast('PDF生成に失敗しました');
+  } finally {
+    document.body.removeChild(iframe);
+  }
+}
+
+async function downloadPDFCalendar()   { const h = _capturePrintHtml(printCalendar);          if (h) await _pdfDownload(h, '空き状況カレンダー.pdf'); }
+async function downloadPDFCapacity()   { const h = _capturePrintHtml(printCapacity);          if (h) await _pdfDownload(h, '容量設定レポート.pdf'); }
+async function downloadPDFPricing()    { const h = _capturePrintHtml(printPricing);           if (h) await _pdfDownload(h, '料金表.pdf'); }
+async function downloadPDFDisposal()   { const h = _capturePrintHtml(printDisposal);          if (h) await _pdfDownload(h, '不用品処分料金表.pdf'); }
+async function downloadPDFReport()     { const h = _capturePrintHtml(printReport);            if (h) await _pdfDownload(h, '売上レポート.pdf'); }
+async function downloadPDFBackup()     { const h = _capturePrintHtml(printBackup);            if (h) await _pdfDownload(h, 'システム状況レポート.pdf'); }
+async function downloadPDFAnalytics()  { const h = _capturePrintHtml(printAnalytics);         if (h) await _pdfDownload(h, '分析レポート.pdf'); }
+async function downloadPDFQuote(id)    { const h = _capturePrintHtml(() => printQuote(id));   if (h) await _pdfDownload(h, `見積り確認書_${id}.pdf`); }
+async function downloadPDFReview(id)   { const h = _capturePrintHtml(() => printReview(id));  if (h) await _pdfDownload(h, `レビュー確認_${id}.pdf`); }
+async function downloadPDFCustomer(id) { const h = _capturePrintHtml(() => printCustomer(id));if (h) await _pdfDownload(h, `顧客プロフィール_${id}.pdf`); }
+
+/* ════════════════════════════════════════════════════════
    STATS
    ════════════════════════════════════════════════════════ */
 function calcStats() {
@@ -1608,6 +1679,9 @@ function _renderDisposalUI() {
         </span>
       </div>
       <div style="display:flex;gap:5px">
+        <button class="btn btn-ghost btn-sm" onclick="downloadPDFDisposal()">
+          <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PDF
+        </button>
         <button class="btn btn-ghost btn-sm" onclick="printDisposal()">
           <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
         </button>
@@ -1918,6 +1992,9 @@ function _renderQuotesUI() {
     <td>
       <div style="display:flex;gap:4px">
         <button class="btn btn-primary btn-sm" onclick="convertToBooking('${esc(qt.id)}')" title="予約に変換">予約化</button>
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="downloadPDFQuote('${esc(qt.id)}')" title="PDFダウンロード">
+          <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        </button>
         <button class="btn btn-ghost btn-sm btn-icon" onclick="printQuote('${esc(qt.id)}')" title="印刷">
           <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
         </button>
@@ -2525,6 +2602,9 @@ function _renderReviewsUI() {
       actions = `<button class="btn btn-ghost btn-sm" onclick="approveRev('${r.id}')">承認に戻す</button>`;
     }
     actions += `
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="downloadPDFReview('${r.id}')" title="PDFダウンロード">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+      </button>
       <button class="btn btn-ghost btn-sm btn-icon" onclick="printReview('${r.id}')" title="印刷">
         <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
       </button>
@@ -3980,7 +4060,13 @@ async function testLineNotif() {
    ════════════════════════════════════════════════════════ */
 const CHANGELOG = [
   {
-    version: 'v3.5', date: '2026-06-07', label: '最新',
+    version: 'v3.6', date: '2026-06-07', label: '最新',
+    entries: [
+      { type:'feat',    text:'PDF直接出力（Phase 12）：全11印刷機能にPDFダウンロードボタンを追加。html2canvas+jsPDFで印刷HTMLをキャプチャしA4 PDFとして直接保存。印刷ダイアログ不要' },
+    ]
+  },
+  {
+    version: 'v3.5', date: '2026-06-07',
     entries: [
       { type:'improve', text:'ウェブサイト管理（Phase 11）をadminから完全削除：#view-webcontent HTML、.wc-* CSS、WC_FIELDS・switchWcTab・renderWebContent等8関数、contentService.jsをリポジトリごと除去' },
     ]
@@ -4368,6 +4454,9 @@ function generateReport() {
     </div>
     <div style="margin-top:16px;display:flex;gap:8px">
       <button class="btn btn-ghost btn-sm" onclick="document.getElementById('reportModal').classList.remove('open')">閉じる</button>
+      <button class="btn btn-ghost btn-sm" onclick="downloadPDFReport()">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PDF
+      </button>
       <button class="btn btn-ghost btn-sm" onclick="printReport()">
         <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
       </button>
@@ -4657,6 +4746,7 @@ function openCustModal(id) {
   }
   document.getElementById('custModalHistory').innerHTML = histHTML;
 
+  document.getElementById('custModalPdfBtn').onclick   = () => downloadPDFCustomer(id);
   document.getElementById('custModalPrintBtn').onclick = () => printCustomer(id);
   document.getElementById('custModalDelBtn').onclick   = () => { closeCustModal(); deleteCust(id); };
 

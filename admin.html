@@ -889,6 +889,9 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
                   <option value="booked">× 満了</option>
                 </select>
                 <button class="btn btn-ghost btn-sm" id="bulkApply" style="display:none" onclick="applyBulk()">選択日に適用</button>
+                <button class="btn btn-ghost btn-sm" onclick="downloadPDFCalendar()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PDF
+                </button>
                 <button class="btn btn-ghost btn-sm" onclick="printCalendar()">
                   <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
                 </button>
@@ -927,6 +930,9 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
                 <button class="btn btn-ghost btn-sm" onclick="exportAnalyticsCSV()">
                   <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>CSV出力
                 </button>
+                <button class="btn btn-ghost btn-sm" onclick="downloadPDFAnalytics()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PDF
+                </button>
                 <button class="btn btn-ghost btn-sm" onclick="printAnalytics()">
                   <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
                 </button>
@@ -943,6 +949,9 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
             <div class="panel">
               <div class="panel-head">
                 <span class="panel-title">予約容量設定</span>
+                <button class="btn btn-ghost btn-sm" onclick="downloadPDFCapacity()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PDF
+                </button>
                 <button class="btn btn-ghost btn-sm" onclick="printCapacity()">
                   <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
                 </button>
@@ -978,6 +987,9 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
               <span class="panel-title">料金管理</span>
               <div style="display:flex;align-items:center;gap:10px">
                 <span style="font-size:11px;color:var(--gray-2)">保存するとサイトに即時反映されます</span>
+                <button class="btn btn-ghost btn-sm" onclick="downloadPDFPricing()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PDF
+                </button>
                 <button class="btn btn-ghost btn-sm" onclick="printPricing()">
                   <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
                 </button>
@@ -1017,6 +1029,10 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
                 <button class="qa-btn" onclick="generateReport()">
                   <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
                   売上レポート生成
+                </button>
+                <button class="qa-btn" onclick="downloadPDFReport()">
+                  <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                  売上レポートPDF
                 </button>
                 <button class="qa-btn" onclick="printReport()">
                   <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
@@ -1614,6 +1630,9 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
             <div class="panel">
               <div class="panel-head">
                 <span class="panel-title">エクスポート</span>
+                <button class="btn btn-ghost btn-sm" onclick="downloadPDFBackup()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PDF
+                </button>
                 <button class="btn btn-ghost btn-sm" onclick="printBackup()">
                   <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>状況を印刷
                 </button>
@@ -1883,6 +1902,9 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
     </div>
     <div id="detailBody"></div>
     <div class="m-actions" style="margin-top:14px">
+      <button class="btn btn-ghost btn-sm" id="detailPdfBtn">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PDF
+      </button>
       <button class="btn btn-ghost btn-sm" id="detailPrintBtn">
         <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
       </button>
@@ -2072,6 +2094,9 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
     <div id="custModalHistory"></div>
     <div class="m-actions">
       <button class="btn btn-ghost" onclick="closeCustModal()">閉じる</button>
+      <button class="btn btn-ghost" id="custModalPdfBtn">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PDF
+      </button>
       <button class="btn btn-ghost" id="custModalPrintBtn">
         <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
       </button>
@@ -2138,6 +2163,9 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 <script src="js/services/dataProvider.js"></script>
 <script src="js/services/serviceRegistry.js"></script>
 <script src="js/services/healthCheck.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script src="admin-bookings.js"></script>
 <script src="admin-analytics.js"></script>

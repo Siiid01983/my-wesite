@@ -388,6 +388,7 @@ function openDetail(id) {
     r('お客様名',b.name) + r('メール',b.email) +
     r('引越し元',b.fromAddr) + r('引越し先',b.toAddr) +
     r('備考',b.notes) + r('受付日時',fmtDT(b.createdAt));
+  document.getElementById('detailPdfBtn').onclick   = () => downloadPDFBooking(id);
   document.getElementById('detailPrintBtn').onclick = () => printBooking(id);
   document.getElementById('detailEditBtn').onclick  = () => openEdit(id);
   document.getElementById('detailDelBtn').onclick   = () => { if(confirm('削除しますか？')){ const _bk=BookingService.getBookings().find(b=>b.id===id); Adapter.deleteBooking(id); BookingService.releaseBooking(_bk); closeDetail(); renderBookings(); renderDash(); toast('削除しました'); }};
@@ -479,4 +480,9 @@ body{font-family:-apple-system,'Hiragino Sans','Meiryo','Yu Gothic',sans-serif;f
   if (!w) { toast('ポップアップをブロックしています。許可してから再試行してください'); return; }
   w.document.write(html);
   w.document.close();
+}
+
+async function downloadPDFBooking(id) {
+  const h = _capturePrintHtml(() => printBooking(id));
+  if (h) await _pdfDownload(h, `予約確認書_${id}.pdf`);
 }
