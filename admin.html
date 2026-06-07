@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Admin — Hello Moving</title>
 <meta name="robots" content="noindex, nofollow" />
+<link rel="manifest" href="/manifest-admin.json" />
+<meta name="theme-color" content="#0a1f44" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -2217,5 +2219,8 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 
 <!-- ── App bootstrap (startup IIFE — must load last) ── -->
 <script src="js/core/appBootstrap.js"></script>
+
+<!-- ── PWA: service worker registration ── -->
+<script src="js/utils/swRegister.js"></script>
 </body>
 </html>

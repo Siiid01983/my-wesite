@@ -1,0 +1,15 @@
+{
+  "name": "Hello Moving",
+  "short_name": "Hello Moving",
+  "description": "東京・関東の引越し専門 — オンライン予約・当日対応",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0a1f44",
+  "background_color": "#ffffff",
+  "lang": "ja",
+  "icons": [
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

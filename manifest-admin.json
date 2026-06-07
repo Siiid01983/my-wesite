@@ -1,0 +1,15 @@
+{
+  "name": "Hello Moving 管理パネル",
+  "short_name": "HM 管理",
+  "description": "Hello Moving 管理システム",
+  "start_url": "/admin.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0a1f44",
+  "background_color": "#0a1f44",
+  "lang": "ja",
+  "icons": [
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
