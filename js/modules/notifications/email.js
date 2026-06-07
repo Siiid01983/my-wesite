@@ -180,6 +180,7 @@ function renderEmail() {
   </div>`;
 
   renderEmailLog();
+  if (window.FollowUp) FollowUp.renderFollowUpPanel();
 }
 
 function renderEmailLog() {

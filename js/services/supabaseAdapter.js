@@ -70,7 +70,10 @@
     linelog: 'hm_linelog',
     email:   'hm_email',
     emaillog:'hm_emaillog',
-    gcal:    'hm_gcal',
+    gcal:         'hm_gcal',
+    followup:     'hm_followup',
+    followupSent: 'hm_followup_sent',
+    followupLog:  'hm_followup_log',
   };
 
   /* ── Status maps ──────────────────────────────────────── */
@@ -548,6 +551,15 @@
     /* ── Google Calendar ─────────────────────────────── */
     getGcalSettings: () => _ls(K.gcal, { enabled:false, clientId:'', calendarId:'primary', syncDir:'both', lastSync:null }),
     saveGcalSettings: (v) => wt(K.gcal, v),
+
+    /* ── Follow-up emails ────────────────────────────── */
+    getFollowUpSettings: () => _ls(K.followup, { enabled:false, delayDays:3, templateId:'' }),
+    saveFollowUpSettings: (v) => wt(K.followup, v),
+    getFollowUpSent: () => _ls(K.followupSent, {}),
+    markFollowUpSent(refId, info) { const s = this.getFollowUpSent(); s[refId] = info; wt(K.followupSent, s); },
+    getFollowUpLog: () => _ls(K.followupLog, []),
+    pushFollowUpLog(entry) { const log = this.getFollowUpLog(); log.unshift(entry); wt(K.followupLog, log.slice(0, 30)); },
+    clearFollowUpLog() { wt(K.followupLog, []); },
 
     /* ── Customers ────────────────────────────────────── */
     getCustomers: () => _ls(K.cust, []),

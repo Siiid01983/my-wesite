@@ -213,6 +213,8 @@ async function init() {
   if (window.StatisticsService) StatisticsService.initializeRealtime();
   renderDash();
   Auth.startTimer();
+  /* Check follow-ups after sync settles — fire-and-forget, never blocks init */
+  if (window.FollowUp) setTimeout(() => FollowUp.checkAndSend(true), 4000);
 }
 
 /* ════════════════════════════════════════════════════════
