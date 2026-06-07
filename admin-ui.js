@@ -308,8 +308,7 @@ const VIEW_TITLES = {
   dashboard:'ダッシュボード', bookings:'予約管理', quotes:'見積り管理',
   reviews:'レビュー管理', services:'サービス管理', faq:'FAQ編集', company:'会社情報編集', footer:'フッター編集', hero:'ヒーロー編集', calendar:'カレンダー管理', analytics:'分析',
   capacity:'容量設定', pricing:'料金管理', disposal:'不用品管理', actions:'クイック操作',
-  backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理', line:'LINE通知設定', email:'メール通知設定', changelog:'変更履歴', security:'セキュリティ', health:'システム健全性',
-  webcontent:'ウェブサイト管理'
+  backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理', line:'LINE通知設定', email:'メール通知設定', changelog:'変更履歴', security:'セキュリティ', health:'システム健全性'
 };
 
 /* ════════════════════════════════════════════════════════
@@ -359,7 +358,6 @@ function go(view) {
   if (view==='changelog') renderChangelog();
   if (view==='security')    renderSecurity();
   if (view==='health')      renderHealth();
-  if (view==='webcontent')  { renderWebContent(); _syncWebContentFromSupabase(); }
 }
 
 function toggleDark() {
@@ -5447,158 +5445,3 @@ function _applyHcBanner() {
   }
 })();
 
-/* ════════════════════════════════════════════════════════
-   WEBSITE CONTENT MANAGEMENT — Phase 11
-   Reads/writes via ContentService → ui_content table.
-   Each tab section maps to a set of content_key fields.
-   ════════════════════════════════════════════════════════ */
-
-const WC_FIELDS = {
-  header: [
-    { id:'wcHeaderLogoUrl',      key:'logo_url',      label:'ロゴURL' },
-    { id:'wcHeaderCompanyName',  key:'company_name',  label:'会社名' },
-    { id:'wcHeaderPhone',        key:'phone',         label:'電話番号' },
-    { id:'wcHeaderCtaText',      key:'cta_text',      label:'CTAボタン' },
-    { id:'wcHeaderNavHome',      key:'nav_home',      label:'ナビ：ホーム' },
-    { id:'wcHeaderNavServices',  key:'nav_services',  label:'ナビ：サービス' },
-    { id:'wcHeaderNavAbout',     key:'nav_about',     label:'ナビ：会社案内' },
-    { id:'wcHeaderNavContact',   key:'nav_contact',   label:'ナビ：お問い合わせ' },
-    { id:'wcHeaderNavFaq',       key:'nav_faq',       label:'ナビ：FAQ' },
-  ],
-  hero: [
-    { id:'wcHeroHeadlineJa',    key:'headline_ja',    label:'見出し（日）' },
-    { id:'wcHeroHeadlineEn',    key:'headline_en',    label:'見出し（英）' },
-    { id:'wcHeroSubPrimary',    key:'sub_primary',    label:'サブ（プライマリ）' },
-    { id:'wcHeroSubSecondary',  key:'sub_secondary',  label:'サブ（セカンダリ）' },
-    { id:'wcHeroCtaBook',       key:'cta_book',       label:'予約ボタン' },
-    { id:'wcHeroCtaQuote',      key:'cta_quote',      label:'見積りボタン' },
-    { id:'wcHeroCtaLine',       key:'cta_line',       label:'LINEボタン' },
-  ],
-  services: [
-    { id:'wcServicesEyebrow',   key:'eyebrow',   label:'Eyebrow' },
-    { id:'wcServicesTitle',     key:'title',     label:'タイトル' },
-    { id:'wcServicesSubtitle',  key:'subtitle',  label:'サブタイトル' },
-  ],
-  testimonials: [
-    { id:'wcTestimonialsEyebrow',   key:'eyebrow',   label:'Eyebrow' },
-    { id:'wcTestimonialsTitle',     key:'title',     label:'タイトル' },
-    { id:'wcTestimonialsSubtitle',  key:'subtitle',  label:'サブタイトル' },
-  ],
-  footer: [
-    { id:'wcFooterAddress',    key:'address',    label:'住所' },
-    { id:'wcFooterPhone',      key:'phone',      label:'電話番号' },
-    { id:'wcFooterEmail',      key:'email',      label:'メール' },
-    { id:'wcFooterCopyright',  key:'copyright',  label:'著作権' },
-  ],
-  contact: [
-    { id:'wcContactWhatsapp',       key:'whatsapp',       label:'WhatsApp' },
-    { id:'wcContactPhone',          key:'phone',          label:'電話番号' },
-    { id:'wcContactEmail',          key:'email',          label:'メール' },
-    { id:'wcContactHoursWeekday',   key:'hours_weekday',  label:'営業時間（平日）' },
-    { id:'wcContactHoursWeekend',   key:'hours_weekend',  label:'営業時間（土日祝）' },
-    { id:'wcContactHoursNote',      key:'hours_note',     label:'補足' },
-  ],
-  seo: [
-    { id:'wcSeoPageTitle',      key:'page_title',      label:'ページタイトル', maxLen:60  },
-    { id:'wcSeoDescription',    key:'description',     label:'メタ説明文',     maxLen:160, ta:true },
-    { id:'wcSeoOgTitle',        key:'og_title',        label:'OGタイトル' },
-    { id:'wcSeoOgDescription',  key:'og_description',  label:'OG説明文',       ta:true },
-    { id:'wcSeoOgImage',        key:'og_image',        label:'OG画像URL' },
-  ],
-};
-
-function switchWcTab(tab) {
-  document.querySelectorAll('.wc-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-  document.querySelectorAll('.wc-tab-panel').forEach(p => p.classList.toggle('active', p.id === 'wc-tab-' + tab));
-}
-
-function _wcGetValues(section) {
-  const out = {};
-  (WC_FIELDS[section] || []).forEach(f => {
-    const el = document.getElementById(f.id);
-    if (el) out[f.key] = el.value;
-  });
-  return out;
-}
-
-function _wcSetValues(section, data) {
-  (WC_FIELDS[section] || []).forEach(f => {
-    const el = document.getElementById(f.id);
-    if (el && data[f.key] != null) el.value = data[f.key];
-  });
-}
-
-function wcLivePreview(section) {
-  const box = document.getElementById('wcPrev-' + section);
-  if (!box) return;
-  const vals   = _wcGetValues(section);
-  const fields = WC_FIELDS[section] || [];
-  const empty  = '<span style="color:var(--gray-2);font-size:11px">フィールドに入力するとここに表示されます</span>';
-
-  if (section === 'seo') {
-    const title = vals.page_title || '';
-    const desc  = vals.description || '';
-    const ogT   = vals.og_title || '';
-    const ogD   = vals.og_description || '';
-    const lenT  = title.length;
-    const lenD  = desc.length;
-    if (!title && !desc) { box.innerHTML = empty; return; }
-    box.innerHTML = `
-      <div style="margin-bottom:14px">
-        <div style="font-size:10px;font-weight:600;color:var(--gray-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Google 検索プレビュー</div>
-        <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px">
-          <div style="font-size:15px;color:#1a0dab;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(title||'（タイトル未設定）')}</div>
-          <div style="font-size:12px;color:#006621;margin-bottom:4px">hello-moving.com</div>
-          <div style="font-size:13px;color:#545454;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(desc)}</div>
-        </div>
-        <div style="display:flex;gap:12px;margin-top:4px">
-          <span style="font-size:10px;color:${lenT>60?'var(--red)':'var(--gray-2)'}">タイトル ${lenT}/60</span>
-          <span style="font-size:10px;color:${lenD>160?'var(--red)':'var(--gray-2)'}">説明文 ${lenD}/160</span>
-        </div>
-      </div>
-      ${ogT||ogD ? `<div>
-        <div style="font-size:10px;font-weight:600;color:var(--gray-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">OGカードプレビュー</div>
-        <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px">
-          <div style="font-size:13px;font-weight:700;margin-bottom:3px">${esc(ogT)}</div>
-          <div style="font-size:12px;color:var(--gray-1);line-height:1.5">${esc(ogD)}</div>
-        </div>
-      </div>` : ''}`;
-    return;
-  }
-
-  const rows = fields.map(f => {
-    const v = vals[f.key];
-    if (!v) return '';
-    return `<div class="wc-prev-row"><span class="wc-prev-key">${esc(f.label)}</span><span class="wc-prev-val">${esc(v)}</span></div>`;
-  }).join('');
-  box.innerHTML = rows || empty;
-}
-
-async function renderWebContent() {
-  if (!window.ContentService) return;
-  const all = await ContentService.load();
-  Object.keys(WC_FIELDS).forEach(section => {
-    _wcSetValues(section, all[section] || {});
-    wcLivePreview(section);
-  });
-}
-
-async function wcSaveSection(section) {
-  if (!window.ContentService) { toast('ContentServiceが利用できません'); return; }
-  const data = _wcGetValues(section);
-  const ind  = document.getElementById('wcSaveInd-' + section);
-  if (ind) { ind.textContent = '保存中...'; ind.classList.add('vis'); }
-  const { success, source } = await ContentService.saveSection(section, data);
-  wcLivePreview(section);
-  if (ind) {
-    ind.textContent = success ? '保存しました ✓' : 'ローカル保存 ✓';
-    ind.style.color = success ? 'var(--green)' : 'var(--yellow)';
-    setTimeout(() => ind.classList.remove('vis'), 3000);
-  }
-  toast(success ? `${section} を保存しました` : 'オフライン — ローカルに保存しました');
-}
-
-function _syncWebContentFromSupabase() {
-  if (!Adapter.supabaseReady) return;
-  _dpSync('ui_content', null, () => ContentService.syncToLocalStorage(), 'view-webcontent', renderWebContent);
-}
