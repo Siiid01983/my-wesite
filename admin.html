@@ -8950,6 +8950,21 @@ function _applyHcBanner() {
    ════════════════════════════════════════════════════════ */
 (async () => {
   await Auth.initCreds();
+
+  /* Dev-only bypass: dev-reset.html writes hm_admin_bypass to localStorage.
+     Consumed once here — creates a clean session so the user lands directly
+     on the dashboard without going through the login or force-change screens.
+     Only active on localhost to prevent accidental use in production. */
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    try {
+      const bp = JSON.parse(localStorage.getItem('hm_admin_bypass') || 'null');
+      if (bp && bp.exp > Date.now()) {
+        localStorage.removeItem('hm_admin_bypass');
+        sessionStorage.setItem(Auth.KEY, JSON.stringify({ token: Auth._mkToken(), ts: Date.now() }));
+      }
+    } catch {}
+  }
+
   if (window.location.hash === '#review') {
     showPublicReviewForm();
   } else if (Auth.isLoggedIn()) {
