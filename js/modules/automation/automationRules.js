@@ -30,7 +30,7 @@ window.AutomationRules = (function () {
       enabled: true,
       trigger: 'schedule',
       condType: 'pre_move_reminder',
-      conditions: { daysBeforeMove: 3 },
+      conditions: { daysBeforeMove: 1 },
       actions: ['send_move_reminder'],
       createdAt: new Date().toISOString()
     },
