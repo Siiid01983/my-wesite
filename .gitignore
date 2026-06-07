@@ -7,6 +7,7 @@ js/config/env.js
 .netlify
 
 # Development artifacts
+dev-reset.html
 _admin_script_extract.js
 _test_booking.js
 components/
