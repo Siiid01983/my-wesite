@@ -64,7 +64,12 @@ my-website/
 │   │
 │   └── modules/                # Phase 14 — Feature modules (one domain per folder)
 │       ├── dashboard/
-│       │   └── dashboard.js    # renderDash, renderStatGrid, BI panels, renderQA
+│       │   ├── dashboard.js         # renderDash, renderStatGrid, BI panels, renderQA
+│       │   ├── dashboardLayout.js   # window.DashboardLayout — widget order/visibility (hm_dashboard_layout)
+│       │   ├── dashboardCustomizer.js # window.DashboardCustomizer — settings modal, applyLayout()
+│       │   ├── dashboardReorder.js  # window.DashboardReorder — HTML5 DnD, #dashOrderContainer slots
+│       │   ├── kpiManager.js        # window.KPIManager — stat-card visibility (hm_dashboard_kpis)
+│       │   └── dashboardProfiles.js # window.DashboardProfiles — Owner/Ops/Marketing presets (hm_dashboard_profiles)
 │       ├── calendar/
 │       │   └── calendar.js     # renderCalendar, calClick, bulk select, printCalendar
 │       ├── capacity/
@@ -151,8 +156,15 @@ Data modules (define _DOW_JP and buildTable used by later modules)
 Core navigation (lazy — all render fns resolved at call-time)
   js/core/navigation.js               ← go(), _dpSync, VIEW_TITLES
 
-Feature modules (any order relative to each other)
-  js/modules/dashboard/dashboard.js
+Feature modules — dashboard customisation chain (MUST load in this order)
+  js/modules/dashboard/dashboardLayout.js    ← storage API; no DOM dependency
+  js/modules/dashboard/dashboard.js          ← defines renderDash, renderStatGrid
+  js/modules/dashboard/dashboardCustomizer.js← patches renderDash (1st wrapper)
+  js/modules/dashboard/dashboardReorder.js   ← patches renderDash (2nd wrapper)
+  js/modules/dashboard/kpiManager.js         ← patches renderDash + renderStatGrid (3rd wrapper)
+  js/modules/dashboard/dashboardProfiles.js  ← patches renderDash (outermost wrapper)
+
+Feature modules — remaining (any order relative to each other)
   js/modules/calendar/calendar.js
   js/modules/capacity/capacity.js
   js/modules/pricing/pricing.js
@@ -234,6 +246,11 @@ subsequent scripts.
 | `Adapter` | `js/services/supabaseAdapter.js` | Domain CRUD (all data writes go here) |
 | `DataProvider` | `js/services/dataProvider.js` | Generic CRUD + TTL cache + retry |
 | `Services` | `js/services/serviceRegistry.js` | Central service locator |
+| `DashboardLayout` | `js/modules/dashboard/dashboardLayout.js` | Widget order + visibility storage (`hm_dashboard_layout`) |
+| `DashboardCustomizer` | `js/modules/dashboard/dashboardCustomizer.js` | Widget visibility modal; `applyLayout()` |
+| `DashboardReorder` | `js/modules/dashboard/dashboardReorder.js` | Drag-and-drop slot reordering; `applyOrder()` |
+| `KPIManager` | `js/modules/dashboard/kpiManager.js` | Stat-card visibility by label matching (`hm_dashboard_kpis`) |
+| `DashboardProfiles` | `js/modules/dashboard/dashboardProfiles.js` | Owner/Operations/Marketing presets (`hm_dashboard_profiles`) |
 
 ---
 
@@ -539,10 +556,78 @@ AdminState.snapshot()         // current ephemeral UI state
 
 ---
 
+## Dashboard customisation layer (Phase 21)
+
+Five modules that add widget reordering, visibility control, KPI selection, and profiles
+**on top of** the existing dashboard without modifying any render function.
+
+### renderDash patch chain
+
+Each module wraps `window.renderDash` at load time. Execution order (outermost → innermost):
+
+```
+DashboardProfiles
+  → KPIManager
+    → DashboardReorder
+      → DashboardCustomizer
+        → original renderDash()   ← renders all content to element IDs
+      ← DashboardCustomizer: _injectSettingsBtn(), applyLayout()
+    ← DashboardReorder: applyOrder() → _sortSlots() + applyLayout()
+  ← KPIManager: _injectKPIButton(), applyVisibility()
+← DashboardProfiles: _injectProfileBar(), _updateTabState()
+```
+
+`KPIManager` also wraps `window.renderStatGrid` independently so KPI visibility
+applies on every grid render including Realtime-triggered updates.
+
+### DOM structure after first renderDash
+
+```
+#view-dashboard
+├── #dashCustomizerBar          (injected by DashboardCustomizer)
+│   ├── #dashProfileBar         (injected by DashboardProfiles — margin-right:auto → left)
+│   ├── #kpiSettingsBtn         (injected by KPIManager)
+│   └── [settings button]       (original dashCustomizerBar content)
+├── #dashOrderContainer         (created by DashboardReorder)
+│   ├── .dash-slot[data-slot="stats"]          → #statGrid
+│   ├── .dash-slot[data-slot="quick-actions"]  → #qaGrid
+│   ├── .dash-slot[data-slot="observability"]  → #obsPanel
+│   ├── .dash-slot[data-slot="bi-revenue"]     → #biRevenuePanel
+│   ├── .dash-slot[data-slot="bi-trend"]       → #biTrendPanel
+│   ├── .dash-slot[data-slot="bi-service"]     → #biServicePanel
+│   ├── .dash-slot[data-slot="bi-customer"]    → #biCustomerPanel
+│   ├── .dash-slot[data-slot="bi-operational"] → #biOperationalPanel
+│   ├── .dash-slot[data-slot="bi-export"]      → #biExportPanel
+│   ├── .dash-slot[data-slot="recent-bookings"]→ .panel (parent of #recentWrap)
+│   └── .dash-slot[data-slot="activity"]       → .panel.activity-panel
+├── #biRow1    (empty, display:none — children extracted into slots)
+├── #biRow2    (empty, display:none)
+└── .dash-panels (empty, display:none)
+```
+
+### localStorage keys
+
+| Key | Owner | Contents |
+|---|---|---|
+| `hm_dashboard_layout` | `DashboardLayout` | `{version, widgets:[{id, elementId, visible, order}]}` |
+| `hm_dashboard_kpis` | `KPIManager` | `{version, kpis:[{id, visible}]}` |
+| `hm_dashboard_profiles` | `DashboardProfiles` | `{version, active, overrides:{[profileId]:{layout,kpis}}}` |
+
+### Key rules for future work
+
+- **Never modify `renderDash` or `renderStatGrid` directly.** Wrap them the same way the existing modules do.
+- **`DashboardCustomizer._container(widget)`** prefers `.dash-slot[data-slot]` over raw element IDs — always call `applyLayout()` after DOM changes that affect slots.
+- **`_syncWrappers()`** is a no-op when `#dashOrderContainer` exists — the empty `biRow`/`dash-panels` divs are intentionally inert.
+- **Profile load does NOT call `renderDash()`** — it calls `DashboardReorder.applyOrder()` + `KPIManager.applyVisibility()` directly to avoid a full data re-fetch.
+- **Built-in profile presets are code-only** — only user overrides are written to `hm_dashboard_profiles`.
+
+---
+
 ## Phase history
 
 | Phase | Commit | What was built |
 |---|---|---|
+| 21 | `e33a779` | Dashboard customisation suite (A–E): layout storage, widget visibility modal, HTML5 DnD reordering, KPI card manager, Owner/Operations/Marketing profiles |
 | 1 | `14af5d5` | Infrastructure: appConfig, fallbackLogger, dataProvider, serviceRegistry |
 | 2 | `675da50` | Connected admin page syncs to DataProvider via `_dpSync` |
 | 3 | `57b4748` | Auth hardening: salted hash, constant-time compare, session rotation, exponential lockout |
