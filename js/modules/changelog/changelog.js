@@ -5,7 +5,20 @@
    ════════════════════════════════════════════════════════ */
 const CHANGELOG = [
   {
-    version: 'v3.6', date: '2026-06-07', label: '最新',
+    version: 'v4.0', date: '2026-06-07', label: '最新',
+    entries: [
+      { type:'improve', text:'モジュラーアーキテクチャ刷新（Phase 14）：admin-ui.js（5,543行）を30ファイルに分割。js/core/（Auth・navigation・appBootstrap・EventBus・StateManager）、js/utils/（formatters・dom・pdf・storage・validators）、js/modules/（dashboard・calendar・capacity・pricing・disposal・quotes・services・hero・reviews・footer・company・faq・backup・notifications・changelog・customers・media・security）の4層構成に整理' },
+      { type:'improve', text:'js/core/eventBus.js 新設：document.dispatchEvent / addEventListener をラップした型付きイベントバス（EventBus.on/emit/off/clear）を追加' },
+      { type:'improve', text:'js/core/stateManager.js 新設：エフェメラルUIステートのリアクティブコンテナ（AdminState.get/set/subscribe）を追加' },
+      { type:'improve', text:'js/utils/validators.js 新設：required・email・bookingId・starRating・url など共通バリデーションヘルパー（window.Validators）を追加' },
+      { type:'improve', text:'js/utils/storage.js 新設：型安全なlocalStorageラッパー（getArray・pushToArray など）を追加' },
+      { type:'improve', text:'js/utils/dom.js 新設：$id・$html・$show・$delegate などDOMユーティリティヘルパーを追加' },
+      { type:'improve', text:'serviceRegistry.js を拡張：Auth・EventBus・AdminState・Validators・Storage をwindow.Servicesに登録。中央サービスロケーターが全レイヤーをカバー' },
+      { type:'improve', text:'admin.html をHTML+CSSのみに整理：インラインJSをすべて外部ファイルに移動。スクリプト読み込みは明確な依存順序で30タグに整理' },
+    ]
+  },
+  {
+    version: 'v3.6', date: '2026-06-07',
     entries: [
       { type:'feat',    text:'PDF直接出力（Phase 12）：全11印刷機能にPDFダウンロードボタンを追加。html2canvas+jsPDFで印刷HTMLをキャプチャしA4 PDFとして直接保存。印刷ダイアログ不要' },
     ]
