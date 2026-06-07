@@ -11,6 +11,7 @@ _admin_script_extract.js
 _test_booking.js
 components/
 lib/
+!js/lib/
 /services/
 types/
 *.zip
