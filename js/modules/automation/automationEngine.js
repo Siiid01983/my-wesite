@@ -43,9 +43,9 @@ window.AutomationEngine = (function () {
     var results  = [];
     bookings.forEach(function (b) {
       if (b.status !== '完了') return;
-      var ref = b.move_date || '';
+      var ref = b.date || b.move_date || '';
       if (!ref || _daysDiff(ref, today) !== days) return;
-      var key = rule.id + ':' + (b.reference_id || b.id || '');
+      var key = rule.id + ':' + (b.id || b.reference_id || '');
       if (AutomationAudit.lastRunToday(key)) return;
       results.push({ booking: b, _key: key });
     });
@@ -59,9 +59,9 @@ window.AutomationEngine = (function () {
     var results  = [];
     bookings.forEach(function (b) {
       if (b.status !== '確定') return;
-      var ref = b.move_date || '';
+      var ref = b.date || b.move_date || '';
       if (!ref || _daysDiff(today, ref) !== days) return;
-      var key = rule.id + ':' + (b.reference_id || b.id || '');
+      var key = rule.id + ':' + (b.id || b.reference_id || '');
       if (AutomationAudit.lastRunToday(key)) return;
       results.push({ booking: b, _key: key });
     });
