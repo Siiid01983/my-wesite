@@ -1,13 +1,40 @@
 'use strict';
 /* ════════════════════════════════════════════════════════
-   ANALYTICS WIDGETS — Phase 23
-   Three standalone widgets:
-     1. renderDemandForecast — weekly booking demand projection
-     2. renderDowHeatmap     — day-of-week intensity heatmap
-     3. renderInsightCards   — AI-style business insight cards
+   ANALYTICS WIDGETS — Phase 23 / 23E
+   Widget registry + three standalone widgets.
+
+   Registry API (Phase 23E):
+     AnalyticsWidgets.register(id, config)
+       config: { label, icon, renderFn(containerId, bk, qt) }
+     AnalyticsWidgets.renderWidget(id, containerId, bk, qt)
+     AnalyticsWidgets.getAll() → [{id, label, icon}, ...]
+
+   Built-in widgets:
+     renderDemandForecast — weekly booking demand projection
+     renderDowHeatmap     — day-of-week intensity heatmap
+     renderInsightCards   — AI-style business insight cards
    Depends on: AnalyticsEngine, drawBarChart (admin-analytics.js)
    ════════════════════════════════════════════════════════ */
 (function () {
+
+  /* ── Widget registry ── */
+  var _registry = {};
+
+  function register(id, config) {
+    _registry[id] = config || {};
+  }
+
+  function renderWidget(id, containerId, bk, qt) {
+    var cfg = _registry[id];
+    if (!cfg || typeof cfg.renderFn !== 'function') return;
+    cfg.renderFn(containerId, bk, qt);
+  }
+
+  function getAll() {
+    return Object.keys(_registry).map(function (id) {
+      return { id: id, label: _registry[id].label || id, icon: _registry[id].icon || '' };
+    });
+  }
 
   const _DOW_S = ['日','月','火','水','木','金','土'];
   const _DOW_L = ['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'];
@@ -204,5 +231,12 @@
     </div>`;
   }
 
-  window.AnalyticsWidgets = { renderDemandForecast, renderDowHeatmap, renderInsightCards };
+  window.AnalyticsWidgets = {
+    /* Registry API */
+    register: register, renderWidget: renderWidget, getAll: getAll,
+    /* Built-in widgets */
+    renderDemandForecast: renderDemandForecast,
+    renderDowHeatmap:     renderDowHeatmap,
+    renderInsightCards:   renderInsightCards,
+  };
 })();

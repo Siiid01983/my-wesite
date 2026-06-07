@@ -119,7 +119,11 @@ my-website/
 │           ├── customerInsights.js   # window.CustomerInsights — CLV, churn risk, cohort, repeat rate
 │           ├── conversionAnalytics.js# window.ConversionAnalytics — quote→booking funnel, time-to-convert, per-service rates
 │           ├── analyticsWidgets.js   # window.AnalyticsWidgets — demand forecast chart, DOW heatmap, insight cards
-│           └── analyticsUI.js        # window.AnalyticsUI — wraps renderAnalytics(), injects #analyticsAdvanced section
+│           ├── analyticsUI.js        # window.AnalyticsUI — wraps renderAnalytics(), injects #analyticsAdvanced section
+│           ├── analyticsCache.js     # window.AnalyticsCache — 5-min TTL localStorage cache (hm_analytics_cache)
+│           ├── bookingTrends.js      # window.BookingTrends — daily/weekly/monthly trends, growth%, peak detection
+│           ├── analyticsExport.js    # window.AnalyticsExport — CSV exports: revenueForecast/serviceRankings/customerMetrics + AuditLog
+│           └── analyticsDashboard.js # window.AnalyticsDashboard — 高度分析 page, widget registry init, go() wrap, tab routing
 │
 ├── tests/
 │   └── dataProvider.test.js    # 20-case unit test suite (node:test + Playwright)
@@ -186,6 +190,10 @@ Analytics BI modules (Phase 23 — must load after admin-analytics.js)
   js/modules/analytics/conversionAnalytics.js← depends on AnalyticsEngine
   js/modules/analytics/analyticsWidgets.js   ← depends on AnalyticsEngine + drawBarChart
   js/modules/analytics/analyticsUI.js        ← wraps renderAnalytics (outermost)
+  js/modules/analytics/analyticsCache.js     ← 5-min browser cache; no deps
+  js/modules/analytics/bookingTrends.js      ← depends on AnalyticsEngine + AnalyticsCache
+  js/modules/analytics/analyticsExport.js    ← depends on all compute modules + AuditLog
+  js/modules/analytics/analyticsDashboard.js ← wraps go(); registers widgets; must load last
 
 Feature modules — remaining (any order relative to each other)
   js/modules/calendar/calendar.js
@@ -284,6 +292,10 @@ subsequent scripts.
 | `ConversionAnalytics` | `js/modules/analytics/conversionAnalytics.js` | Quote→booking funnel; `compute(bk, qt)` → `{funnel, convRate, avgConvertH, svcRates, trend}` |
 | `AnalyticsWidgets` | `js/modules/analytics/analyticsWidgets.js` | `renderDemandForecast`, `renderDowHeatmap`, `renderInsightCards` |
 | `AnalyticsUI` | `js/modules/analytics/analyticsUI.js` | Wraps `renderAnalytics()`; injects `#analyticsAdvanced` div after `#analyticsExtra` |
+| `AnalyticsCache` | `js/modules/analytics/analyticsCache.js` | 5-min TTL cache (`hm_analytics_cache`); auto-invalidates on booking events |
+| `BookingTrends` | `js/modules/analytics/bookingTrends.js` | Daily/weekly/monthly series; `compute(bk)` → `{daily, weekly, monthly, dailyGrowth, weeklyGrowth, monthlyGrowth, peaks}` |
+| `AnalyticsExport` | `js/modules/analytics/analyticsExport.js` | `revenueForecast()`, `serviceRankings()`, `customerMetrics()` CSV downloads + AuditLog |
+| `AnalyticsDashboard` | `js/modules/analytics/analyticsDashboard.js` | 高度分析 page; registers all 5 widgets; wraps `go()`; `setTab(id)`, `refresh()` |
 
 ---
 
