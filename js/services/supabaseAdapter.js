@@ -70,6 +70,7 @@
     linelog: 'hm_linelog',
     email:   'hm_email',
     emaillog:'hm_emaillog',
+    gcal:    'hm_gcal',
   };
 
   /* ── Status maps ──────────────────────────────────────── */
@@ -543,6 +544,10 @@
     getEmailLog: () => _ls(K.emaillog, []),
     pushEmailLog(entry) { const log = this.getEmailLog(); log.unshift(entry); wt(K.emaillog, log.slice(0, 20)); },
     clearEmailLog() { wt(K.emaillog, []); },
+
+    /* ── Google Calendar ─────────────────────────────── */
+    getGcalSettings: () => _ls(K.gcal, { enabled:false, clientId:'', calendarId:'primary', syncDir:'both', lastSync:null }),
+    saveGcalSettings: (v) => wt(K.gcal, v),
 
     /* ── Customers ────────────────────────────────────── */
     getCustomers: () => _ls(K.cust, []),

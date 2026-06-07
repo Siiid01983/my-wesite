@@ -66,7 +66,7 @@ function go(view) {
   Auth.touch();
   if (view==='dashboard') renderDash();
   if (view==='bookings') renderBookings();
-  if (view==='calendar') { refreshCalendarUI(); _syncCalendarFromSupabase(); }
+  if (view==='calendar') { refreshCalendarUI(); renderGCalPanel(); _syncCalendarFromSupabase(); }
   if (view==='analytics') renderAnalytics();
   if (view==='capacity') { loadCapacity(); _syncCapacityFromSupabase(); }
   if (view==='pricing') { renderPricing(); _syncPricingFromSupabase(); }
