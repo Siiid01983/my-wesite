@@ -38,10 +38,11 @@ const VIEW_TITLES = {
   capacity:'容量設定', pricing:'料金管理', disposal:'不用品管理', actions:'クイック操作',
   backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理', line:'LINE通知設定', email:'メール通知設定', changelog:'変更履歴', security:'セキュリティ', health:'システム健全性',
   staff:'スタッフ管理',
+  'audit-log':'監査ログ',
 };
 
 /* Views only accessible to the admin role */
-const _ADMIN_ONLY = new Set(['pricing','disposal','services','faq','company','footer','hero','backup','email','line','security','staff']);
+const _ADMIN_ONLY = new Set(['pricing','disposal','services','faq','company','footer','hero','backup','email','line','security','staff','audit-log']);
 
 function _applyRoleToSidebar() {
   const role = Auth.getRole ? Auth.getRole() : 'admin';
@@ -106,6 +107,7 @@ function go(view) {
   if (view==='security')    renderSecurity();
   if (view==='health')      renderHealth();
   if (view==='staff')       renderStaff();
+  if (view==='audit-log')   renderAuditLog();
   if (window.I18n) I18n.applyToDOM(document.getElementById('adminApp'));
 }
 

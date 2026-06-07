@@ -506,6 +506,7 @@ function openDetail(id) {
     r('備考',b.notes) + r('受付日時',fmtDT(b.createdAt));
   document.getElementById('detailPdfBtn').onclick   = () => downloadPDFBooking(id);
   document.getElementById('detailPrintBtn').onclick = () => printBooking(id);
+  document.getElementById('detailInvBtn').onclick   = () => InvoiceManager.openModal(id);
   document.getElementById('detailEditBtn').onclick  = () => openEdit(id);
   document.getElementById('detailDelBtn').onclick   = () => { if(confirm('削除しますか？')){ const _bk=BookingService.getBookings().find(b=>b.id===id); Adapter.deleteBooking(id); BookingService.releaseBooking(_bk); closeDetail(); renderBookings(); renderDash(); toast('削除しました'); }};
   document.getElementById('detailModal').classList.add('open');
