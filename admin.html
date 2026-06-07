@@ -8952,21 +8952,24 @@ function _applyHcBanner() {
   await Auth.initCreds();
 
   /* Dev-only bypass: dev-reset.html writes hm_admin_bypass to localStorage.
-     Consumed once here — creates a clean session so the user lands directly
-     on the dashboard without going through the login or force-change screens.
-     Only active on localhost to prevent accidental use in production. */
+     Consumed once — calls showApp() directly without touching sessionStorage,
+     so it works even when sessionStorage is blocked by browser privacy settings.
+     Only active on localhost / 127.0.0.1. Never runs on the production domain. */
+  let _devBypass = false;
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     try {
-      const bp = JSON.parse(localStorage.getItem('hm_admin_bypass') || 'null');
-      if (bp && bp.exp > Date.now()) {
+      const _bp = JSON.parse(localStorage.getItem('hm_admin_bypass') || 'null');
+      if (_bp && _bp.exp > Date.now()) {
         localStorage.removeItem('hm_admin_bypass');
-        sessionStorage.setItem(Auth.KEY, JSON.stringify({ token: Auth._mkToken(), ts: Date.now() }));
+        _devBypass = true;
       }
-    } catch(e) { /* bypass read failed — continue to normal login flow */ }
+    } catch(e) { /* storage blocked — fall through to normal login */ }
   }
 
   if (window.location.hash === '#review') {
     showPublicReviewForm();
+  } else if (_devBypass) {
+    showApp(); await init();
   } else if (Auth.isLoggedIn()) {
     if (Auth.mustChangePassword()) { showForceChange(); }
     else { showApp(); await init(); }
