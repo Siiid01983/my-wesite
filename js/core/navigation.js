@@ -86,6 +86,7 @@ function go(view) {
   if (view==='changelog') renderChangelog();
   if (view==='security')    renderSecurity();
   if (view==='health')      renderHealth();
+  if (window.I18n) I18n.applyToDOM(document.getElementById('adminApp'));
 }
 
 function toggleDark() {
