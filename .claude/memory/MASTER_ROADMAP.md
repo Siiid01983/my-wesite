@@ -8,7 +8,7 @@ metadata:
 # Hello Moving — Master Roadmap
 
 > **Update rule:** After every completed phase, prepend it to the Phase History table, move it from Remaining to Completed, and update any status tables that changed.
-> Last updated: 2026-06-07 (Phase 19)
+> Last updated: 2026-06-07 (Phase 20)
 
 ---
 
@@ -210,6 +210,7 @@ Removed (June 2026): オフィス・法人移転, 外国人向け引越し.
 
 | Phase | Commit | Date | What was built |
 |---|---|---|---|
+| 20 | `5a5e825` | 2026-06-07 | Staff management: multi-account login; roles (admin/staff/read-only); Auth staff CRUD; read-only write guard on all Adapter write paths; _applyRoleToSidebar(); スタッフ管理 view with add/edit/delete/PW-reset modal |
 | 19 | `443f385` | 2026-06-07 | English admin UI: I18n module; ~300-entry EN map; TreeWalker DOM pass after every go(); language toggle button in sidebar; sidebar translated on DOMContentLoaded |
 | 18 | `a0af7b4` | 2026-06-07 | Auto follow-up emails: FollowUp module; checkAndSend() on login (4s delay); customer email via EmailJS separate template; delay selector 1–14 days; sent tracker + log; settings panel in メール通知設定 |
 | 17 | `771a563` | 2026-06-07 | PWA support: sw.js (cache-first static assets, network-only Supabase/OAuth, stale-while-revalidate fonts); manifest.json + manifest-admin.json; icons/icon.svg; swRegister.js with update banner |
@@ -242,7 +243,6 @@ Removed (June 2026): オフィス・法人移転, 外国人向け引越し.
 | Item | Notes |
 |---|---|
 | Dashboard customisation | Drag-and-drop panel layout; user-defined KPI selection |
-| Staff management | Role-based access levels (admin / staff / read-only) |
 
 ### Low priority / nice to have
 
