@@ -104,8 +104,14 @@ my-website/
 │       │   └── customers.js    # renderCustomers, openCustModal, printCustomer
 │       ├── media/
 │       │   └── media.js        # MediaLib, renderMedia, upload, preview
-│       └── security/
-│           └── security.js     # renderSecurity, renderHealth, _applyAppHealthBanner
+│       ├── security/
+│       │   └── security.js     # renderSecurity, renderHealth, _applyAppHealthBanner
+│       ├── invoices/
+│       │   └── invoices.js     # window.InvoiceManager — generate, preview modal, PDF download (hm_invoices)
+│       ├── search/
+│       │   └── globalSearch.js # window.GlobalSearch — Ctrl+K overlay, multi-type search, keyboard nav
+│       └── audit/
+│           └── auditLog.js     # window.AuditLog — ring buffer, Adapter patches, 監査ログ view (hm_audit_log)
 │
 ├── tests/
 │   └── dataProvider.test.js    # 20-case unit test suite (node:test + Playwright)
@@ -251,6 +257,9 @@ subsequent scripts.
 | `DashboardReorder` | `js/modules/dashboard/dashboardReorder.js` | Drag-and-drop slot reordering; `applyOrder()` |
 | `KPIManager` | `js/modules/dashboard/kpiManager.js` | Stat-card visibility by label matching (`hm_dashboard_kpis`) |
 | `DashboardProfiles` | `js/modules/dashboard/dashboardProfiles.js` | Owner/Operations/Marketing presets (`hm_dashboard_profiles`) |
+| `InvoiceManager` | `js/modules/invoices/invoices.js` | Invoice generate/preview/PDF; `hm_invoices` stores number per booking |
+| `GlobalSearch` | `js/modules/search/globalSearch.js` | Ctrl+K search overlay across all local Adapter data |
+| `AuditLog` | `js/modules/audit/auditLog.js` | Ring-buffer action log; patches Adapter writes; `hm_audit_log` |
 
 ---
 
@@ -612,6 +621,8 @@ applies on every grid render including Realtime-triggered updates.
 | `hm_dashboard_layout` | `DashboardLayout` | `{version, widgets:[{id, elementId, visible, order}]}` |
 | `hm_dashboard_kpis` | `KPIManager` | `{version, kpis:[{id, visible}]}` |
 | `hm_dashboard_profiles` | `DashboardProfiles` | `{version, active, overrides:{[profileId]:{layout,kpis}}}` |
+| `hm_invoices` | `InvoiceManager` | `{version, counter, records:{[bookingId]:{number, issuedAt}}}` |
+| `hm_audit_log` | `AuditLog` | `{version, entries:[{id, ts, actor, action, entity, entityId, detail}]}` (max 500) |
 
 ### Key rules for future work
 
@@ -627,6 +638,7 @@ applies on every grid render including Realtime-triggered updates.
 
 | Phase | Commit | What was built |
 |---|---|---|
+| 22 | `e9505ac` | Invoice generator (InvoiceManager, hm_invoices, 請求書 button in booking detail); global search (GlobalSearch, Ctrl+K, searches all local data); audit log (AuditLog, hm_audit_log ring buffer, Adapter auto-patches, 監査ログ view) |
 | 21 | `e33a779` | Dashboard customisation suite (A–E): layout storage, widget visibility modal, HTML5 DnD reordering, KPI card manager, Owner/Operations/Marketing profiles |
 | 1 | `14af5d5` | Infrastructure: appConfig, fallbackLogger, dataProvider, serviceRegistry |
 | 2 | `675da50` | Connected admin page syncs to DataProvider via `_dpSync` |
