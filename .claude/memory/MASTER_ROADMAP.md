@@ -8,7 +8,7 @@ metadata:
 # Hello Moving — Master Roadmap
 
 > **Update rule:** After every completed phase, prepend it to the Phase History table, move it from Remaining to Completed, and update any status tables that changed.
-> Last updated: 2026-06-07 (Phase 14)
+> Last updated: 2026-06-07 (Phase 15)
 
 ---
 
@@ -210,6 +210,7 @@ Removed (June 2026): オフィス・法人移転, 外国人向け引越し.
 
 | Phase | Commit | Date | What was built |
 |---|---|---|---|
+| 15 | `7ceb33c` | 2026-06-07 | Bulk operations: multi-select checkboxes on bookings table; batch status change; select-all / deselect-all; bulk delete with confirmation |
 | 14 | `0b73573` | 2026-06-07 | Modular architecture: admin-ui.js (5,543 lines) split into 30 files; js/core/, js/utils/, js/modules/ created; EventBus, AdminState, Validators, Storage, DOM utils added |
 | 13 | — | 2026-06-06 | BI Dashboard: Phase 13 revenue/trend/service/customer/operational panels; StatisticsService query reduction (22→9 Supabase requests) |
 | 12 | `8c3eac9` | 2026-06-07 | PDF direct download: all 11 print functions get downloadPDF* button via html2canvas + jsPDF |
@@ -235,7 +236,6 @@ Removed (June 2026): オフィス・法人移転, 外国人向け引越し.
 | Item | Notes |
 |---|---|
 | Google Calendar sync | Two-way sync between admin calendar and Google Calendar |
-| Bulk operations | Multi-select bookings; batch status change |
 | PWA support | Offline admin access; service worker |
 
 ### Medium priority
