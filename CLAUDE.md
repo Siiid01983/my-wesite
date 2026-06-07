@@ -8,7 +8,7 @@ It has two distinct surfaces:
 | Surface | Files | Purpose |
 |---|---|---|
 | **Public site** | `index.html`, `styles.css`, `script.js`, `bookingService.js`, `calendarService.js` | Customer-facing marketing + booking form |
-| **Admin panel** | `admin.html` | Single-page admin for bookings, calendar, pricing, reviews, content editing |
+| **Admin panel** | `admin.html` + `js/` modules | Single-page admin for bookings, calendar, pricing, reviews, content editing |
 
 The stack is deliberately no-build: plain `<script>` tags, no bundler, no framework.
 All JavaScript runs as browser globals.
@@ -20,7 +20,9 @@ All JavaScript runs as browser globals.
 ```
 my-website/
 ├── index.html              # Public site
-├── admin.html              # Admin panel (~7000 lines, single HTML file)
+├── admin.html              # Admin panel — HTML structure + CSS only (no inline JS)
+├── admin-bookings.js       # CalendarService, BookingService, bookings UI
+├── admin-analytics.js      # Analytics view, chart drawing, _DOW_JP global
 ├── styles.css              # Public site styles
 ├── script.js               # Public site JS (calendar, quote form, etc.)
 ├── bookingService.js       # Booking form submission + Supabase write
@@ -30,16 +32,75 @@ my-website/
 │
 ├── js/
 │   ├── config/
-│   │   ├── appConfig.js        # Global HM_CONFIG object
-│   │   └── env.js              # Supabase credentials (gitignored)
+│   │   ├── appConfig.js        # window.HM_CONFIG — runtime config object
+│   │   ├── env.js              # Supabase credentials (gitignored)
 │   │   └── env.example.js      # Credentials template
-│   └── services/
-│       ├── supabaseClient.js   # window.SupabaseClient singleton
-│       ├── supabaseAdapter.js  # window.Adapter — domain CRUD layer
-│       ├── statisticsService.js# window.StatisticsService — dashboard stats
-│       ├── fallbackLogger.js   # window.FallbackLogger — localStorage event log
-│       ├── dataProvider.js     # window.DataProvider — generic CRUD + cache + retry
-│       └── serviceRegistry.js  # window.Services — service locator
+│   │
+│   ├── lib/
+│   │   └── supabase.js         # Supabase UMD bundle (local copy)
+│   │
+│   ├── services/               # Infrastructure layer (Phases 1–8)
+│   │   ├── supabaseClient.js   # window.SupabaseClient singleton
+│   │   ├── supabaseAdapter.js  # window.Adapter — domain CRUD layer
+│   │   ├── statisticsService.js# window.StatisticsService — BI dashboard stats
+│   │   ├── fallbackLogger.js   # window.FallbackLogger — localStorage event log
+│   │   ├── dataProvider.js     # window.DataProvider — generic CRUD + cache + retry
+│   │   ├── serviceRegistry.js  # window.Services — central service locator
+│   │   └── healthCheck.js      # window.HealthCheck — Supabase connectivity probe
+│   │
+│   ├── core/                   # Phase 14 — Core layer
+│   │   ├── auth.js             # window.Auth — salted hash, session, lockout
+│   │   ├── navigation.js       # go(), VIEW_TITLES, _dpSync, toggleDark, calcStats
+│   │   ├── appBootstrap.js     # init(), showLogin/App/ForceChange, event listeners, startup IIFE
+│   │   ├── eventBus.js         # window.EventBus — typed CustomEvent wrapper
+│   │   └── stateManager.js     # window.AdminState — reactive key/value state container
+│   │
+│   ├── utils/                  # Phase 14 — Reusable utilities
+│   │   ├── formatters.js       # MN, DN, pad, fmtD, fmtDT, genId, esc, badge, toast
+│   │   ├── dom.js              # $id, $html, $show, $hide, $delegate DOM helpers
+│   │   ├── pdf.js              # _capturePrintHtml, _pdfDownload, all downloadPDF* fns
+│   │   ├── storage.js          # window.Storage — type-safe localStorage helpers
+│   │   └── validators.js       # window.Validators — required, email, bookingId, url, etc.
+│   │
+│   └── modules/                # Phase 14 — Feature modules (one domain per folder)
+│       ├── dashboard/
+│       │   └── dashboard.js    # renderDash, renderStatGrid, BI panels, renderQA
+│       ├── calendar/
+│       │   └── calendar.js     # renderCalendar, calClick, bulk select, printCalendar
+│       ├── capacity/
+│       │   └── capacity.js     # loadCapacity, saveCapacity, printCapacity
+│       ├── pricing/
+│       │   └── pricing.js      # renderPricing, savePricing, printPricing
+│       ├── disposal/
+│       │   └── disposal.js     # renderDisposal, category/item CRUD, printDisposal
+│       ├── quotes/
+│       │   └── quotes.js       # renderQuotes, deleteQuote, convertToBooking, printQuote
+│       ├── services/
+│       │   └── servicesEditor.js # renderServices, service CRUD, live preview, history
+│       ├── hero/
+│       │   └── hero.js         # renderHero, saveHero, badge editor, media picker
+│       ├── reviews/
+│       │   └── reviewsEditor.js# renderReviews, approve/reject, public review form fns
+│       ├── footer/
+│       │   └── footer.js       # renderFooter, saveFooterAll, live preview, history
+│       ├── company/
+│       │   └── company.js      # renderCompany, row CRUD, live preview, history
+│       ├── faq/
+│       │   └── faq.js          # renderFaq, item CRUD, live preview, public review form
+│       ├── backup/
+│       │   ├── backup.js       # exportBookingsJSON, exportFullBackup, handleImport
+│       │   └── csvReport.js    # exportCSV, importCSV, generateReport, printReport
+│       ├── notifications/
+│       │   ├── email.js        # sendEmailNotif, renderEmail, saveEmailSettings
+│       │   └── line.js         # sendLineNotif, renderLine, saveLineSettings
+│       ├── changelog/
+│       │   └── changelog.js    # CHANGELOG array, renderChangelog
+│       ├── customers/
+│       │   └── customers.js    # renderCustomers, openCustModal, printCustomer
+│       ├── media/
+│       │   └── media.js        # MediaLib, renderMedia, upload, preview
+│       └── security/
+│           └── security.js     # renderSecurity, renderHealth, _applyAppHealthBanner
 │
 ├── tests/
 │   └── dataProvider.test.js    # 20-case unit test suite (node:test + Playwright)
@@ -52,30 +113,71 @@ my-website/
 
 ## Script loading order
 
-Both HTML files load scripts in this order. **Order matters — do not reorder.**
+**Order matters — do not reorder.** Dependencies are resolved at call-time (lazy), but
+top-level initialisation code in each file must see its dependencies already defined.
 
 ### admin.html
 
-```html
-<!-- 1. Supabase UMD (CDN) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<!-- 2. Global config -->
-<script src="js/config/appConfig.js"></script>
-<!-- 3. Credentials (gitignored) -->
-<script src="js/config/env.js"></script>
-<!-- 4. Supabase client singleton -->
-<script src="js/services/supabaseClient.js"></script>
-<!-- 5. Domain adapter (Adapter.*) -->
-<script src="js/services/supabaseAdapter.js"></script>
-<!-- 6. Dashboard statistics -->
-<script src="js/services/statisticsService.js"></script>
-<!-- 7. Fallback event logger -->
-<script src="js/services/fallbackLogger.js"></script>
-<!-- 8. Generic data provider -->
-<script src="js/services/dataProvider.js"></script>
-<!-- 9. Service locator -->
-<script src="js/services/serviceRegistry.js"></script>
-<!-- 10. Admin application (inline <script> block) -->
+```
+Infrastructure (Supabase → config → services)
+  js/lib/supabase.js
+  js/config/appConfig.js
+  js/config/env.js
+  js/services/supabaseClient.js
+  js/services/supabaseAdapter.js      ← sets window.Adapter
+  js/services/statisticsService.js    ← sets window.StatisticsService
+  js/services/fallbackLogger.js       ← sets window.FallbackLogger
+  js/services/dataProvider.js         ← sets window.DataProvider
+  js/services/healthCheck.js          ← sets window.HealthCheck
+
+Core layer
+  js/core/auth.js                     ← sets window.Auth
+  js/core/eventBus.js                 ← sets window.EventBus
+  js/core/stateManager.js             ← sets window.AdminState
+
+Utilities
+  js/utils/formatters.js              ← globals: MN, DN, pad, fmtD, esc, badge, toast, …
+  js/utils/dom.js                     ← globals: $id, $html, $show, …
+  js/utils/storage.js                 ← sets window.Storage
+  js/utils/validators.js              ← sets window.Validators
+  js/utils/pdf.js                     ← globals: _pdfDownload, downloadPDF*, …
+
+CDN (html2canvas, jsPDF)
+
+Data modules (define _DOW_JP and buildTable used by later modules)
+  admin-bookings.js                   ← CalendarService, BookingService, buildTable, emptyHTML
+  admin-analytics.js                  ← renderAnalytics, drawBarChart, _DOW_JP
+
+Core navigation (lazy — all render fns resolved at call-time)
+  js/core/navigation.js               ← go(), _dpSync, VIEW_TITLES
+
+Feature modules (any order relative to each other)
+  js/modules/dashboard/dashboard.js
+  js/modules/calendar/calendar.js
+  js/modules/capacity/capacity.js
+  js/modules/pricing/pricing.js
+  js/modules/disposal/disposal.js
+  js/modules/quotes/quotes.js
+  js/modules/services/servicesEditor.js
+  js/modules/hero/hero.js
+  js/modules/reviews/reviewsEditor.js
+  js/modules/footer/footer.js
+  js/modules/company/company.js
+  js/modules/faq/faq.js
+  js/modules/backup/backup.js
+  js/modules/backup/csvReport.js
+  js/modules/notifications/email.js
+  js/modules/notifications/line.js
+  js/modules/changelog/changelog.js
+  js/modules/customers/customers.js
+  js/modules/media/media.js
+  js/modules/security/security.js
+
+Service registry (after all services + core + utils are loaded)
+  js/services/serviceRegistry.js      ← populates window.Services
+
+App bootstrap (must be last — contains the startup IIFE)
+  js/core/appBootstrap.js
 ```
 
 ### index.html
@@ -91,6 +193,47 @@ Both HTML files load scripts in this order. **Order matters — do not reorder.*
 <script src="js/services/serviceRegistry.js"></script>
 <script src="bookingService.js"></script>
 ```
+
+---
+
+## Architecture layers (Phase 14)
+
+The admin JS is split into four layers. All code is browser globals — no ES modules,
+no bundler. Functions declared at the top level of any script file are accessible from all
+subsequent scripts.
+
+```
+┌─────────────────────────────────────────────┐
+│  admin.html  (HTML structure + CSS only)    │
+├─────────────────────────────────────────────┤
+│  js/core/    Auth · Navigation · Bootstrap  │  ← session, routing, startup
+│              EventBus · StateManager        │  ← scaffolding for new code
+├─────────────────────────────────────────────┤
+│  js/utils/   formatters · dom · pdf         │  ← shared helpers, no domain logic
+│              storage · validators           │
+├─────────────────────────────────────────────┤
+│  js/modules/ 20 domain folders              │  ← one file per admin section
+├─────────────────────────────────────────────┤
+│  js/services/ Adapter · DataProvider · …   │  ← Supabase, cache, fallback
+└─────────────────────────────────────────────┘
+```
+
+### Key globals
+
+| Global | File | Purpose |
+|---|---|---|
+| `Auth` | `js/core/auth.js` | Login, session, lockout |
+| `go(view)` | `js/core/navigation.js` | Navigate between admin views |
+| `_dpSync(...)` | `js/core/navigation.js` | Route page syncs through DataProvider |
+| `toast(msg)` | `js/utils/formatters.js` | Show notification toast |
+| `esc(s)` | `js/utils/formatters.js` | HTML-escape a string |
+| `fmtD(ds)` | `js/utils/formatters.js` | Format ISO date to Japanese string |
+| `EventBus` | `js/core/eventBus.js` | Typed CustomEvent wrapper |
+| `AdminState` | `js/core/stateManager.js` | Reactive ephemeral UI state |
+| `Validators` | `js/utils/validators.js` | Input validation helpers |
+| `Adapter` | `js/services/supabaseAdapter.js` | Domain CRUD (all data writes go here) |
+| `DataProvider` | `js/services/dataProvider.js` | Generic CRUD + TTL cache + retry |
+| `Services` | `js/services/serviceRegistry.js` | Central service locator |
 
 ---
 
@@ -217,11 +360,17 @@ Override via `HM_CONFIG.CACHE_TTL = { bookings: 60000 }`.
 
 ### `js/services/serviceRegistry.js` → `window.Services`
 
-Service locator populated at load time.
+Central service locator. Populated after all services, core, and utils are loaded.
 
 ```js
-window.Services.Adapter      // → window.Adapter (domain CRUD)
-window.Services.DataProvider // → window.DataProvider (generic CRUD)
+window.Services.Adapter           // → window.Adapter (domain CRUD)
+window.Services.DataProvider      // → window.DataProvider (generic CRUD)
+window.Services.StatisticsService // → window.StatisticsService (BI stats)
+window.Services.Auth              // → window.Auth (session management)
+window.Services.EventBus          // → window.EventBus (typed events)
+window.Services.AdminState        // → window.AdminState (UI state)
+window.Services.Validators        // → window.Validators (input validation)
+window.Services.Storage           // → window.Storage (localStorage helpers)
 ```
 
 ---
@@ -262,7 +411,7 @@ Adapter.syncFromSupabase()
 
 ## Admin page sync pattern
 
-Every admin page that loads data from Supabase uses `_dpSync()` (defined in admin.html):
+Every admin view that pulls from Supabase uses `_dpSync()` (defined in `js/core/navigation.js`):
 
 ```js
 async function _dpSync(table, filters, adapterFn, viewId, rerenderFn) {
@@ -276,8 +425,9 @@ async function _dpSync(table, filters, adapterFn, viewId, rerenderFn) {
 }
 ```
 
-Usage example (one of 13 sync functions in admin.html):
+Usage example (one of 20 sync functions across the modules):
 ```js
+// js/modules/pricing/pricing.js
 function _syncPricingFromSupabase() {
   if (!Adapter.supabaseReady) return;
   _dpSync('hm_data', {key:'hm_prices'}, () => Adapter.syncPrices(), 'view-pricing', _renderPricingUI);
@@ -288,7 +438,7 @@ function _syncPricingFromSupabase() {
 
 ## Admin authentication (Phase 3 hardening)
 
-The `Auth` object in `admin.html` handles all login/session logic.
+The `Auth` object lives in `js/core/auth.js`.
 
 | Feature | Implementation |
 |---|---|
@@ -383,7 +533,8 @@ Debug from the browser console:
 DataProvider.getMetrics()     // runtime stats since page load
 DataProvider.cacheStatus()    // per-table cache state
 FallbackLogger.getAll()       // all fallback events
-window.Services               // {Adapter, DataProvider}
+window.Services               // {Adapter, DataProvider, Auth, EventBus, …}
+AdminState.snapshot()         // current ephemeral UI state
 ```
 
 ---
@@ -399,4 +550,6 @@ window.Services               // {Adapter, DataProvider}
 | 5 | `0f644c8` | Admin dashboard observability panel with live metrics |
 | 6 | `84ecfdf` | DataProvider retry with exponential backoff and jitter |
 | 7 | `0a9c11d` | 20-case DataProvider unit test suite |
-| 8 | `—` | This file |
+| 8 | `—` | CLAUDE.md (this file) |
+| 12 | `8c3eac9` | PDF direct download for all 11 print functions |
+| 14 | `0b73573` | Modular architecture: split admin-ui.js (5543 lines) into 30 domain files across js/core/, js/utils/, js/modules/ |
