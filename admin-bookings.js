@@ -224,6 +224,8 @@ function _renderBookingsUI() {
 
   document.getElementById('bookingsWrap').innerHTML =
     bk.length ? buildTable(bk, false) : emptyHTML('該当する予約がありません');
+  _renderBkBulkBar();
+  _updateHeaderCheckbox();
 }
 
 function renderBookings() {
@@ -234,7 +236,14 @@ function renderBookings() {
 }
 
 function buildTable(bk, compact) {
+  const chk = id => !compact ? `<td style="width:36px;text-align:center;padding:8px 4px">
+    <input type="checkbox" id="bkCb_${esc(id)}" ${_bkBulkSel.has(id)?'checked':''}
+      onchange="_bkToggleRow('${esc(id)}')"
+      style="width:14px;height:14px;accent-color:var(--blue);cursor:pointer" />
+  </td>` : '';
+
   const rows = bk.map(b => `<tr>
+    ${chk(b.id)}
     <td class="td-mono" style="font-size:11px">${esc(b.id||'—')}</td>
     <td><strong>${esc(b.name||'—')}</strong>${!compact&&b.email?`<br><span class="td-sm">${esc(b.email)}</span>`:''}</td>
     <td>${fmtD(b.date)}</td>
@@ -255,7 +264,14 @@ function buildTable(bk, compact) {
     </td>
   </tr>`).join('');
 
+  const selectAllTh = !compact ? `<th style="width:36px;text-align:center;padding:8px 4px">
+    <input type="checkbox" id="bkSelectAll" title="全選択／解除"
+      onchange="_bkToggleAll()"
+      style="width:14px;height:14px;accent-color:var(--blue);cursor:pointer" />
+  </th>` : '';
+
   return `<table><thead><tr>
+    ${selectAllTh}
     <th>予約番号</th><th>お客様名</th><th>引越し日</th><th>ステータス</th>
     ${!compact?'<th>受付日時</th>':''}
     <th>操作</th>
@@ -298,6 +314,106 @@ function filterToday() {
     renderDash();
   });
 });
+
+/* ════════════════════════════════════════════════════════
+   BULK OPERATIONS
+   ════════════════════════════════════════════════════════ */
+let _bkBulkSel = new Set();
+
+function _visibleBookingIds() {
+  const filter = document.getElementById('bkFilter')?.value || '';
+  const q      = (document.getElementById('bkSearch')?.value || '').toLowerCase();
+  return BookingService.getBookings()
+    .filter(b => !filter || b.status === filter)
+    .filter(b => !q ||
+      (b.name||'').toLowerCase().includes(q) ||
+      (b.email||'').toLowerCase().includes(q) ||
+      (b.id||'').toLowerCase().includes(q))
+    .map(b => b.id);
+}
+
+function _bkToggleRow(id) {
+  if (_bkBulkSel.has(id)) _bkBulkSel.delete(id); else _bkBulkSel.add(id);
+  const cb = document.getElementById('bkCb_' + id);
+  if (cb) cb.checked = _bkBulkSel.has(id);
+  _updateHeaderCheckbox();
+  _renderBkBulkBar();
+}
+
+function _bkToggleAll() {
+  const cb  = document.getElementById('bkSelectAll');
+  const ids = _visibleBookingIds();
+  if (cb && cb.checked) ids.forEach(id => _bkBulkSel.add(id));
+  else                  ids.forEach(id => _bkBulkSel.delete(id));
+  _renderBkBulkBar();
+  _renderBookingsUI();
+}
+
+function _updateHeaderCheckbox() {
+  const cb      = document.getElementById('bkSelectAll');
+  if (!cb) return;
+  const visible = _visibleBookingIds();
+  const all     = visible.length > 0 && visible.every(id => _bkBulkSel.has(id));
+  const some    = visible.some(id => _bkBulkSel.has(id));
+  cb.checked       = all;
+  cb.indeterminate = some && !all;
+}
+
+function _renderBkBulkBar() {
+  const el = document.getElementById('bkBulkBar');
+  if (!el) return;
+  const n = _bkBulkSel.size;
+  if (n === 0) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.innerHTML = `
+    <span style="font-size:13px;font-weight:600;color:var(--blue);flex-shrink:0">${n}件選択中</span>
+    <span style="color:var(--line);font-size:18px;flex-shrink:0;line-height:1">|</span>
+    <span style="font-size:12px;color:var(--gray-1);flex-shrink:0;white-space:nowrap">ステータス変更：</span>
+    <select class="sel" id="bkBulkStatus" style="font-size:12px">
+      <option value="新規">新規</option>
+      <option value="確認中">確認中</option>
+      <option value="確定">確定</option>
+      <option value="完了">完了</option>
+      <option value="キャンセル">キャンセル</option>
+    </select>
+    <button class="btn btn-primary btn-sm" onclick="_bkApplyStatus()">適用</button>
+    <button class="btn btn-danger btn-sm" onclick="_bkDeleteSelected()">
+      <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>削除
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick="_bkClearSelection()" style="margin-left:auto">✕ 選択解除</button>`;
+}
+
+function _bkApplyStatus() {
+  const status = document.getElementById('bkBulkStatus')?.value;
+  if (!status) return;
+  const ids = [..._bkBulkSel];
+  ids.forEach(id => {
+    if (status === 'キャンセル') BookingService.cancelBooking(id);
+    else BookingService.updateBooking(id, { status });
+  });
+  _bkBulkSel.clear();
+  toast(`${ids.length}件を「${status}」に変更しました`);
+  renderBookings(); renderDash();
+}
+
+function _bkDeleteSelected() {
+  const n = _bkBulkSel.size;
+  if (!confirm(`選択した${n}件の予約を削除しますか？この操作は取り消せません。`)) return;
+  [..._bkBulkSel].forEach(id => {
+    const bk = BookingService.getBookings().find(b => b.id === id);
+    Adapter.deleteBooking(id);
+    if (bk) BookingService.releaseBooking(bk);
+  });
+  _bkBulkSel.clear();
+  toast(`${n}件を削除しました`);
+  renderBookings(); renderDash();
+}
+
+function _bkClearSelection() {
+  _bkBulkSel.clear();
+  _renderBkBulkBar();
+  _renderBookingsUI();
+}
 
 /* ════════════════════════════════════════════════════════
    ADD / EDIT MODAL
