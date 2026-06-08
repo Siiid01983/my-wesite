@@ -39,6 +39,9 @@ const VIEW_TITLES = {
   backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理', line:'LINE通知設定', email:'メール通知設定', changelog:'変更履歴', security:'セキュリティ', health:'システム健全性',
   staff:'スタッフ管理',
   'audit-log':'監査ログ',
+  'seo':'SEO センター',
+  'blog':'ブログ管理',
+  'site-settings':'ウェブサイト設定',
 };
 
 /* Views only accessible to the admin role */
@@ -104,10 +107,13 @@ function go(view) {
   if (view==='line') renderLine();
   if (view==='email') renderEmail();
   if (view==='changelog') renderChangelog();
-  if (view==='security')    renderSecurity();
-  if (view==='health')      renderHealth();
-  if (view==='staff')       renderStaff();
-  if (view==='audit-log')   renderAuditLog();
+  if (view==='security')      renderSecurity();
+  if (view==='health')        renderHealth();
+  if (view==='staff')         renderStaff();
+  if (view==='audit-log')     renderAuditLog();
+  if (view==='seo')           { renderSEO(); _syncSEOFromSupabase(); }
+  if (view==='blog')          renderBlog();
+  if (view==='site-settings') { renderSiteSettings(); _syncSiteSettingsFromSupabase(); }
   if (window.I18n) I18n.applyToDOM(document.getElementById('adminApp'));
 }
 
