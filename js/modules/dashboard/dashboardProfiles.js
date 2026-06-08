@@ -289,6 +289,7 @@ window.DashboardProfiles = (function () {
     resetProfile: resetProfile,
     getActiveId:  getActiveId,
     PRESETS:      PRESETS,     /* exposed for debugging */
+    init:         init,
   };
 
 }());

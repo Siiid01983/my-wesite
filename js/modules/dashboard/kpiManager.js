@@ -229,14 +229,15 @@ window.KPIManager = (function () {
   }
 
   return {
-    get:           get,
-    save:          save,
-    reset:         reset,
+    get:             get,
+    save:            save,
+    reset:           reset,
     applyVisibility: applyVisibility,
-    openModal:     openModal,
-    closeModal:    closeModal,
-    saveSettings:  saveSettings,
-    resetModal:    resetModal,
+    openModal:       openModal,
+    closeModal:      closeModal,
+    saveSettings:    saveSettings,
+    resetModal:      resetModal,
+    init:            init,
   };
 
 }());
