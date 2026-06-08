@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Website Management — Hello Moving</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+
+/* ══════════════════════════════════════════════════════
+   DESIGN TOKENS — mirrors admin.html
+   ══════════════════════════════════════════════════════ */
+:root {
+  --bg:#fff; --bg-soft:#f8f9fa; --bg-soft-2:#f0f2f5;
+  --ink:#0b0f17; --ink-2:#1e2532;
+  --gray-1:#6b7280; --gray-2:#9ca3af;
+  --line:rgba(0,0,0,.08); --line-2:rgba(0,0,0,.05);
+  --navy:#0a1f44; --blue:#2563eb; --blue-2:#1d4ed8;
+  --green:#10b981; --red:#ef4444; --yellow:#f59e0b;
+  --sw: 240px;
+  /* WordPress-flavour sidebar */
+  --wp-sb:#1d2327; --wp-sb-hover:rgba(255,255,255,.07);
+  --wp-sb-active:rgba(255,255,255,.13); --wp-sb-text:rgba(255,255,255,.7);
+  --wp-sb-section:rgba(255,255,255,.3);
+}
+html.dark {
+  --bg:#0d1117; --bg-soft:#161b22; --bg-soft-2:#1c2128;
+  --ink:#e6edf3; --ink-2:#c9d1d9;
+  --gray-1:#8b949e; --gray-2:#6e7681;
+  --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.04);
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { font-size:14px; }
+body { font-family:'Noto Sans JP','Inter',system-ui,sans-serif; background:var(--bg); color:var(--ink); }
+
+/* ══════════════════════════════════════════════════════
+   LOGIN SCREEN
+   ══════════════════════════════════════════════════════ */
+#wmcLogin {
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  background:var(--navy); padding:20px;
+  background-image:
+    radial-gradient(circle at 20% 50%,rgba(29,158,117,.08) 0%,transparent 60%),
+    radial-gradient(circle at 80% 20%,rgba(37,99,235,.06) 0%,transparent 50%);
+}
+.login-card {
+  background:var(--bg); border-radius:20px; padding:44px 40px 36px;
+  width:100%; max-width:380px;
+  box-shadow:0 32px 80px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06);
+}
+.login-brand { display:flex; align-items:center; gap:13px; margin-bottom:28px; justify-content:center; }
+.login-mark {
+  width:44px; height:44px; border-radius:12px;
+  background:linear-gradient(135deg,#1D9E75,#059669);
+  color:#fff; font-weight:700; font-size:22px;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 6px 16px rgba(29,158,117,.35);
+}
+.login-name { font-weight:700; font-size:17px; color:var(--ink); line-height:1.2; }
+.login-sub { font-size:11px; color:var(--gray-2); letter-spacing:.03em; }
+.login-badge {
+  display:inline-flex; align-items:center; gap:5px;
+  background:rgba(37,99,235,.08); border:1px solid rgba(37,99,235,.15);
+  border-radius:8px; padding:5px 10px; font-size:11px; font-weight:600;
+  color:var(--blue); margin:0 auto 24px; width:fit-content;
+}
+.login-title { text-align:center; font-size:18px; font-weight:700; color:var(--ink); margin-bottom:22px; }
+.login-field { margin-bottom:14px; }
+.login-label { display:block; font-size:12px; font-weight:600; color:var(--gray-1); margin-bottom:5px; }
+.login-input {
+  width:100%; padding:11px 13px; border:1.5px solid var(--line);
+  border-radius:10px; font-size:14px; font-family:inherit;
+  color:var(--ink); background:var(--bg); transition:.15s;
+}
+.login-input:focus { outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(37,99,235,.1); }
+.login-input.has-error { border-color:var(--red); }
+.login-btn {
+  width:100%; padding:12px; background:var(--blue); color:#fff; border:none;
+  border-radius:10px; font-size:14px; font-weight:600; cursor:pointer;
+  font-family:inherit; transition:.15s;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.login-btn:hover:not(:disabled) { background:var(--blue-2); }
+.login-btn:disabled { opacity:.7; cursor:not-allowed; }
+.login-spinner {
+  width:14px; height:14px; border:2px solid rgba(255,255,255,.35);
+  border-top-color:#fff; border-radius:50%;
+  animation:lspin .6s linear infinite; display:none;
+}
+.login-btn.loading .login-spinner { display:block; }
+@keyframes lspin { to { transform:rotate(360deg); } }
+.login-err {
+  color:var(--red); font-size:12px; text-align:center; margin-top:10px;
+  display:none; background:rgba(239,68,68,.06);
+  border:1px solid rgba(239,68,68,.18); border-radius:8px; padding:8px 12px;
+}
+html.dark .login-card { background:var(--bg-soft); }
+html.dark .login-input { background:var(--bg); border-color:rgba(255,255,255,.12); }
+
+/* ══════════════════════════════════════════════════════
+   APP LAYOUT — WordPress style
+   ══════════════════════════════════════════════════════ */
+#wmcApp { display:none; min-height:100vh; }
+.wmc-layout { display:flex; min-height:100vh; }
+
+/* ── Sidebar ── */
+.wmc-sidebar {
+  width:var(--sw); flex-shrink:0; background:var(--wp-sb);
+  display:flex; flex-direction:column;
+  position:fixed; top:0; left:0; height:100vh; z-index:100;
+  overflow-y:auto;
+}
+.wmc-brand {
+  padding:16px 14px; border-bottom:1px solid rgba(255,255,255,.08);
+  display:flex; align-items:center; gap:10px;
+}
+.wmc-mark {
+  width:34px; height:34px; border-radius:9px;
+  background:linear-gradient(135deg,#1D9E75,#059669);
+  color:#fff; font-weight:700; font-size:15px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.wmc-brand-text { min-width:0; }
+.wmc-brand-name { font-weight:700; font-size:13px; color:#fff; line-height:1.2; }
+.wmc-brand-sub { font-size:10px; color:rgba(255,255,255,.4); margin-top:1px; }
+.wmc-nav { flex:1; padding:8px 0; }
+.wmc-section {
+  padding:10px 14px 4px; font-size:10px; letter-spacing:.08em;
+  color:var(--wp-sb-section); text-transform:uppercase; font-weight:600;
+}
+.wmc-link {
+  display:flex; align-items:center; gap:9px; padding:8px 12px;
+  color:var(--wp-sb-text); font-size:12px; font-weight:500;
+  border-radius:5px; margin:1px 7px; cursor:pointer;
+  border:none; background:none; width:calc(100% - 14px);
+  text-align:left; transition:background .15s,color .15s; font-family:inherit;
+}
+.wmc-link:hover { background:var(--wp-sb-hover); color:#fff; }
+.wmc-link.active { background:var(--wp-sb-active); color:#fff; }
+.wmc-link-icon { opacity:.7; flex-shrink:0; width:16px; }
+.wmc-link.active .wmc-link-icon,
+.wmc-link:hover .wmc-link-icon { opacity:1; }
+.wmc-link-badge {
+  margin-left:auto; min-width:18px; height:16px; border-radius:8px;
+  font-size:10px; font-weight:700; padding:0 5px;
+  background:var(--blue); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+}
+.wmc-link-badge:empty { display:none; }
+.wmc-sidebar-footer {
+  padding:10px 14px 14px; border-top:1px solid rgba(255,255,255,.08);
+  display:flex; flex-direction:column; gap:6px;
+}
+.wmc-logout-btn {
+  width:100%; padding:7px; background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.1); border-radius:6px;
+  color:rgba(255,255,255,.55); font-size:12px; cursor:pointer;
+  font-family:inherit; transition:.15s;
+}
+.wmc-logout-btn:hover { background:rgba(239,68,68,.18); border-color:rgba(239,68,68,.3); color:#f87171; }
+.wmc-back-btn {
+  width:100%; padding:7px; background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.1); border-radius:6px;
+  color:rgba(255,255,255,.55); font-size:12px; cursor:pointer;
+  font-family:inherit; transition:.15s; text-decoration:none;
+  display:flex; align-items:center; justify-content:center; gap:5px;
+}
+.wmc-back-btn:hover { background:var(--wp-sb-hover); color:#fff; }
+
+/* ── Main area ── */
+.wmc-main { margin-left:var(--sw); flex:1; display:flex; flex-direction:column; min-height:100vh; }
+
+/* ── Top bar ── */
+.wmc-topbar {
+  height:46px; border-bottom:1px solid var(--line); padding:0 22px;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  background:var(--bg); position:sticky; top:0; z-index:50;
+}
+.wmc-breadcrumb { display:flex; align-items:center; gap:6px; font-size:13px; }
+.wmc-breadcrumb a { color:var(--blue); text-decoration:none; font-weight:500; }
+.wmc-breadcrumb a:hover { text-decoration:underline; }
+.wmc-breadcrumb-sep { color:var(--gray-2); }
+.wmc-breadcrumb-current { color:var(--gray-1); font-weight:500; }
+.wmc-topbar-right { display:flex; align-items:center; gap:10px; }
+.wmc-user-chip {
+  display:flex; align-items:center; gap:7px; padding:5px 10px;
+  background:var(--bg-soft); border:1px solid var(--line); border-radius:20px;
+  font-size:12px; color:var(--ink); font-weight:500;
+}
+.wmc-user-dot {
+  width:8px; height:8px; border-radius:50%; background:var(--green);
+  flex-shrink:0;
+}
+.wmc-site-link {
+  display:flex; align-items:center; gap:5px;
+  padding:5px 10px; background:var(--bg-soft);
+  border:1px solid var(--line); border-radius:7px;
+  font-size:12px; color:var(--gray-1); font-weight:500;
+  text-decoration:none; transition:.15s;
+}
+.wmc-site-link:hover { border-color:var(--blue); color:var(--blue); }
+.wmc-dark-toggle {
+  padding:5px 8px; background:none; border:1px solid var(--line);
+  border-radius:7px; cursor:pointer; font-size:14px; line-height:1;
+  transition:.15s; color:var(--gray-1);
+}
+.wmc-dark-toggle:hover { border-color:var(--blue); }
+
+/* ── Content ── */
+.wmc-content { padding:22px; flex:1; }
+
+/* ── View management ── */
+.wmc-view { display:none; }
+.wmc-view.active { display:block; }
+
+/* ── Section headers ── */
+.wmc-section-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:20px; flex-wrap:wrap; gap:10px;
+}
+.wmc-section-title { font-size:18px; font-weight:700; color:var(--ink); }
+.wmc-section-sub { font-size:12px; color:var(--gray-1); margin-top:2px; }
+.wmc-section-actions { display:flex; align-items:center; gap:8px; }
+
+/* ── Status banner ── */
+.wmc-status-banner {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 16px; border-radius:10px; margin-bottom:20px;
+  border:1px solid;
+}
+.wmc-status-banner.online { background:rgba(16,185,129,.07); border-color:rgba(16,185,129,.25); }
+.wmc-status-banner.offline { background:rgba(239,68,68,.07); border-color:rgba(239,68,68,.25); }
+.wmc-status-banner.checking { background:rgba(245,158,11,.07); border-color:rgba(245,158,11,.25); }
+.wmc-status-dot {
+  width:10px; height:10px; border-radius:50%; flex-shrink:0;
+  animation:pulse-dot 2s infinite;
+}
+.wmc-status-banner.online .wmc-status-dot { background:var(--green); }
+.wmc-status-banner.offline .wmc-status-dot { background:var(--red); animation:none; }
+.wmc-status-banner.checking .wmc-status-dot { background:var(--yellow); }
+@keyframes pulse-dot {
+  0%,100% { opacity:1; } 50% { opacity:.4; }
+}
+.wmc-status-text { flex:1; font-size:13px; font-weight:500; color:var(--ink); }
+.wmc-status-detail { font-size:11px; color:var(--gray-2); margin-top:1px; }
+.wmc-status-time { font-size:11px; color:var(--gray-2); flex-shrink:0; }
+
+/* ── Overview grid ── */
+.wmc-overview-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:14px; margin-bottom:22px;
+}
+.wmc-stat-card {
+  background:var(--bg-soft); border:1px solid var(--line); border-radius:12px;
+  padding:18px 20px; position:relative; overflow:hidden; transition:.2s;
+}
+.wmc-stat-card:hover { border-color:rgba(37,99,235,.3); box-shadow:0 4px 12px rgba(0,0,0,.06); transform:translateY(-1px); }
+.wmc-stat-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:var(--card-accent, var(--blue));
+}
+.wmc-stat-icon {
+  width:38px; height:38px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; margin-bottom:12px;
+  background:var(--icon-bg, rgba(37,99,235,.1));
+}
+.wmc-stat-label { font-size:11px; font-weight:600; color:var(--gray-1); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+.wmc-stat-value { font-size:28px; font-weight:700; color:var(--ink); line-height:1; margin-bottom:4px; }
+.wmc-stat-meta { font-size:11px; color:var(--gray-2); }
+.wmc-stat-badge {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600;
+  margin-top:8px;
+}
+.wmc-stat-badge.green { background:rgba(16,185,129,.1); color:#059669; }
+.wmc-stat-badge.yellow { background:rgba(245,158,11,.12); color:#b45309; }
+.wmc-stat-badge.red { background:rgba(239,68,68,.08); color:#b91c1c; }
+.wmc-stat-badge.blue { background:rgba(37,99,235,.1); color:var(--blue); }
+html.dark .wmc-stat-badge.green { color:#34d399; }
+html.dark .wmc-stat-badge.yellow { color:#f59e0b; }
+html.dark .wmc-stat-badge.red { color:#f87171; }
+
+/* ── SEO Score Panel ── */
+.wmc-seo-panel {
+  background:var(--bg-soft); border:1px solid var(--line); border-radius:12px;
+  overflow:hidden; margin-bottom:22px;
+}
+.wmc-panel-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:13px 18px; border-bottom:1px solid var(--line);
+}
+.wmc-panel-title { font-weight:700; font-size:14px; color:var(--ink); }
+.wmc-panel-body { padding:18px; }
+
+.wmc-seo-overview { display:flex; align-items:center; gap:24px; margin-bottom:20px; flex-wrap:wrap; }
+.wmc-seo-ring-wrap { position:relative; width:110px; height:110px; flex-shrink:0; }
+.wmc-seo-ring-wrap svg { width:110px; height:110px; }
+.wmc-seo-ring-bg { fill:none; stroke:var(--line); stroke-width:8; }
+.wmc-seo-ring-fill { fill:none; stroke-width:8; stroke-linecap:round; transition:stroke-dashoffset .8s ease; }
+.wmc-seo-ring-label {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  text-align:center;
+}
+.wmc-seo-score-num { font-size:22px; font-weight:700; color:var(--ink); line-height:1; }
+.wmc-seo-score-out { font-size:11px; color:var(--gray-2); }
+
+.wmc-seo-summary { flex:1; min-width:200px; }
+.wmc-seo-grade { font-size:24px; font-weight:700; margin-bottom:4px; }
+.wmc-seo-desc { font-size:13px; color:var(--gray-1); line-height:1.5; }
+
+.wmc-seo-checks { display:flex; flex-direction:column; gap:8px; }
+.wmc-check-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line-2); }
+.wmc-check-item:last-child { border-bottom:none; padding-bottom:0; }
+.wmc-check-icon { width:20px; height:20px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:11px; }
+.wmc-check-icon.pass { background:rgba(16,185,129,.12); color:#059669; }
+.wmc-check-icon.fail { background:rgba(239,68,68,.08); color:#b91c1c; }
+.wmc-check-icon.warn { background:rgba(245,158,11,.12); color:#b45309; }
+html.dark .wmc-check-icon.pass { color:#34d399; }
+html.dark .wmc-check-icon.fail { color:#f87171; }
+html.dark .wmc-check-icon.warn { color:#f59e0b; }
+.wmc-check-label { font-size:12px; color:var(--ink); flex:1; }
+.wmc-check-pts { font-size:11px; color:var(--gray-2); font-weight:600; }
+
+/* ── Content Health ── */
+.wmc-health-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; margin-bottom:22px; }
+.wmc-health-card {
+  background:var(--bg-soft); border:1px solid var(--line); border-radius:12px;
+  padding:14px 16px; display:flex; align-items:flex-start; gap:12px;
+}
+.wmc-health-icon-wrap {
+  width:36px; height:36px; border-radius:8px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; font-size:16px;
+}
+.wmc-health-body { flex:1; min-width:0; }
+.wmc-health-title { font-size:12px; font-weight:600; color:var(--ink); margin-bottom:3px; }
+.wmc-health-meta { font-size:11px; color:var(--gray-2); }
+.wmc-health-action {
+  margin-top:6px; font-size:11px; font-weight:600; color:var(--blue);
+  text-decoration:none; cursor:pointer; background:none; border:none;
+  font-family:inherit; padding:0;
+}
+.wmc-health-action:hover { text-decoration:underline; }
+
+/* ── Quick Actions ── */
+.wmc-qa-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin-bottom:22px; }
+.wmc-qa-btn {
+  display:flex; align-items:center; gap:10px; padding:13px 16px;
+  background:var(--bg-soft); border:1px solid var(--line); border-radius:10px;
+  cursor:pointer; font-size:13px; font-weight:500; color:var(--ink);
+  font-family:inherit; transition:.15s; text-align:left; width:100%;
+  text-decoration:none;
+}
+.wmc-qa-btn:hover { border-color:var(--blue); background:rgba(37,99,235,.04); color:var(--ink); }
+.wmc-qa-btn svg { color:var(--blue); flex-shrink:0; }
+
+/* ── Buttons ── */
+.btn {
+  display:inline-flex; align-items:center; gap:6px; padding:7px 14px;
+  border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;
+  border:none; font-family:inherit; transition:.15s; white-space:nowrap;
+}
+.btn-primary { background:var(--blue); color:#fff; }
+.btn-primary:hover { background:var(--blue-2); }
+.btn-ghost { background:none; border:1px solid var(--line); color:var(--ink); }
+.btn-ghost:hover { border-color:var(--blue); color:var(--blue); }
+.btn-sm { padding:5px 10px; font-size:11px; }
+
+/* ── Placeholder view ── */
+.wmc-placeholder {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:64px 24px; text-align:center; color:var(--gray-2);
+}
+.wmc-placeholder-icon { font-size:48px; margin-bottom:16px; opacity:.4; }
+.wmc-placeholder-title { font-size:16px; font-weight:700; color:var(--ink); margin-bottom:8px; }
+.wmc-placeholder-text { font-size:13px; line-height:1.6; max-width:340px; }
+
+/* ── Toast ── */
+#toast {
+  position:fixed; bottom:20px; right:20px; background:var(--ink); color:var(--bg);
+  padding:9px 16px; border-radius:8px; font-size:13px; font-weight:500;
+  z-index:9999; opacity:0; transform:translateY(6px);
+  transition:opacity .2s,transform .2s; pointer-events:none; max-width:280px;
+}
+#toast.show { opacity:1; transform:translateY(0); }
+
+/* ── Responsive ── */
+@media(max-width:768px) {
+  .wmc-sidebar { transform:translateX(-240px); transition:transform .25s; }
+  .wmc-sidebar.open { transform:translateX(0); }
+  .wmc-main { margin-left:0; }
+  .wmc-overview-grid { grid-template-columns:repeat(2,1fr); }
+}
+@media(max-width:480px) {
+  .wmc-overview-grid { grid-template-columns:1fr; }
+  .wmc-qa-grid { grid-template-columns:1fr; }
+}
+
+/* ══════════════════════════════════════════════════════
+   THEME CUSTOMIZER (Section 8)
+   ══════════════════════════════════════════════════════ */
+.tc-layout { display:grid; grid-template-columns:320px 1fr; gap:16px; align-items:start; }
+@media(max-width:960px) { .tc-layout { grid-template-columns:1fr; } }
+.tc-panel { background:var(--bg-soft); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+.tc-panel-head { padding:11px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; }
+.tc-panel-title { font-weight:700; font-size:13px; color:var(--ink); }
+.tc-tabs { display:flex; gap:2px; padding:5px; background:var(--bg-soft-2); border-radius:8px; margin-bottom:14px; }
+.tc-tab { flex:1; padding:5px 3px; border:none; border-radius:5px; font-size:10px; font-weight:600; cursor:pointer; font-family:inherit; color:var(--gray-1); background:none; transition:.15s; white-space:nowrap; }
+.tc-tab.active { background:var(--bg); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.1); }
+.tc-pane { display:none; }
+.tc-pane.active { display:block; }
+.tc-row { display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line-2); gap:10px; }
+.tc-row:last-child { border-bottom:none; }
+.tc-row-label { font-size:12px; font-weight:500; color:var(--ink); }
+.tc-row-sub { font-size:10px; color:var(--gray-2); margin-top:1px; }
+.tc-color-wrap { display:flex; align-items:center; gap:5px; flex-shrink:0; }
+.tc-color-btn { width:26px; height:26px; border-radius:6px; border:2px solid var(--line); cursor:pointer; padding:0; overflow:hidden; flex-shrink:0; background:none; }
+.tc-color-btn input[type=color] { width:36px; height:36px; margin:-5px; border:none; cursor:pointer; }
+.tc-color-hex { width:68px; padding:4px 7px; border:1px solid var(--line); border-radius:6px; font-size:11px; font-family:monospace; color:var(--ink); background:var(--bg); }
+.tc-color-hex:focus { outline:none; border-color:var(--blue); }
+.tc-range-wrap { display:flex; align-items:center; gap:7px; flex-shrink:0; }
+.tc-range { width:88px; accent-color:var(--blue); cursor:pointer; }
+.tc-range-val { font-size:11px; font-weight:600; color:var(--gray-1); min-width:30px; text-align:right; }
+.tc-select { padding:5px 7px; border:1px solid var(--line); border-radius:6px; font-size:11px; font-family:inherit; color:var(--ink); background:var(--bg); cursor:pointer; max-width:140px; }
+.tc-select:focus { outline:none; border-color:var(--blue); }
+.tc-btn-group { display:flex; gap:3px; flex-shrink:0; }
+.tc-btn-opt { padding:4px 9px; border:1.5px solid var(--line); border-radius:5px; font-size:10px; font-weight:600; cursor:pointer; font-family:inherit; color:var(--gray-1); background:none; transition:.15s; }
+.tc-btn-opt.active { border-color:var(--blue); color:var(--blue); background:rgba(37,99,235,.07); }
+.tc-preview-wrap { background:var(--bg-soft); border:1px solid var(--line); border-radius:12px; overflow:hidden; position:sticky; top:56px; }
+.tc-preview-head { padding:11px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; }
+.tc-preview-browser { background:#e5e7eb; border-radius:0 0 11px 11px; }
+.tc-preview-bar { height:26px; background:#e5e7eb; display:flex; align-items:center; gap:5px; padding:0 10px; }
+.tc-preview-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+/* preview element resets */
+.tc-prev { line-height:1.4; }
+.tc-prev-hero { padding:22px 20px; }
+.tc-prev-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.tc-prev-logo { font-weight:700; font-size:13px; }
+.tc-prev-h1 { font-size:17px; font-weight:700; line-height:1.3; margin-bottom:6px; }
+.tc-prev-p { font-size:11px; line-height:1.6; opacity:.8; margin-bottom:14px; }
+.tc-prev-btn { display:inline-block; font-size:12px; font-weight:600; cursor:default; border:none; }
+.tc-prev-cards { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:12px 20px; }
+.tc-prev-card { padding:12px; }
+.tc-prev-card-icon { font-size:18px; margin-bottom:6px; }
+.tc-prev-card-title { font-size:11px; font-weight:600; margin-bottom:3px; }
+.tc-prev-card-text { font-size:10px; opacity:.65; }
+.tc-applied-info { background:rgba(16,185,129,.07); border:1px solid rgba(16,185,129,.2); border-radius:10px; padding:12px 16px; display:flex; align-items:center; gap:10px; font-size:12px; color:var(--ink); }
+
+/* ══════════════════════════════════════════════════════
+   DEPLOYMENT CENTER (Section 9)
+   ══════════════════════════════════════════════════════ */
+.dc-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:20px; }
+.dc-card { background:var(--bg-soft); border:1px solid var(--line); border-radius:12px; padding:16px; }
+.dc-card-label { font-size:10px; font-weight:600; color:var(--gray-2); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; display:flex; align-items:center; gap:5px; }
+.dc-card-value { font-size:18px; font-weight:700; color:var(--ink); margin-bottom:3px; word-break:break-all; font-family:monospace; }
+.dc-card-meta { font-size:11px; color:var(--gray-2); }
+.dc-actions { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin-bottom:20px; }
+.dc-action { background:var(--bg-soft); border:1px solid var(--line); border-radius:12px; padding:16px; }
+.dc-action-head { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.dc-action-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+.dc-action-title { font-size:13px; font-weight:700; color:var(--ink); }
+.dc-action-desc { font-size:11px; color:var(--gray-2); line-height:1.5; margin-bottom:12px; }
+.dc-log-panel { background:var(--bg-soft); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+.dc-log-head { padding:11px 16px; border-bottom:1px solid var(--line); font-weight:700; font-size:13px; color:var(--ink); display:flex; align-items:center; justify-content:space-between; }
+.dc-log-body { padding:12px 16px; font-family:monospace; font-size:11px; color:var(--gray-1); max-height:200px; overflow-y:auto; }
+.dc-log-line { display:flex; gap:10px; padding:3px 0; border-bottom:1px solid var(--line-2); }
+.dc-log-line:last-child { border-bottom:none; }
+.dc-log-ts { color:var(--gray-2); flex-shrink:0; white-space:nowrap; }
+.dc-log-ok  { color:var(--green); }
+.dc-log-warn{ color:var(--yellow); }
+.dc-log-err { color:var(--red); }
+.dc-version-row { display:flex; gap:6px; flex-wrap:wrap; }
+.dc-version-row input { flex:1; min-width:80px; padding:5px 8px; border:1px solid var(--line); border-radius:6px; font-size:12px; font-family:monospace; color:var(--ink); background:var(--bg); }
+.dc-version-row input:focus { outline:none; border-color:var(--blue); }
+
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════
+     LOGIN SCREEN
+     ══════════════════════════════════════════════════════ -->
+<div id="wmcLogin">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-mark">H</div>
+      <div>
+        <div class="login-name">Hello Moving</div>
+        <div class="login-sub">Website Management</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-bottom:22px">
+      <div class="login-badge">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Website Control Center
+      </div>
+    </div>
+
+    <div class="login-title">管理者ログイン</div>
+
+    <div class="login-field">
+      <label class="login-label" for="wmcEmail">メールアドレス</label>
+      <input class="login-input" id="wmcEmail" type="email" autocomplete="username" placeholder="admin@hello-moving.com" />
+    </div>
+    <div class="login-field">
+      <label class="login-label" for="wmcPass">パスワード</label>
+      <input class="login-input" id="wmcPass" type="password" autocomplete="current-password" placeholder="••••••••" />
+    </div>
+
+    <button class="login-btn" id="wmcLoginBtn">
+      <span class="login-btn-text">ログイン</span>
+      <div class="login-spinner"></div>
+    </button>
+
+    <div class="login-err" id="wmcLoginErr"></div>
+
+    <div style="text-align:center;margin-top:16px">
+      <a href="admin.html" style="font-size:12px;color:var(--blue);text-decoration:none">
+        ← 管理パネルに戻る
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MAIN APP
+     ══════════════════════════════════════════════════════ -->
+<div id="wmcApp">
+  <div class="wmc-layout">
+
+    <!-- ── Sidebar ── -->
+    <aside class="wmc-sidebar" id="wmcSidebar">
+      <div class="wmc-brand">
+        <div class="wmc-mark">H</div>
+        <div class="wmc-brand-text">
+          <div class="wmc-brand-name">Hello Moving</div>
+          <div class="wmc-brand-sub">Website Management</div>
+        </div>
+      </div>
+
+      <nav class="wmc-nav">
+        <div class="wmc-section">メイン</div>
+        <button class="wmc-link active" data-view="overview">
+          <svg class="wmc-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          ダッシュボード
+        </button>
+        <button class="wmc-link" data-view="pages">
+          <svg class="wmc-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          ページ管理
+          <span class="wmc-link-badge" id="wmcPagesBadge"></span>
+        </button>
+        <button class="wmc-link" data-view="blog">
+          <svg class="wmc-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          ブログ投稿
+          <span class="wmc-link-badge" id="wmcBlogBadge"></span>
+        </button>
+
+        <div class="wmc-section">コンテンツ</div>
+        <button class="wmc-link" data-view="services">
+          <svg class="wmc-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 115 19.07M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42"/></svg>
+          サービス管理
+          <span class="wmc-link-badge" id="wmcSvcBadge"></span>
+        </button>
+        <button class="wmc-link" data-view="reviews">
+          <svg class="wmc-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          レビュー
+          <span class="wmc-link-badge" id="wmcRevBadge"></span>
+        </button>
+        <button class="wmc-link" data-view="media">
+          <svg class="wmc-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          メディア
+        </button>
+
+        <div class="wmc-section">SEO・設定</div>
+        <button class="wmc-link" data-view="seo">
+          <svg class="wmc-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          SEO設定
+        </button>
+        <button class="wmc-link" data-view="theme">
+          <svg class="wmc-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 100 20"/><path d="M12 2c2.5 5 2.5 15 0 20M2 12h20"/></svg>
+          テーマカスタマイザー
+        </button>
+        <button class="wmc-link" data-view="deploy">
+          <svg class="wmc-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+          デプロイメント
+        </button>
+        <button class="wmc-link" data-view="permissions">
+          <svg class="wmc-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          権限管理
+        </button>
+        <button class="wmc-link" data-view="settings">
+          <svg class="wmc-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 115 19.07"/></svg>
+          サイト設定
+        </button>
+      </nav>
+
+      <div class="wmc-sidebar-footer">
+        <a href="admin.html" class="wmc-back-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="15 18 9 12 15 6"/></svg>
+          管理パネルへ
+        </a>
+        <button class="wmc-logout-btn" onclick="wmcLogout()">ログアウト</button>
+      </div>
+    </aside>
+
+    <!-- ── Main ── -->
+    <main class="wmc-main">
+
+      <!-- Top Bar -->
+      <div class="wmc-topbar">
+        <div class="wmc-breadcrumb">
+          <span style="font-weight:600;font-size:13px;color:var(--ink)">Website Management</span>
+          <span class="wmc-breadcrumb-sep">/</span>
+          <span class="wmc-breadcrumb-current" id="wmcBreadcrumbCurrent">概要</span>
+        </div>
+        <div class="wmc-topbar-right">
+          <a href="/" target="_blank" class="wmc-site-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+            サイトを見る
+          </a>
+          <button class="wmc-dark-toggle" id="wmcDarkToggle" title="ダークモード切替">🌙</button>
+          <div class="wmc-user-chip">
+            <div class="wmc-user-dot"></div>
+            <span id="wmcUserName">Admin</span>
+            <span id="wmcUserChipRole"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="wmc-content">
+
+        <!-- ══ VIEW: Overview ══ -->
+        <div class="wmc-view active" id="wmc-view-overview">
+
+          <div class="wmc-section-header">
+            <div>
+              <div class="wmc-section-title">ウェブサイト概要</div>
+              <div class="wmc-section-sub" id="wmcOverviewTs">読み込み中…</div>
+            </div>
+            <div class="wmc-section-actions">
+              <button class="btn btn-ghost btn-sm" onclick="wmcRefreshOverview()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                更新
+              </button>
+              <a href="admin.html" class="btn btn-primary btn-sm">
+                管理パネルへ →
+              </a>
+            </div>
+          </div>
+
+          <!-- Site Status Banner -->
+          <div class="wmc-status-banner checking" id="wmcStatusBanner">
+            <div class="wmc-status-dot"></div>
+            <div>
+              <div class="wmc-status-text" id="wmcStatusText">サイト状態を確認中…</div>
+              <div class="wmc-status-detail" id="wmcStatusDetail">少々お待ちください</div>
+            </div>
+            <div class="wmc-status-time" id="wmcStatusTime"></div>
+          </div>
+
+          <!-- 8 Stat Cards -->
+          <div class="wmc-overview-grid" id="wmcOverviewGrid">
+            <!-- Rendered by JS -->
+          </div>
+
+          <!-- SEO Score Panel -->
+          <div class="wmc-seo-panel">
+            <div class="wmc-panel-head">
+              <div style="display:flex;align-items:center;gap:8px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <span class="wmc-panel-title">SEOスコア &amp; コンテンツ健全性</span>
+              </div>
+              <a href="admin.html" class="btn btn-ghost btn-sm">コンテンツを編集</a>
+            </div>
+            <div class="wmc-panel-body">
+              <div class="wmc-seo-overview">
+                <div class="wmc-seo-ring-wrap">
+                  <svg viewBox="0 0 110 110">
+                    <circle class="wmc-seo-ring-bg" cx="55" cy="55" r="46"/>
+                    <circle class="wmc-seo-ring-fill" id="wmcSeoRing"
+                      cx="55" cy="55" r="46"
+                      stroke-dasharray="289"
+                      stroke-dashoffset="289"
+                      transform="rotate(-90 55 55)"/>
+                  </svg>
+                  <div class="wmc-seo-ring-label">
+                    <div class="wmc-seo-score-num" id="wmcSeoNum">—</div>
+                    <div class="wmc-seo-score-out">/100</div>
+                  </div>
+                </div>
+                <div class="wmc-seo-summary">
+                  <div class="wmc-seo-grade" id="wmcSeoGrade">—</div>
+                  <div class="wmc-seo-desc" id="wmcSeoDesc">コンテンツを読み込み中です…</div>
+                </div>
+              </div>
+              <div class="wmc-seo-checks" id="wmcSeoChecks">
+                <!-- Rendered by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Content Health Cards -->
+          <div style="margin-bottom:16px">
+            <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:12px">コンテンツ状態</div>
+            <div class="wmc-health-grid" id="wmcHealthGrid">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div style="margin-bottom:16px">
+            <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:12px">クイックアクション</div>
+            <div class="wmc-qa-grid">
+              <a href="admin.html#bookings" class="wmc-qa-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                予約を管理する
+              </a>
+              <a href="admin.html#services" class="wmc-qa-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 115 19.07M12 2v2"/></svg>
+                サービスを編集する
+              </a>
+              <a href="admin.html#reviews" class="wmc-qa-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                レビューを承認する
+              </a>
+              <a href="admin.html#hero" class="wmc-qa-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                ヒーロー編集
+              </a>
+              <a href="admin.html#faq" class="wmc-qa-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+                FAQ を編集する
+              </a>
+              <a href="admin.html#media" class="wmc-qa-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                メディアを管理する
+              </a>
+            </div>
+          </div>
+
+        </div>
+        <!-- /overview -->
+
+        <!-- ══ VIEW: Pages ══ -->
+        <div class="wmc-view" id="wmc-view-pages">
+          <div class="wmc-section-header">
+            <div>
+              <div class="wmc-section-title">ページ管理</div>
+              <div class="wmc-section-sub">サイトの全ページ一覧と状態</div>
+            </div>
+          </div>
+          <div id="wmcPagesContent"></div>
+        </div>
+
+        <!-- ══ VIEW: Blog ══ -->
+        <div class="wmc-view" id="wmc-view-blog">
+          <div class="wmc-section-header">
+            <div>
+              <div class="wmc-section-title">ブログ投稿</div>
+              <div class="wmc-section-sub">記事・お知らせの管理</div>
+            </div>
+            <button class="btn btn-primary btn-sm" id="wmcBlogNewBtn" onclick="wmcNewBlogPost()">
+              + 新規投稿
+            </button>
+          </div>
+          <div id="wmcBlogContent"></div>
+        </div>
+
+        <!-- ══ VIEW: Services ══ -->
+        <div class="wmc-view" id="wmc-view-services">
+          <div class="wmc-placeholder">
+            <div class="wmc-placeholder-icon">⚙️</div>
+            <div class="wmc-placeholder-title">サービス管理</div>
+            <div class="wmc-placeholder-text">サービスの編集は管理パネルから行えます。</div>
+            <a href="admin.html" class="btn btn-primary" style="margin-top:16px">管理パネルを開く →</a>
+          </div>
+        </div>
+
+        <!-- ══ VIEW: Reviews ══ -->
+        <div class="wmc-view" id="wmc-view-reviews">
+          <div class="wmc-placeholder">
+            <div class="wmc-placeholder-icon">⭐</div>
+            <div class="wmc-placeholder-title">レビュー管理</div>
+            <div class="wmc-placeholder-text">レビューの承認・管理は管理パネルから行えます。</div>
+            <a href="admin.html" class="btn btn-primary" style="margin-top:16px">管理パネルを開く →</a>
+          </div>
+        </div>
+
+        <!-- ══ VIEW: Media ══ -->
+        <div class="wmc-view" id="wmc-view-media">
+          <div class="wmc-placeholder">
+            <div class="wmc-placeholder-icon">🖼</div>
+            <div class="wmc-placeholder-title">メディアライブラリ</div>
+            <div class="wmc-placeholder-text">画像・動画の管理は管理パネルのメディアライブラリから行えます。</div>
+            <a href="admin.html" class="btn btn-primary" style="margin-top:16px">管理パネルを開く →</a>
+          </div>
+        </div>
+
+        <!-- ══ VIEW: SEO ══ -->
+        <div class="wmc-view" id="wmc-view-seo">
+          <div class="wmc-section-header">
+            <div>
+              <div class="wmc-section-title">SEO設定</div>
+              <div class="wmc-section-sub">検索エンジン最適化の管理</div>
+            </div>
+          </div>
+          <div id="wmcSeoSettingsContent"></div>
+        </div>
+
+        <!-- ══ VIEW: Permissions (Section 10) ══ -->
+        <div class="wmc-view" id="wmc-view-permissions">
+          <div class="wmc-section-header">
+            <div>
+              <div class="wmc-section-title">権限管理</div>
+              <div class="wmc-section-sub">ロール・ユーザー・アクセス権限を管理します</div>
+            </div>
+          </div>
+          <div id="wmcPermissionsContent"></div>
+        </div>
+
+        <!-- ══ VIEW: Settings ══ -->
+        <div class="wmc-view" id="wmc-view-settings">
+          <div class="wmc-placeholder">
+            <div class="wmc-placeholder-icon">⚙️</div>
+            <div class="wmc-placeholder-title">サイト設定</div>
+            <div class="wmc-placeholder-text">Coming soon — サイト全体の設定を管理します。</div>
+          </div>
+        </div>
+
+        <!-- ══ VIEW: Theme Customizer (Section 8) ══ -->
+        <div class="wmc-view" id="wmc-view-theme">
+          <div class="wmc-section-header">
+            <div>
+              <div class="wmc-section-title">テーマカスタマイザー</div>
+              <div class="wmc-section-sub">カラー・フォント・ボタン・余白をコード不要で変更、ライブプレビュー付き</div>
+            </div>
+            <div class="wmc-section-actions">
+              <button class="btn btn-ghost btn-sm" onclick="_tcReset()">リセット</button>
+              <button class="btn btn-primary btn-sm" onclick="_tcApply()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
+                サイトに適用
+              </button>
+            </div>
+          </div>
+
+          <div class="tc-layout">
+            <!-- Controls -->
+            <div class="tc-panel">
+              <div class="tc-panel-head">
+                <span class="tc-panel-title">スタイル設定</span>
+                <span style="font-size:10px;color:var(--gray-2)">変更は自動保存されません</span>
+              </div>
+              <div style="padding:14px">
+                <div class="tc-tabs" id="tcTabs">
+                  <button class="tc-tab active" data-tab="colors">カラー</button>
+                  <button class="tc-tab" data-tab="fonts">フォント</button>
+                  <button class="tc-tab" data-tab="buttons">ボタン</button>
+                  <button class="tc-tab" data-tab="radius">角丸</button>
+                  <button class="tc-tab" data-tab="spacing">余白</button>
+                </div>
+                <div class="tc-pane active" id="tcPane-colors"></div>
+                <div class="tc-pane" id="tcPane-fonts"></div>
+                <div class="tc-pane" id="tcPane-buttons"></div>
+                <div class="tc-pane" id="tcPane-radius"></div>
+                <div class="tc-pane" id="tcPane-spacing"></div>
+              </div>
+            </div>
+
+            <!-- Live Preview -->
+            <div class="tc-preview-wrap">
+              <div class="tc-preview-head">
+                <span class="tc-panel-title">ライブプレビュー</span>
+                <span style="font-size:10px;color:var(--gray-2)">変更はリアルタイムで反映されます</span>
+              </div>
+              <div class="tc-preview-browser">
+                <div class="tc-preview-bar">
+                  <div class="tc-preview-dot" style="background:#ef4444"></div>
+                  <div class="tc-preview-dot" style="background:#f59e0b"></div>
+                  <div class="tc-preview-dot" style="background:#10b981"></div>
+                  <div style="flex:1;height:14px;background:rgba(255,255,255,.65);border-radius:3px;margin-left:6px;font-size:9px;line-height:14px;padding:0 6px;color:#555;font-family:monospace">hello-moving.com</div>
+                </div>
+                <div id="tcPreview"></div>
+              </div>
+              <div id="tcAppliedBanner" style="display:none;padding:10px 14px"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ VIEW: Deployment Center (Section 9) ══ -->
+        <div class="wmc-view" id="wmc-view-deploy">
+          <div class="wmc-section-header">
+            <div>
+              <div class="wmc-section-title">デプロイメントセンター</div>
+              <div class="wmc-section-sub">バージョン管理・設定エクスポート・バックアップ</div>
+            </div>
+            <div class="wmc-section-actions">
+              <button class="btn btn-ghost btn-sm" onclick="_dcRefresh()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                更新
+              </button>
+            </div>
+          </div>
+
+          <!-- Info cards -->
+          <div class="dc-grid" id="dcInfoGrid"></div>
+
+          <!-- Actions -->
+          <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:12px">アクション</div>
+          <div class="dc-actions" id="dcActionsGrid"></div>
+
+          <!-- Backups list -->
+          <div id="dcBackupsList" style="margin-bottom:20px"></div>
+
+          <!-- Deploy log -->
+          <div class="dc-log-panel">
+            <div class="dc-log-head">
+              <span>デプロイログ</span>
+              <button class="btn btn-ghost btn-sm" onclick="_dcClearLog()">ログをクリア</button>
+            </div>
+            <div class="dc-log-body" id="dcLogBody"></div>
+          </div>
+        </div>
+
+      </div><!-- /wmc-content -->
+    </main>
+  </div><!-- /wmc-layout -->
+</div><!-- /wmcApp -->
+
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     SCRIPTS — minimal subset needed by this page
+     ══════════════════════════════════════════════════════ -->
+<script src="js/lib/supabase.js"></script>
+<script src="js/config/appConfig.js"></script>
+<script src="js/config/env.js" onerror="console.warn('[WMC] env.js missing')"></script>
+<script src="js/services/supabaseClient.js"></script>
+<script src="js/services/supabaseAdapter.js"></script>
+<script src="js/services/fallbackLogger.js"></script>
+<script src="js/services/dataProvider.js"></script>
+<script src="js/services/healthCheck.js"></script>
+<script src="js/core/auth.js"></script>
+<script src="js/core/eventBus.js"></script>
+<script src="js/core/stateManager.js"></script>
+<script src="js/utils/formatters.js"></script>
+<script src="js/utils/dom.js"></script>
+<script src="js/utils/storage.js"></script>
+<script src="js/utils/validators.js"></script>
+<script src="js/utils/i18n.js"></script>
+<script src="js/modules/audit/auditLog.js"></script>
+<script src="js/services/serviceRegistry.js"></script>
+
+<!-- Phase 28 — WMC modules -->
+<script src="js/modules/website/wmcCore.js"></script>
+<script src="js/modules/website/wmcPermissions.js"></script>
+<script src="js/modules/website/wmcOverview.js"></script>
+<script src="js/modules/website/wmcPages.js"></script>
+<script src="js/modules/website/wmcBlog.js"></script>
+<script src="js/modules/website/wmcSeo.js"></script>
+<script src="js/modules/website/wmcTheme.js"></script>
+<script src="js/modules/website/wmcDeploy.js"></script>
+
+<script>
+'use strict';
+
+/* Global shim */
+function showLogin() { _wmcShowLogin(); }
+
+/* Navigation */
+var _wmcCurrentView = 'overview';
+
+var WMC_BREADCRUMBS = {
+  overview    : '概要',
+  pages       : 'ページ管理',
+  blog        : 'ブログ投稿',
+  services    : 'サービス管理',
+  reviews     : 'レビュー',
+  media       : 'メディア',
+  seo         : 'SEO設定',
+  theme       : 'テーマカスタマイザー',
+  deploy      : 'デプロイメントセンター',
+  permissions : '権限管理',
+  settings    : 'サイト設定',
+};
+
+var _WMC_VIEW_PERMS = {
+  theme       : 'manage_theme',
+  deploy      : 'manage_deploy',
+  settings    : 'modify_settings',
+  permissions : 'manage_users',
+};
+
+function wmcGo(view) {
+  if (!Auth.isLoggedIn()) { _wmcShowLogin(); return; }
+  Auth.touch();
+  var old     = document.getElementById('wmc-view-' + _wmcCurrentView);
+  var oldLink = document.querySelector('.wmc-link[data-view="' + _wmcCurrentView + '"]');
+  if (old)     old.classList.remove('active');
+  if (oldLink) oldLink.classList.remove('active');
+  _wmcCurrentView = view;
+  var el   = document.getElementById('wmc-view-' + view);
+  var link = document.querySelector('.wmc-link[data-view="' + view + '"]');
+  if (el)   el.classList.add('active');
+  if (link) link.classList.add('active');
+  var bc = document.getElementById('wmcBreadcrumbCurrent');
+  if (bc) bc.textContent = WMC_BREADCRUMBS[view] || view;
+  var perm = _WMC_VIEW_PERMS[view];
+  if (perm && typeof WMCPermissions !== 'undefined') {
+    WMCPermissions.applyRestriction(view, perm);
+    if (!WMCPermissions.can(perm)) return;
+  }
+  if (view === 'overview')    wmcRefreshOverview();
+  if (view === 'pages')       _wmcRenderPages();
+  if (view === 'blog')        _wmcRenderBlog();
+  if (view === 'seo')         _wmcRenderSeoSettings();
+  if (view === 'theme')       _wmcRenderTheme();
+  if (view === 'deploy')      _wmcRenderDeploy();
+  if (view === 'permissions') _wmcRenderPermissions();
+}
+
+/* Auth flow */
+function _wmcShowLogin() {
+  document.getElementById('wmcLogin').style.display = 'flex';
+  document.getElementById('wmcApp').style.display   = 'none';
+  document.getElementById('wmcLoginErr').style.display = 'none';
+  document.getElementById('wmcEmail').value = '';
+  document.getElementById('wmcPass').value  = '';
+  document.getElementById('wmcEmail').classList.remove('has-error');
+  document.getElementById('wmcPass').classList.remove('has-error');
+  try {
+    var r = JSON.parse(localStorage.getItem('hm_admin_remember') || 'null');
+    if (r && r.user && r.exp && Date.now() < r.exp) document.getElementById('wmcEmail').value = r.user;
+  } catch (_) {}
+}
+
+function _wmcShowApp() {
+  document.getElementById('wmcLogin').style.display = 'none';
+  document.getElementById('wmcApp').style.display   = 'block';
+  var nameEl = document.getElementById('wmcUserName');
+  if (nameEl) nameEl.textContent = Auth.getUser().name || 'Admin';
+  if (typeof WMCPermissions !== 'undefined') {
+    var ri   = WMCPermissions.getRoleInfo();
+    var chip = document.getElementById('wmcUserChipRole');
+    if (chip) { chip.textContent = ri.label; chip.className = 'wmc-stat-badge ' + ri.badge; chip.style.marginLeft = '6px'; }
+  }
+}
+
+function wmcLogout() {
+  if (typeof AuditLog !== 'undefined') AuditLog.record('logout', 'wmc', '-', 'Website Management ログアウト');
+  Auth.logout();
+}
+
+/* Dark mode */
+(function () {
+  if (localStorage.getItem('hm_dark') === '1') document.documentElement.classList.add('dark');
+}());
+document.addEventListener('DOMContentLoaded', function () {
+  var btn = document.getElementById('wmcDarkToggle');
+  if (!btn) return;
+  btn.addEventListener('click', function () {
+    var d = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('hm_dark', d ? '1' : '0');
+    btn.textContent = d ? '☀️' : '🌙';
+  });
+  btn.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+});
+
+/* Startup IIFE */
+(async function () {
+  await Auth.initCreds();
+  document.querySelectorAll('.wmc-link[data-view]').forEach(function (btn) {
+    btn.addEventListener('click', function () { wmcGo(this.dataset.view); });
+  });
+  document.getElementById('wmcLoginBtn').addEventListener('click', async function () {
+    var emailEl = document.getElementById('wmcEmail');
+    var passEl  = document.getElementById('wmcPass');
+    var errEl   = document.getElementById('wmcLoginErr');
+    var btn     = document.getElementById('wmcLoginBtn');
+    emailEl.classList.remove('has-error'); passEl.classList.remove('has-error');
+    errEl.style.display = 'none';
+    if (Auth.isLockedOut()) {
+      errEl.textContent = 'アカウントがロックされています。' + Auth.lockoutMins() + '分後に再試行してください。';
+      errEl.style.display = 'block'; return;
+    }
+    var u = emailEl.value.trim(); var p = passEl.value;
+    if (!u || !p) { if (!u) emailEl.classList.add('has-error'); if (!p) passEl.classList.add('has-error'); return; }
+    btn.disabled = true; btn.classList.add('loading');
+    btn.querySelector('.login-btn-text').textContent = 'ログイン中…';
+    var result = await Auth.login(u, p, false);
+    btn.classList.remove('loading'); btn.disabled = false;
+    btn.querySelector('.login-btn-text').textContent = 'ログイン';
+    if (result.ok) { _wmcShowApp(); await _wmcInit(); }
+    else {
+      emailEl.classList.add('has-error'); passEl.classList.add('has-error');
+      errEl.textContent = result.locked
+        ? 'ログイン試行が多すぎます。' + Auth.lockoutMins() + '分後に再試行してください。'
+        : 'メールアドレスまたはパスワードが正しくありません。';
+      errEl.style.display = 'block';
+    }
+  });
+  document.getElementById('wmcPass').addEventListener('keydown',  function (e) { if (e.key === 'Enter') document.getElementById('wmcLoginBtn').click(); });
+  document.getElementById('wmcEmail').addEventListener('keydown', function (e) { if (e.key === 'Enter') document.getElementById('wmcPass').focus(); });
+  if (Auth.isLoggedIn()) { _wmcShowApp(); await _wmcInit(); } else { _wmcShowLogin(); }
+}());
+
+async function _wmcInit() {
+  _wmcPatchAdapterForTimestamp();
+  if (typeof Adapter !== 'undefined' && Adapter.supabaseReady) {
+    try { await Adapter.syncFromSupabase(); } catch (_) {}
+  }
+  if (typeof AuditLog !== 'undefined' && AuditLog.init) AuditLog.init();
+  await wmcRefreshOverview();
+  document.addEventListener('click',   function () { Auth.touch(); });
+  document.addEventListener('keydown', function () { Auth.touch(); });
+}
+</script>
+</body>
+</html>
