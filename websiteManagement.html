@@ -980,40 +980,155 @@ html.dark .wmc-check-icon.warn { color:#f59e0b; }
 <div id="toast"></div>
 
 <!-- ══════════════════════════════════════════════════════
-     SCRIPTS — minimal subset needed by this page
+     SCRIPTS — dependency-verified loading sequence
+     Every tag carries onload + onerror diagnostics.
      ══════════════════════════════════════════════════════ -->
-<script src="js/lib/supabase.js"></script>
-<script src="js/config/appConfig.js"></script>
-<script src="js/config/env.js" onerror="console.warn('[WMC] env.js missing')"></script>
-<script src="js/services/supabaseClient.js"></script>
-<script src="js/services/supabaseAdapter.js"></script>
-<script src="js/services/fallbackLogger.js"></script>
-<script src="js/services/dataProvider.js"></script>
-<script src="js/services/healthCheck.js"></script>
-<script src="js/core/auth.js"></script>
-<script src="js/core/eventBus.js"></script>
-<script src="js/core/stateManager.js"></script>
-<script src="js/utils/formatters.js"></script>
-<script src="js/utils/dom.js"></script>
-<script src="js/utils/storage.js"></script>
-<script src="js/utils/validators.js"></script>
-<script src="js/utils/i18n.js"></script>
-<script src="js/modules/audit/auditLog.js"></script>
-<script src="js/services/serviceRegistry.js"></script>
 
-<!-- Phase 28 — WMC modules -->
-<script src="js/modules/website/wmcCore.js"></script>
-<script src="js/modules/website/wmcPermissions.js"></script>
-<script src="js/modules/website/wmcOverview.js"></script>
-<script src="js/modules/website/wmcPages.js"></script>
-<script src="js/modules/website/wmcBlog.js"></script>
-<script src="js/modules/website/wmcSeo.js"></script>
-<script src="js/modules/website/wmcTheme.js"></script>
-<script src="js/modules/website/wmcDeploy.js"></script>
-<script src="js/modules/website/wmcAnalytics.js"></script>
+<!-- Infrastructure -->
+<script src="js/lib/supabase.js"
+  onload="console.log('[WMC] Loaded: supabase.js')"
+  onerror="console.error('[WMC] FAILED: supabase.js')"></script>
+<script src="js/config/appConfig.js"
+  onload="console.log('[WMC] Loaded: appConfig.js')"
+  onerror="console.error('[WMC] FAILED: appConfig.js')"></script>
+<script src="js/config/env.js"
+  onload="console.log('[WMC] Loaded: env.js')"
+  onerror="console.warn('[WMC] env.js not found — Supabase credentials unavailable')"></script>
+<script src="js/services/supabaseClient.js"
+  onload="console.log('[WMC] Loaded: supabaseClient.js')"
+  onerror="console.error('[WMC] FAILED: supabaseClient.js')"></script>
+<script src="js/services/supabaseAdapter.js"
+  onload="console.log('[WMC] Loaded: supabaseAdapter.js')"
+  onerror="console.error('[WMC] FAILED: supabaseAdapter.js')"></script>
+<script src="js/services/fallbackLogger.js"
+  onload="console.log('[WMC] Loaded: fallbackLogger.js')"
+  onerror="console.error('[WMC] FAILED: fallbackLogger.js')"></script>
+<script src="js/services/dataProvider.js"
+  onload="console.log('[WMC] Loaded: dataProvider.js')"
+  onerror="console.error('[WMC] FAILED: dataProvider.js')"></script>
+<script src="js/services/healthCheck.js"
+  onload="console.log('[WMC] Loaded: healthCheck.js')"
+  onerror="console.error('[WMC] FAILED: healthCheck.js')"></script>
+
+<!-- Core -->
+<script src="js/core/auth.js"
+  onload="console.log('[WMC] Loaded: auth.js')"
+  onerror="console.error('[WMC] FAILED: auth.js')"></script>
+<script src="js/core/eventBus.js"
+  onload="console.log('[WMC] Loaded: eventBus.js')"
+  onerror="console.error('[WMC] FAILED: eventBus.js')"></script>
+<script src="js/core/stateManager.js"
+  onload="console.log('[WMC] Loaded: stateManager.js')"
+  onerror="console.error('[WMC] FAILED: stateManager.js')"></script>
+
+<!-- Utilities -->
+<script src="js/utils/formatters.js"
+  onload="console.log('[WMC] Loaded: formatters.js')"
+  onerror="console.error('[WMC] FAILED: formatters.js')"></script>
+<script src="js/utils/dom.js"
+  onload="console.log('[WMC] Loaded: dom.js')"
+  onerror="console.error('[WMC] FAILED: dom.js')"></script>
+<script src="js/utils/storage.js"
+  onload="console.log('[WMC] Loaded: storage.js')"
+  onerror="console.error('[WMC] FAILED: storage.js')"></script>
+<script src="js/utils/validators.js"
+  onload="console.log('[WMC] Loaded: validators.js')"
+  onerror="console.error('[WMC] FAILED: validators.js')"></script>
+<script src="js/utils/i18n.js"
+  onload="console.log('[WMC] Loaded: i18n.js')"
+  onerror="console.error('[WMC] FAILED: i18n.js')"></script>
+
+<!-- Audit + registry (after all services, core, and utils) -->
+<script src="js/modules/audit/auditLog.js"
+  onload="console.log('[WMC] Loaded: auditLog.js')"
+  onerror="console.error('[WMC] FAILED: auditLog.js')"></script>
+<script src="js/services/serviceRegistry.js"
+  onload="console.log('[WMC] Loaded: serviceRegistry.js')"
+  onerror="console.error('[WMC] FAILED: serviceRegistry.js')"></script>
+
+<!-- Phase 28 — WMC core (permissions shared by all WMC modules) -->
+<script src="js/modules/website/wmcCore.js"
+  onload="console.log('[WMC] Loaded: wmcCore.js')"
+  onerror="console.error('[WMC] FAILED: wmcCore.js')"></script>
+<script src="js/modules/website/wmcPermissions.js"
+  onload="console.log('[WMC] Loaded: wmcPermissions.js')"
+  onerror="console.error('[WMC] FAILED: wmcPermissions.js')"></script>
+
+<!-- Phase 28 — WMC extended modules
+     Load order matters: pageManager defines _wmcCloseModal used by wmcMedia + blockEditor;
+     blockEditor depends on WMCPageManager and WMCMedia. -->
+<script src="js/modules/wmc/pageManager.js"
+  onload="console.log('[WMC] Loaded: pageManager.js')"
+  onerror="console.error('[WMC] FAILED: pageManager.js')"></script>
+<script src="js/modules/wmc/wmcMedia.js"
+  onload="console.log('[WMC] Loaded: wmcMedia.js')"
+  onerror="console.error('[WMC] FAILED: wmcMedia.js')"></script>
+<script src="js/modules/wmc/blockEditor.js"
+  onload="console.log('[WMC] Loaded: blockEditor.js')"
+  onerror="console.error('[WMC] FAILED: blockEditor.js')"></script>
+
+<!-- Phase 28 — WMC feature modules -->
+<script src="js/modules/website/wmcOverview.js"
+  onload="console.log('[WMC] Loaded: wmcOverview.js')"
+  onerror="console.error('[WMC] FAILED: wmcOverview.js')"></script>
+<script src="js/modules/website/wmcPages.js"
+  onload="console.log('[WMC] Loaded: wmcPages.js')"
+  onerror="console.error('[WMC] FAILED: wmcPages.js')"></script>
+<script src="js/modules/website/wmcBlog.js"
+  onload="console.log('[WMC] Loaded: wmcBlog.js')"
+  onerror="console.error('[WMC] FAILED: wmcBlog.js')"></script>
+<script src="js/modules/website/wmcSeo.js"
+  onload="console.log('[WMC] Loaded: wmcSeo.js')"
+  onerror="console.error('[WMC] FAILED: wmcSeo.js')"></script>
+<script src="js/modules/website/wmcTheme.js"
+  onload="console.log('[WMC] Loaded: wmcTheme.js')"
+  onerror="console.error('[WMC] FAILED: wmcTheme.js')"></script>
+<script src="js/modules/website/wmcDeploy.js"
+  onload="console.log('[WMC] Loaded: wmcDeploy.js')"
+  onerror="console.error('[WMC] FAILED: wmcDeploy.js')"></script>
+<script src="js/modules/website/wmcAnalytics.js"
+  onload="console.log('[WMC] Loaded: wmcAnalytics.js')"
+  onerror="console.error('[WMC] FAILED: wmcAnalytics.js')"></script>
 
 <script>
 'use strict';
+
+/* ── Startup dependency audit ── */
+(function () {
+  var required = [
+    ['Auth',           'js/core/auth.js'],
+    ['Adapter',        'js/services/supabaseAdapter.js'],
+    ['DataProvider',   'js/services/dataProvider.js'],
+    ['HealthCheck',    'js/services/healthCheck.js'],
+    ['AuditLog',       'js/modules/audit/auditLog.js'],
+    ['Services',       'js/services/serviceRegistry.js'],
+    ['WMCPermissions', 'js/modules/website/wmcCore.js'],
+  ];
+  var extended = [
+    ['WMCPageManager', 'js/modules/wmc/pageManager.js'],
+    ['WMCMedia',       'js/modules/wmc/wmcMedia.js'],
+    ['WMCBlockEditor', 'js/modules/wmc/blockEditor.js'],
+  ];
+  var missing = required.filter(function (c) { return typeof window[c[0]] === 'undefined'; });
+  var missingExt = extended.filter(function (c) { return typeof window[c[0]] === 'undefined'; });
+  if (missing.length) {
+    console.group('[WMC] Dependency audit — ' + missing.length + ' required global(s) missing');
+    missing.forEach(function (c) {
+      console.error('[WMC] Missing required: window.' + c[0] + '  ←  ' + c[1]);
+    });
+    console.groupEnd();
+  }
+  if (missingExt.length) {
+    console.group('[WMC] Dependency audit — ' + missingExt.length + ' extended global(s) missing');
+    missingExt.forEach(function (c) {
+      console.warn('[WMC] Missing extended: window.' + c[0] + '  ←  ' + c[1]);
+    });
+    console.groupEnd();
+  }
+  if (!missing.length && !missingExt.length) {
+    console.log('[WMC] Dependency audit — all globals present ✓');
+  }
+}());
 
 /* Global shim */
 function showLogin() { _wmcShowLogin(); }

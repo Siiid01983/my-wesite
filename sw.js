@@ -15,7 +15,7 @@
    Bump CACHE_VERSION to force cache replacement on next deploy.
    ════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const STATIC_CACHE  = 'hm-static-' + CACHE_VERSION;
 const FONT_CACHE    = 'hm-fonts-'  + CACHE_VERSION;
 const ALL_CACHES    = [STATIC_CACHE, FONT_CACHE];
@@ -101,6 +101,23 @@ const PRECACHE = [
   '/js/modules/offline/offlineDB.js',
   '/js/modules/offline/offlineQueue.js',
   '/js/modules/camera/cameraCapture.js',
+
+  /* Phase 28 — Website Management Center */
+  '/websiteManagement.html',
+  '/js/utils/i18n.js',
+  '/js/modules/audit/auditLog.js',
+  '/js/modules/website/wmcCore.js',
+  '/js/modules/website/wmcPermissions.js',
+  '/js/modules/website/wmcOverview.js',
+  '/js/modules/website/wmcPages.js',
+  '/js/modules/website/wmcBlog.js',
+  '/js/modules/website/wmcSeo.js',
+  '/js/modules/website/wmcTheme.js',
+  '/js/modules/website/wmcDeploy.js',
+  '/js/modules/website/wmcAnalytics.js',
+  '/js/modules/wmc/pageManager.js',
+  '/js/modules/wmc/wmcMedia.js',
+  '/js/modules/wmc/blockEditor.js',
 ];
 
 /* ── Install: pre-cache static assets ──────────────────── */
@@ -205,7 +222,13 @@ self.addEventListener('fetch', event => {
   if (url.hostname.endsWith('.googleapis.com') ||
       url.hostname === 'apis.google.com') return;
 
-  /* Same-origin — cache-first */
+  /* Same-origin HTML navigation — network-first so pages are never stale */
+  if (url.origin === self.location.origin && event.request.mode === 'navigate') {
+    event.respondWith(_networkFirst(event.request, STATIC_CACHE));
+    return;
+  }
+
+  /* Same-origin static assets (JS/CSS/images) — cache-first */
   if (url.origin === self.location.origin) {
     event.respondWith(_cacheFirst(event.request, STATIC_CACHE));
   }
@@ -224,6 +247,24 @@ async function _cacheFirst(request, cacheName) {
     return new Response('オフライン — このリソースはキャッシュされていません', {
       status: 503,
       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
+  }
+}
+
+async function _networkFirst(request, cacheName) {
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(cacheName);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    const cache  = await caches.open(cacheName);
+    const cached = await cache.match(request);
+    return cached || new Response('オフライン — ページが利用できません', {
+      status: 503,
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
     });
   }
 }
