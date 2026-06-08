@@ -31,7 +31,7 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           port: ${{ secrets.FTP_PORT }}
-          protocol: ftpes
+          protocol: ftps-legacy
           local-dir: ./
           server-dir: ./public_html/
           dry-run: ${{ inputs.dry_run || false }}
