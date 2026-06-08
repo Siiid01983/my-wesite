@@ -1,225 +1,272 @@
 /* ════════════════════════════════════════════════════════
-   CONTENT LOADER — Phase 11 public-site rendering engine
-   Single source of truth: Supabase ui_content table.
-   Reads localStorage cache first, then refreshes from
-   Supabase in the background on every page load.
+   CONTENT LOADER
+   Fetches live content from Supabase on every public page
+   load and applies it to the DOM, replacing the static
+   defaults in index.html.
 
-   Load order: supabaseClient.js → this file
+   Sources:
+     hm_data table  → hero, services meta, reviews meta,
+                       FAQ items, company rows, footer
+     services table → service card titles / descriptions
+     reviews table  → approved + published review cards
+     calendar_availability → booked dates for public calendar
+
+   Load order: supabaseClient.js → this file (end of <body>)
    ════════════════════════════════════════════════════════ */
 window.ContentLoader = (function () {
   'use strict';
 
-  const LS_KEY = 'hm_ui_content';
-  const TABLE  = 'ui_content';
+  /* ── DOM / XSS helpers ────────────────────────────────── */
+  function esc(s) {
+    return String(s || '').replace(/[<>&"]/g,
+      c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+  }
+  function _el(id)       { return document.getElementById(id); }
+  function _set(id, val) { const e = _el(id); if (e && val != null && val !== '') e.textContent = val; }
+  function _ls(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
 
-  /* ── Declarative binding configuration ──────────────────
-     Each entry maps one Supabase {section, key} to a DOM
-     target via a named type handler.  Adding a new content
-     field requires only a new entry here — no other code
-     changes needed.
-     ─────────────────────────────────────────────────────── */
-  const BINDINGS = [
-    // ── Hero ─────────────────────────────────────────────
-    { s: 'hero', k: 'headline_ja',    t: 'text',         id: 'heroTitleJa' },
-    { s: 'hero', k: 'headline_en',    t: 'text',         id: 'heroTitleEn' },
-    { s: 'hero', k: 'sub_primary',    t: 'text',         id: 'heroSubPrimary' },
-    { s: 'hero', k: 'sub_secondary',  t: 'text',         id: 'heroSubSecondary' },
-    { s: 'hero', k: 'cta_book',       t: 'text',         id: 'heroCtaBookLbl' },
-    { s: 'hero', k: 'cta_quote',      t: 'text',         id: 'heroCtaQuoteLbl' },
-    { s: 'hero', k: 'cta_line',       t: 'text',         id: 'heroCtaLine' },
-
-    // ── Services section ──────────────────────────────────
-    { s: 'services', k: 'eyebrow',    t: 'text',         id: 'svcEyebrowEl' },
-    { s: 'services', k: 'title',      t: 'text',         id: 'svcTitleEl' },
-    { s: 'services', k: 'subtitle',   t: 'text',         id: 'svcLeadEl' },
-
-    // ── Testimonials section ──────────────────────────────
-    { s: 'testimonials', k: 'eyebrow',t: 'text',         id: 'revEyebrowEl' },
-    { s: 'testimonials', k: 'title',  t: 'text',         id: 'revTitleEl' },
-    { s: 'testimonials', k: 'subtitle',t: 'text',        id: 'revLeadEl' },
-
-    // ── Header ────────────────────────────────────────────
-    { s: 'header', k: 'company_name', t: 'text',         id: 'headerBrandNameEl' },
-    { s: 'header', k: 'cta_text',     t: 'text',         id: 'headerCtaBtnEl' },
-    { s: 'header', k: 'nav_home',     t: 'nav',          anchor: '#booking' },
-    { s: 'header', k: 'nav_services', t: 'nav',          anchor: '#services' },
-    { s: 'header', k: 'nav_about',    t: 'nav',          anchor: '#company' },
-    { s: 'header', k: 'nav_faq',      t: 'nav',          anchor: '#faq' },
-
-    // ── Footer ────────────────────────────────────────────
-    { s: 'footer', k: 'copyright',    t: 'text',         id: 'footerCopyrightEl' },
-    { s: 'footer', k: 'address',      t: 'show-text',    id: 'footerAddressEl' },
-    { s: 'footer', k: 'phone',        t: 'show-tel',     id: 'footerPhoneEl',    reveal: 'footerContactLineEl' },
-    { s: 'footer', k: 'email',        t: 'show-mailto',  id: 'footerEmailEl',    reveal: 'footerContactLineEl' },
-
-    // ── Contact ───────────────────────────────────────────
-    { s: 'contact', k: 'email',          t: 'contact-email' },
-    { s: 'contact', k: 'phone',          t: 'all-tel' },
-    { s: 'contact', k: 'whatsapp',       t: 'wa',         id: 'contactWhatsappEl' },
-    { s: 'contact', k: 'hours_weekday',  t: 'text',       id: 'footerHoursWeekdayEl' },
-    { s: 'contact', k: 'hours_weekend',  t: 'show-text',  id: 'footerHoursWeekendEl' },
-    { s: 'contact', k: 'hours_note',     t: 'show-text',  id: 'footerHoursNoteEl' },
-
-    // ── SEO meta ─────────────────────────────────────────
-    { s: 'seo', k: 'page_title',      t: 'title' },
-    { s: 'seo', k: 'description',     t: 'meta',         sel: 'meta[name="description"]' },
-    { s: 'seo', k: 'og_title',        t: 'meta',         sel: 'meta[property="og:title"]' },
-    { s: 'seo', k: 'og_description',  t: 'meta',         sel: 'meta[property="og:description"]' },
-    { s: 'seo', k: 'og_image',        t: 'og-image' },
-  ];
-
-  /* ── Type handlers ────────────────────────────────────── */
-  const HANDLERS = {
-    // Simple textContent update
-    'text': (b, val) => {
-      const el = document.getElementById(b.id);
-      if (el) el.textContent = val;
-    },
-
-    // textContent + make visible
-    'show-text': (b, val) => {
-      const el = document.getElementById(b.id);
-      if (el) { el.textContent = val; el.style.display = ''; }
-    },
-
-    // meta[content] attribute
-    'meta': (b, val) => {
-      const el = document.querySelector(b.sel);
-      if (el) el.setAttribute('content', val);
-    },
-
-    // document.title
-    'title': (b, val) => { document.title = val; },
-
-    // Nav links — update both .nav and .mobile-nav anchors
-    'nav': (b, val) => {
-      document.querySelectorAll(
-        `.nav a[href="${b.anchor}"], .mobile-nav a[href="${b.anchor}"]`
-      ).forEach(a => { a.textContent = val; });
-    },
-
-    // Footer phone link: show + set href
-    'show-tel': (b, val) => {
-      const el = document.getElementById(b.id);
-      if (!el) return;
-      el.textContent = val;
-      el.href = 'tel:' + val.replace(/[^\d+]/g, '');
-      el.style.display = '';
-      if (b.reveal) {
-        const parent = document.getElementById(b.reveal);
-        if (parent) parent.style.display = '';
-      }
-    },
-
-    // Footer email link: show + set href
-    'show-mailto': (b, val) => {
-      const el = document.getElementById(b.id);
-      if (!el) return;
-      el.textContent = val;
-      el.href = 'mailto:' + val;
-      el.style.display = '';
-      if (b.reveal) {
-        const parent = document.getElementById(b.reveal);
-        if (parent) parent.style.display = '';
-      }
-    },
-
-    // Contact section email: CTA card + header link + topbar link
-    'contact-email': (b, val) => {
-      const cta = document.getElementById('contactEmailLinkEl');
-      if (cta) {
-        cta.href = 'mailto:' + val;
-        const small = cta.querySelector('small');
-        if (small) small.textContent = val;
-      }
-      const hdr = document.querySelector('.header-contact-link[href^="mailto:"]');
-      if (hdr) hdr.href = 'mailto:' + val;
-      const tb = document.querySelector('.topbar-link[href^="mailto:"]');
-      if (tb) tb.href = 'mailto:' + val;
-    },
-
-    // Update every tel: link on the page
-    'all-tel': (b, val) => {
-      const tel = 'tel:' + val.replace(/[^\d+]/g, '');
-      document.querySelectorAll('a[href^="tel:"]').forEach(a => { a.href = tel; });
-    },
-
-    // WhatsApp deep-link
-    'wa': (b, val) => {
-      const el = document.getElementById(b.id);
-      if (el) el.href = 'https://wa.me/' + val.replace(/[^\d+]/g, '');
-    },
-
-    // og:image — create tag if absent
-    'og-image': (b, val) => {
-      let el = document.querySelector('meta[property="og:image"]');
-      if (!el) {
-        el = document.createElement('meta');
-        el.setAttribute('property', 'og:image');
-        document.head.appendChild(el);
-      }
-      el.setAttribute('content', val);
-    },
-  };
-
-  /* ── localStorage helpers ─────────────────────────────── */
-  function _getLocal() {
-    try {
-      const raw = localStorage.getItem(LS_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch { return null; }
+  /* ── Hero ─────────────────────────────────────────────── */
+  function _applyHero(h) {
+    if (!h) return;
+    _set('heroTitleJa',      h.headline_ja);
+    _set('heroTitleEn',      h.headline_en);
+    _set('heroSubPrimary',   h.sub_primary);
+    _set('heroSubSecondary', h.sub_secondary);
+    _set('heroCtaBookSup',   h.cta_book_sup);
+    _set('heroCtaBookLbl',   h.cta_book_lbl);
+    _set('heroCtaQuoteSup',  h.cta_quote_sup);
+    _set('heroCtaQuoteLbl',  h.cta_quote_lbl);
+    _set('heroCtaLine',      h.cta_line);
   }
 
-  function _setLocal(map) {
-    try { localStorage.setItem(LS_KEY, JSON.stringify(map)); } catch {}
+  /* ── Services ─────────────────────────────────────────── */
+  function _applyServicesMeta(m) {
+    if (!m) return;
+    _set('svcEyebrowEl', m.eyebrow);
+    _set('svcTitleEl',   m.title);
+    _set('svcLeadEl',    m.lead);
   }
 
-  /* ── Row array → { section: { key: value } } ─────────── */
-  function _rowsToMap(rows) {
-    const map = {};
-    rows.forEach(r => {
-      if (!map[r.section]) map[r.section] = {};
-      map[r.section][r.content_key] = r.content_value ?? '';
-    });
-    return map;
-  }
-
-  /* ── Supabase fetch ───────────────────────────────────── */
-  async function _fetchFromSupabase() {
-    const sb = window.SupabaseClient;
-    if (!sb) return null;
-    try {
-      const { data, error } = await sb
-        .from(TABLE)
-        .select('section, content_key, content_value');
-      if (error || !data || !data.length) return null;
-      const map = _rowsToMap(data);
-      _setLocal(map);
-      return map;
-    } catch { return null; }
-  }
-
-  /* ── Core apply: iterate BINDINGS, dispatch to handlers ── */
-  function apply(map) {
-    if (!map) return;
-    BINDINGS.forEach(b => {
-      const val = (map[b.s] || {})[b.k];
-      if (!val) return;
-      const handler = HANDLERS[b.t];
-      if (handler) handler(b, val);
+  function _applyServiceCards(svcs) {
+    if (!svcs || !svcs.length) return;
+    const cards = document.querySelectorAll('#svcGridEl .service-card');
+    svcs.forEach((svc, i) => {
+      if (!cards[i]) return;
+      const card     = cards[i];
+      const featured = card.classList.contains('service-card-featured');
+      const h3 = card.querySelector('h3');
+      if (h3 && svc.title)
+        h3.textContent = svc.title;
+      const p = card.querySelector(featured ? '.service-featured-body p' : 'p');
+      if (p && svc.description)
+        p.textContent = svc.description;
+      const badge = card.querySelector(featured ? '.service-featured-eyebrow' : '.svc-pop-badge');
+      if (badge && svc.badge)
+        badge.textContent = svc.badge;
+      const cta = card.querySelector('.service-card-cta');
+      if (cta && svc.cta_text)
+        cta.textContent = svc.cta_text;
     });
   }
 
-  /* ── Init: apply cache immediately, refresh from Supabase ─ */
+  /* ── Reviews ──────────────────────────────────────────── */
+  function _applyRevsMeta(m) {
+    if (!m) return;
+    _set('revEyebrowEl', m.eyebrow);
+    _set('revTitleEl',   m.title);
+    _set('revLeadEl',    m.lead);
+    _set('revGmbScore',  m.gmb_score);
+    _set('revGmbCount',  m.gmb_count);
+  }
+
+  function _applyRevCards(revs) {
+    if (!revs || !revs.length) return;
+    const published = revs.filter(r => r.status === 'approved' && r.published);
+    if (!published.length) return;
+    const grid = _el('revGridEl');
+    if (!grid) return;
+    grid.innerHTML = published.map(r => {
+      const stars    = '★'.repeat(r.rating || 5) + '☆'.repeat(5 - (r.rating || 5));
+      const headline = esc(r.headline || (r.text || '').substring(0, 30) + ((r.text || '').length > 30 ? '…' : ''));
+      const meta     = [r.service, r.date_label ? 'ご利用日：' + r.date_label : ''].filter(Boolean).join(' • ');
+      const avatar   = esc((r.name || '?').charAt(0));
+      const loc      = esc(r.location || r.service || '');
+      return `<article class="review-card">` +
+        `<div class="review-meta-line"><span class="review-stars">${stars}</span>` +
+        (meta ? `<span>${esc(meta)}</span>` : '') + `</div>` +
+        `<h3>${headline}</h3>` +
+        `<p>${esc(r.text || '')}</p>` +
+        `<footer><span class="avatar" aria-hidden="true">${avatar}</span>` +
+        `<span class="meta"><strong>${esc(r.name || '')}</strong>` +
+        (loc ? `<em>${loc}</em>` : '') + `</span></footer>` +
+        `</article>`;
+    }).join('');
+  }
+
+  /* ── FAQ ──────────────────────────────────────────────── */
+  function _applyFaqMeta(m) {
+    if (!m) return;
+    _set('faqEyebrowEl', m.eyebrow);
+    _set('faqTitleEl',   m.title);
+    _set('faqLeadEl',    m.lead);
+  }
+
+  function _applyFaqItems(items) {
+    if (!items || !items.length) return;
+    const list = _el('faqListEl');
+    if (!list) return;
+    list.innerHTML = items.map(f =>
+      `<details class="faq-item"><summary>${esc(f.question || '')}</summary>` +
+      `<p>${esc(f.answer || '')}</p></details>`
+    ).join('');
+  }
+
+  /* ── Company ──────────────────────────────────────────── */
+  function _applyCompanyMeta(m) {
+    if (!m) return;
+    _set('compEyebrowEl', m.eyebrow);
+    _set('compTitleEl',   m.title);
+  }
+
+  function _applyCompanyRows(rows) {
+    if (!rows || !rows.length) return;
+    const tbl = _el('companyTableEl');
+    if (!tbl) return;
+    tbl.innerHTML = rows.map(r =>
+      `<div class="company-row"><dt>${esc(r.label)}</dt><dd>${esc(r.value)}</dd></div>`
+    ).join('');
+  }
+
+  /* ── Footer ───────────────────────────────────────────── */
+  function _applyFooter(f) {
+    if (!f) return;
+    _set('footerDescEl',      f.brand_desc);
+    _set('footerCopyrightEl', f.copyright);
+    if (!Array.isArray(f.cols)) return;
+    f.cols.forEach((col, i) => {
+      _set('footerCol' + i + 'TitleEl', col.title);
+      const colEl = _el('footerCol' + i + 'El');
+      if (!colEl || !Array.isArray(col.links)) return;
+      const ul = colEl.querySelector('ul');
+      if (!ul) return;
+      ul.innerHTML = col.links.map(lk =>
+        lk.href
+          ? `<li><a href="${esc(lk.href)}">${esc(lk.text)}</a></li>`
+          : `<li><span>${esc(lk.text)}</span></li>`
+      ).join('');
+    });
+  }
+
+  /* ── Calendar availability ────────────────────────────── */
+  function _applyCalendar(rows) {
+    if (!rows || !rows.length) return;
+    const booked = rows
+      .filter(r => r.status === 'full' || r.status === 'booked')
+      .map(r => r.date);
+    _ls('hm_booked', booked);
+  }
+
+  /* ── Map services table row → local shape ─────────────── */
+  function _mapService(r) {
+    return {
+      id:            r.reference_id || r.id,
+      title:         r.title        || '',
+      description:   r.description  || '',
+      badge:         r.badge        || '',
+      cta_text:      r.cta_text     || '無料お見積り →',
+      display_order: r.display_order || 0,
+      active:        r.active !== false,
+    };
+  }
+
+  /* ── Map reviews table row → local shape ──────────────── */
+  function _mapReview(r) {
+    return {
+      id:         r.reference_id  || r.id,
+      name:       r.customer_name || '',
+      rating:     r.rating,
+      text:       r.review_text   || '',
+      status:     r.approved ? 'approved' : 'pending',
+      published:  r.published     || false,
+      headline:   r.headline      || '',
+      service:    r.service       || '',
+      date_label: r.date_label    || '',
+      location:   r.location      || '',
+    };
+  }
+
+  /* ── Main init ─────────────────────────────────────────── */
   async function init() {
-    const local = _getLocal();
-    if (local) apply(local);
-    const fresh = await _fetchFromSupabase();
-    if (fresh) apply(fresh);
+    const sb = window.SupabaseClient;
+    if (!sb) {
+      console.warn('[ContentLoader] SupabaseClient not available — displaying static defaults');
+      return;
+    }
+
+    try {
+      const [kvRes, svcRes, revRes, calRes] = await Promise.all([
+        sb.from('hm_data').select('key,value'),
+        sb.from('services').select('*').order('display_order'),
+        sb.from('reviews').select('*').eq('approved', true).eq('published', true)
+          .order('created_at', { ascending: false }),
+        sb.from('calendar_availability').select('date,status'),
+      ]);
+
+      /* hm_data KV ─────────────────────────────────────── */
+      if (kvRes.data && kvRes.data.length) {
+        const kv = {};
+        kvRes.data.forEach(({ key, value }) => { kv[key] = value; _ls(key, value); });
+
+        _applyHero(kv.hm_hero);
+        _applyServicesMeta(kv.hm_services_section);
+        _applyRevsMeta(kv.hm_reviews_section);
+        _applyFaqMeta(kv.hm_faq_section);
+        _applyFaqItems(kv.hm_faq);
+        _applyCompanyMeta(kv.hm_company_section);
+        _applyCompanyRows(kv.hm_company_rows);
+        _applyFooter(kv.hm_footer);
+
+        /* Fallbacks if dedicated tables returned nothing */
+        if (!svcRes.data || !svcRes.data.length)
+          _applyServiceCards(kv.hm_services);
+        if (!revRes.data || !revRes.data.length)
+          _applyRevCards(kv.hm_reviews);
+      } else if (kvRes.error) {
+        console.warn('[ContentLoader] hm_data read error:', kvRes.error.message);
+      }
+
+      /* services table ─────────────────────────────────── */
+      if (svcRes.data && svcRes.data.length) {
+        const svcs = svcRes.data.map(_mapService);
+        _ls('hm_services', svcs);
+        _applyServiceCards(svcs);
+      } else if (svcRes.error) {
+        console.warn('[ContentLoader] services read error:', svcRes.error.message);
+      }
+
+      /* reviews table ──────────────────────────────────── */
+      if (revRes.data && revRes.data.length) {
+        const revs = revRes.data.map(_mapReview);
+        _ls('hm_reviews', revs);
+        _applyRevCards(revs);
+      } else if (revRes.error) {
+        console.warn('[ContentLoader] reviews read error:', revRes.error.message);
+      }
+
+      /* calendar_availability ──────────────────────────── */
+      if (calRes.data) {
+        _applyCalendar(calRes.data);
+      } else if (calRes.error) {
+        console.warn('[ContentLoader] calendar read error:', calRes.error.message);
+      }
+
+    } catch (e) {
+      console.warn('[ContentLoader] init error:', e.message || e);
+    }
   }
 
-  return { init, apply };
+  return { init };
 })();
 
-// DOM is ready (script loads at end of <body>) — init immediately
+/* DOM is ready — scripts load at end of <body> */
 window.ContentLoader.init();
