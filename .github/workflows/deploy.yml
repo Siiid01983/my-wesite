@@ -1,0 +1,48 @@
+name: Deploy to cPanel
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run — list changes without uploading'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  deploy:
+    name: FTP Deploy to cPanel
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTP_PORT }}
+          protocol: ftps
+          local-dir: ./
+          server-dir: ./public_html/
+          dry-run: ${{ inputs.dry_run || false }}
+          exclude: |
+            **/.git*
+            **/.git*/**
+            .github/**
+            node_modules/**
+            .claude/**
+            tests/**
+            serve.js
+            package.json
+            package-lock.json
+            CLAUDE.md
+            js/config/env.js
+            **/*.test.js
