@@ -412,6 +412,22 @@ html.dark .rev-tab-cnt{color:#f59e0b}
 .sec-pass-msg{font-size:12px;min-height:18px;margin-bottom:10px;font-weight:500}
 .sec-pass-ok{color:var(--green)}
 .sec-pass-err{color:var(--red)}
+/* Security score ring */
+.sec-score-panel .panel-body{padding:20px 22px}
+.sec-ring-wrap{position:relative;width:76px;height:76px;flex-shrink:0}
+.sec-ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.sec-check-list{display:flex;flex-direction:column;gap:6px}
+.sec-check-item{display:flex;align-items:flex-start;gap:7px;font-size:12.5px;color:var(--ink);line-height:1.4}
+/* Avatar */
+.sec-avatar{width:40px;height:40px;border-radius:50%;color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+/* Session progress */
+.sec-prog-track{height:6px;background:var(--bg-soft-2);border-radius:3px;overflow:hidden}
+.sec-prog-bar{height:100%;border-radius:3px;transition:width .4s ease}
+/* Password strength */
+.sec-strength-wrap{display:flex;align-items:center;gap:8px}
+.sec-strength-track{flex:1;height:5px;background:var(--bg-soft-2);border-radius:3px;overflow:hidden}
+.sec-strength-bar{height:100%;border-radius:3px;transition:width .3s,background .3s}
+.sec-strength-label{font-size:11px;font-weight:600;min-width:60px}
 .login-err-lock{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.25);color:#92400e}
 html.dark .login-err-lock{color:#f59e0b}
 .hc-banner{max-width:380px;width:100%;margin-top:12px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.28);border-radius:12px;padding:12px 14px;color:#92400e}
@@ -1853,43 +1869,7 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 
         <!-- SECURITY -->
         <div id="view-security" class="view">
-          <div class="settings-grid">
-            <div class="panel">
-              <div class="panel-head"><span class="panel-title">パスワード変更</span></div>
-              <div class="panel-body">
-                <div class="m-field">
-                  <label class="m-label">現在のパスワード</label>
-                  <input class="m-input" id="secCurrentPass" type="password" placeholder="現在のパスワード" autocomplete="current-password" />
-                </div>
-                <div class="m-field">
-                  <label class="m-label">新しいパスワード <span style="color:var(--gray-2);font-weight:400">（8文字以上）</span></label>
-                  <input class="m-input" id="secNewPass" type="password" placeholder="8文字以上" autocomplete="new-password" />
-                </div>
-                <div class="m-field">
-                  <label class="m-label">新しいパスワード（確認）</label>
-                  <input class="m-input" id="secConfirmPass" type="password" placeholder="確認のため再入力" autocomplete="new-password" />
-                </div>
-                <div id="secPassMsg" class="sec-pass-msg"></div>
-                <button class="btn btn-primary" onclick="doChangePassword()">パスワードを変更する</button>
-              </div>
-            </div>
-            <div class="panel">
-              <div class="panel-head"><span class="panel-title">現在のセッション</span></div>
-              <div class="panel-body" id="secSessionInfo"></div>
-            </div>
-          </div>
-          <div class="panel">
-            <div class="panel-head">
-              <span class="panel-title">ログイン履歴</span>
-              <button class="btn btn-ghost btn-sm" onclick="renderSecurity()">更新</button>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>日時</th><th>種別</th><th>詳細</th></tr></thead>
-                <tbody id="secLogBody"></tbody>
-              </table>
-            </div>
-          </div>
+          <div id="securityContent"></div>
         </div>
 
         <!-- MEDIA LIBRARY -->
@@ -2367,6 +2347,59 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 </div>
 
 <div id="toast"></div>
+
+<!-- Staff Add/Edit Modal -->
+<div class="overlay" id="staffModal" onclick="if(event.target===this)closeStaffModal()">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title" id="staffModalTitle">スタッフを追加</div>
+    <div class="m-field">
+      <label class="m-label">名前 *</label>
+      <input class="m-input" id="staffName" type="text" placeholder="山田 花子" maxlength="40" onkeydown="if(event.key==='Enter')saveStaffModal()" />
+    </div>
+    <div class="m-field" id="staffEmailField">
+      <label class="m-label">メールアドレス *</label>
+      <input class="m-input" id="staffEmail" type="email" placeholder="hanako@example.com" />
+    </div>
+    <div class="m-field">
+      <label class="m-label">権限</label>
+      <select class="m-input" id="staffRole">
+        <option value="admin">管理者（全機能）</option>
+        <option value="staff" selected>スタッフ（予約・見積り管理）</option>
+        <option value="read-only">閲覧専用</option>
+      </select>
+    </div>
+    <div class="m-field" id="staffPassWrap">
+      <label class="m-label">パスワード * <span style="color:var(--gray-2);font-weight:400">（8文字以上）</span></label>
+      <input class="m-input" id="staffPassword" type="password" placeholder="8文字以上" autocomplete="new-password" />
+    </div>
+    <div id="staffMsg" class="sec-pass-msg"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
+      <button class="btn btn-ghost btn-sm" onclick="closeStaffModal()">キャンセル</button>
+      <button class="btn btn-primary btn-sm" onclick="saveStaffModal()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Staff Reset Password Modal -->
+<div class="overlay" id="staffResetModal" onclick="if(event.target===this)closeResetPassModal()">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-title">パスワードをリセット</div>
+    <div style="font-size:12.5px;color:var(--gray-1);margin-bottom:14px">対象：<strong id="resetStaffName"></strong></div>
+    <div class="m-field">
+      <label class="m-label">新しいパスワード * <span style="color:var(--gray-2);font-weight:400">（8文字以上）</span></label>
+      <input class="m-input" id="resetStaffPass" type="password" placeholder="8文字以上" autocomplete="new-password" />
+    </div>
+    <div class="m-field">
+      <label class="m-label">確認</label>
+      <input class="m-input" id="resetStaffConf" type="password" placeholder="確認のため再入力" autocomplete="new-password" onkeydown="if(event.key==='Enter')saveResetPassModal()" />
+    </div>
+    <div id="resetStaffMsg" class="sec-pass-msg"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
+      <button class="btn btn-ghost btn-sm" onclick="closeResetPassModal()">キャンセル</button>
+      <button class="btn btn-primary btn-sm" onclick="saveResetPassModal()">リセット</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── Infrastructure ── -->
 <script src="js/lib/supabase.js"></script>
