@@ -509,6 +509,61 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 @media(max-width:768px){.media-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:380px){.media-grid{grid-template-columns:1fr}}
 
+/* ── Changelog v2 ── */
+.cl-header{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px;padding:14px 16px;background:var(--bg-soft);border:1px solid var(--line);border-radius:12px}
+.cl-header-info{flex:1;min-width:200px}
+.cl-header-title{font-weight:600;font-size:14px;color:var(--ink);margin-bottom:4px}
+.cl-header-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cl-stats{font-size:12px;color:var(--gray-1);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.cl-dot{color:var(--gray-2)}
+.cl-stat-feat{color:#2563eb;font-weight:500}
+.cl-stat-imp{color:#059669;font-weight:500}
+.cl-stat-fix{color:#b91c1c;font-weight:500}
+.cl-type-filters{display:flex;gap:4px;flex-wrap:wrap}
+.cl-type-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--line);border-radius:20px;font-size:12px;cursor:pointer;background:var(--bg-soft);color:var(--gray-1);font-family:inherit;transition:.15s;white-space:nowrap}
+.cl-type-btn:hover{border-color:var(--blue);color:var(--blue)}
+.cl-type-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.cl-pill{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:17px;padding:0 4px;border-radius:9px;font-size:10px;font-weight:700;background:var(--bg-soft-2);color:var(--gray-2)}
+.cl-type-btn.active .cl-pill{background:rgba(255,255,255,.25);color:#fff}
+.cl-released-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;margin-top:20px}
+.cl-section-label{font-size:11px;font-weight:700;color:var(--gray-1);text-transform:uppercase;letter-spacing:.07em}
+.cl-text-btn{font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;font-family:inherit}
+.cl-text-btn:hover{text-decoration:underline}
+/* Timeline */
+.cl-timeline{position:relative;padding-left:24px}
+.cl-timeline::before{content:'';position:absolute;left:5px;top:14px;bottom:14px;width:2px;background:var(--line);border-radius:1px}
+.cl-ver{position:relative;margin-bottom:12px}
+.cl-ver::before{content:'';position:absolute;left:-21px;top:17px;width:12px;height:12px;border-radius:50%;background:var(--bg-soft);border:2px solid var(--gray-2);transition:.2s;z-index:1}
+.cl-ver.cl-ver-latest::before{background:var(--blue);border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+.cl-ver-head{display:flex;align-items:center;gap:9px;padding:10px 14px;background:var(--bg-soft);border:1px solid var(--line);border-radius:10px;cursor:pointer;flex-wrap:wrap;user-select:none;transition:background .15s}
+.cl-ver.cl-ver-collapsed .cl-ver-head{border-radius:10px}
+.cl-ver:not(.cl-ver-collapsed) .cl-ver-head{border-radius:10px 10px 0 0;border-bottom-color:var(--line-2)}
+.cl-ver-head:hover{background:var(--bg-soft-2)}
+.cl-ver-num{font-size:14px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
+.cl-latest-badge{padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.25)}
+.cl-ver-date{font-size:12px;color:var(--gray-2)}
+.cl-ver-count{font-size:11.5px;color:var(--gray-2);margin-left:auto;padding-right:4px}
+.cl-chevron{color:var(--gray-2);flex-shrink:0;transition:transform .2s}
+.cl-chevron.collapsed{transform:rotate(-90deg)}
+.cl-ver-body{border:1px solid var(--line);border-top:none;border-radius:0 0 10px 10px;overflow:hidden}
+.cl-entry{display:flex;align-items:flex-start;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line-2)}
+.cl-entry:last-child{border-bottom:none}
+.cl-badge{flex-shrink:0;margin-top:1px;display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap}
+.cl-entry-text{font-size:13px;color:var(--ink);line-height:1.55}
+.cl-empty{text-align:center;padding:20px;color:var(--gray-2);font-size:13px}
+.cl-mark{background:rgba(245,158,11,.25);color:var(--ink);border-radius:2px;padding:0 1px}
+/* What's Next */
+.cl-next-panel{background:var(--bg-soft);border:1px solid rgba(139,92,246,.25);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.cl-next-head{display:flex;align-items:center;gap:8px;padding:12px 16px;background:rgba(139,92,246,.04);cursor:pointer;flex-wrap:wrap;user-select:none;transition:background .15s}
+.cl-next-head:hover{background:rgba(139,92,246,.08)}
+.cl-next-title{font-weight:600;font-size:13px;color:#7c3aed}
+.cl-next-count{font-size:12px;color:var(--gray-2)}
+.cl-priority-summary{display:flex;align-items:center;gap:6px;font-size:11.5px;margin-left:4px}
+.cl-next-body{padding:4px 0}
+.cl-next-item{display:flex;align-items:flex-start;gap:10px;padding:9px 16px;border-bottom:1px solid var(--line-2)}
+.cl-next-item:last-child{border-bottom:none}
+@media(max-width:768px){.cl-header{flex-direction:column}.cl-ver-num{font-size:13px}}
+
 /* ── BI Dashboard — Phase 13 ── */
 .bi-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
 @media(max-width:768px){.bi-row{grid-template-columns:1fr}}
