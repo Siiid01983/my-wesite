@@ -24,6 +24,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Generate env.js from secrets
+        run: |
+          cat > js/config/env.js <<'ENVEOF'
+          window.SUPABASE_URL      = '${{ secrets.SUPABASE_URL }}';
+          window.SUPABASE_ANON_KEY = '${{ secrets.SUPABASE_ANON_KEY }}';
+          ENVEOF
+
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -46,5 +53,4 @@ jobs:
             package.json
             package-lock.json
             CLAUDE.md
-            js/config/env.js
             **/*.test.js
