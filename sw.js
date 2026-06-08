@@ -124,6 +124,42 @@ self.addEventListener('message', event => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
+/* ── Push: display notification (Phase 27C) ─────────────── */
+self.addEventListener('push', event => {
+  const data  = event.data ? event.data.json().catch(() => ({})) : Promise.resolve({});
+  event.waitUntil(
+    data.then(d => self.registration.showNotification(
+      d.title || 'Hello Moving Admin',
+      {
+        body:  d.body  || '',
+        icon:  d.icon  || '/icons/icon.svg',
+        badge: d.badge || '/icons/icon.svg',
+        tag:   d.tag   || 'hm-admin',
+        data:  d.data  || {},
+      }
+    ))
+  );
+});
+
+/* ── Notification click: focus/open admin tab (Phase 27C) ── */
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const view = (event.notification.data && event.notification.data.view) || 'dashboard';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+      /* Find existing admin tab */
+      const adminClient = clients.find(c => c.url.includes('admin.html'));
+      if (adminClient) {
+        adminClient.focus();
+        adminClient.postMessage({ type: 'NOTIFICATION_CLICK', view });
+        return;
+      }
+      /* Open new tab */
+      return self.clients.openWindow('/admin.html#' + view);
+    })
+  );
+});
+
 /* ── Fetch ──────────────────────────────────────────────── */
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
