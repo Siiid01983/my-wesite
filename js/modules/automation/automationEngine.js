@@ -13,6 +13,9 @@
 window.AutomationEngine = (function () {
 
   var _initialized = false;
+  var _evaluators  = {}; /* pluggable evaluators: condType → fn(rule) → contexts[] */
+
+  function registerEvaluator(condType, fn) { _evaluators[condType] = fn; }
 
   /* ── Date helpers ── */
 
@@ -114,6 +117,7 @@ window.AutomationEngine = (function () {
     if (rule.condType === 'pre_move_reminder')   return _evalPreMoveReminder(rule);
     if (rule.condType === 'quote_followup')       return _evalQuoteFollowup(rule);
     if (rule.condType === 'low_occupancy' || rule.condType === 'high_occupancy') return _evalOccupancy(rule);
+    if (_evaluators[rule.condType]) return _evaluators[rule.condType](rule);
     return [];
   }
 
@@ -155,6 +159,6 @@ window.AutomationEngine = (function () {
     setTimeout(run, 3000); // initial evaluation 3 s after login
   }
 
-  return { init: init, run: run, evaluate: evaluate };
+  return { init: init, run: run, evaluate: evaluate, registerEvaluator: registerEvaluator };
 
 })();

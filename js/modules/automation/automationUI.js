@@ -17,11 +17,13 @@
 
   /* ── Condition type metadata (mirrors AutomationEngine evaluators) ── */
   var COND_TYPES = [
-    { id: 'completion_followup', label: '引越し完了N日後',   param: 'daysAfterCompletion', unit: '日後', def: 7   },
-    { id: 'pre_move_reminder',   label: '引越しN日前',       param: 'daysBeforeMove',      unit: '日前', def: 3   },
-    { id: 'quote_followup',      label: '見積もり作成N日後', param: 'daysAfterQuote',      unit: '日後', def: 3   },
-    { id: 'low_occupancy',       label: '稼働率N%以下アラート', param: 'occupancyBelow',   unit: '%以下', def: 50 },
-    { id: 'high_occupancy',      label: '稼働率N%以上アラート', param: 'occupancyAbove',   unit: '%以上', def: 90 }
+    { id: 'completion_followup',   label: '引越し完了N日後',         param: 'daysAfterCompletion', unit: '日後', def: 7   },
+    { id: 'pre_move_reminder',     label: '引越しN日前',             param: 'daysBeforeMove',      unit: '日前', def: 3   },
+    { id: 'quote_followup',        label: '見積もり作成N日後',       param: 'daysAfterQuote',      unit: '日後', def: 3   },
+    { id: 'low_occupancy',         label: '稼働率N%以下アラート',    param: 'occupancyBelow',      unit: '%以下', def: 50 },
+    { id: 'high_occupancy',        label: '稼働率N%以上アラート',    param: 'occupancyAbove',      unit: '%以上', def: 90 },
+    { id: 'auto_complete_booking', label: '引越し日超過＋確定済み → 自動完了', param: null, noParam: true, unit: '', def: 0 },
+    { id: 'auto_release_calendar', label: 'キャンセル済み → カレンダー枠解放', param: null, noParam: true, unit: '', def: 0 },
   ];
 
   var _editId = null;
@@ -40,7 +42,12 @@
     if (!el) return;
     var rules  = AutomationRules.getAll();
     var audits = AutomationAudit.getAll().slice(0, 40);
-    el.innerHTML = _rulesPanel(rules) + _historyPanel(audits) + _modal();
+    el.innerHTML = _rulesPanel(rules) + _historyPanel(audits) +
+      '<div id="qfContent"></div>' +
+      '<div id="ocSettingsContent"></div>' +
+      _modal();
+    if (window.QuoteFollowUpAction) QuoteFollowUpAction.renderPanel();
+    if (window.OccupancyMonitor)    OccupancyMonitor.renderSettingsPanel();
   }
 
   /* ── Rules panel ── */
@@ -184,7 +191,7 @@
           '<select class="sel" id="amCondType" style="width:100%" ' +
             'onchange="AutomationUI._onCondTypeChange(this.value)">' + condOpts + '</select>' +
         '</div>' +
-        '<div class="m-field">' +
+        '<div class="m-field" id="amParamField">' +
           '<label class="m-label" id="amParamLabel">日数</label>' +
           '<input class="m-input" id="amParamVal" type="number" min="1" max="365" value="7" ' +
             'style="width:120px" />' +
@@ -223,8 +230,12 @@
       _onCondTypeChange(rule.condType);
       var ct = COND_TYPES.find(function (c) { return c.id === rule.condType; });
       if (ct) {
-        var val = rule.conditions[ct.param];
-        document.getElementById('amParamVal').value = val !== undefined ? val : ct.def;
+        var pf = document.getElementById('amParamField');
+        if (pf) pf.style.display = ct.noParam ? 'none' : '';
+        if (!ct.noParam) {
+          var val = rule.conditions[ct.param];
+          document.getElementById('amParamVal').value = val !== undefined ? val : ct.def;
+        }
       }
       AutomationActions.list().forEach(function (a) {
         var cb = document.getElementById('amAct_' + a.id);
@@ -254,10 +265,12 @@
   function _onCondTypeChange(typeId) {
     var ct = COND_TYPES.find(function (c) { return c.id === typeId; });
     if (!ct) return;
+    var pf = document.getElementById('amParamField');
+    if (pf) pf.style.display = ct.noParam ? 'none' : '';
     var lbl = document.getElementById('amParamLabel');
     var inp = document.getElementById('amParamVal');
     if (lbl) lbl.textContent = ct.label.replace('N', '数値') + '（' + ct.unit + '）';
-    if (inp) { inp.value = ct.def; }
+    if (inp) inp.value = ct.def;
   }
 
   function saveModal() {
@@ -268,7 +281,7 @@
     var ct       = COND_TYPES.find(function (c) { return c.id === condType; });
     var paramVal = parseInt(document.getElementById('amParamVal').value, 10) || (ct ? ct.def : 7);
     var conds    = {};
-    if (ct) conds[ct.param] = paramVal;
+    if (ct && ct.param) conds[ct.param] = paramVal;
 
     var actions = AutomationActions.list()
       .filter(function (a) {

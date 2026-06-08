@@ -12,14 +12,17 @@ window.AutomationActions = (function () {
   var _registry = {};
 
   var LABELS = {
-    send_review_request: 'レビュー依頼を送信',
-    send_move_reminder:  '引越しリマインダーを送信',
-    send_quote_followup: '見積もりフォローアップを送信',
-    alert_admin:         '管理者にアラート',
-    log_event:           'イベントを記録'
+    send_review_request:    'レビュー依頼を送信',
+    send_move_reminder:     '引越しリマインダーを送信',
+    send_quote_followup:    '見積もりフォローアップを送信',
+    alert_admin:            '管理者にアラート',
+    log_event:              'イベントを記録',
+    change_status:          'ステータスを自動更新',
+    release_calendar_slot:  'カレンダー枠を解放',
   };
 
   function register(id, fn) { _registry[id] = fn; }
+  function registerLabel(id, label) { LABELS[id] = label; }
 
   async function execute(actionId, context) {
     var fn = _registry[actionId];
@@ -78,6 +81,6 @@ window.AutomationActions = (function () {
     return msg;
   });
 
-  return { register: register, execute: execute, list: list, label: label };
+  return { register: register, registerLabel: registerLabel, execute: execute, list: list, label: label };
 
 })();

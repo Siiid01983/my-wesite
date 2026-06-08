@@ -74,6 +74,19 @@ window.AutomationRules = (function () {
     if (!_load()) _save({ version: 1, rules: DEFAULTS });
   }
 
+  /* Add missing rules by ID — safe to call on every load (idempotent) */
+  function seedNew(newDefaults) {
+    var store   = _load() || { version: 1, rules: [] };
+    var changed = false;
+    newDefaults.forEach(function (def) {
+      if (!store.rules.find(function (r) { return r.id === def.id; })) {
+        store.rules.push(Object.assign({}, def, { createdAt: new Date().toISOString() }));
+        changed = true;
+      }
+    });
+    if (changed) _save(store);
+  }
+
   function getAll() {
     var d = _load();
     return d ? d.rules : DEFAULTS;
@@ -115,6 +128,6 @@ window.AutomationRules = (function () {
     return update(id, { enabled: !rule.enabled });
   }
 
-  return { seed: seed, getAll: getAll, get: get, add: add, update: update, remove: remove, toggle: toggle };
+  return { seed: seed, seedNew: seedNew, getAll: getAll, get: get, add: add, update: update, remove: remove, toggle: toggle };
 
 })();
