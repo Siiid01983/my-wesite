@@ -112,6 +112,14 @@ my-website/
 │       │   └── globalSearch.js # window.GlobalSearch — Ctrl+K overlay, multi-type search, keyboard nav
 │       ├── audit/
 │       │   └── auditLog.js     # window.AuditLog — ring buffer, Adapter patches, 監査ログ view (hm_audit_log)
+│       ├── mobile/
+│       │   ├── mobileNav.js      # window.MobileNav — drawer, bottom-nav (5 items), swipe gestures, quick-bar, setBadge()
+│       │   └── mobileDash.js     # window.MobileDash — 5 mobile stat cards injected into dashboard; push-permission banner
+│       ├── offline/
+│       │   ├── offlineDB.js      # window.OfflineDB — IndexedDB hm_offline_db wrapper (bookings/calendar/quotes/action_queue)
+│       │   └── offlineQueue.js   # window.OfflineQueue — localStorage write queue; drain on reconnect; offline banner
+│       ├── camera/
+│       │   └── cameraCapture.js  # window.CameraCapture — Canvas compress (1200px/0.82q); camera+gallery capture; MediaLib upload; hm_camera_photos fallback
 │       └── analytics/
 │           ├── analyticsEngine.js    # window.AnalyticsEngine — linearRegression, movingAverage, detectAnomalies, forecastNext, aggregateMonthly
 │           ├── revenueForecast.js    # window.RevenueForecast — 3-month revenue projection via linear regression
@@ -124,6 +132,8 @@ my-website/
 │           ├── bookingTrends.js      # window.BookingTrends — daily/weekly/monthly trends, growth%, peak detection
 │           ├── analyticsExport.js    # window.AnalyticsExport — CSV exports: revenueForecast/serviceRankings/customerMetrics + AuditLog
 │           └── analyticsDashboard.js # window.AnalyticsDashboard — 高度分析 page, widget registry init, go() wrap, tab routing
+│
+├── mobile.css              # Phase 27A — mobile-first enhancements (bottom-nav, drawer, 44px targets, camera modal, offline banner)
 │
 ├── tests/
 │   └── dataProvider.test.js    # 20-case unit test suite (node:test + Playwright)

@@ -92,6 +92,15 @@ const PRECACHE = [
   '/manifest.json',
   '/manifest-admin.json',
   '/icons/icon.svg',
+
+  /* Phase 27 — Mobile Experience */
+  '/mobile.css',
+  '/js/modules/mobile/mobileNav.js',
+  '/js/modules/mobile/mobileDash.js',
+  '/js/modules/notifications/pushNotifications.js',
+  '/js/modules/offline/offlineDB.js',
+  '/js/modules/offline/offlineQueue.js',
+  '/js/modules/camera/cameraCapture.js',
 ];
 
 /* ── Install: pre-cache static assets ──────────────────── */
