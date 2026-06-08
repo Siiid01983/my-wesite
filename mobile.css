@@ -1,0 +1,324 @@
+/* ════════════════════════════════════════════════════════
+   HELLO MOVING — MOBILE ADMIN STYLESHEET  (Phase 27A)
+   Mobile-first enhancements layered on top of admin.html styles.
+   All desktop functionality preserved — additions only.
+   ════════════════════════════════════════════════════════ */
+
+/* ── Bottom navigation bar ────────────────────────────── */
+#mobileBottomNav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 58px;
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+  z-index: 200;
+  align-items: stretch;
+  box-shadow: 0 -4px 12px rgba(0,0,0,.08);
+}
+.mbn-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 9px;
+  color: var(--gray-1);
+  padding: 6px 4px;
+  min-height: 44px;
+  transition: color .15s;
+  position: relative;
+}
+.mbn-item svg { opacity: .7; transition: opacity .15s; }
+.mbn-item.active { color: var(--navy); }
+.mbn-item.active svg { opacity: 1; }
+.mbn-item:active { background: var(--bg-soft); }
+.mbn-badge {
+  position: absolute;
+  top: 5px;
+  right: calc(50% - 14px);
+  background: var(--red);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 1px 4px;
+  min-width: 14px;
+  text-align: center;
+  line-height: 1.4;
+}
+html.dark #mobileBottomNav { background: var(--bg-soft); }
+
+/* ── Sidebar backdrop ─────────────────────────────────── */
+#sidebarBackdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 99;
+}
+#sidebarBackdrop.visible { display: block; }
+
+/* ── Mobile quick-access bar (sticky actions) ─────────── */
+#mobileQuickBar {
+  display: none;
+  position: sticky;
+  top: 52px;
+  z-index: 40;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 16px;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+#mobileQuickBar::-webkit-scrollbar { display: none; }
+.mqb-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 36px;
+  flex-shrink: 0;
+  transition: background .15s, border-color .15s;
+}
+.mqb-chip:active { background: var(--bg-soft-2); }
+.mqb-chip.primary { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+/* ── Offline banner ───────────────────────────────────── */
+#offlineBanner {
+  display: none;
+  position: fixed;
+  top: 52px;
+  left: 0;
+  right: 0;
+  background: #92400e;
+  color: #fef3c7;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 16px;
+  z-index: 300;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  justify-content: center;
+}
+#offlineBanner.show { display: flex; }
+
+/* ── Touch target enforcement ─────────────────────────── */
+@media (max-width: 768px) {
+  /* Ensure all interactive controls meet 44px minimum */
+  .btn { min-height: 36px; }
+  .btn-sm { min-height: 32px; }
+  .sb-link { min-height: 44px; padding: 10px 12px; }
+  .sel, .input, .m-input, .search-input { min-height: 44px; padding: 10px 12px; }
+  .login-btn { min-height: 50px; }
+  .mob-btn { min-width: 44px; min-height: 44px; align-items: center; justify-content: center; }
+
+  /* Bottom nav spacing — push content above nav bar */
+  .main { padding-bottom: 60px; }
+  #toast { bottom: 72px; }
+
+  /* Show bottom nav and quick bar */
+  #mobileBottomNav { display: flex; }
+  #mobileQuickBar  { display: flex; }
+
+  /* Sidebar: full-height drawer with higher z-index */
+  .sidebar {
+    z-index: 200;
+    box-shadow: 4px 0 20px rgba(0,0,0,.3);
+  }
+
+  /* Wider sidebar on mobile for easier tapping */
+  .sidebar { width: min(280px, 85vw); }
+
+  /* Content padding reduction */
+  .content { padding: 12px; }
+  .panel-body { padding: 12px; }
+  .panel-head { padding: 10px 14px; }
+
+  /* Stat grid: 2 columns on phones */
+  .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .stat-val { font-size: 22px; }
+
+  /* Tables: horizontal scroll with sticky first column */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 520px; }
+
+  /* Modals: full-screen on phones */
+  .overlay { padding: 0; align-items: flex-end; }
+  .modal {
+    border-radius: 16px 16px 0 0;
+    max-width: 100%;
+    width: 100%;
+    max-height: 85vh;
+    border-bottom: none;
+  }
+
+  /* Quick action grid: 2 columns */
+  .qa-grid { grid-template-columns: 1fr 1fr; }
+  .qa-btn { padding: 12px; }
+
+  /* Search bar: stack on mobile */
+  .search-bar { gap: 6px; }
+  .search-bar .btn { flex-shrink: 0; }
+
+  /* Panel title font size */
+  .panel-title { font-size: 13px; }
+
+  /* CRM split panel: single column */
+  #view-crm > div > div[style*="display:flex"] { flex-direction: column !important; }
+  #view-crm > div > div[style*="height"] { height: auto !important; }
+}
+
+/* ── Tablet layout (768–1024px) ──────────────────────── */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .content { padding: 16px; }
+}
+
+/* ── Very small phones (<400px) ──────────────────────── */
+@media (max-width: 400px) {
+  .stat-grid { grid-template-columns: 1fr; }
+  .qa-grid   { grid-template-columns: 1fr; }
+  .stat-val  { font-size: 20px; }
+  .content   { padding: 10px; }
+}
+
+/* ── Mobile dashboard cards ──────────────────────────── */
+#mobileDashCards {
+  display: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.mdc-card {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform .1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mdc-card:active { transform: scale(.97); }
+.mdc-card-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+.mdc-card-label { font-size: 10px; font-weight: 600; color: var(--gray-2); text-transform: uppercase; letter-spacing: .05em; }
+.mdc-card-value { font-size: 24px; font-weight: 700; color: var(--ink); line-height: 1; }
+.mdc-card-sub   { font-size: 10px; color: var(--gray-2); }
+.mdc-card-accent {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 3px;
+  height: 100%;
+  border-radius: 0 12px 12px 0;
+}
+@media (max-width: 768px) {
+  #mobileDashCards { display: grid; }
+}
+@media (max-width: 400px) {
+  #mobileDashCards { grid-template-columns: 1fr; }
+}
+
+/* ── Push notification permission banner ─────────────── */
+#pushPermBanner {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(37,99,235,.06);
+  border: 1px solid rgba(37,99,235,.15);
+  border-radius: 10px;
+  margin-bottom: 14px;
+  font-size: 12px;
+  color: var(--ink);
+  flex-wrap: wrap;
+}
+#pushPermBanner.show { display: flex; }
+#pushPermBanner .perm-text { flex: 1; }
+#pushPermBanner .perm-dismiss { background: none; border: none; cursor: pointer; color: var(--gray-2); font-size: 16px; padding: 0; }
+
+/* ── Camera capture modal ────────────────────────────── */
+#cameraModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  z-index: 2000;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+#cameraModal.open { display: flex; }
+#cameraSheet {
+  background: var(--bg);
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-width: 500px;
+  padding: 20px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+#cameraPreview {
+  width: 100%;
+  border-radius: 10px;
+  background: var(--bg-soft-2);
+  max-height: 260px;
+  object-fit: cover;
+  display: none;
+}
+#cameraPreview.visible { display: block; }
+
+/* ── Offline queue indicator ─────────────────────────── */
+#offlineQueueBadge {
+  display: none;
+  font-size: 9px;
+  font-weight: 700;
+  background: var(--yellow);
+  color: #78350f;
+  border-radius: 8px;
+  padding: 1px 5px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+#offlineQueueBadge.show { display: inline; }
+
+/* ── Swipe hint (first visit only) ──────────────────── */
+@keyframes swipeHint {
+  0%   { transform: translateX(0); opacity: .8; }
+  50%  { transform: translateX(20px); opacity: .4; }
+  100% { transform: translateX(0); opacity: .8; }
+}
+.swipe-hint-icon { animation: swipeHint 1.2s ease-in-out 2; }

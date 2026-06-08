@@ -49,6 +49,11 @@ function showApp() {
   document.getElementById('forceChangeScreen').style.display='none';
   document.getElementById('adminApp').style.display='block';
   if (typeof _applyRoleToSidebar === 'function') _applyRoleToSidebar();
+  /* Phase 27 — Mobile Experience */
+  if (window.MobileNav)  MobileNav.init();
+  if (window.OfflineQueue) OfflineQueue.init();
+  if (window.PushNotifications) PushNotifications.init();
+  if (window.CameraCapture) CameraCapture.init();
 }
 
 function showForceChange() {

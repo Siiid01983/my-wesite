@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="mobile.css" />
 <style>
 /* ── Variables ── */
 :root{
@@ -894,6 +895,12 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 
         <!-- CRM -->
         <div id="view-crm" class="view"></div>
+
+        <!-- Mobile Notifications Settings (Phase 27C) -->
+        <div id="view-mobile-notifications" class="view"></div>
+
+        <!-- Camera Capture View (Phase 27E) -->
+        <div id="view-camera" class="view"></div>
 
         <!-- 3. CALENDAR -->
         <div id="view-calendar" class="view">
@@ -1936,6 +1943,43 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 </div>
 
 <!-- Detail Modal -->
+<!-- Camera Capture Modal (Phase 27E) -->
+<div id="cameraModal">
+  <div id="cameraSheet">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:700;color:var(--ink)">📷 写真を撮影・アップロード</div>
+      <button class="btn btn-ghost btn-sm" onclick="CameraCapture.close()">閉じる</button>
+    </div>
+    <img id="cameraPreview" alt="プレビュー" />
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
+      <label class="btn btn-primary" style="justify-content:center;cursor:pointer;display:flex;align-items:center;gap:8px;min-height:44px">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+        カメラで撮影
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="CameraCapture.onCapture(this)" />
+      </label>
+      <label class="btn btn-ghost" style="justify-content:center;cursor:pointer;display:flex;align-items:center;gap:8px;min-height:44px">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+        ギャラリーから選択
+        <input type="file" id="galleryInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="CameraCapture.onCapture(this)" />
+      </label>
+      <div id="cameraUploadArea" style="display:none">
+        <div id="cameraMeta" style="font-size:11px;color:var(--gray-2);margin-bottom:10px"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" style="flex:1;min-height:44px" onclick="CameraCapture.upload()">アップロード</button>
+          <button class="btn btn-ghost" style="min-height:44px" onclick="CameraCapture.reset()">やり直す</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Offline Banner (Phase 27D) -->
+<div id="offlineBanner">
+  <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+  オフラインモード — 操作はオンライン復帰後に同期されます
+  <span id="offlineQueueBadge"></span>
+</div>
+
 <div class="overlay" id="detailModal">
   <div class="modal" style="max-width:520px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -2308,6 +2352,14 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 <script src="js/modules/crm/crmAnalytics.js"></script>
 <script src="js/modules/crm/crmExport.js"></script>
 <script src="js/modules/crm/crmAutomation.js"></script>
+
+<!-- ── Mobile Experience (Phase 27) ── -->
+<script src="js/modules/mobile/mobileNav.js"></script>
+<script src="js/modules/mobile/mobileDash.js"></script>
+<script src="js/modules/notifications/pushNotifications.js"></script>
+<script src="js/modules/offline/offlineDB.js"></script>
+<script src="js/modules/offline/offlineQueue.js"></script>
+<script src="js/modules/camera/cameraCapture.js"></script>
 
 <!-- ── Service registry (populated after all services/core/utils are loaded) ── -->
 <script src="js/services/serviceRegistry.js"></script>
