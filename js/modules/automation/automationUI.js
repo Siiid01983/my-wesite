@@ -17,13 +17,17 @@
 
   /* ── Condition type metadata (mirrors AutomationEngine evaluators) ── */
   var COND_TYPES = [
-    { id: 'completion_followup',   label: '引越し完了N日後',         param: 'daysAfterCompletion', unit: '日後', def: 7   },
-    { id: 'pre_move_reminder',     label: '引越しN日前',             param: 'daysBeforeMove',      unit: '日前', def: 3   },
-    { id: 'quote_followup',        label: '見積もり作成N日後',       param: 'daysAfterQuote',      unit: '日後', def: 3   },
-    { id: 'low_occupancy',         label: '稼働率N%以下アラート',    param: 'occupancyBelow',      unit: '%以下', def: 50 },
-    { id: 'high_occupancy',        label: '稼働率N%以上アラート',    param: 'occupancyAbove',      unit: '%以上', def: 90 },
+    { id: 'completion_followup',   label: '引越し完了N日後',                    param: 'daysAfterCompletion', unit: '日後',  def: 7   },
+    { id: 'pre_move_reminder',     label: '引越しN日前',                        param: 'daysBeforeMove',      unit: '日前',  def: 3   },
+    { id: 'quote_followup',        label: '見積もり作成N日後',                  param: 'daysAfterQuote',      unit: '日後',  def: 3   },
+    { id: 'low_occupancy',         label: '稼働率N%以下アラート',               param: 'occupancyBelow',      unit: '%以下', def: 50  },
+    { id: 'high_occupancy',        label: '稼働率N%以上アラート',               param: 'occupancyAbove',      unit: '%以上', def: 90  },
     { id: 'auto_complete_booking', label: '引越し日超過＋確定済み → 自動完了', param: null, noParam: true, unit: '', def: 0 },
     { id: 'auto_release_calendar', label: 'キャンセル済み → カレンダー枠解放', param: null, noParam: true, unit: '', def: 0 },
+    /* CRM targeting conditions (Phase 25) */
+    { id: 'crm_vip',    label: 'VIP顧客対象（毎日チェック）',   param: null, noParam: true,  unit: '', def: 0     },
+    { id: 'crm_repeat', label: '常連顧客対象（毎日チェック）',  param: null, noParam: true,  unit: '', def: 0     },
+    { id: 'crm_tagged', label: '特定タグの顧客対象',            param: 'tag', textParam: true, unit: 'タグ名', def: 'VIP' },
   ];
 
   var _editId = null;
@@ -234,7 +238,11 @@
         if (pf) pf.style.display = ct.noParam ? 'none' : '';
         if (!ct.noParam) {
           var val = rule.conditions[ct.param];
-          document.getElementById('amParamVal').value = val !== undefined ? val : ct.def;
+          var inp = document.getElementById('amParamVal');
+          if (inp) {
+            inp.type  = ct.textParam ? 'text' : 'number';
+            inp.value = val !== undefined ? val : ct.def;
+          }
         }
       }
       AutomationActions.list().forEach(function (a) {
@@ -269,18 +277,24 @@
     if (pf) pf.style.display = ct.noParam ? 'none' : '';
     var lbl = document.getElementById('amParamLabel');
     var inp = document.getElementById('amParamVal');
-    if (lbl) lbl.textContent = ct.label.replace('N', '数値') + '（' + ct.unit + '）';
-    if (inp) inp.value = ct.def;
+    if (lbl) lbl.textContent = ct.unit ? ct.label.replace('N', '') + '(' + ct.unit + ')' : ct.label;
+    if (inp) {
+      inp.type  = ct.textParam ? 'text' : 'number';
+      inp.value = ct.def;
+      if (!ct.textParam) { inp.min = '1'; inp.max = '365'; }
+      else { inp.removeAttribute('min'); inp.removeAttribute('max'); }
+    }
   }
 
   function saveModal() {
     var name = (document.getElementById('amName').value || '').trim();
     if (!name) { toast('ルール名を入力してください'); return; }
 
-    var condType = document.getElementById('amCondType').value;
-    var ct       = COND_TYPES.find(function (c) { return c.id === condType; });
-    var paramVal = parseInt(document.getElementById('amParamVal').value, 10) || (ct ? ct.def : 7);
-    var conds    = {};
+    var condType  = document.getElementById('amCondType').value;
+    var ct        = COND_TYPES.find(function (c) { return c.id === condType; });
+    var rawVal    = document.getElementById('amParamVal').value;
+    var paramVal  = (ct && ct.textParam) ? (rawVal || ct.def) : (parseInt(rawVal, 10) || (ct ? ct.def : 7));
+    var conds     = {};
     if (ct && ct.param) conds[ct.param] = paramVal;
 
     var actions = AutomationActions.list()

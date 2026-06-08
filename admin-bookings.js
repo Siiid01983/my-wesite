@@ -508,6 +508,20 @@ function openDetail(id) {
   document.getElementById('detailPrintBtn').onclick = () => printBooking(id);
   document.getElementById('detailInvBtn').onclick   = () => InvoiceManager.openModal(id);
   document.getElementById('detailEditBtn').onclick  = () => openEdit(id);
+  document.getElementById('detailCrmBtn').onclick   = () => {
+    closeDetail();
+    if (window.CustomerProfiles && window.CRMUI) {
+      var profiles = CustomerProfiles.getAll();
+      var email = (b.email || '').toLowerCase().trim();
+      var name  = (b.name  || '').toLowerCase().trim();
+      var found = profiles.find(p =>
+        (email && p.email && p.email.toLowerCase() === email) ||
+        (!email && name && p.name && p.name.toLowerCase() === name)
+      );
+      if (found) { go('crm'); setTimeout(() => CRMUI.select(found.id), 80); return; }
+    }
+    go('crm');
+  };
   document.getElementById('detailDelBtn').onclick   = () => { if(confirm('削除しますか？')){ const _bk=BookingService.getBookings().find(b=>b.id===id); Adapter.deleteBooking(id); BookingService.releaseBooking(_bk); closeDetail(); renderBookings(); renderDash(); toast('削除しました'); }};
   document.getElementById('detailModal').classList.add('open');
 }

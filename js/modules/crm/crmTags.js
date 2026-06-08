@@ -55,14 +55,19 @@ window.CRMTags = (function () {
     if (d.data[customerId].indexOf(tag) === -1) {
       d.data[customerId].push(tag);
       _save(d);
+      if (window.AuditLog) AuditLog.record('other', 'crm', customerId, 'customer_tag_added: ' + tag);
     }
   }
 
   function remove(customerId, tag) {
     var d = _load();
     if (!d.data[customerId]) return;
+    var before = d.data[customerId].length;
     d.data[customerId] = d.data[customerId].filter(function (t) { return t !== tag; });
-    _save(d);
+    if (d.data[customerId].length !== before) {
+      _save(d);
+      if (window.AuditLog) AuditLog.record('other', 'crm', customerId, 'customer_tag_removed: ' + tag);
+    }
   }
 
   /* All unique tags in use across all customers, sorted */

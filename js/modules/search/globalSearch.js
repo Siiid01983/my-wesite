@@ -42,6 +42,7 @@ window.GlobalSearch = (function () {
       '.gs-icon-quote{background:rgba(245,158,11,.1);color:var(--yellow)}' +
       '.gs-icon-review{background:rgba(139,92,246,.1);color:#8b5cf6}' +
       '.gs-icon-customer{background:rgba(16,185,129,.1);color:var(--green)}' +
+      '.gs-icon-crm{background:rgba(245,158,11,.12);color:#92400e}' +
       '.gs-main{flex:1;min-width:0}' +
       '.gs-primary{font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;' +
         'overflow:hidden;text-overflow:ellipsis}' +
@@ -132,8 +133,23 @@ window.GlobalSearch = (function () {
       });
     }
 
-    /* Customers (unique by email from bookings) */
-    if (window.Adapter || window.BookingService) {
+    /* CRM Profiles — search by name, email, phone, tag */
+    if (window.CustomerProfiles) {
+      CustomerProfiles.getAll().forEach(function (p) {
+        var tags = (p.tags || []).join(' ');
+        if (_matches([p.name, p.email, p.phone, tags], q)) {
+          var statusLabel = p.status === 'vip' ? '✦ VIP' : p.status === 'returning' ? '常連' : '新規';
+          results.push({
+            type:      'crm',
+            id:        p.id,
+            primary:   p.name || '—',
+            secondary: (p.email || '') + '　' + statusLabel +
+                       (p.tags && p.tags.length ? '　[' + p.tags.slice(0, 3).join(', ') + ']' : ''),
+          });
+        }
+      });
+    } else if (window.Adapter || window.BookingService) {
+      /* Legacy fallback when CRM module not loaded */
       var seen  = {};
       var bks2  = window.BookingService ? BookingService.getBookings() : Adapter.getBookings();
       bks2.forEach(function (b) {
@@ -156,10 +172,11 @@ window.GlobalSearch = (function () {
     quote:    { cls: 'gs-icon-quote',    svg: '<path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>' },
     review:   { cls: 'gs-icon-review',  svg: '<path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>' },
     customer: { cls: 'gs-icon-customer', svg: '<path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>' },
+    crm:      { cls: 'gs-icon-crm',      svg: '<path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>' },
   };
 
-  var _LABELS = { booking: '予約', quote: '見積り', review: 'レビュー', customer: '顧客' };
-  var _VIEWS  = { booking: 'bookings', quote: 'quotes', review: 'reviews', customer: 'customers' };
+  var _LABELS = { booking: '予約', quote: '見積り', review: 'レビュー', customer: '顧客', crm: 'CRM顧客' };
+  var _VIEWS  = { booking: 'bookings', quote: 'quotes', review: 'reviews', customer: 'customers', crm: 'crm' };
 
   function _renderResults(results) {
     var wrap = document.getElementById('gsResults');
@@ -179,7 +196,7 @@ window.GlobalSearch = (function () {
     });
 
     var html = '';
-    ['booking', 'quote', 'review', 'customer'].forEach(function (type) {
+    ['booking', 'quote', 'review', 'crm', 'customer'].forEach(function (type) {
       var items = groups[type];
       if (!items || !items.length) return;
       var icon = _ICONS[type];
@@ -237,6 +254,9 @@ window.GlobalSearch = (function () {
     if (type === 'booking') {
       go('bookings');
       if (typeof openDetail === 'function') setTimeout(function () { openDetail(id); }, 60);
+    } else if (type === 'crm') {
+      go('crm');
+      if (window.CRMUI) setTimeout(function () { CRMUI.select(id); }, 80);
     } else if (type === 'customer') {
       go('customers');
     } else if (type === 'quote') {

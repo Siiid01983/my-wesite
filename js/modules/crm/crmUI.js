@@ -80,10 +80,28 @@ window.CRMUI = (function () {
       var q = _search.toLowerCase();
       return (p.name  || '').toLowerCase().indexOf(q) !== -1 ||
              (p.email || '').toLowerCase().indexOf(q) !== -1 ||
-             (p.phone || '').toLowerCase().indexOf(q) !== -1;
+             (p.phone || '').toLowerCase().indexOf(q) !== -1 ||
+             (p.tags  || []).some(function (t) { return t.toLowerCase().indexOf(q) !== -1; });
     });
-    el.innerHTML =
-      '<div style="display:flex;gap:16px;height:calc(100vh - 130px);min-height:500px">' +
+    var toolbar =
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
+        '<div style="font-size:13px;font-weight:600;color:var(--ink)">' +
+          'CRM — ' + all.length + '名の顧客' +
+        '</div>' +
+        '<div style="display:flex;gap:6px">' +
+          '<button class="btn btn-ghost btn-sm" onclick="window.CRMExport&&CRMExport.exportCustomers()" title="全顧客をCSVエクスポート">' +
+            '<svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> 全顧客 CSV' +
+          '</button>' +
+          '<button class="btn btn-ghost btn-sm" onclick="window.CRMExport&&CRMExport.exportVIP()" title="VIP顧客のみエクスポート">' +
+            '✦ VIP CSV' +
+          '</button>' +
+          '<button class="btn btn-ghost btn-sm" onclick="window.CRMExport&&CRMExport.exportRevenueRanking()" title="売上ランキング順にエクスポート">' +
+            '売上ランキング CSV' +
+          '</button>' +
+        '</div>' +
+      '</div>';
+    el.innerHTML = toolbar +
+      '<div style="display:flex;gap:16px;height:calc(100vh - 170px);min-height:460px">' +
         _listPanel(filtered, all) +
         '<div id="crmDetail" style="flex:1;overflow-y:auto">' +
           (_activeId ? _detailPanel(CustomerProfiles.get(_activeId)) : _placeholder()) +
