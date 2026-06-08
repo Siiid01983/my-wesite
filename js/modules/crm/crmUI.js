@@ -14,10 +14,12 @@ window.CRMUI = (function () {
   try { VIEW_TITLES['crm'] = 'CRM 顧客管理'; } catch (_) {}
   try { _ADMIN_ONLY.add('crm'); } catch (_) {}
 
-  var _activeId  = null;
-  var _activeTab = 'profile';
-  var _search    = '';
-  var _filter    = 'all';
+  var _activeId      = null;
+  var _activeTab     = 'profile';
+  var _search        = '';
+  var _filter        = 'all';
+  var _tagFilter     = null;   /* null = no tag filter; string = filter by this tag */
+  var _tagPickerOpen = false;
 
   /* ── Helpers ── */
 
@@ -35,15 +37,27 @@ window.CRMUI = (function () {
   }
 
   var STATUS_BADGE = {
-    vip:       ['VIP',  'rgba(245,158,11,.12)',  '#92400e', 'rgba(245,158,11,.3)'],
-    returning: ['常連', 'rgba(37,99,235,.1)',    '#1d4ed8', 'rgba(37,99,235,.2)'],
-    new:       ['新規', 'rgba(16,185,129,.1)',   '#065f46', 'rgba(16,185,129,.2)'],
+    vip:       ['✦ VIP', 'rgba(245,158,11,.18)',  '#92400e', 'rgba(245,158,11,.45)'],
+    returning: ['常連',  'rgba(37,99,235,.1)',     '#1d4ed8', 'rgba(37,99,235,.2)'],
+    new:       ['新規',  'rgba(16,185,129,.1)',    '#065f46', 'rgba(16,185,129,.2)'],
   };
 
   function _badge(status) {
     var m = STATUS_BADGE[status] || ['?', 'transparent', 'var(--gray-1)', 'var(--line)'];
-    return '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:12px;' +
+    return '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;' +
       'background:' + m[1] + ';color:' + m[2] + ';border:1px solid ' + m[3] + '">' + m[0] + '</span>';
+  }
+
+  var GRADE_STYLE = {
+    A: 'background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff',
+    B: 'background:rgba(37,99,235,.12);color:#1d4ed8;border:1px solid rgba(37,99,235,.25)',
+    C: 'background:rgba(107,114,128,.1);color:#4b5563;border:1px solid rgba(107,114,128,.25)',
+    D: 'background:rgba(156,163,175,.08);color:#9ca3af;border:1px solid rgba(156,163,175,.2)',
+  };
+
+  function _gradeBadge(grade) {
+    var st = GRADE_STYLE[grade] || GRADE_STYLE.D;
+    return '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:8px;' + st + '">スコア ' + (grade || '?') + '</span>';
   }
 
   function _metric(label, value, color) {
@@ -61,6 +75,7 @@ window.CRMUI = (function () {
     var all = CustomerProfiles.build();
     var filtered = all.filter(function (p) {
       if (_filter !== 'all' && p.status !== _filter) return false;
+      if (_tagFilter && (p.tags || []).indexOf(_tagFilter) === -1) return false;
       if (!_search) return true;
       var q = _search.toLowerCase();
       return (p.name  || '').toLowerCase().indexOf(q) !== -1 ||
@@ -108,17 +123,35 @@ window.CRMUI = (function () {
       '<div style="padding:10px 12px;background:var(--bg-soft);border-bottom:1px solid var(--line)">' +
         '<input class="input" type="text" placeholder="名前・メール・電話..." value="' + esc(_search) + '" ' +
           'oninput="CRMUI._onSearch(this.value)" style="width:100%;margin-bottom:8px" />' +
-        '<div style="display:flex;gap:4px;flex-wrap:wrap">' +
+        '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px">' +
           _fb('all',       '全員',  all.length) +
           _fb('vip',       'VIP',   counts.vip) +
           _fb('returning', '常連',  counts.returning) +
           _fb('new',       '新規',  counts.new) +
         '</div>' +
+        _tagFilterRow() +
       '</div>' +
       '<div style="flex:1;overflow-y:auto">' +
         (rows || '<div style="padding:20px;text-align:center;color:var(--gray-2);font-size:12px">顧客なし</div>') +
       '</div>' +
     '</div>';
+  }
+
+  function _tagFilterRow() {
+    var usedTags = window.CRMTags ? CRMTags.getAllTags() : [];
+    if (!usedTags.length) return '';
+    var pills = usedTags.map(function (t) {
+      var active = _tagFilter === t;
+      return '<button onclick="CRMUI._onTagFilter(\'' + esc(t) + '\')" ' +
+        'style="font-size:10px;padding:2px 7px;border-radius:10px;cursor:pointer;border:1px solid;white-space:nowrap;' +
+        (active ? 'background:var(--navy);color:#fff;border-color:var(--navy)'
+                : 'background:var(--bg);color:var(--gray-1);border-color:var(--line)') + '">' +
+        esc(t) + '</button>';
+    }).join('');
+    var clearBtn = _tagFilter
+      ? '<button onclick="CRMUI._onTagFilter(null)" style="font-size:10px;padding:2px 7px;border-radius:10px;cursor:pointer;border:1px solid var(--line);background:var(--bg);color:var(--gray-2)">✕ クリア</button>'
+      : '';
+    return '<div style="display:flex;gap:4px;flex-wrap:wrap">' + pills + clearBtn + '</div>';
   }
 
   function _placeholder() {
@@ -150,19 +183,30 @@ window.CRMUI = (function () {
              : _activeTab === 'insights' ? _tabInsights(p)
              : _tabProfile(p);
 
+    var avatarBg = p.status === 'vip'
+      ? 'background:linear-gradient(135deg,#f59e0b,#d97706)'
+      : 'background:var(--navy)';
+
     return '<div class="panel">' +
       '<div class="panel-head" style="flex-wrap:wrap;gap:8px">' +
         '<div style="display:flex;align-items:center;gap:10px;flex:1">' +
-          '<div style="width:38px;height:38px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;flex-shrink:0">' +
+          '<div style="width:38px;height:38px;border-radius:50%;' + avatarBg + ';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;flex-shrink:0">' +
             esc((p.name || '?').slice(0, 1)) +
           '</div>' +
           '<div>' +
             '<div style="font-size:15px;font-weight:700;color:var(--ink)">' + esc(p.name) + '</div>' +
-            '<div style="display:flex;gap:5px;margin-top:3px;flex-wrap:wrap">' + _badge(p.status) + chips + '</div>' +
+            '<div style="display:flex;gap:5px;margin-top:3px;flex-wrap:wrap;align-items:center">' +
+              _badge(p.status) +
+              _gradeBadge(p.score || 'D') +
+              chips +
+            '</div>' +
           '</div>' +
         '</div>' +
-        '<button class="btn btn-ghost btn-sm" onclick="CRMUI._promptTag(\'' + p.id + '\')">タグ追加</button>' +
+        '<button class="btn btn-ghost btn-sm" onclick="CRMUI._toggleTagPicker(\'' + p.id + '\')">' +
+          (_tagPickerOpen ? 'タグ閉じる' : 'タグ管理') +
+        '</button>' +
       '</div>' +
+      (_tagPickerOpen ? _tagPickerPanel(p) : '') +
       '<div style="border-bottom:1px solid var(--line);display:flex">' + tabNav + '</div>' +
       '<div class="panel-body">' + body + '</div>' +
     '</div>';
@@ -260,29 +304,67 @@ window.CRMUI = (function () {
     (rows || '<div style="color:var(--gray-2);font-size:12px;padding:8px 0">メモはありません</div>');
   }
 
-  /* ── Insights tab ── */
+  /* ── Insights tab (Phase 25E) — Customer Score + full metrics ── */
 
   function _tabInsights(p) {
     var ins = CRMInsights.compute(p);
     if (!ins) return '<div style="color:var(--gray-2);font-size:12px">データ不足</div>';
+
+    var sc = ins.score || { grade: 'D', total: 0, revPts: 10, freqPts: 10, recPts: 0 };
+    var gradeColor = { A: '#d97706', B: '#2563eb', C: '#4b5563', D: '#9ca3af' }[sc.grade] || '#9ca3af';
+    var gradeBg    = { A: 'rgba(245,158,11,.1)', B: 'rgba(37,99,235,.08)', C: 'rgba(107,114,128,.08)', D: 'rgba(156,163,175,.06)' }[sc.grade] || '';
+
+    /* Score hero card */
+    var scoreCard =
+      '<div style="border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px;' +
+          'background:' + gradeBg + ';display:flex;align-items:center;gap:16px">' +
+        '<div style="text-align:center;flex-shrink:0">' +
+          '<div style="font-size:48px;font-weight:900;line-height:1;color:' + gradeColor + '">' + sc.grade + '</div>' +
+          '<div style="font-size:10px;color:var(--gray-2);margin-top:2px">顧客スコア</div>' +
+        '</div>' +
+        '<div style="flex:1">' +
+          '<div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:6px">' + sc.total + ' / 100 点</div>' +
+          _scoreBar('売上',          sc.revPts,  40, gradeColor) +
+          _scoreBar('予約頻度',      sc.freqPts, 30, gradeColor) +
+          _scoreBar('最近のアクティビティ', sc.recPts,  30, gradeColor) +
+        '</div>' +
+      '</div>';
+
     var riskColor = ins.churnRisk === 'high' ? 'var(--red)' : ins.churnRisk === 'medium' ? 'var(--yellow)' : 'var(--green)';
     var riskLabel = { high: '高リスク', medium: '中リスク', low: '低リスク' }[ins.churnRisk] || '';
-    return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-      _metric('顧客生涯価値 (CLV)',   _yen(ins.clv),                                              'var(--green)') +
-      _metric('平均予約単価',         _yen(ins.avgBookingValue),                                  'var(--blue)') +
-      _metric('平均予約頻度',         ins.bookingFrequencyDays ? ins.bookingFrequencyDays + ' 日ごと' : '—', 'var(--navy)') +
-      _metric('最終予約からの日数',   ins.daysInactive !== null ? ins.daysInactive + ' 日' : '—', 'var(--gray-1)') +
-      _metric('解約リスク',           riskLabel,                                                  riskColor) +
-      _metric('よく使うサービス',     ins.preferredService || '—',                                'var(--yellow)') +
-      (ins.nextBookingEstimate ? _metric('次回予測日', ins.nextBookingEstimate, 'var(--blue)') : '') +
+
+    var metrics =
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+        _metric('総売上',         _yen(ins.totalRevenue),                                                          'var(--green)') +
+        _metric('平均予約単価 (AOV)', _yen(ins.aov),                                                              'var(--blue)') +
+        _metric('顧客生涯価値 (LTV)', _yen(ins.ltv),                                                              'var(--green)') +
+        _metric('予約頻度',       ins.bookingFrequencyDays ? ins.bookingFrequencyDays + ' 日ごと' : '—',          'var(--navy)') +
+        _metric('最終アクティビティ', ins.lastActivity !== null ? ins.lastActivity + ' 日前' : '—',              'var(--gray-1)') +
+        _metric('解約リスク',     riskLabel,                                                                        riskColor) +
+        _metric('よく使うサービス', ins.preferredService || '—',                                                  'var(--yellow)') +
+        (ins.nextBookingEstimate ? _metric('次回予測日', ins.nextBookingEstimate, 'var(--blue)') : '') +
+      '</div>';
+
+    return scoreCard + metrics;
+  }
+
+  function _scoreBar(label, pts, max, color) {
+    var pct = max > 0 ? Math.round(pts / max * 100) : 0;
+    return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">' +
+      '<div style="font-size:10px;color:var(--gray-2);width:90px;flex-shrink:0">' + label + '</div>' +
+      '<div style="flex:1;height:5px;background:var(--line);border-radius:3px;overflow:hidden">' +
+        '<div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:3px;transition:width .3s"></div>' +
+      '</div>' +
+      '<div style="font-size:10px;color:var(--gray-2);width:30px;text-align:right">' + pts + '</div>' +
     '</div>';
   }
 
   /* ── Public API ── */
 
   function select(id) {
-    _activeId  = id;
-    _activeTab = 'profile';
+    _activeId      = id;
+    _activeTab     = 'profile';
+    _tagPickerOpen = false;
     renderCRM();
   }
 
@@ -295,13 +377,60 @@ window.CRMUI = (function () {
 
   function _onSearch(v) { _search = v; renderCRM(); }
   function _onFilter(v) { _filter = v; renderCRM(); }
+  function _onTagFilter(v) { _tagFilter = v || null; renderCRM(); }
 
-  function _promptTag(id) {
-    var tag = prompt('タグを入力（例: VIP, 常連, 法人）:');
-    if (!tag) return;
-    CRMTags.add(id, tag.trim());
+  /* ── Tag picker (Phase 25D) ── */
+
+  function _toggleTagPicker(id) {
+    _tagPickerOpen = !_tagPickerOpen;
+    tab(_activeTab);
+  }
+
+  function _closeTagPicker() {
+    _tagPickerOpen = false;
+    tab(_activeTab);
+  }
+
+  function _tagPickerPanel(p) {
+    var presets = window.CRMTags ? CRMTags.getPresets() : [];
+    var current = p.tags || [];
+    var pills = presets.map(function (t) {
+      var has = current.indexOf(t) !== -1;
+      return '<button onclick="CRMUI._togglePresetTag(\'' + p.id + '\',\'' + esc(t) + '\')" ' +
+        'style="font-size:11px;padding:3px 10px;border-radius:12px;cursor:pointer;' +
+        (has ? 'background:rgba(245,158,11,.15);color:#92400e;border:1px solid rgba(245,158,11,.35);font-weight:600'
+             : 'background:var(--bg);color:var(--gray-1);border:1px solid var(--line)') + '">' +
+        (has ? '✓ ' : '') + esc(t) +
+      '</button>';
+    }).join('');
+    return '<div style="border-bottom:1px solid var(--line);padding:12px 16px;background:var(--bg-soft)">' +
+      '<div style="font-size:10px;font-weight:700;color:var(--gray-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">タグを管理（クリックでON/OFF）</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">' + (pills || '<span style="font-size:11px;color:var(--gray-2)">—</span>') + '</div>' +
+      '<div style="display:flex;gap:6px">' +
+        '<input class="input" id="crmCustomTagInput" type="text" placeholder="カスタムタグ..." style="flex:1;height:30px;font-size:12px" ' +
+          'onkeydown="if(event.key===\'Enter\')CRMUI._addCustomTag(\'' + p.id + '\')" />' +
+        '<button class="btn btn-primary btn-sm" onclick="CRMUI._addCustomTag(\'' + p.id + '\')">追加</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function _togglePresetTag(id, tag) {
+    var tags = window.CRMTags ? CRMTags.get(id) : [];
+    if (tags.indexOf(tag) !== -1) { CRMTags.remove(id, tag); }
+    else                          { CRMTags.add(id, tag);    }
     CustomerProfiles.refresh();
-    renderCRM();
+    tab(_activeTab);
+  }
+
+  function _addCustomTag(id) {
+    var inp = document.getElementById('crmCustomTagInput');
+    var tag = inp ? (inp.value || '').trim() : '';
+    if (!tag) return;
+    CRMTags.add(id, tag);
+    if (inp) inp.value = '';
+    CustomerProfiles.refresh();
+    tab(_activeTab);
+    toast('タグ「' + tag + '」を追加しました');
   }
 
   function _removeTag(id, tag) {
@@ -337,15 +466,19 @@ window.CRMUI = (function () {
   window.renderCRM = renderCRM;
 
   return {
-    renderCRM:    renderCRM,
-    select:       select,
-    tab:          tab,
-    _onSearch:    _onSearch,
-    _onFilter:    _onFilter,
-    _promptTag:   _promptTag,
-    _removeTag:   _removeTag,
-    _addNote:     _addNote,
-    _deleteNote:  _deleteNote,
+    renderCRM:         renderCRM,
+    select:            select,
+    tab:               tab,
+    _onSearch:         _onSearch,
+    _onFilter:         _onFilter,
+    _onTagFilter:      _onTagFilter,
+    _toggleTagPicker:  _toggleTagPicker,
+    _closeTagPicker:   _closeTagPicker,
+    _togglePresetTag:  _togglePresetTag,
+    _addCustomTag:     _addCustomTag,
+    _removeTag:        _removeTag,
+    _addNote:          _addNote,
+    _deleteNote:       _deleteNote,
   };
 
 })();

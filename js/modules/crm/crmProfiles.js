@@ -4,8 +4,8 @@
    CUSTOMER PROFILES — Phase 25A
    Builds unified CRM profiles from Adapter data.
 
-   Status logic:
-     VIP       : totalBookings ≥ 3  OR  totalRevenue ≥ ¥200,000
+   Status logic (Phase 25E):
+     VIP       : totalRevenue > ¥300,000  OR  totalBookings ≥ 3  OR  Score = A
      Returning : totalBookings ≥ 2
      New       : totalBookings < 2
 
@@ -17,11 +17,21 @@
 window.CustomerProfiles = (function () {
 
   var VIP_BOOKINGS = 3;
-  var VIP_REVENUE  = 200000;
+  var VIP_REVENUE  = 300000;
   var _cache       = null;
 
-  function _status(nBk, rev) {
-    if (nBk >= VIP_BOOKINGS || rev >= VIP_REVENUE) return 'vip';
+  /* Grade computation (mirrors CRMInsights.score — duplicated for load-order independence) */
+  function _grade(nBk, rev, lastDate) {
+    var revPts  = rev  >= 300000 ? 40 : rev  >= 150000 ? 30 : rev  >= 50000 ? 20 : 10;
+    var freqPts = nBk  >= 5      ? 30 : nBk  >= 3      ? 20 : nBk  >= 2     ? 15 : 10;
+    var days    = lastDate ? Math.round((Date.now() - new Date(lastDate).getTime()) / 86400000) : 999;
+    var recPts  = days <= 60 ? 30 : days <= 180 ? 20 : days <= 365 ? 10 : 0;
+    var total   = revPts + freqPts + recPts;
+    return total >= 80 ? 'A' : total >= 60 ? 'B' : total >= 40 ? 'C' : 'D';
+  }
+
+  function _status(nBk, rev, grade) {
+    if (rev >= VIP_REVENUE || nBk >= VIP_BOOKINGS || grade === 'A') return 'vip';
     if (nBk >= 2) return 'returning';
     return 'new';
   }
@@ -57,23 +67,27 @@ window.CustomerProfiles = (function () {
     var ORDER  = { vip: 0, returning: 1, new: 2 };
     var result = [];
     map.forEach(function (entry) {
-      var id  = CRMCore.makeId(entry.key);
-      var rev = _revenue(entry.bookings);
-      var ds  = _sortedDates(entry.bookings);
+      var id   = CRMCore.makeId(entry.key);
+      var rev  = _revenue(entry.bookings);
+      var ds   = _sortedDates(entry.bookings);
+      var nBk  = entry.bookings.length;
+      var last = ds[ds.length - 1] || null;
+      var gr   = _grade(nBk, rev, last);
       result.push({
         id:               id,
         name:             entry.name  || '（名前なし）',
         email:            entry.email || '',
         phone:            entry.phone || '',
         address:          _firstAddr(entry.bookings),
-        firstBookingDate: ds[0]             || null,
-        lastBookingDate:  ds[ds.length - 1] || null,
-        totalBookings:    entry.bookings.length,
+        firstBookingDate: ds[0]  || null,
+        lastBookingDate:  last,
+        totalBookings:    nBk,
         totalRevenue:     rev,
         totalQuotes:      entry.quotes.length,
         totalReviews:     entry.reviews.length,
         avgRating:        _avgRating(entry.reviews),
-        status:           _status(entry.bookings.length, rev),
+        score:            gr,
+        status:           _status(nBk, rev, gr),
         bookings:         entry.bookings,
         quotes:           entry.quotes,
         reviews:          entry.reviews,
