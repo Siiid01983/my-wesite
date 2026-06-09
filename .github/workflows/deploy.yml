@@ -24,11 +24,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Stamp service worker cache version with commit SHA
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          sed -i "s/const CACHE_VERSION = '[^']*'/const CACHE_VERSION = '${SHORT_SHA}'/" sw.js
+
       - name: Generate env.js from secrets
         run: |
           cat > js/config/env.js <<'ENVEOF'
           window.SUPABASE_URL      = '${{ secrets.SUPABASE_URL }}';
           window.SUPABASE_ANON_KEY = '${{ secrets.SUPABASE_ANON_KEY }}';
+          window.ENV = {
+            SUPABASE_URL:      window.SUPABASE_URL,
+            SUPABASE_ANON_KEY: window.SUPABASE_ANON_KEY,
+            ready: !!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY),
+          };
           ENVEOF
 
       - name: Deploy via FTP
@@ -50,6 +60,7 @@ jobs:
             .claude/**
             tests/**
             serve.js
+            deploy.js
             package.json
             package-lock.json
             CLAUDE.md
