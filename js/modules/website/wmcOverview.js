@@ -26,14 +26,22 @@ async function _wmcCheckSiteStatus() {
     sbOk = !!window.SupabaseClient;
   }
 
-  var siteOk = false;
+  /* If this code is executing, the HTML + JS assets already loaded from the
+     server — the site is reachable by definition.  Confirm with a quick GET
+     and only flip to offline on an explicit server error (5xx).  Any network
+     exception (timeout, abort, DNS blip) keeps siteOk = true because the page
+     load itself is stronger evidence than a transient fetch failure. */
+  var siteOk = true;
+  var _ctrl  = new AbortController();
+  var _timer = setTimeout(function () { _ctrl.abort(); }, 4000);
   try {
-    var _ctrl  = new AbortController();
-    var _timer = setTimeout(function () { _ctrl.abort(); }, 5000);
-    var res = await fetch('/index.html', { method: 'HEAD', cache: 'no-store', signal: _ctrl.signal });
+    var res = await fetch('/index.html', { cache: 'no-store', signal: _ctrl.signal });
+    if (res.status >= 500) siteOk = false;
+  } catch (_) {
+    /* network / abort — page loaded so site is accessible; leave siteOk true */
+  } finally {
     clearTimeout(_timer);
-    siteOk = res.status < 500;   // 2xx / 3xx = site is up; 5xx = server error
-  } catch (_) {}
+  }
 
   banner.className = 'wmc-status-banner ' + (siteOk ? 'online' : 'offline');
   if (text)   text.textContent   = siteOk ? 'サイトはオンラインです' : 'サイトに接続できません';
