@@ -205,7 +205,22 @@ window.ContentLoader = (function () {
       return;
     }
 
-    try {
+    /* Retry once after 2 s on any network/timeout failure */
+    for (let _attempt = 0; _attempt < 2; _attempt++) {
+      if (_attempt > 0) {
+        await new Promise(r => setTimeout(r, 2000));
+        console.debug('[ContentLoader] retrying after transient failure…');
+      }
+      try {
+        await _load(sb);
+        return;
+      } catch (e) {
+        if (_attempt === 1) console.warn('[ContentLoader] init error:', e.message || e);
+      }
+    }
+  }
+
+  async function _load(sb) {
       const [kvRes, svcRes, revRes, calRes] = await Promise.all([
         sb.from('hm_data').select('key,value'),
         sb.from('services').select('*').order('display_order'),
@@ -274,10 +289,6 @@ window.ContentLoader = (function () {
       } else if (calRes.error) {
         console.warn('[ContentLoader] calendar read error:', calRes.error.message);
       }
-
-    } catch (e) {
-      console.warn('[ContentLoader] init error:', e.message || e);
-    }
   }
 
   return { init };
