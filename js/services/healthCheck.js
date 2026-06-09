@@ -84,7 +84,6 @@
     const critical = [];
     if (!window.Adapter)                       critical.push('Adapter');
     if (!window.DataProvider)                  critical.push('DataProvider');
-    if (!window.StatisticsService)             critical.push('StatisticsService');
     if (!window.Services?.Adapter)             critical.push('Services.Adapter');
     if (!window.Services?.DataProvider)        critical.push('Services.DataProvider');
 
@@ -93,8 +92,9 @@
     }
 
     const optional = [];
-    if (!window.BookingService)  optional.push('BookingService');
-    if (!window.CalendarService) optional.push('CalendarService');
+    if (!window.StatisticsService) optional.push('StatisticsService');
+    if (!window.BookingService)    optional.push('BookingService');
+    if (!window.CalendarService)   optional.push('CalendarService');
 
     if (optional.length > 0) {
       return { service: 'services', status: 'warning', message: `任意サービスが未登録: ${optional.join(', ')}` };

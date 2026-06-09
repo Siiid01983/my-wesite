@@ -28,8 +28,11 @@ async function _wmcCheckSiteStatus() {
 
   var siteOk = false;
   try {
-    var res = await fetch('/', { method: 'HEAD', cache: 'no-store', signal: AbortSignal.timeout(4000) });
-    siteOk = res.ok;
+    var _ctrl  = new AbortController();
+    var _timer = setTimeout(function () { _ctrl.abort(); }, 5000);
+    var res = await fetch('/index.html', { method: 'HEAD', cache: 'no-store', signal: _ctrl.signal });
+    clearTimeout(_timer);
+    siteOk = res.status < 500;   // 2xx / 3xx = site is up; 5xx = server error
   } catch (_) {}
 
   banner.className = 'wmc-status-banner ' + (siteOk ? 'online' : 'offline');

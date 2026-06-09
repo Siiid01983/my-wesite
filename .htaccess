@@ -1,22 +1,36 @@
 # ── Service worker — must never be cached by the server ──────────────────────
-# Browsers check for SW script changes on every navigation. If cPanel/LiteSpeed
-# caches sw.js, browsers never see the new cache version and stale assets persist.
-<Files "sw.js">
+# Browsers check for SW script changes on every navigation. If the server
+# caches sw.js, browsers never see the new cache-version stamp and stale
+# assets persist indefinitely.
+<IfModule mod_headers.c>
+  <Files "sw.js">
     Header set Cache-Control "no-cache, no-store, must-revalidate"
     Header set Pragma "no-cache"
     Header set Expires "0"
-</Files>
+  </Files>
 
-# ── HTML pages — always revalidate ───────────────────────────────────────────
-<FilesMatch "\.html$">
+  # HTML pages — always revalidate so index.html updates are immediate
+  <FilesMatch "\.html$">
     Header set Cache-Control "no-cache, must-revalidate"
     Header set Pragma "no-cache"
-</FilesMatch>
+  </FilesMatch>
 
-# ── CSS / JS — 1-hour TTL with revalidation ──────────────────────────────────
-# The service worker already manages its own cache. These headers govern the
-# HTTP cache layer (CDN, proxy, browser HTTP cache before SW intercepts).
-<FilesMatch "\.(css|js)$">
+  # CSS / JS — 1-hour browser TTL; SW manages its own cache on top of this
+  <FilesMatch "\.(css|js)$">
     Header set Cache-Control "public, max-age=3600, must-revalidate"
-    FileETag MTime Size
-</FilesMatch>
+  </FilesMatch>
+</IfModule>
+
+# Fallback: mod_expires for servers without mod_headers
+<IfModule mod_expires.c>
+  ExpiresActive On
+  <FilesMatch "sw\.js$">
+    ExpiresDefault "access plus 0 seconds"
+  </FilesMatch>
+  <FilesMatch "\.html$">
+    ExpiresDefault "access plus 0 seconds"
+  </FilesMatch>
+</IfModule>
+
+# ETags — fingerprint by mtime + size (works without mod_headers)
+FileETag MTime Size
