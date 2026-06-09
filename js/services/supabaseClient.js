@@ -4,6 +4,12 @@
 (function () {
   'use strict';
 
+  if (!window.ENV || !window.ENV.ready) {
+    console.error('[SupabaseClient] ENV not ready — env.js did not load or credentials are missing. Supabase disabled.');
+    window.SupabaseClient = null;
+    return;
+  }
+
   const url = window.SUPABASE_URL;
   const key = window.SUPABASE_ANON_KEY;
 

@@ -17,4 +17,7 @@
   window.Services.Validators = window.Validators || null;
   window.Services.Storage    = window.Storage    || null;
 
+  /* Signal that the full service registry has been populated */
+  window.__APP_READY__ = true;
+
 })();

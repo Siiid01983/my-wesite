@@ -39,6 +39,7 @@ jobs:
             SUPABASE_ANON_KEY: window.SUPABASE_ANON_KEY,
             ready: !!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY),
           };
+          window.__APP_READY__ = false;
           ENVEOF
 
       - name: Deploy via FTP

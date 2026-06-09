@@ -199,6 +199,10 @@ window.ContentLoader = (function () {
 
   /* ── Main init ─────────────────────────────────────────── */
   async function init() {
+    if (!window.ENV || !window.ENV.ready) {
+      console.error('[ContentLoader] Aborting: window.ENV not ready — env.js failed to load');
+      return;
+    }
     const sb = window.SupabaseClient;
     if (!sb) {
       console.warn('[ContentLoader] SupabaseClient not available — displaying static defaults');
@@ -297,31 +301,25 @@ window.ContentLoader = (function () {
 /* Lowercase alias — window.contentLoader === window.ContentLoader */
 window.contentLoader = window.ContentLoader;
 
-/* Startup diagnostics — surface the exact missing dependency before init() */
+/* Startup diagnostics — surface exact failure layer before init() runs */
 (function () {
   'use strict';
-  var ok = true;
-  if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
-    console.warn('[ContentLoader] env.js not loaded or credentials missing', {
-      SUPABASE_URL:      window.SUPABASE_URL      ? '✓' : '✗ missing',
-      SUPABASE_ANON_KEY: window.SUPABASE_ANON_KEY ? '✓' : '✗ missing',
-    });
-    ok = false;
+  if (!window.ENV || !window.ENV.ready) {
+    console.error('[ContentLoader] FATAL: window.ENV not ready — env.js did not execute. Check FTP deploy and server logs.');
+    return;
   }
   if (!window.supabase) {
-    console.warn('[ContentLoader] Supabase UMD library not loaded — js/lib/supabase.js missing or failed');
-    ok = false;
+    console.error('[ContentLoader] FATAL: Supabase UMD not loaded — js/lib/supabase.js missing');
+    return;
   }
   if (!window.SupabaseClient) {
-    console.warn('[ContentLoader] window.SupabaseClient is null — static defaults will be displayed', {
-      envReady:     !!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY),
+    console.error('[ContentLoader] FATAL: SupabaseClient is null — createClient() failed', {
+      ENV_ready:    window.ENV.ready,
       supabaseLib:  !!window.supabase,
     });
-    ok = false;
+    return;
   }
-  if (ok) {
-    console.debug('[ContentLoader] bootstrap OK — fetching live content from Supabase');
-  }
+  console.debug('[ContentLoader] bootstrap OK — ENV ready, SupabaseClient initialized');
 })();
 
 /* DOM is ready — scripts load at end of <body> */
