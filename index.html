@@ -2887,7 +2887,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
 <script src="script.js"></script>
 <script src="js/lib/supabase.js"></script>
 <script src="js/config/appConfig.js"></script>
-<script src="js/config/env.js" onerror="console.warn('[Booking] js/config/env.js missing')"></script>
+<script src="js/config/env.js" onerror="console.error('[Bootstrap] FATAL: js/config/env.js failed to load — Supabase unavailable'); window.ENV = window.ENV || { ready: false };"></script>
 <script src="js/services/supabaseClient.js"></script>
 <script src="js/services/fallbackLogger.js"></script>
 <script src="js/services/dataProvider.js"></script>

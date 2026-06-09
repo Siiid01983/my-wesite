@@ -45,9 +45,15 @@ function _tcReset() {
 
 function _tcApply() {
   _tcConfig = _tcReadControls();
+  var css = _tcGenerateCss(_tcConfig);
   localStorage.setItem('hm_theme_config', JSON.stringify(_tcConfig));
-  localStorage.setItem('hm_custom_theme_css', _tcGenerateCss(_tcConfig));
+  localStorage.setItem('hm_custom_theme_css', css);
   localStorage.setItem('hm_theme_applied_at', new Date().toISOString());
+  /* Persist to Supabase so every visitor on every device gets the theme */
+  if (typeof DataProvider !== 'undefined') {
+    DataProvider.write('hm_data', { key: 'hm_custom_theme_css', value: css })
+      .then(function (r) { if (!r.success) console.warn('[WMCTheme] Supabase write failed', r.error); });
+  }
   var banner = document.getElementById('tcAppliedBanner');
   if (banner) {
     banner.style.display = 'block';

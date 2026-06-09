@@ -228,6 +228,19 @@ window.ContentLoader = (function () {
         _applyCompanyRows(kv.hm_company_rows);
         _applyFooter(kv.hm_footer);
 
+        /* Theme CSS — overwrite localStorage and inject for all visitors */
+        if (kv.hm_custom_theme_css) {
+          const css = String(kv.hm_custom_theme_css);
+          _ls('hm_custom_theme_css', css);
+          let themeEl = document.getElementById('hm-theme-override');
+          if (!themeEl) {
+            themeEl = document.createElement('style');
+            themeEl.id = 'hm-theme-override';
+            document.head.appendChild(themeEl);
+          }
+          themeEl.textContent = css;
+        }
+
         /* Fallbacks if dedicated tables returned nothing */
         if (!svcRes.data || !svcRes.data.length)
           _applyServiceCards(kv.hm_services);
@@ -268,6 +281,36 @@ window.ContentLoader = (function () {
   }
 
   return { init };
+})();
+
+/* Lowercase alias — window.contentLoader === window.ContentLoader */
+window.contentLoader = window.ContentLoader;
+
+/* Startup diagnostics — surface the exact missing dependency before init() */
+(function () {
+  'use strict';
+  var ok = true;
+  if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+    console.warn('[ContentLoader] env.js not loaded or credentials missing', {
+      SUPABASE_URL:      window.SUPABASE_URL      ? '✓' : '✗ missing',
+      SUPABASE_ANON_KEY: window.SUPABASE_ANON_KEY ? '✓' : '✗ missing',
+    });
+    ok = false;
+  }
+  if (!window.supabase) {
+    console.warn('[ContentLoader] Supabase UMD library not loaded — js/lib/supabase.js missing or failed');
+    ok = false;
+  }
+  if (!window.SupabaseClient) {
+    console.warn('[ContentLoader] window.SupabaseClient is null — static defaults will be displayed', {
+      envReady:     !!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY),
+      supabaseLib:  !!window.supabase,
+    });
+    ok = false;
+  }
+  if (ok) {
+    console.debug('[ContentLoader] bootstrap OK — fetching live content from Supabase');
+  }
 })();
 
 /* DOM is ready — scripts load at end of <body> */

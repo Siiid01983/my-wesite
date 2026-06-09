@@ -1,0 +1,22 @@
+# ── Service worker — must never be cached by the server ──────────────────────
+# Browsers check for SW script changes on every navigation. If cPanel/LiteSpeed
+# caches sw.js, browsers never see the new cache version and stale assets persist.
+<Files "sw.js">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+</Files>
+
+# ── HTML pages — always revalidate ───────────────────────────────────────────
+<FilesMatch "\.html$">
+    Header set Cache-Control "no-cache, must-revalidate"
+    Header set Pragma "no-cache"
+</FilesMatch>
+
+# ── CSS / JS — 1-hour TTL with revalidation ──────────────────────────────────
+# The service worker already manages its own cache. These headers govern the
+# HTTP cache layer (CDN, proxy, browser HTTP cache before SW intercepts).
+<FilesMatch "\.(css|js)$">
+    Header set Cache-Control "public, max-age=3600, must-revalidate"
+    FileETag MTime Size
+</FilesMatch>
