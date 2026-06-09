@@ -119,6 +119,12 @@ async function wmcRefreshOverview() {
   var tsEl = document.getElementById('wmcOverviewTs');
   if (tsEl) tsEl.textContent = '更新中…';
 
+  var greetEl = document.getElementById('wmcUserName');
+  if (greetEl) {
+    var _u = (typeof Auth !== 'undefined' && Auth.getUser) ? Auth.getUser() : {};
+    greetEl.textContent = 'Welcome back, ' + (_u.name || 'Admin');
+  }
+
   _wmcRenderOverviewGrid(_wmcBuildCards());
   _wmcRenderSeoPanel(_wmcCalcSeo());
   _wmcRenderHealthCards();
