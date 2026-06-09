@@ -49,14 +49,16 @@ window.ContentLoader = (function () {
 
   function _applyServiceCards(svcs) {
     if (!svcs || !svcs.length) return;
-    const cards = document.querySelectorAll('#svcGridEl .service-card');
-    svcs.forEach((svc, i) => {
-      if (!cards[i]) return;
-      const card     = cards[i];
-      const featured = card.classList.contains('service-card-featured');
+    // Match by title — DB display_order differs from HTML card positions
+    const byTitle = {};
+    document.querySelectorAll('#svcGridEl .service-card').forEach(card => {
       const h3 = card.querySelector('h3');
-      if (h3 && svc.title)
-        h3.textContent = svc.title;
+      if (h3) byTitle[h3.textContent.trim()] = card;
+    });
+    svcs.forEach(svc => {
+      const card = byTitle[svc.title];
+      if (!card) return;
+      const featured = card.classList.contains('service-card-featured');
       const p = card.querySelector(featured ? '.service-featured-body p' : 'p');
       if (p && svc.description)
         p.textContent = svc.description;
