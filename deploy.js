@@ -108,7 +108,13 @@ async function uploadDir(client, localDir) {
     if (SECURE) accessOpts.secureOptions = { rejectUnauthorized: false };
     await client.access(accessOpts);
     console.log('Connected.');
+    const pwdAfterLogin = await client.pwd();
+    console.log('CWD after login:', pwdAfterLogin);
+    const lsRoot = await client.list();
+    console.log('Root entries:', lsRoot.map(e => (e.isDirectory ? 'd' : '-') + ' ' + e.name).join(', '));
     await client.ensureDir(REMOTE);   // navigate into public_html
+    const pwdAfterEnsure = await client.pwd();
+    console.log('CWD after ensureDir(' + REMOTE + '):', pwdAfterEnsure);
     await uploadDir(client, __dirname); // upload relative to CWD
     console.log(`\n✓ Deploy complete → ${HOST}/${REMOTE}`);
   } catch (err) {
