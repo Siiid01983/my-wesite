@@ -1418,7 +1418,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
       <p class="section-lead" id="svcLeadEl">単身・カップル・学生・当日引越しまで対応。</p>
     </header>
     <div class="service-grid" id="svcGridEl">
-      <article class="service-card service-card-urgent service-card-featured">
+      <article class="service-card service-card-urgent service-card-featured" data-service="emergency">
         <div class="service-icon urgent-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="32" height="32"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.5 5H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
         </div>
@@ -1434,7 +1434,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
           <a href="https://line.me/R/ti/p/~hellomoving" class="btn btn-ghost" target="_blank" rel="noopener noreferrer">LINE で相談</a>
         </div>
       </article>
-      <article class="service-card">
+      <article class="service-card" data-service="single">
         <span class="svc-pop-badge">人気サービス</span>
         <div class="service-icon service-icon-colored sic-single" aria-hidden="true">
           <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
@@ -1449,7 +1449,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
         <p>1人分の荷物に最適化。必要な分だけコンパクトに対応。</p>
         <a href="#quote" class="service-card-cta" data-service="単身引越し">無料お見積り →</a>
       </article>
-      <article class="service-card">
+      <article class="service-card" data-service="couple">
         <span class="svc-pop-badge">人気サービス</span>
         <div class="service-icon service-icon-colored sic-couple" aria-hidden="true">
           <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
@@ -1463,7 +1463,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
         <p>養生から家具配置まで。二人の新生活をスムーズに。</p>
         <a href="#quote" class="service-card-cta" data-service="カップル・ご夫婦引越し">無料お見積り →</a>
       </article>
-      <article class="service-card">
+      <article class="service-card" data-service="student">
         <span class="svc-pop-badge">人気サービス</span>
         <div class="service-icon service-icon-colored sic-student" aria-hidden="true">
           <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
@@ -1477,7 +1477,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
         <p>初めての引越しも段取りから設置まで対応。</p>
         <a href="#quote" class="service-card-cta" data-service="学生・新生活引越し">無料お見積り →</a>
       </article>
-      <article class="service-card">
+      <article class="service-card" data-service="disposal">
         <span class="svc-pop-badge">人気サービス</span>
         <div class="service-icon service-icon-colored sic-disposal" aria-hidden="true">
           <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
@@ -1493,7 +1493,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
         <p>回収・処分・搬出まで一括。手続き不要。</p>
         <a href="#quote" class="service-card-cta" data-service="不用品回収・処分サービス">無料お見積り →</a>
       </article>
-      <article class="service-card">
+      <article class="service-card" data-service="furniture">
         <div class="service-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M22 8 12 2 2 8v8l10 6 10-6Zm-10 2.2L4.3 8 12 4.5 19.7 8Z"/></svg>
         </div>
@@ -2885,21 +2885,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
 
 
 <script src="script.js"></script>
-<script src="js/lib/supabase.js"></script>
-<script src="js/config/appConfig.js"></script>
-<script src="js/config/env.js" onerror="
-  console.error('[Bootstrap] FATAL: env.js failed to load — all Supabase services disabled');
-  window.SUPABASE_URL      = window.SUPABASE_URL      || '';
-  window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || '';
-  window.ENV = { SUPABASE_URL: '', SUPABASE_ANON_KEY: '', ready: false };
-  window.__APP_READY__ = false;
-"></script>
-<script src="js/services/supabaseClient.js"></script>
-<script src="js/services/fallbackLogger.js"></script>
-<script src="js/services/dataProvider.js"></script>
-<script src="js/services/serviceRegistry.js"></script>
-<script src="bookingService.js"></script>
-<script src="js/services/contentLoader.js"></script>
+<script src="js/core/bootstrap.js" defer></script>
 <script>
 (function(){
 'use strict';
@@ -3436,7 +3422,6 @@ updateS2Btn();
   }catch(e){}
 })();
 </script>
-<script src="js/utils/swRegister.js"></script>
 
 </body>
 </html>

@@ -168,6 +168,42 @@ window.ContentLoader = (function () {
     _ls('hm_booked', booked);
   }
 
+  /* ── Service images ──────────────────────────────────── */
+  /* Fallback title→slug map — used only for cards that lack data-service.
+     Primary lookup is card.dataset.service set in index.html. */
+  var _SVC_TITLE_TO_SLUG = {
+    '当日・お急ぎ引越しプラン': 'emergency',
+    '単身引越し':             'single',
+    'カップル・ご夫婦引越し': 'couple',
+    '学生・新生活引越し':     'student',
+    '不用品回収・処分':       'disposal',
+    '家具組立・分解':         'furniture',
+  };
+
+  function _applyServiceImages(serviceImages) {
+    if (!serviceImages || typeof serviceImages !== 'object') return;
+    document.querySelectorAll('#svcGridEl .service-card').forEach(function (card) {
+      /* Primary: stable data-service attribute on the <article> element */
+      var slug = card.dataset.service;
+      /* Fallback: title text match for cards that predate the attribute */
+      if (!slug) {
+        var h3 = card.querySelector('h3');
+        slug = h3 ? _SVC_TITLE_TO_SLUG[h3.textContent.trim()] : null;
+      }
+      if (!slug) return;
+      var cfg = serviceImages[slug];
+      if (!cfg || cfg.display_mode !== 'image' || !cfg.image_url) return;
+      var iconEl = card.querySelector('.service-icon');
+      if (!iconEl) return;
+      var img = document.createElement('img');
+      img.src = cfg.image_url;
+      img.alt = slug;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;';
+      iconEl.innerHTML = '';
+      iconEl.appendChild(img);
+    });
+  }
+
   /* ── Map services table row → local shape ─────────────── */
   function _mapService(r) {
     return {
@@ -199,8 +235,8 @@ window.ContentLoader = (function () {
 
   /* ── Main init ─────────────────────────────────────────── */
   async function init() {
-    if (!window.ENV || !window.ENV.ready) {
-      console.error('[ContentLoader] Aborting: window.ENV not ready — env.js failed to load');
+    if (!window.__APP_READY__) {
+      console.error('[ContentLoader] Aborting: window.__APP_READY__ is not set — bootstrap did not complete');
       return;
     }
     const sb = window.SupabaseClient;
@@ -278,6 +314,12 @@ window.ContentLoader = (function () {
         console.warn('[ContentLoader] services read error:', svcRes.error.message);
       }
 
+      /* service images — applied after cards are rendered ─ */
+      const imgCfg = (kvRes.data && kvRes.data.length)
+        ? (() => { const row = kvRes.data.find(d => d.key === 'hm_service_images'); return row ? row.value : null; })()
+        : null;
+      if (imgCfg) _applyServiceImages(imgCfg);
+
       /* reviews table ──────────────────────────────────── */
       if (revRes.data && revRes.data.length) {
         const revs = revRes.data.map(_mapReview);
@@ -304,22 +346,15 @@ window.contentLoader = window.ContentLoader;
 /* Startup diagnostics — surface exact failure layer before init() runs */
 (function () {
   'use strict';
-  if (!window.ENV || !window.ENV.ready) {
-    console.error('[ContentLoader] FATAL: window.ENV not ready — env.js did not execute. Check FTP deploy and server logs.');
-    return;
-  }
-  if (!window.supabase) {
-    console.error('[ContentLoader] FATAL: Supabase UMD not loaded — js/lib/supabase.js missing');
+  if (!window.__APP_READY__) {
+    console.error('[ContentLoader] FATAL: window.__APP_READY__ is false — bootstrap.js did not complete. Check bootstrap stage:', window.__BOOTSTRAP__ && window.__BOOTSTRAP__.stage);
     return;
   }
   if (!window.SupabaseClient) {
-    console.error('[ContentLoader] FATAL: SupabaseClient is null — createClient() failed', {
-      ENV_ready:    window.ENV.ready,
-      supabaseLib:  !!window.supabase,
-    });
+    console.warn('[ContentLoader] SupabaseClient is null — static defaults will be shown. Check env.js credentials and supabaseClient.js.');
     return;
   }
-  console.debug('[ContentLoader] bootstrap OK — ENV ready, SupabaseClient initialized');
+  console.debug('[ContentLoader] OK — __APP_READY__ true, stage:', window.__BOOTSTRAP__ && window.__BOOTSTRAP__.stage);
 })();
 
 /* DOM is ready — scripts load at end of <body> */
