@@ -9,7 +9,7 @@
     $env:FTP_USERNAME="hellom41"
     $env:FTP_PASSWORD="your-password"
     $env:FTP_PORT="21"                       # optional, default 21
-    $env:FTP_REMOTE="/public_html"           # optional
+    $env:FTP_REMOTE="public_html"            # optional, relative to FTP login dir
     $env:SUPABASE_URL="https://ursohvtxzqxeczvrspiw.supabase.co"
     $env:SUPABASE_ANON_KEY="your-anon-key"
     node deploy.js
@@ -53,15 +53,16 @@ const SKIP = new Set([
   'CLAUDE.md',
 ]);
 
-async function uploadDir(client, localDir, remotePath) {
+/* remoteBase is a CWD-relative prefix; '' means upload into the current directory. */
+async function uploadDir(client, localDir, remoteBase) {
   const entries = fs.readdirSync(localDir, { withFileTypes: true });
   for (const entry of entries) {
-    if (SKIP.has(entry.name)) continue;
+    if (!remoteBase && SKIP.has(entry.name)) continue;
     if (entry.name.startsWith('.') && entry.name !== '.htaccess') continue;
     if (entry.name.endsWith('.test.js')) continue;
 
     const localPath = path.join(localDir, entry.name);
-    const dest      = remotePath + '/' + entry.name;
+    const dest      = remoteBase ? remoteBase + '/' + entry.name : entry.name;
 
     if (entry.isDirectory()) {
       await client.ensureDir(dest);
@@ -101,9 +102,9 @@ async function uploadDir(client, localDir, remotePath) {
     if (SECURE) accessOpts.secureOptions = { rejectUnauthorized: false };
     await client.access(accessOpts);
     console.log('Connected.');
-    await client.ensureDir(REMOTE);
-    await uploadDir(client, __dirname, REMOTE);
-    console.log(`\n✓ Deploy complete → ${HOST}${REMOTE}`);
+    await client.ensureDir(REMOTE);   // navigate into public_html
+    await uploadDir(client, __dirname, ''); // upload relative to CWD
+    console.log(`\n✓ Deploy complete → ${HOST}/${REMOTE}`);
   } catch (err) {
     console.error('\n✗ Deploy failed:', err.message);
     process.exit(1);
