@@ -112,9 +112,20 @@ async function uploadDir(client, localDir) {
     console.log('CWD after login:', pwdAfterLogin);
     const lsRoot = await client.list();
     console.log('Root entries:', lsRoot.map(e => (e.isDirectory ? 'd' : '-') + ' ' + e.name).join(', '));
-    await client.ensureDir(REMOTE);   // navigate into public_html
-    const pwdAfterEnsure = await client.pwd();
-    console.log('CWD after ensureDir(' + REMOTE + '):', pwdAfterEnsure);
+    // cPanel FTP may log in directly to public_html (login CWD = '/').
+    // Calling ensureDir('public_html') in that state would create
+    // public_html/public_html/ (double-nesting) and silently upload
+    // everything to the wrong path.  Navigate in only when the listing
+    // shows public_html as a subdirectory of the current CWD.
+    const needsCd = lsRoot.some(e => e.isDirectory && e.name === REMOTE);
+    if (needsCd) {
+      await client.cd(REMOTE);
+      console.log('Navigated into', REMOTE);
+    } else {
+      console.log('Login CWD is already the web root — skipping cd into', REMOTE);
+    }
+    const pwdAfterSetup = await client.pwd();
+    console.log('CWD for upload:', pwdAfterSetup);
     await uploadDir(client, __dirname); // upload relative to CWD
     console.log(`\n✓ Deploy complete → ${HOST}/${REMOTE}`);
   } catch (err) {
