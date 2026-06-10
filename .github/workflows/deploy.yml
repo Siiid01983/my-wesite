@@ -43,7 +43,7 @@ jobs:
           FTP_USERNAME:     ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD:     ${{ secrets.FTP_PASSWORD }}
           FTP_PORT:         ${{ secrets.FTP_PORT }}
-          FTP_REMOTE:       /public_html
+          FTP_REMOTE:       public_html
           FTP_SECURE:       true
           SUPABASE_URL:     ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}

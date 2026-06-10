@@ -27,7 +27,7 @@ const HOST   = process.env.FTP_HOST;
 const USER   = process.env.FTP_USERNAME;
 const PASS   = process.env.FTP_PASSWORD;
 const PORT   = parseInt(process.env.FTP_PORT || '21', 10);
-const REMOTE = process.env.FTP_REMOTE || '/public_html';
+const REMOTE = process.env.FTP_REMOTE || 'public_html';
 // FTP_SECURE=true → explicit FTPS (STARTTLS on port 21, common on cPanel)
 // FTP_SECURE=implicit → implicit FTPS (port 990)
 // unset / false → plain FTP (default, backward-compatible)
