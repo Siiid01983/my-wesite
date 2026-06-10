@@ -71,12 +71,12 @@ jobs:
           SITE: https://${{ secrets.FTP_HOST }}
         run: |
           check() {
-            STATUS=$(curl -o /dev/null -s -w "%{http_code}" "$1")
+            STATUS=$(curl -k -o /dev/null -s -w "%{http_code}" "$1") || STATUS="ERR"
             if [ "$STATUS" != "200" ]; then
               echo "FAIL $1 → HTTP $STATUS"
               exit 1
             fi
-            SIZE=$(curl -sI "$1" | grep -i content-length | awk '{print $2}' | tr -d '\r')
+            SIZE=$(curl -k -sI "$1" | grep -i content-length | awk '{print $2}' | tr -d '\r')
             echo "OK   $1 → HTTP $STATUS (${SIZE} bytes)"
           }
           check "$SITE/js/modules/website/wmcServices.js"
