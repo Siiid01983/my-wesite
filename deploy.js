@@ -53,24 +53,30 @@ const SKIP = new Set([
   'CLAUDE.md',
 ]);
 
-/* remoteBase is a CWD-relative prefix; '' means upload into the current directory. */
-async function uploadDir(client, localDir, remoteBase) {
+/*
+ * Upload localDir contents into the FTP server's current working directory.
+ * Uses explicit cd/cdup so the CWD is always known and uploadFrom always
+ * receives just the filename — no path-prefix double-nesting.
+ */
+async function uploadDir(client, localDir) {
+  const isRoot = localDir === __dirname;
   const entries = fs.readdirSync(localDir, { withFileTypes: true });
   for (const entry of entries) {
-    if (!remoteBase && SKIP.has(entry.name)) continue;
+    if (isRoot && SKIP.has(entry.name)) continue;
     if (entry.name.startsWith('.') && entry.name !== '.htaccess') continue;
     if (entry.name.endsWith('.test.js')) continue;
 
     const localPath = path.join(localDir, entry.name);
-    const dest      = remoteBase ? remoteBase + '/' + entry.name : entry.name;
 
     if (entry.isDirectory()) {
-      await client.ensureDir(dest);
-      await uploadDir(client, localPath, dest);
+      try { await client.send('MKD ' + entry.name); } catch (_) {}  // ignore if exists
+      await client.cd(entry.name);
+      await uploadDir(client, localPath);
+      await client.cdup();
     } else {
       const rel = path.relative(__dirname, localPath).replace(/\\/g, '/');
       process.stdout.write('  ' + rel + ' … ');
-      await client.uploadFrom(localPath, dest);
+      await client.uploadFrom(localPath, entry.name);
       process.stdout.write('done\n');
     }
   }
@@ -103,7 +109,7 @@ async function uploadDir(client, localDir, remoteBase) {
     await client.access(accessOpts);
     console.log('Connected.');
     await client.ensureDir(REMOTE);   // navigate into public_html
-    await uploadDir(client, __dirname, ''); // upload relative to CWD
+    await uploadDir(client, __dirname); // upload relative to CWD
     console.log(`\n✓ Deploy complete → ${HOST}/${REMOTE}`);
   } catch (err) {
     console.error('\n✗ Deploy failed:', err.message);
