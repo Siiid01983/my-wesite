@@ -28,6 +28,11 @@ const USER   = process.env.FTP_USERNAME;
 const PASS   = process.env.FTP_PASSWORD;
 const PORT   = parseInt(process.env.FTP_PORT || '21', 10);
 const REMOTE = process.env.FTP_REMOTE || '/public_html';
+// FTP_SECURE=true → explicit FTPS (STARTTLS on port 21, common on cPanel)
+// FTP_SECURE=implicit → implicit FTPS (port 990)
+// unset / false → plain FTP (default, backward-compatible)
+const SECURE_RAW = (process.env.FTP_SECURE || '').toLowerCase();
+const SECURE = SECURE_RAW === 'implicit' ? 'implicit' : SECURE_RAW === 'true';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
@@ -81,6 +86,7 @@ async function uploadDir(client, localDir, remotePath) {
     `  SUPABASE_ANON_KEY: window.SUPABASE_ANON_KEY,`,
     `  ready: !!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY),`,
     `};`,
+    `window.__APP_READY__ = false;`,
     '',
   ].join('\n');
   fs.writeFileSync(envPath, envContent, 'utf8');
@@ -91,7 +97,9 @@ async function uploadDir(client, localDir, remotePath) {
   client.ftp.verbose = false;
   try {
     console.log(`Connecting to ${HOST}:${PORT} …`);
-    await client.access({ host: HOST, user: USER, password: PASS, port: PORT, secure: false });
+    const accessOpts = { host: HOST, user: USER, password: PASS, port: PORT, secure: SECURE };
+    if (SECURE) accessOpts.secureOptions = { rejectUnauthorized: false };
+    await client.access(accessOpts);
     console.log('Connected.');
     await client.ensureDir(REMOTE);
     await uploadDir(client, __dirname, REMOTE);
