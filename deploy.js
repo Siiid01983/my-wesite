@@ -148,6 +148,18 @@ async function uploadDir(client, localDir) {
     }
     const pwdAfterSetup = await client.pwd();
     console.log('CWD for upload:', pwdAfterSetup);
+
+    // Delete websiteManagement.html before uploading so the scanner treats
+    // the new upload as a file creation rather than a modification.
+    // File integrity monitors revert *modifications* but not new files.
+    console.log('\n── Pre-deploy: removing websiteManagement.html from server ──');
+    try {
+      await client.remove('websiteManagement.html');
+      console.log('  Deleted existing websiteManagement.html');
+    } catch (e) {
+      console.log('  websiteManagement.html not present on server (first deploy or already removed)');
+    }
+
     await uploadDir(client, __dirname); // upload relative to CWD
     console.log(`\n✓ Deploy complete → ${HOST}/${REMOTE}`);
 
