@@ -129,6 +129,21 @@ html,body{background:var(--canvas);font-family:var(--font);color:var(--forest);-
   to{stroke-dashoffset:0}
 }
 
+/* ── Service detail screen ───────────────────────────────── */
+.detail-hero{width:100%;aspect-ratio:5/3;background:#f0f0ec;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.detail-hero svg{width:42%;height:42%;opacity:.85}
+.detail-body{padding:24px 20px 120px;display:flex;flex-direction:column;gap:20px}
+.detail-name{font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--forest)}
+.detail-desc{font-size:15px;line-height:1.7;color:var(--text-muted)}
+.detail-section-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px}
+.detail-features{display:flex;flex-direction:column;gap:8px}
+.detail-feature{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--forest)}
+.detail-feature-dot{width:7px;height:7px;border-radius:50%;background:var(--olive);flex-shrink:0}
+.detail-price-card{background:#f4f8f0;border:1px solid #c8ddb2;border-radius:14px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between}
+.detail-price-label{font-size:12px;font-weight:700;color:var(--text-muted)}
+.detail-price-val{font-size:22px;font-weight:800;color:var(--forest)}
+.detail-price-note{font-size:11px;color:var(--text-muted);margin-top:2px;text-align:right}
+
 /* ── Confirmation screen ─────────────────────────────────── */
 .confirm-body{display:flex;flex-direction:column;align-items:center;padding:40px 20px 120px;flex:1}
 .confirm-icon{width:100px;height:100px;margin-bottom:24px}
@@ -179,6 +194,37 @@ html,body{background:var(--canvas);font-family:var(--font);color:var(--forest);-
   <div class="screen active" id="screen-services">
     <div class="sec-title">おすすめのサービス</div>
     <div class="grid" id="services-grid"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SCREEN 1.5 — SERVICE DETAIL
+  ══════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-detail">
+    <div class="detail-hero" id="detail-hero"></div>
+    <div class="detail-body">
+      <div class="detail-name" id="detail-name"></div>
+      <p class="detail-desc" id="detail-desc"></p>
+      <div>
+        <div class="detail-section-label">サービス内容</div>
+        <div class="detail-features" id="detail-features"></div>
+      </div>
+      <div class="detail-price-card">
+        <div>
+          <div class="detail-price-label">概算料金（税込）</div>
+          <div class="detail-price-val" id="detail-price"></div>
+        </div>
+        <div class="detail-price-note">距離・荷物量により変動</div>
+      </div>
+    </div>
+    <div class="action-footer">
+      <button class="btn-search" onclick="openBooking()">
+        <span class="btn-idle">
+          <span>この内容で見積もりを取る</span>
+          <svg style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </span>
+        <span class="btn-spin"></span>
+      </button>
+    </div>
   </div>
 
   <!-- ══════════════════════════════════════════════════════════
@@ -619,6 +665,40 @@ const SERVICE_SVG = {
   furniture: `<svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 60 L46 34 C44 28 46 20 52 16 C54 20 52 24 54 26 C56 28 60 26 62 28 C58 34 50 36 46 34"/><line x1="20" y1="60" x2="26" y2="66"/><circle cx="23" cy="63" r="5"/><rect x="42" y="38" width="26" height="30" rx="2" stroke-dasharray="4 2"/><line x1="42" y1="50" x2="68" y2="50"/></svg>`
 };
 
+// Per-service detail content
+const SERVICE_DETAIL = {
+  single: {
+    desc:     "一人暮らしのお引越しをリーズナブルにサポート。コンパクトな荷物量に最適化されたプランで、効率よく新生活をスタートできます。",
+    features: ["家具・家電の搬出入", "ダンボール資材を無料提供", "即日・翌日対応も相談可能", "エレベーターなし割増なし"],
+    priceFrom: "¥15,000〜"
+  },
+  couple: {
+    desc:     "二人暮らしのお引越しに。大型家具や家電もチームでスムーズに対応。新居への設置・配置まで丁寧にサポートします。",
+    features: ["2名作業員で大型荷物対応", "家具の設置・配置サポート", "梱包・開封サービス", "不用品の同時回収も可"],
+    priceFrom: "¥28,000〜"
+  },
+  student: {
+    desc:     "学生・新社会人の初めてのお引越しを安心サポート。必要な分だけのシンプルプランで、新生活を気軽にスタートできます。",
+    features: ["学割・学生優待あり", "小荷物プランで費用を節約", "平日割引適用可", "引越し資材の貸し出し無料"],
+    priceFrom: "¥12,000〜"
+  },
+  urgent: {
+    desc:     "急なお引越しにも当日・翌日対応。突然の転勤や急遽の退去など、緊急時でも迅速に対応するスペシャルプランです。",
+    features: ["当日・翌日での対応", "24時間相談受付", "最短2時間で見積もり確定", "深夜・早朝の対応も可"],
+    priceFrom: "¥20,000〜"
+  },
+  recycle: {
+    desc:     "不用品の回収・処分をまとめてお任せ。引越し時に出た大型家具や家電から細々した品まで、適切にリサイクル・処分します。",
+    features: ["家電リサイクル法対応", "大型家具の解体・搬出", "当日積み放題プランあり", "回収後の部屋クリーニング対応"],
+    priceFrom: "¥8,000〜"
+  },
+  furniture: {
+    desc:     "家具の組み立て・分解を専門スタッフが対応。IKEAや各種メーカーの家具も対応可能。新居での設置まで安心して任せられます。",
+    features: ["IKEA・ニトリ等各社対応", "電動工具での迅速作業", "壁掛け・取り付け工事も", "1点からでも依頼可能"],
+    priceFrom: "¥5,000〜"
+  }
+};
+
 // Furniture item label map (for summary line)
 const ITEM_LABELS = {
   "tv-s":"テレビ(小)",    "tv-l":"テレビ(大)",
@@ -635,7 +715,8 @@ const ITEM_LABELS = {
 // Application state — single source of truth
 // ─────────────────────────────────────────────────────────────
 const AppState = {
-  activeService: null,
+  activeService:     null,
+  activeServiceName: null,
   bookingData: {
     from:    "",
     to:      "",
@@ -720,29 +801,57 @@ function updateRowStates() {
 // 2. Screen navigation
 // ─────────────────────────────────────────────────────────────
 function selectService(id, name) {
-  AppState.activeService = id;
+  AppState.activeService     = id;
+  AppState.activeServiceName = name;
 
+  // Populate detail screen
+  const detail = SERVICE_DETAIL[id] || {};
+  document.getElementById("detail-hero").innerHTML     = SERVICE_SVG[id] || "";
+  document.getElementById("detail-name").innerText     = name;
+  document.getElementById("detail-desc").innerText     = detail.desc || "";
+  document.getElementById("detail-price").innerText    = detail.priceFrom || "要見積もり";
+  document.getElementById("detail-features").innerHTML = (detail.features || [])
+    .map(f => `<div class="detail-feature"><span class="detail-feature-dot"></span>${f}</div>`)
+    .join('');
+
+  // Header
   document.getElementById("hdrLogo").style.display = "none";
-  const title = document.getElementById("hdrTitle");
-  title.innerText = name;
-  title.style.display = "block";
+  const hdrTitle = document.getElementById("hdrTitle");
+  hdrTitle.innerText     = name;
+  hdrTitle.style.display = "block";
   document.getElementById("backBtn").classList.add("visible");
 
-  document.getElementById("booking-title").innerText = name;
   document.getElementById("screen-services").classList.remove("active");
+  document.getElementById("screen-detail").classList.add("active");
+  window.scrollTo({ top: 0, behavior: "instant" });
+}
+
+function openBooking() {
+  document.getElementById("booking-title").innerText = AppState.activeServiceName;
+  document.getElementById("screen-detail").classList.remove("active");
   document.getElementById("screen-booking").classList.add("active");
   window.scrollTo({ top: 0, behavior: "instant" });
 }
 
 function goBack() {
-  AppState.activeService = null;
+  const onBooking = document.getElementById("screen-booking").classList.contains("active");
+  const onDetail  = document.getElementById("screen-detail").classList.contains("active");
 
-  document.getElementById("hdrLogo").style.display = "flex";
-  document.getElementById("hdrTitle").style.display = "none";
-  document.getElementById("backBtn").classList.remove("visible");
-
-  document.getElementById("screen-booking").classList.remove("active");
-  document.getElementById("screen-services").classList.add("active");
+  if (onBooking) {
+    // Booking → Detail
+    document.getElementById("screen-booking").classList.remove("active");
+    document.getElementById("screen-detail").classList.add("active");
+  } else if (onDetail) {
+    // Detail → Services
+    AppState.activeService     = null;
+    AppState.activeServiceName = null;
+    document.getElementById("hdrLogo").style.display = "flex";
+    document.getElementById("hdrTitle").style.display = "none";
+    document.getElementById("backBtn").classList.remove("visible");
+    document.getElementById("screen-detail").classList.remove("active");
+    document.getElementById("screen-services").classList.add("active");
+  }
+  window.scrollTo({ top: 0, behavior: "instant" });
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -968,8 +1077,9 @@ function showConfirmation() {
 
 function goHome() {
   // Reset state
-  AppState.activeService = null;
-  AppState.bookingData   = { from: "", to: "", items: {}, workers: 2, date: "", filters: [] };
+  AppState.activeService     = null;
+  AppState.activeServiceName = null;
+  AppState.bookingData       = { from: "", to: "", items: {}, workers: 2, date: "", filters: [] };
 
   // Reset form display values
   [
