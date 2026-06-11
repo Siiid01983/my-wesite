@@ -18,9 +18,10 @@
     FTP_HOST=... FTP_USERNAME=... FTP_PASSWORD=... SUPABASE_URL=... SUPABASE_ANON_KEY=... node deploy.js
 */
 
-const ftp  = require('basic-ftp');
-const path = require('path');
-const fs   = require('fs');
+const ftp    = require('basic-ftp');
+const path   = require('path');
+const fs     = require('fs');
+const crypto = require('crypto');
 
 // ── Credentials from environment — NEVER hardcode these ──────────────────────
 const HOST   = process.env.FTP_HOST;
@@ -75,9 +76,30 @@ async function uploadDir(client, localDir) {
       await client.cdup();
     } else {
       const rel = path.relative(__dirname, localPath).replace(/\\/g, '/');
+      const isTarget = entry.name === 'websiteManagement.html';
+      if (isTarget) {
+        const buf  = fs.readFileSync(localPath);
+        const sha  = crypto.createHash('sha256').update(buf).digest('hex').toUpperCase();
+        const size = buf.length;
+        console.log('\n  ── websiteManagement.html pre-upload ──');
+        console.log('  local path : ' + localPath);
+        console.log('  local size : ' + size + ' bytes');
+        console.log('  local SHA256: ' + sha);
+      }
       process.stdout.write('  ' + rel + ' … ');
       await client.uploadFrom(localPath, entry.name);
       process.stdout.write('done\n');
+      if (isTarget) {
+        // Verify remote file by listing the current directory
+        const listing = await client.list();
+        const remote  = listing.find(e => e.name === 'websiteManagement.html');
+        if (remote) {
+          console.log('  remote size (after upload): ' + remote.size + ' bytes');
+          console.log('  remote modified           : ' + (remote.rawModifiedAt || remote.modifiedAt || 'n/a'));
+        } else {
+          console.log('  WARNING: websiteManagement.html not found in remote listing after upload');
+        }
+      }
     }
   }
 }
@@ -128,6 +150,28 @@ async function uploadDir(client, localDir) {
     console.log('CWD for upload:', pwdAfterSetup);
     await uploadDir(client, __dirname); // upload relative to CWD
     console.log(`\n✓ Deploy complete → ${HOST}/${REMOTE}`);
+
+    // Production content verification
+    console.log('\n── Production content check ──');
+    const https    = require('https');
+    const prodUrl  = `https://${HOST}/websiteManagement.html`;
+    const prodHtml = await new Promise((resolve, reject) => {
+      https.get(prodUrl, { rejectUnauthorized: false }, res => {
+        let body = '';
+        res.on('data', d => { body += d; });
+        res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+      }).on('error', reject);
+    });
+    console.log('  URL         : ' + prodUrl);
+    console.log('  HTTP status : ' + prodHtml.status);
+    console.log('  Content-Length header : ' + (prodHtml.headers['content-length'] || 'not set'));
+    console.log('  Last-Modified header  : ' + (prodHtml.headers['last-modified'] || 'not set'));
+    console.log('  body size (bytes)     : ' + Buffer.byteLength(prodHtml.body, 'utf8'));
+    const prodSha = crypto.createHash('sha256').update(prodHtml.body).digest('hex').toUpperCase();
+    console.log('  body SHA256           : ' + prodSha);
+    console.log('  contains wmcServicesContent : ' + prodHtml.body.includes('wmcServicesContent'));
+    console.log('  contains wmcServices.js     : ' + prodHtml.body.includes('wmcServices.js'));
+    console.log('  contains wmc-placeholder    : ' + prodHtml.body.includes('wmc-placeholder'));
   } catch (err) {
     console.error('\n✗ Deploy failed:', err.message);
     process.exit(1);
