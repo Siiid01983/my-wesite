@@ -27,7 +27,7 @@ function _wmcSvcCardHtml(svc, cfg) {
   var isSvg   = cfg.display_mode !== 'image';
   var imgUrl  = cfg.image_url || '';
   var preview = (imgUrl && !isSvg)
-    ? '<img src="' + esc(imgUrl) + '" alt="" onerror="this.style.display=\'none\'" style="width:100%;height:90px;object-fit:cover;border-radius:8px;margin-top:10px;border:1px solid var(--line);">'
+    ? '<img src="' + esc(imgUrl) + '" alt="" class="wmc-svc-img-preview" style="width:100%;height:90px;object-fit:cover;border-radius:8px;margin-top:10px;border:1px solid var(--line);">'
     : '<div class="wmc-svc-svg-placeholder" style="width:100%;height:90px;border-radius:8px;margin-top:10px;background:var(--bg-soft-2);display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;color:var(--gray-1);border:1px dashed var(--line);">' +
         '<span style="font-size:20px;">' + svc.icon + '</span>SVG（デフォルト）</div>';
 
@@ -76,6 +76,10 @@ function _wmcRenderServices() {
 
   document.getElementById('wmcSvcSaveAllBtn').addEventListener('click', _wmcSvcSaveAll);
 
+  el.querySelectorAll('.wmc-svc-img-preview').forEach(function (img) {
+    img.addEventListener('error', function () { this.style.display = 'none'; });
+  });
+
   /* Live preview on mode toggle */
   el.querySelectorAll('input[type="radio"]').forEach(function (radio) {
     radio.addEventListener('change', function () {
@@ -89,7 +93,9 @@ function _wmcRenderServices() {
       var prevEl  = card.querySelector('img, .wmc-svc-svg-placeholder');
       if (!prevEl) return;
       if (!isSvg && imgUrl) {
-        prevEl.outerHTML = '<img src="' + esc(imgUrl) + '" alt="" onerror="this.style.display=\'none\'" style="width:100%;height:90px;object-fit:cover;border-radius:8px;margin-top:10px;border:1px solid var(--line);">';
+        prevEl.outerHTML = '<img src="' + esc(imgUrl) + '" alt="" class="wmc-svc-img-preview" style="width:100%;height:90px;object-fit:cover;border-radius:8px;margin-top:10px;border:1px solid var(--line);">';
+        var newImg = card.querySelector('.wmc-svc-img-preview');
+        if (newImg) newImg.addEventListener('error', function () { this.style.display = 'none'; });
       } else {
         prevEl.outerHTML = '<div class="wmc-svc-svg-placeholder" style="width:100%;height:90px;border-radius:8px;margin-top:10px;background:var(--bg-soft-2);display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;color:var(--gray-1);border:1px dashed var(--line);"><span style="font-size:20px;">' + (svc ? svc.icon : '🖼') + '</span>SVG（デフォルト）</div>';
       }
