@@ -908,6 +908,7 @@ function setPref(type, prefName) {
 }
 
 function confirmAddr(type) {
+  if (navigator.vibrate) navigator.vibrate(6);
   const val     = document.getElementById(`input-${type}`).value.trim();
   const display = document.getElementById(`val-${type}`);
 
@@ -949,6 +950,7 @@ function updateItemCount(itemId, count) {
 }
 
 function confirmFurniture() {
+  if (navigator.vibrate) navigator.vibrate(6);
   const keys    = Object.keys(AppState.bookingData.items);
   const display = document.getElementById("val-items");
 
@@ -981,6 +983,7 @@ function setWorker(count) {
 // 4d. Date picker
 // ─────────────────────────────────────────────────────────────
 function confirmDate() {
+  if (navigator.vibrate) navigator.vibrate(6);
   const raw     = document.getElementById("input-date").value;
   const display = document.getElementById("val-date");
 
@@ -1003,6 +1006,7 @@ function confirmDate() {
 // 4e. Filter checkboxes
 // ─────────────────────────────────────────────────────────────
 function confirmFilter() {
+  if (navigator.vibrate) navigator.vibrate(6);
   const FILTER_MAP = [
     { id: "f-same-day",  label: "当日・翌日対応" },
     { id: "f-english",   label: "英語対応"       },
