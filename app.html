@@ -104,6 +104,12 @@ html,body{background:var(--canvas);font-family:var(--font);color:var(--forest);-
 .seg-btn{flex:1;border:none;height:40px;border-radius:8px;font-size:14px;font-weight:700;color:var(--text-muted);background:transparent;cursor:pointer}
 .seg-btn.on{background:#fff;color:var(--forest);box-shadow:0 2px 6px rgba(0,0,0,.06)}
 
+/* ── Row done state (checkmark) ─────────────────────────── */
+.sel-arrow .icon-check{display:none}
+.sel-row.done{border-color:#c8ddb2}
+.sel-row.done .sel-arrow .icon-chev{display:none}
+.sel-row.done .sel-arrow .icon-check{display:block;color:var(--olive)}
+
 /* ── Booking progress bar ────────────────────────────────── */
 .progress-wrap{padding:2px 0 18px}
 .progress-track{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
@@ -161,7 +167,8 @@ html,body{background:var(--canvas);font-family:var(--font);color:var(--forest);-
           <div class="sel-val" id="val-from">現住所を選択</div>
         </div>
         <div class="sel-arrow">
-          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg class="icon-chev" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg class="icon-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
       </div>
 
@@ -172,7 +179,8 @@ html,body{background:var(--canvas);font-family:var(--font);color:var(--forest);-
           <div class="sel-val" id="val-to">引越し先を選択</div>
         </div>
         <div class="sel-arrow">
-          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg class="icon-chev" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg class="icon-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
       </div>
 
@@ -183,7 +191,8 @@ html,body{background:var(--canvas);font-family:var(--font);color:var(--forest);-
           <div class="sel-val" id="val-items">荷物を選択</div>
         </div>
         <div class="sel-arrow">
-          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg class="icon-chev" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg class="icon-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
       </div>
 
@@ -194,7 +203,8 @@ html,body{background:var(--canvas);font-family:var(--font);color:var(--forest);-
           <div class="sel-val" id="val-date">引越し希望日を選択</div>
         </div>
         <div class="sel-arrow">
-          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg class="icon-chev" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg class="icon-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
       </div>
 
@@ -205,7 +215,8 @@ html,body{background:var(--canvas);font-family:var(--font);color:var(--forest);-
           <div class="sel-val" id="val-filter">条件を選択</div>
         </div>
         <div class="sel-arrow">
-          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg class="icon-chev" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg class="icon-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
       </div>
 
@@ -611,6 +622,21 @@ function updateProgress() {
   document.getElementById("progress-fill").style.width  = pct + "%";
   document.getElementById("progress-label").innerText   = `${filled} / ${steps.length} 項目入力済`;
   document.getElementById("progress-pct").innerText     = pct + "%";
+
+  updateRowStates();
+}
+
+function updateRowStates() {
+  const d = AppState.bookingData;
+  [
+    { id: "row-from",      done: d.from !== "" },
+    { id: "row-to",        done: d.to   !== "" },
+    { id: "row-furniture", done: Object.keys(d.items).length > 0 },
+    { id: "row-date",      done: d.date !== "" },
+    { id: "row-filter",    done: d.filters.length > 0 }
+  ].forEach(({ id, done }) => {
+    document.getElementById(id).classList.toggle("done", done);
+  });
 }
 
 // ─────────────────────────────────────────────────────────────
