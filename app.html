@@ -934,12 +934,12 @@ function confirmAddr(type) {
 // ─────────────────────────────────────────────────────────────
 function inc(itemId) {
   const cur = AppState.bookingData.items[itemId] || 0;
-  if (cur < 99) updateItemCount(itemId, cur + 1);
+  if (cur < 99) { if (navigator.vibrate) navigator.vibrate(3); updateItemCount(itemId, cur + 1); }
 }
 
 function dec(itemId) {
   const cur = AppState.bookingData.items[itemId] || 0;
-  if (cur > 0) updateItemCount(itemId, cur - 1);
+  if (cur > 0)  { if (navigator.vibrate) navigator.vibrate(3); updateItemCount(itemId, cur - 1); }
 }
 
 function updateItemCount(itemId, count) {
