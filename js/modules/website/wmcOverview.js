@@ -16,19 +16,20 @@ async function _wmcCheckSiteStatus() {
 
   var now = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
   var sbOk = false;
+  var hcPassed = false;
   if (window.HealthCheck) {
     try {
       var report = await HealthCheck.run();
       var c = report.checks.find(function (x) { return x.service === 'supabase'; });
-      sbOk = !c || c.status === 'healthy';
+      hcPassed = !c || c.status === 'healthy';
+      sbOk = hcPassed;
     } catch (_) {}
   } else {
-    sbOk = !!window.SupabaseClient;
+    hcPassed = !!window.SupabaseClient;
+    sbOk = hcPassed;
   }
 
-  /* This function executing means the page's HTML + JS loaded from the server
-     — the site is reachable by definition.  No fetch needed. */
-  var siteOk = true;
+  var siteOk = !!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.supabase) && hcPassed;
 
   banner.className = 'wmc-status-banner ' + (siteOk ? 'online' : 'offline');
   if (text)   text.textContent   = siteOk ? 'サイトはオンラインです' : 'サイトに接続できません';
@@ -230,7 +231,68 @@ async function wmcRefreshOverview() {
     var n = new Date();
     tsEl.textContent = '最終更新: ' + n.getHours() + ':' + _padZ(n.getMinutes()) + ':' + _padZ(n.getSeconds());
   }
+  _wmcInjectDiagPanel();
   if (typeof AuditLog !== 'undefined') AuditLog.record('other', 'wmc', 'overview', 'WMC 概要ページを表示');
+}
+
+/* ── Write test + diagnostics ── */
+function _wmcInjectDiagPanel() {
+  if (document.getElementById('wmcDiagPanel')) return;
+  var banner = document.getElementById('wmcStatusBanner');
+  if (!banner) return;
+
+  var adapterReady = typeof Adapter !== 'undefined' && !!Adapter.supabaseReady;
+  var clientReady  = !!window.SupabaseClient;
+
+  var panel = document.createElement('div');
+  panel.id = 'wmcDiagPanel';
+  panel.style.cssText = 'margin-top:10px;padding:8px 10px;background:rgba(0,0,0,.04);border-radius:6px;font-size:11px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;';
+  panel.innerHTML =
+    '<span>Adapter.supabaseReady: <strong style="color:' + (adapterReady ? '#10b981' : '#ef4444') + '">' + adapterReady + '</strong></span>' +
+    '<span>SupabaseClient: <strong style="color:' + (clientReady ? '#10b981' : '#ef4444') + '">' + (clientReady ? 'OK' : 'null') + '</strong></span>' +
+    '<button id="wmcWriteTestBtn" style="padding:3px 10px;border:1px solid #2563eb;border-radius:4px;background:#fff;color:#2563eb;cursor:pointer;font-size:11px;">Write Test Record</button>' +
+    '<span id="wmcWriteTestResult"></span>';
+  banner.appendChild(panel);
+
+  document.getElementById('wmcWriteTestBtn').addEventListener('click', _wmcRunWriteTest);
+}
+
+async function _wmcRunWriteTest() {
+  var btn = document.getElementById('wmcWriteTestBtn');
+  var out = document.getElementById('wmcWriteTestResult');
+  if (btn) btn.disabled = true;
+  if (out) out.textContent = '書き込み中…';
+
+  var payload = { key: 'test_connection', value: { timestamp: Date.now() }, updated_at: new Date().toISOString() };
+  console.log('[SAVE] write test payload:', payload);
+
+  if (!window.SupabaseClient) {
+    var msg = 'SupabaseClient is null — writes cannot reach Supabase. Verify env.js has window.ENV={ready:true} and valid credentials.';
+    console.error('[SUPABASE ERROR]', msg);
+    if (out) out.innerHTML = '<span style="color:#ef4444">' + msg + '</span>';
+    if (btn) btn.disabled = false;
+    return;
+  }
+
+  try {
+    var r = await window.SupabaseClient
+      .from('hm_data')
+      .upsert(payload, { onConflict: 'key' });
+
+    if (r.error) {
+      console.error('[SUPABASE ERROR] write test failed:', r.error.message, r.error);
+      if (out) out.innerHTML = '<span style="color:#ef4444">Error: ' + r.error.message + '</span>';
+    } else {
+      console.log('[SUPABASE RESPONSE] write test succeeded:', r.data);
+      if (out) out.innerHTML = '<span style="color:#10b981">✓ Supabase write OK — check: select count(*) from hm_data;</span>';
+      if (typeof toast !== 'undefined') toast('テスト書き込み成功 — Supabase confirmed');
+    }
+  } catch (e) {
+    console.error('[SUPABASE ERROR] write test exception:', e.message, e);
+    if (out) out.innerHTML = '<span style="color:#ef4444">Exception: ' + e.message + '</span>';
+  }
+
+  if (btn) btn.disabled = false;
 }
 
 /* ── Adapter timestamp patch ── */

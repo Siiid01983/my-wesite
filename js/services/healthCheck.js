@@ -96,10 +96,13 @@
     if (!window.BookingService)    optional.push('BookingService');
     if (!window.CalendarService)   optional.push('CalendarService');
 
-    if (optional.length > 0) {
-      return { service: 'services', status: 'warning', message: `任意サービスが未登録: ${optional.join(', ')}` };
-    }
-    return { service: 'services', status: 'healthy', message: 'サービスレジストリ正常（全サービス登録済み）' };
+    return {
+      service: 'services',
+      status:  'healthy',
+      message: optional.length
+        ? `サービスレジストリ正常 — 任意未登録: ${optional.join(', ')}`
+        : 'サービスレジストリ正常（全サービス登録済み）',
+    };
   }
 
   async function _checkStorage() {

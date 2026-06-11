@@ -26,6 +26,11 @@
 
   /* ── Shared Supabase client (single instance for the whole app) ─── */
   const _sb = window.SupabaseClient || null;
+  if (!_sb) {
+    console.error('[Adapter] CRITICAL: SupabaseClient is null at Adapter init — ALL writes will be silently dropped. Check env.js (window.ENV.ready must be true) and supabaseClient.js.');
+  } else {
+    console.log('[Adapter] SupabaseClient captured OK —', _sb.supabaseUrl || 'client ready');
+  }
 
   /* ── localStorage helpers ─────────────────────────────── */
   const _ls  = (k, def) => { try { return JSON.parse(localStorage.getItem(k) ?? JSON.stringify(def)); } catch { return def; } };
@@ -48,25 +53,42 @@
   /* ── Supabase write helpers ───────────────────────────── */
   function _upsert(table, data, matchCol) {
     if (window.Auth && typeof Auth.getRole === 'function' && Auth.getRole() === 'read-only') return;
-    if (!_sb) return;
+    if (!_sb) {
+      console.warn(`[Adapter] _upsert: SupabaseClient is null — write to "${table}" dropped`);
+      return;
+    }
+    console.log('[SAVE]', table, 'upsert', matchCol, data);
     _sb.from(table)
       .upsert(data, { onConflict: matchCol })
-      .then(({ error }) => { if (error) console.warn(`[Adapter] ${table} upsert error:`, error.message); });
+      .then(({ error }) => {
+        if (error) console.error(`[SUPABASE ERROR] ${table} upsert failed:`, error.message, error);
+        else        console.log(`[SUPABASE RESPONSE] ${table} upsert ok`);
+      });
   }
 
   function _del(table, col, val) {
     if (window.Auth && typeof Auth.getRole === 'function' && Auth.getRole() === 'read-only') return;
-    if (!_sb) return;
+    if (!_sb) {
+      console.warn(`[Adapter] _del: SupabaseClient is null — delete from "${table}" dropped`);
+      return;
+    }
     _sb.from(table).delete().eq(col, val)
-      .then(({ error }) => { if (error) console.warn(`[Adapter] ${table} delete error:`, error.message); });
+      .then(({ error }) => { if (error) console.error(`[SUPABASE ERROR] ${table} delete failed:`, error.message); });
   }
 
   /* hm_data key-value writes */
   function _kv(key, value) {
-    if (!_sb) return;
+    if (!_sb) {
+      console.warn(`[Adapter] _kv: SupabaseClient is null — hm_data write dropped. key: "${key}"`);
+      return;
+    }
+    console.log('[SAVE] hm_data upsert key:', key);
     _sb.from('hm_data')
       .upsert({ key, value, updated_at: new Date().toISOString() })
-      .then(({ error }) => { if (error) console.warn('[Adapter] hm_data write error:', key, error.message); });
+      .then(({ error }) => {
+        if (error) console.error(`[SUPABASE ERROR] hm_data upsert failed. key: "${key}"`, error.message, error);
+        else        console.log(`[SUPABASE RESPONSE] hm_data upsert ok. key: "${key}"`);
+      });
   }
 
   /* Write-through: localStorage first, then Supabase hm_data */

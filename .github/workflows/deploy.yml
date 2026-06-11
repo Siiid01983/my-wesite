@@ -82,4 +82,4 @@ jobs:
           check "$SITE/js/modules/website/wmcServices.js"
           check "$SITE/js/services/contentLoader.js"
           check "$SITE/index.html"
-          check "$SITE/websiteManagement.html"
+          check "$SITE/wmcDashboard.html"

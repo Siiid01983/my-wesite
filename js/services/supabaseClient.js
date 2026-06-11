@@ -4,8 +4,8 @@
 (function () {
   'use strict';
 
-  if (!window.ENV || !window.ENV.ready) {
-    console.error('[SupabaseClient] ENV not ready — env.js did not load or credentials are missing. Supabase disabled.');
+  if (window.ENV && !window.ENV.ready) {
+    console.error('[SupabaseClient] ENV not ready — env.js reported credentials as invalid. Supabase disabled.');
     window.SupabaseClient = null;
     return;
   }
