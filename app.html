@@ -30,6 +30,10 @@ html,body{background:var(--canvas);font-family:var(--font);color:var(--forest);-
 /* ── Screens ─────────────────────────────────────────── */
 .screen{display:none;width:100%;flex:1}
 .screen.active{display:block}
+.screen.slide-fwd { animation:slideInFwd  .22s cubic-bezier(.4,0,.2,1) both; }
+.screen.slide-back{ animation:slideInBack .22s cubic-bezier(.4,0,.2,1) both; }
+@keyframes slideInFwd  { from{transform:translateX(36px); opacity:0} to{transform:none;opacity:1} }
+@keyframes slideInBack { from{transform:translateX(-36px);opacity:0} to{transform:none;opacity:1} }
 
 /* ── Section title ───────────────────────────────────── */
 .sec-title{font-size:20px;font-weight:800;padding:20px 16px 14px;color:var(--forest)}
@@ -730,9 +734,26 @@ const AppState = {
 // ─────────────────────────────────────────────────────────────
 // 1. Init
 // ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Screen switch helpers — apply directional slide animation
+// ─────────────────────────────────────────────────────────────
+function activateScreen(id, dir) {
+  const el = document.getElementById(id);
+  if (dir) {
+    const cls = dir === 'fwd' ? 'slide-fwd' : 'slide-back';
+    el.classList.add(cls);
+    el.addEventListener('animationend', () => el.classList.remove('slide-fwd','slide-back'), { once: true });
+  }
+  el.classList.add('active');
+}
+function deactivateScreen(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   renderServices();
   initMinDate();
+  initSwipeGestures();
 });
 
 function renderServices() {
@@ -821,15 +842,15 @@ function selectService(id, name) {
   hdrTitle.style.display = "block";
   document.getElementById("backBtn").classList.add("visible");
 
-  document.getElementById("screen-services").classList.remove("active");
-  document.getElementById("screen-detail").classList.add("active");
+  deactivateScreen("screen-services");
+  activateScreen("screen-detail", "fwd");
   window.scrollTo({ top: 0, behavior: "instant" });
 }
 
 function openBooking() {
   document.getElementById("booking-title").innerText = AppState.activeServiceName;
-  document.getElementById("screen-detail").classList.remove("active");
-  document.getElementById("screen-booking").classList.add("active");
+  deactivateScreen("screen-detail");
+  activateScreen("screen-booking", "fwd");
   window.scrollTo({ top: 0, behavior: "instant" });
 }
 
@@ -839,8 +860,8 @@ function goBack() {
 
   if (onBooking) {
     // Booking → Detail
-    document.getElementById("screen-booking").classList.remove("active");
-    document.getElementById("screen-detail").classList.add("active");
+    deactivateScreen("screen-booking");
+    activateScreen("screen-detail", "back");
   } else if (onDetail) {
     // Detail → Services
     AppState.activeService     = null;
@@ -848,8 +869,8 @@ function goBack() {
     document.getElementById("hdrLogo").style.display = "flex";
     document.getElementById("hdrTitle").style.display = "none";
     document.getElementById("backBtn").classList.remove("visible");
-    document.getElementById("screen-detail").classList.remove("active");
-    document.getElementById("screen-services").classList.add("active");
+    deactivateScreen("screen-detail");
+    activateScreen("screen-services", "back");
   }
   window.scrollTo({ top: 0, behavior: "instant" });
 }
@@ -1068,8 +1089,8 @@ function showConfirmation() {
     </div>`).join('');
 
   // Switch to Screen 3
-  document.getElementById("screen-booking").classList.remove("active");
-  document.getElementById("screen-confirm").classList.add("active");
+  deactivateScreen("screen-booking");
+  activateScreen("screen-confirm", "fwd");
   document.getElementById("hdrTitle").innerText = "見積もり完了";
   document.getElementById("backBtn").classList.remove("visible");
   window.scrollTo({ top: 0, behavior: "instant" });
@@ -1112,10 +1133,44 @@ function goHome() {
   document.getElementById("w1").classList.remove("on");
 
   // Switch to Screen 1
-  document.getElementById("screen-confirm").classList.remove("active");
-  document.getElementById("screen-services").classList.add("active");
+  deactivateScreen("screen-confirm");
+  activateScreen("screen-services", "back");
   document.getElementById("hdrLogo").style.display = "flex";
   document.getElementById("hdrTitle").style.display = "none";
+}
+// ─────────────────────────────────────────────────────────────
+// Swipe gesture navigation
+// ─────────────────────────────────────────────────────────────
+function initSwipeGestures() {
+  const page = document.querySelector('.page');
+  let startX = 0, startY = 0;
+
+  page.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+
+  page.addEventListener('touchend', e => {
+    // Don't fire while a drawer is open
+    if (document.body.style.overflow === 'hidden') return;
+
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+
+    // Require predominantly horizontal swipe of at least 60px
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+
+    if (dx > 0) {
+      // Swipe right → back
+      const onDetail  = document.getElementById('screen-detail').classList.contains('active');
+      const onBooking = document.getElementById('screen-booking').classList.contains('active');
+      if (onDetail || onBooking) goBack();
+    } else {
+      // Swipe left → advance
+      const onDetail = document.getElementById('screen-detail').classList.contains('active');
+      if (onDetail) openBooking();
+    }
+  }, { passive: true });
 }
 </script>
 </body>
