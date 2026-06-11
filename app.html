@@ -108,7 +108,19 @@ html,body{background:var(--canvas);font-family:var(--font);color:var(--forest);-
 .sel-arrow .icon-check{display:none}
 .sel-row.done{border-color:#c8ddb2}
 .sel-row.done .sel-arrow .icon-chev{display:none}
-.sel-row.done .sel-arrow .icon-check{display:block;color:var(--olive)}
+.sel-row.done .sel-arrow .icon-check{display:block;color:var(--olive);animation:checkPop .3s cubic-bezier(.34,1.56,.64,1) both}
+
+/* stroke-draw: polyline total length ≈ 23px, dashoffset starts full then animates to 0 */
+.icon-check polyline{stroke-dasharray:25;stroke-dashoffset:25}
+.sel-row.done .icon-check polyline{animation:checkDraw .28s .04s cubic-bezier(.4,0,.2,1) forwards}
+
+@keyframes checkPop{
+  from{transform:scale(.3);opacity:0}
+  to  {transform:scale(1);opacity:1}
+}
+@keyframes checkDraw{
+  to{stroke-dashoffset:0}
+}
 
 /* ── Booking progress bar ────────────────────────────────── */
 .progress-wrap{padding:2px 0 18px}
