@@ -133,7 +133,7 @@ my-website/
 │           ├── analyticsExport.js    # window.AnalyticsExport — CSV exports: revenueForecast/serviceRankings/customerMetrics + AuditLog
 │           └── analyticsDashboard.js # window.AnalyticsDashboard — 高度分析 page, widget registry init, go() wrap, tab routing
 │
-├── wmcDashboard.php  # Phase 28 — WMC: HTML + CSS only (no inline JS beyond lean navigation/auth/startup)
+├── wmcDashboard.html  # Phase 28 — WMC: HTML + CSS only (no inline JS beyond lean navigation/auth/startup)
 │
 ├── js/modules/website/     # Phase 28 — WMC modules
 │   ├── wmcCore.js          # window.WMCPermissions — 3-tier RBAC (admin/staff/readonly); _padZ, _wmcFmtRelative shared utils
@@ -696,7 +696,7 @@ applies on every grid render including Realtime-triggered updates.
 
 | Phase | Commit | What was built |
 |---|---|---|
-| 28 | `—` | Website Management Center (WMC): `wmcDashboard.php` + 8 modules in `js/modules/website/`. Sections 8 (Theme Customizer — live preview, CSS override for index.html), 9 (Deployment Center — export/import/backup, version tracking, deploy log), 10 (Permissions — 3-tier RBAC: admin/staff/readonly, permission matrix, WMC user management, role simulation, view-level access gates). `WMCPermissions` global, `_padZ`/`_wmcFmtRelative` shared utils. Navigation integration: WMC link added to admin.html sidebar. localStorage schema: `hm_wmc_users`, `hm_dc_log`, `hm_dc_backups`, `hm_theme_config`, `hm_custom_theme_css`. |
+| 28 | `—` | Website Management Center (WMC): `wmcDashboard.html` + 8 modules in `js/modules/website/`. Sections 8 (Theme Customizer — live preview, CSS override for index.html), 9 (Deployment Center — export/import/backup, version tracking, deploy log), 10 (Permissions — 3-tier RBAC: admin/staff/readonly, permission matrix, WMC user management, role simulation, view-level access gates). `WMCPermissions` global, `_padZ`/`_wmcFmtRelative` shared utils. Navigation integration: WMC link added to admin.html sidebar. localStorage schema: `hm_wmc_users`, `hm_dc_log`, `hm_dc_backups`, `hm_theme_config`, `hm_custom_theme_css`. |
 | 23 | `—` | Advanced Analytics & BI: AnalyticsEngine (regression/forecasting), RevenueForecast (3-month projection), ServicePerformance (composite score), CustomerInsights (CLV/churn), ConversionAnalytics (funnel), AnalyticsWidgets (demand chart/DOW heatmap/insight cards), AnalyticsUI (orchestrator wrapper) |
 | 22 | `e9505ac` | Invoice generator (InvoiceManager, hm_invoices, 請求書 button in booking detail); global search (GlobalSearch, Ctrl+K, searches all local data); audit log (AuditLog, hm_audit_log ring buffer, Adapter auto-patches, 監査ログ view) |
 | 21 | `e33a779` | Dashboard customisation suite (A–E): layout storage, widget visibility modal, HTML5 DnD reordering, KPI card manager, Owner/Operations/Marketing profiles |
