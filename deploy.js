@@ -81,7 +81,7 @@ async function uploadDir(client, localDir) {
         const buf  = fs.readFileSync(localPath);
         const sha  = crypto.createHash('sha256').update(buf).digest('hex').toUpperCase();
         const size = buf.length;
-        console.log('\n  ── wmcDashboard.html pre-upload ──');
+        console.log('\n  ── wmc/wmcDashboard.html pre-upload ──');
         console.log('  local path : ' + localPath);
         console.log('  local size : ' + size + ' bytes');
         console.log('  local SHA256: ' + sha);
@@ -92,20 +92,20 @@ async function uploadDir(client, localDir) {
       if (isTarget) {
         // Check permissions and force 644 in case scanner set them to 000
         try {
-          await client.send('SITE CHMOD 644 wmcDashboard.html');
+          await client.send('SITE CHMOD 644 wmc/wmcDashboard.html');
           console.log('  chmod 644 applied');
         } catch (e) {
           console.log('  chmod 644 failed: ' + e.message);
         }
         // List to confirm size and read raw permissions line
         const listing = await client.list();
-        const remote  = listing.find(e => e.name === 'wmcDashboard.html');
+        const remote  = listing.find(e => e.name === 'wmc/wmcDashboard.html');
         if (remote) {
           console.log('  remote size (after upload): ' + remote.size + ' bytes');
           console.log('  remote modified           : ' + (remote.rawModifiedAt || remote.modifiedAt || 'n/a'));
           console.log('  remote rawList entry      : ' + JSON.stringify(remote));
         } else {
-          console.log('  WARNING: wmcDashboard.html not found in remote listing after upload');
+          console.log('  WARNING: wmc/wmcDashboard.html not found in remote listing after upload');
         }
       }
     }
@@ -157,15 +157,16 @@ async function uploadDir(client, localDir) {
     const pwdAfterSetup = await client.pwd();
     console.log('CWD for upload:', pwdAfterSetup);
 
-    // Delete wmcDashboard.html before uploading so the scanner treats
-    // the new upload as a file creation rather than a modification.
-    // File integrity monitors revert *modifications* but not new files.
-    console.log('\n── Pre-deploy: removing wmcDashboard.html from server ──');
+    // Delete wmc/wmcDashboard.html before uploading (navigate into subdir first).
+    console.log('\n── Pre-deploy: removing wmc/wmcDashboard.html from server ──');
     try {
+      await client.cd('wmc');
       await client.remove('wmcDashboard.html');
-      console.log('  Deleted existing wmcDashboard.html');
+      await client.cdup();
+      console.log('  Deleted existing wmc/wmcDashboard.html');
     } catch (e) {
-      console.log('  wmcDashboard.html not present on server (first deploy or already removed)');
+      await client.cdup().catch(() => {});
+      console.log('  wmc/wmcDashboard.html not present on server (first deploy or already removed)');
     }
 
     await uploadDir(client, __dirname); // upload relative to CWD
@@ -174,7 +175,7 @@ async function uploadDir(client, localDir) {
     // Production content verification
     console.log('\n── Production content check ──');
     const https    = require('https');
-    const prodUrl  = `https://${HOST}/wmcDashboard.html`;
+    const prodUrl  = `https://${HOST}/wmc/wmcDashboard.html`;
     const prodHtml = await new Promise((resolve, reject) => {
       https.get(prodUrl, { rejectUnauthorized: false }, res => {
         let body = '';
