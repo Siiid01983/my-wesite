@@ -2,7 +2,7 @@
 
 /* ════════════════════════════════════════════════════════
    WMC MEDIA LIBRARY
-   Standalone media manager for wmcDashboard.html.
+   Standalone media manager for wmcDashboard.php.
    Features:
    • Upload images (drag-drop or file input)
    • Auto-compress to WebP (Canvas, max 1920px, 0.85q)

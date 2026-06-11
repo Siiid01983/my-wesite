@@ -10,7 +10,7 @@ var _WMC_PAGES = [
   { name: '管理パネル (admin.html)',     path: '/admin.html',            desc: '全機能搭載の管理者ダッシュボード。',             status: 'online', edit: 'admin.html' },
   { name: 'レビュー投稿 (review.html)', path: '/review.html',           desc: '顧客がレビューを投稿するための公開フォーム。',   status: 'online', edit: null },
   { name: 'レビュー印刷 (admin-reviews)', path: '/admin-reviews.html',  desc: 'レビューの印刷・PDF出力用ページ。',             status: 'online', edit: null },
-  { name: 'WMC (wmcDashboard.html)', path: '/wmcDashboard.html', desc: 'Website Management Center（このページ）。', status: 'online', edit: null },
+  { name: 'WMC (wmcDashboard.php)', path: '/wmcDashboard.php', desc: 'Website Management Center（このページ）。', status: 'online', edit: null },
 ];
 
 function _wmcRenderPages() {

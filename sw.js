@@ -104,7 +104,7 @@ const PRECACHE = [
   '/js/modules/camera/cameraCapture.js',
 
   /* Phase 28 — Website Management Center */
-  '/wmcDashboard.html',
+  '/wmcDashboard.php',
   '/js/utils/i18n.js',
   '/js/modules/audit/auditLog.js',
   '/js/modules/website/wmcCore.js',
