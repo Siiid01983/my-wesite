@@ -122,6 +122,27 @@ html,body{background:var(--canvas);font-family:var(--font);color:var(--forest);-
   to{stroke-dashoffset:0}
 }
 
+/* ── Confirmation screen ─────────────────────────────────── */
+.confirm-body{display:flex;flex-direction:column;align-items:center;padding:40px 20px 120px;flex:1}
+.confirm-icon{width:100px;height:100px;margin-bottom:24px}
+.confirm-icon svg{width:100%;height:100%}
+.confirm-ring{stroke-dasharray:214;stroke-dashoffset:214;animation:ringDraw .55s .1s cubic-bezier(.4,0,.2,1) forwards}
+.confirm-check{stroke-dasharray:47;stroke-dashoffset:47;animation:checkDrawBig .35s .6s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes ringDraw{to{stroke-dashoffset:0}}
+@keyframes checkDrawBig{to{stroke-dashoffset:0}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.confirm-title{font-size:22px;font-weight:800;color:var(--forest);text-align:center;margin-bottom:8px;animation:fadeUp .3s .45s both}
+.confirm-sub{font-size:14px;color:var(--text-muted);text-align:center;margin-bottom:24px;animation:fadeUp .3s .55s both}
+.confirm-ref{background:#f4f8f0;border:1px solid #c8ddb2;border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:24px;animation:fadeUp .3s .6s both}
+.confirm-ref-label{font-size:12px;font-weight:700;color:var(--text-muted)}
+.confirm-ref-num{font-size:16px;font-weight:800;color:var(--forest);letter-spacing:.06em}
+.confirm-summary{width:100%;display:flex;flex-direction:column;gap:10px;margin-bottom:32px}
+.confirm-row{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;animation:fadeUp .3s both}
+.confirm-row-label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em}
+.confirm-row-val{font-size:15px;font-weight:700;color:var(--forest)}
+.btn-new-search{width:100%;height:54px;background:var(--forest);color:#fff;border:none;border-radius:27px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(44,54,38,.2);animation:fadeUp .3s .85s both}
+.btn-new-search:active{transform:scale(.98)}
+
 /* ── Booking progress bar ────────────────────────────────── */
 .progress-wrap{padding:2px 0 18px}
 .progress-track{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
@@ -242,6 +263,39 @@ html,body{background:var(--canvas);font-family:var(--font);color:var(--forest);-
           <polyline points="9 18 15 12 9 6"/>
         </svg>
       </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SCREEN 3 — CONFIRMATION
+  ══════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-confirm">
+    <div class="confirm-body">
+
+      <!-- Animated ring + checkmark -->
+      <div class="confirm-icon">
+        <svg viewBox="0 0 80 80" fill="none">
+          <circle class="confirm-ring" cx="40" cy="40" r="34"
+            stroke="var(--olive)" stroke-width="3" stroke-linecap="round"/>
+          <polyline class="confirm-check" points="24 40 35 51 56 29"
+            stroke="var(--olive)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="confirm-title">見積もり依頼を送信しました</div>
+      <div class="confirm-sub">最適な業者をマッチングしています</div>
+
+      <!-- Reference number -->
+      <div class="confirm-ref">
+        <span class="confirm-ref-label">受付番号</span>
+        <span class="confirm-ref-num" id="confirm-ref"></span>
+      </div>
+
+      <!-- Booking summary rows (populated by JS) -->
+      <div class="confirm-summary" id="confirm-summary"></div>
+
+      <button class="btn-new-search" onclick="goHome()">新しい見積もりを取る</button>
+
     </div>
   </div>
 
@@ -848,7 +902,7 @@ function handleSearch() {
     return;
   }
 
-  // Backend integration point — replace alert with fetch() call
+  // Backend integration point — swap showConfirmation() for a fetch() call
   console.log("--- SUBMISSION PAYLOAD ---", {
     serviceId:      AppState.activeService,
     origin:         d.from,
@@ -859,13 +913,81 @@ function handleSearch() {
     appliedFilters: d.filters
   });
 
-  alert(
-    `見積もり検索を実行します。\n\n` +
-    `【出発地】 ${d.from}\n` +
-    `【希望日】 ${document.getElementById("val-date").innerText}\n` +
-    `【作業員】 ${d.workers}名\n\n` +
-    `最適な業者の検索を開始します。`
-  );
+  showConfirmation();
+}
+
+function showConfirmation() {
+  const d = AppState.bookingData;
+
+  // Unique reference number
+  document.getElementById("confirm-ref").innerText =
+    "HM-" + Date.now().toString(36).toUpperCase().slice(-6);
+
+  // Build summary rows — skip empty optional fields
+  const rows = [
+    { label: "サービス",     val: document.getElementById("booking-title").innerText },
+    { label: "出発地",       val: d.from },
+    d.to                          ? { label: "引越し先",     val: d.to } : null,
+    Object.keys(d.items).length   ? { label: "荷物",         val: document.getElementById("val-items").innerText } : null,
+    { label: "希望日",       val: document.getElementById("val-date").innerText },
+    { label: "作業員数",     val: d.workers + "名" },
+    d.filters.length              ? { label: "こだわり条件", val: d.filters.join("・") } : null,
+  ].filter(Boolean);
+
+  document.getElementById("confirm-summary").innerHTML = rows.map((r, i) => `
+    <div class="confirm-row" style="animation-delay:${.65 + i * .07}s">
+      <div class="confirm-row-label">${r.label}</div>
+      <div class="confirm-row-val">${r.val}</div>
+    </div>`).join('');
+
+  // Switch to Screen 3
+  document.getElementById("screen-booking").classList.remove("active");
+  document.getElementById("screen-confirm").classList.add("active");
+  document.getElementById("hdrTitle").innerText = "見積もり完了";
+  document.getElementById("backBtn").classList.remove("visible");
+  window.scrollTo({ top: 0, behavior: "instant" });
+}
+
+function goHome() {
+  // Reset state
+  AppState.activeService = null;
+  AppState.bookingData   = { from: "", to: "", items: {}, workers: 2, date: "", filters: [] };
+
+  // Reset form display values
+  [
+    ["val-from",   "現住所を選択"],
+    ["val-to",     "引越し先を選択"],
+    ["val-items",  "荷物を選択"],
+    ["val-date",   "引越し希望日を選択"],
+    ["val-filter", "条件を選択"],
+  ].forEach(([id, placeholder]) => {
+    const el = document.getElementById(id);
+    el.innerText = placeholder;
+    el.classList.remove("filled");
+  });
+
+  // Reset row done states, progress bar, furniture counters
+  ["row-from","row-to","row-furniture","row-date","row-filter"]
+    .forEach(id => document.getElementById(id).classList.remove("done"));
+  document.getElementById("progress-fill").style.width = "0%";
+  document.getElementById("progress-label").innerText  = "0 / 5 項目入力済";
+  document.getElementById("progress-pct").innerText    = "0%";
+  Object.keys(ITEM_LABELS).forEach(id => {
+    const card = document.getElementById(`card-${id}`);
+    if (card) card.classList.remove("has-count");
+    const num = document.getElementById(`n-${id}`);
+    if (num) num.innerText = "0";
+  });
+
+  // Reset worker toggle
+  document.getElementById("w2").classList.add("on");
+  document.getElementById("w1").classList.remove("on");
+
+  // Switch to Screen 1
+  document.getElementById("screen-confirm").classList.remove("active");
+  document.getElementById("screen-services").classList.add("active");
+  document.getElementById("hdrLogo").style.display = "flex";
+  document.getElementById("hdrTitle").style.display = "none";
 }
 </script>
 </body>
