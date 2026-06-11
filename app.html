@@ -1109,6 +1109,7 @@ function showConfirmation() {
   activateScreen("screen-confirm", "fwd");
   document.getElementById("hdrTitle").innerText = "見積もり完了";
   document.getElementById("backBtn").classList.remove("visible");
+  if (navigator.vibrate) navigator.vibrate([10, 60, 10]);
   window.scrollTo({ top: 0, behavior: "instant" });
 }
 
