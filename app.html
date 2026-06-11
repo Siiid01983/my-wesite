@@ -1164,11 +1164,17 @@ function initSwipeGestures() {
       // Swipe right → back
       const onDetail  = document.getElementById('screen-detail').classList.contains('active');
       const onBooking = document.getElementById('screen-booking').classList.contains('active');
-      if (onDetail || onBooking) goBack();
+      if (onDetail || onBooking) {
+        if (navigator.vibrate) navigator.vibrate(8);
+        goBack();
+      }
     } else {
       // Swipe left → advance
       const onDetail = document.getElementById('screen-detail').classList.contains('active');
-      if (onDetail) openBooking();
+      if (onDetail) {
+        if (navigator.vibrate) navigator.vibrate(8);
+        openBooking();
+      }
     }
   }, { passive: true });
 }
