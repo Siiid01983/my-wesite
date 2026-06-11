@@ -1034,6 +1034,7 @@ function confirmFilter() {
 // 5. Search — validation + payload
 // ─────────────────────────────────────────────────────────────
 function handleSearch() {
+  if (navigator.vibrate) navigator.vibrate(10);
   const d = AppState.bookingData;
 
   if (!d.from) {
