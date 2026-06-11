@@ -856,6 +856,7 @@ function openBooking() {
 }
 
 function goBack() {
+  if (navigator.vibrate) navigator.vibrate(6);
   const onBooking = document.getElementById("screen-booking").classList.contains("active");
   const onDetail  = document.getElementById("screen-detail").classList.contains("active");
 
