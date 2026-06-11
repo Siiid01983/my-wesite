@@ -754,6 +754,10 @@ document.addEventListener("DOMContentLoaded", () => {
   renderServices();
   initMinDate();
   initSwipeGestures();
+  document.querySelectorAll('#drawer-filter input[type="checkbox"]')
+    .forEach(cb => cb.addEventListener('change', () => {
+      if (navigator.vibrate) navigator.vibrate(4);
+    }));
 });
 
 function renderServices() {
