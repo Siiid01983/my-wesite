@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>サービス一覧 & 予約 — Hello Moving</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --forest: #2C3626;
+            --forest2: #3a4a32;
+            --olive: #9AB57A;
+            --canvas: #F9F9F6;
+            --border: #e3e3de;
+            --muted: #aaa;
+            --active-bg: #fef9f0;
+            --font: system-ui, -apple-system, sans-serif;
+        }
+        html, body { background: #f2f2ef; font-family: var(--font); color: var(--forest); -webkit-font-smoothing: antialiased; height: 100%; }
+        .page { max-width: 480px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; background: #f2f2ef; position: relative; }
+        .hdr { display: flex; align-items: center; height: 52px; padding: 0 16px; background: #fff; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 30; }
+        .hdr__back { display: none; align-items: center; color: var(--forest); text-decoration: none; padding: 8px; margin-rght: 4px; }
+        .hdr__back.visible { display: flex; }
+        .hdr__back svg { width: 22px; height: 22px; }
+        .hdr__logo { font-size: 16px; font-weight: 800; color: var(--forest); display: flex; align-items: center; gap: 5px; flex: 1; }
+        .hdr__logo .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--olive); }
+        .hdr__title { font-size: 16px; font-weight: 800; color: var(--forest); position: absolute; left: 50%; transform: translateX(-50%); }
+        .screen { display: none; flex: 1; flex-direction: column; animation: fadeIn .18s ease; }
+        .screen.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+        .sec-title { font-size: 19px; font-weight: 800; padding: 20px 16px 14px; background: #f2f2ef; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 12px 32px; }
+        .svc-card { background: #fff; border-radius: 12px; overflow: hidden; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.06); text-decoration: none; position: relative; transition: transform .15s; }
+        .svc-card:active { transform: scale(.97); }
+        .svc-card__img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: none; }
+        .svc-card__img.show { display: block; }
+        .svc-card__illus { width: 100%; aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; background: #f0f0ec; }
+        .svc-card__illus.hide { display: none; }
+        .svc-card__illus svg { width: 48%; height: 48%; opacity: .8; }
+        .svc-card__name { font-size: 13px; font-weight: 700; color: var(--forest); padding: 12px 10px; line-height: 1.4; }
+        .badge { position: absolute; top: 8px; right: 8px; color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px; }
+
+        /* Curama Rows Styling */
+        .booking-body { flex: 1; padding-bottom: 80px; }
+        .card { background: #fff; border-radius: 12px; margin: 0 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+        .row { display: flex; align-items: center; padding: 0 16px; min-height: 56px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; }
+        .row:last-child { border-bottom: none; }
+        .row.focused { box-shadow: inset 0 0 0 2px var(--olive); }
+        .row__label { font-size: 14px; font-weight: 700; color: var(--forest); min-width: 75px; }
+        .row__sep { width: 1px; height: 20px; background: var(--border); margin: 0 12px; }
+        .row__val { flex: 1; font-size: 14px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .row__val.filled { color: var(--forest); font-weight: 600; }
+        .row__chev svg { width: 16px; height: 16px; color: var(--muted); display: block; }
+        .worker-btns { display: flex; gap: 8px; }
+        .wbtn { padding: 6px 18px; border-radius: 20px; border: none; font-size: 13px; font-weight: 700; cursor: pointer; background: #e8e8e4; color: var(--forest); }
+        .wbtn.on { background: var(--forest); color: #fff; }
+        .cta-wrap { padding: 16px 12px 32px; background: #f2f2ef; position: sticky; bottom: 0; }
+        .cta { width: 100%; background: var(--forest); color: #fff; border: none; border-radius: 10px; padding: 16px; font-size: 16px; font-weight: 800; cursor: pointer; text-align: center; }
+
+        /* Drawers Mechanism */
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 50; align-items: flex-end; justify-content: center; }
+        .overlay.open { display: flex; }
+        .drawer { background: #fff; border-radius: 16px 16px 0 0; width: 100%; max-width: 480px; max-height: 85dvh; display: flex; flex-direction: column; animation: up .2s ease-out; }
+        @keyframes up { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .drawer__top { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); }
+        .drawer__handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 10px; }
+        .drawer__title { font-size: 16px; font-weight: 800; text-align: center; }
+        .drawer__scroll { flex: 1; overflow-y: auto; padding: 16px; }
+        .addr-input { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 14px; background: var(--canvas); outline: none; }
+        .pref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+        .pref-btn { padding: 12px; font-size: 13px; background: #f8f8f6; border: 1px solid var(--border); border-radius: 6px; text-align: left; cursor: pointer; }
+        .drawer-cta-wrap { padding: 12px 16px 24px; border-top: 1px solid var(--border); }
+        .drawer-cta { width: 100%; background: var(--forest); color: #fff; border: none; border-radius: 8px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="page">
+    <header class="hdr">
+        <a class="hdr__back" id="backBtn" href="#" onclick="goBack(); return false;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </a>
+        <div class="hdr__logo" id="hdrLogo"><span class="dot"></span>Hello Moving</div>
+        <div class="hdr__title" id="hdrTitle"></div>
+    </header>
+
+    <div class="screen active" id="screen-services">
+        <div class="sec-title">おすすめのサービス</div>
+        <div class="grid" id="services-grid"></div>
+    </div>
+
+    <div class="screen" id="screen-booking">
+        <div class="sec-title" id="booking-title">格安引越し</div>
+        <div class="booking-body">
+            <div class="card">
+                <div class="row" id="row-from" onclick="openDrawer('from')">
+                    <span class="row__label">現住所</span>
+                    <div class="row__sep"></div>
+                    <span class="row__val" id="val-from">市区町村を選択</span>
+                    <span class="row__chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></span>
+                </div>
+                <div class="row" id="row-to" onclick="openDrawer('to')">
+                    <span class="row__label">引越し先</span>
+                    <div class="row__sep"></div>
+                    <span class="row__val" id="val-to">お届け先を選択</span>
+                    <span class="row__chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></span>
+                </div>
+                <div class="row" id="row-date" onclick="openDrawer('date')">
+                    <span class="row__label">希望日</span>
+                    <div class="row__sep"></div>
+                    <span class="row__val" id="val-date">引越し希望日を選択</span>
+                    <span class="row__chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg></span>
+                </div>
+                <div class="row" style="cursor:default">
+                    <span class="row__label">作業員数</span>
+                    <div class="row__sep"></div>
+                    <div class="worker-btns">
+                        <button class="wbtn on" id="w2" onclick="setWorker(2)">2名</button>
+                        <button class="wbtn" id="w1" onclick="setWorker(1)">1名</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="cta-wrap">
+            <button class="cta" onclick="handleSearch()">この条件で格安見積りを検索</button>
+        </div>
+    </div>
+</div>
+
+<div class="overlay" id="drawer-from" onclick="bgClose(event,'from')">
+    <div class="drawer">
+        <div class="drawer__top"><div class="drawer__handle"></div><div class="drawer__title">現住所（出発地）</div></div>
+        <div class="drawer__scroll">
+            <input class="addr-input" id="input-from" type="text" placeholder="例：東京都渋谷区神南1-2">
+            <div class="pref-grid">
+                <button class="pref-btn" onclick="setPref('from','東京都')">東京都</button>
+                <button class="pref-btn" onclick="setPref('from','神奈川県')">神奈川県</button>
+                <button class="pref-btn" onclick="setPref('from','埼玉県')">埼玉県</button>
+                <button class="pref-btn" onclick="setPref('from','千葉県')">千葉県</button>
+            </div>
+        </div>
+        <div class="drawer-cta-wrap"><button class="drawer-cta" onclick="confirmAddr('from')">保存する</button></div>
+    </div>
+</div>
+
+<div class="overlay" id="drawer-to" onclick="bgClose(event,'to')">
+    <div class="drawer">
+        <div class="drawer__top"><div class="drawer__handle"></div><div class="drawer__title">引越し先（お届け先）</div></div>
+        <div class="drawer__scroll">
+            <input class="addr-input" id="input-to" type="text" placeholder="例：埼玉県さいたま市大宮区">
+            <div class="pref-grid">
+                <button class="pref-btn" onclick="setPref('to','東京都')">東京都</button>
+                <button class="pref-btn" onclick="setPref('to','神奈川県')">神奈川県</button>
+                <button class="pref-btn" onclick="setPref('to','埼玉県')">埼玉県</button>
+                <button class="pref-btn" onclick="setPref('to','千葉県')">千葉県</button>
+            </div>
+        </div>
+        <div class="drawer-cta-wrap"><button class="drawer-cta" onclick="confirmAddr('to')">保存する</button></div>
+    </div>
+</div>
+
+<div class="overlay" id="drawer-date" onclick="bgClose(event,'date')">
+    <div class="drawer">
+        <div class="drawer__top"><div class="drawer__handle"></div><div class="drawer__title">引越し希望日</div></div>
+        <div class="drawer__scroll">
+            <input class="addr-input" id="input-date" type="date" style="padding:10px;">
+        </div>
+        <div class="drawer-cta-wrap"><button class="drawer-cta" onclick="confirmDate()">決定</button></div>
+    </div>
+</div>
+
+<script>
+    // DASHBOARD MANAGEMENT CONFIGURATION MATRIX
+    // Easily switch 'icon' type to 'image' and drop a URL to shift look dynamically from an admin dashboard.
+    const SERVICE_CONFIG = [
+        { id:"couple", name:"カップル・ご夫婦引越し", badge:"人気", badgeColor:"#9AB57A", icon:"svg", imageUrl:"" },
+        { id:"student", name:"学生・新生活引越し", badge:"人気", badgeColor:"#9AB57A", icon:"svg", imageUrl:"" },
+        { id:"sameday", name:"当日・お急ぎ引越しプラン", badge:"当日対応", badgeColor:"#c0392b", icon:"svg", imageUrl:"" },
+        { id:"disposal", name:"不用品回収・処分", badge:"", badgeColor:"", icon:"svg", imageUrl:"" },
+        { id:"assembly", name:"家具組立・分解", badge:"", badgeColor:"", icon:"svg", imageUrl:"" }
+    ];
+
+    const SVGS = {
+        couple: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+        student: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>`,
+        sameday: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
+        disposal: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>`,
+        assembly: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`
+    };
+
+    let selectedWorkers = 2;
+
+    function renderServices() {
+        const grid = document.getElementById('services-grid');
+        grid.innerHTML = '';
+        SERVICE_CONFIG.forEach(s => {
+            const card = document.createElement('div');
+            card.className = 'svc-card';
+            card.onclick = () => selectService(s.name);
+
+            let mediaHTML = '';
+            if(s.icon === 'image' && s.imageUrl) {
+                mediaHTML = `<img src="${s.imageUrl}" class="svc-card__img show" alt="${s.name}">`;
+            } else {
+                mediaHTML = `<div class="svc-card__illus">${SVGS[s.id] || ''}</div>`;
+            }
+
+            const badgeHTML = s.badge ? `<span class="badge" style="background:${s.badgeColor}">${s.badge}</span>` : '';
+
+            card.innerHTML = `${badgeHTML}${mediaHTML}<div class="svc-card__name">${s.name}</div>`;
+            grid.appendChild(card);
+        });
+    }
+
+    function selectService(name) {
+        document.getElementById('screen-services').classList.remove('active');
+        document.getElementById('screen-booking').classList.add('active');
+        document.getElementById('booking-title').innerText = name;
+
+        document.getElementById('hdrLogo').style.display = 'none';
+        document.getElementById('hdrTitle').style.display = 'block';
+        document.getElementById('hdrTitle').innerText = name;
+        document.getElementById('backBtn').classList.add('visible');
+    }
+
+    function goBack() {
+        document.getElementById('screen-booking').classList.remove('active');
+        document.getElementById('screen-services').classList.add('active');
+
+        document.getElementById('hdrLogo').style.display = 'flex';
+        document.getElementById('hdrTitle').style.display = 'none';
+        document.getElementById('backBtn').classList.remove('visible');
+    }
+
+    function openDrawer(id) {
+        document.getElementById(`drawer-${id}`).classList.add('open');
+    }
+    function closeDrawer(id) {
+        document.getElementById(`drawer-${id}`).classList.remove('open');
+    }
+    function bgClose(e, id) {
+        if(e.target.classList.contains('overlay')) closeDrawer(id);
+    }
+
+    function setPref(type, name) {
+        document.getElementById(`input-${type}`).value = name;
+    }
+    function confirmAddr(type) {
+        const val = document.getElementById(`input-${type}`).value;
+        if(val.trim() !== "") {
+            const el = document.getElementById(`val-${type}`);
+            el.innerText = val;
+            el.classList.add('filled');
+        }
+        closeDrawer(type);
+    }
+    function confirmDate() {
+        const val = document.getElementById('input-date').value;
+        if(val) {
+            const el = document.getElementById('val-date');
+            el.innerText = val;
+            el.classList.add('filled');
+        }
+        closeDrawer('date');
+    }
+    function setWorker(num) {
+        selectedWorkers = num;
+        document.getElementById('w1').classList.toggle('on', num === 1);
+        document.getElementById('w2').classList.toggle('on', num === 2);
+    }
+    function handleSearch() {
+        alert('見積もり検索リクエストを送信します。');
+    }
+
+    window.onload = renderServices;
+</script>
+</body>
+</html>
