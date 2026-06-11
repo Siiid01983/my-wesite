@@ -49,7 +49,7 @@ function _wmcSvcCardHtml(svc, cfg) {
 }
 
 function _wmcRenderServices() {
-  var el = document.getElementById('wmc-view-services');
+  var el = document.getElementById('wmcServicesContent');
   if (!el) return;
 
   if (typeof WMCPermissions !== 'undefined') {
