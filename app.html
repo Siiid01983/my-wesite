@@ -906,6 +906,7 @@ function bgClose(e, type) {
 // 4a. Address drawers
 // ─────────────────────────────────────────────────────────────
 function setPref(type, prefName) {
+  if (navigator.vibrate) navigator.vibrate(4);
   const input = document.getElementById(`input-${type}`);
   if (input) { input.value = prefName; input.focus(); }
 }
