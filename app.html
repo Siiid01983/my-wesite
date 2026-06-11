@@ -1104,6 +1104,7 @@ function showConfirmation() {
 }
 
 function goHome() {
+  if (navigator.vibrate) navigator.vibrate(10);
   // Reset state
   AppState.activeService     = null;
   AppState.activeServiceName = null;
