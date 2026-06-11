@@ -888,6 +888,7 @@ function goBack() {
 function openDrawer(type) {
   const el = document.getElementById(`drawer-${type}`);
   if (!el) return;
+  if (navigator.vibrate) navigator.vibrate(4);
   el.classList.add("open");
   document.body.style.overflow = "hidden";
 
