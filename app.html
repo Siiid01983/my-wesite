@@ -103,6 +103,14 @@ html,body{background:var(--canvas);font-family:var(--font);color:var(--forest);-
 .seg-control{display:flex;background:#f4f4f0;padding:4px;border-radius:10px;gap:4px}
 .seg-btn{flex:1;border:none;height:40px;border-radius:8px;font-size:14px;font-weight:700;color:var(--text-muted);background:transparent;cursor:pointer}
 .seg-btn.on{background:#fff;color:var(--forest);box-shadow:0 2px 6px rgba(0,0,0,.06)}
+
+/* ── Booking progress bar ────────────────────────────────── */
+.progress-wrap{padding:2px 0 18px}
+.progress-track{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;width:0%;background:var(--olive);border-radius:2px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+.progress-meta{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.progress-label{font-size:12px;font-weight:700;color:var(--text-muted)}
+.progress-pct{font-size:12px;font-weight:800;color:var(--olive)}
 </style>
 </head>
 <body>
@@ -133,6 +141,15 @@ html,body{background:var(--canvas);font-family:var(--font);color:var(--forest);-
   <div class="screen" id="screen-booking">
     <div class="booking-header">
       <h1 id="booking-title">単身引越し</h1>
+      <div class="progress-wrap">
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <div class="progress-meta">
+          <span class="progress-label" id="progress-label">0 / 5 項目入力済</span>
+          <span class="progress-pct" id="progress-pct">0%</span>
+        </div>
+      </div>
     </div>
 
     <div class="form-container">
@@ -577,6 +594,26 @@ function initMinDate() {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Progress bar — recalculates on every confirm action
+// ─────────────────────────────────────────────────────────────
+function updateProgress() {
+  const d = AppState.bookingData;
+  const steps = [
+    d.from  !== "",
+    d.to    !== "",
+    Object.keys(d.items).length > 0,
+    d.date  !== "",
+    d.filters.length > 0
+  ];
+  const filled = steps.filter(Boolean).length;
+  const pct    = Math.round((filled / steps.length) * 100);
+
+  document.getElementById("progress-fill").style.width  = pct + "%";
+  document.getElementById("progress-label").innerText   = `${filled} / ${steps.length} 項目入力済`;
+  document.getElementById("progress-pct").innerText     = pct + "%";
+}
+
+// ─────────────────────────────────────────────────────────────
 // 2. Screen navigation
 // ─────────────────────────────────────────────────────────────
 function selectService(id, name) {
@@ -650,6 +687,7 @@ function confirmAddr(type) {
     display.innerText = type === "from" ? "現住所を選択" : "引越し先を選択";
     display.classList.remove("filled");
   }
+  updateProgress();
   closeDrawer(type);
 }
 
@@ -693,6 +731,7 @@ function confirmFurniture() {
     display.innerText = "荷物を選択";
     display.classList.remove("filled");
   }
+  updateProgress();
   closeDrawer("furniture");
 }
 
@@ -723,6 +762,7 @@ function confirmDate() {
     display.innerText = "引越し希望日を選択";
     display.classList.remove("filled");
   }
+  updateProgress();
   closeDrawer("date");
 }
 
@@ -749,6 +789,7 @@ function confirmFilter() {
     display.innerText = "条件を選択";
     display.classList.remove("filled");
   }
+  updateProgress();
   closeDrawer("filter");
 }
 
