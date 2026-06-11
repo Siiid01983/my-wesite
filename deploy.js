@@ -90,12 +90,20 @@ async function uploadDir(client, localDir) {
       await client.uploadFrom(localPath, entry.name);
       process.stdout.write('done\n');
       if (isTarget) {
-        // Verify remote file by listing the current directory
+        // Check permissions and force 644 in case scanner set them to 000
+        try {
+          await client.send('SITE CHMOD 644 wmcDashboard.html');
+          console.log('  chmod 644 applied');
+        } catch (e) {
+          console.log('  chmod 644 failed: ' + e.message);
+        }
+        // List to confirm size and read raw permissions line
         const listing = await client.list();
         const remote  = listing.find(e => e.name === 'wmcDashboard.html');
         if (remote) {
           console.log('  remote size (after upload): ' + remote.size + ' bytes');
           console.log('  remote modified           : ' + (remote.rawModifiedAt || remote.modifiedAt || 'n/a'));
+          console.log('  remote rawList entry      : ' + JSON.stringify(remote));
         } else {
           console.log('  WARNING: wmcDashboard.html not found in remote listing after upload');
         }
