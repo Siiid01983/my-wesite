@@ -761,6 +761,15 @@ document.addEventListener("DOMContentLoaded", () => {
       if (navigator.vibrate) navigator.vibrate(4);
     }));
 
+  // Search button long-press haptic
+  const searchBtn = document.getElementById('btn-search');
+  let searchLpTimer = null;
+  searchBtn.addEventListener('touchstart', () => {
+    searchLpTimer = setTimeout(() => { if (navigator.vibrate) navigator.vibrate(30); }, 500);
+  }, { passive: true });
+  searchBtn.addEventListener('touchend',  () => clearTimeout(searchLpTimer), { passive: true });
+  searchBtn.addEventListener('touchmove', () => clearTimeout(searchLpTimer), { passive: true });
+
   // "この内容で見積もりを取る" long-press haptic
   const detailCta = document.querySelector('#screen-detail .btn-search');
   let detailLpTimer = null;
