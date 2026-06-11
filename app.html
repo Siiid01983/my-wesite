@@ -754,10 +754,22 @@ document.addEventListener("DOMContentLoaded", () => {
   renderServices();
   initMinDate();
   initSwipeGestures();
+
+  // Filter checkbox haptic
   document.querySelectorAll('#drawer-filter input[type="checkbox"]')
     .forEach(cb => cb.addEventListener('change', () => {
       if (navigator.vibrate) navigator.vibrate(4);
     }));
+
+  // Service card long-press haptic (delegated on grid)
+  const grid = document.getElementById('services-grid');
+  let lpTimer = null;
+  grid.addEventListener('touchstart', e => {
+    if (!e.target.closest('.svc-card')) return;
+    lpTimer = setTimeout(() => { if (navigator.vibrate) navigator.vibrate(30); }, 500);
+  }, { passive: true });
+  grid.addEventListener('touchend',  () => clearTimeout(lpTimer), { passive: true });
+  grid.addEventListener('touchmove', () => clearTimeout(lpTimer), { passive: true });
 });
 
 function renderServices() {
