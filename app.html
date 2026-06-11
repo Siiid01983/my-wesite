@@ -822,6 +822,7 @@ function updateRowStates() {
 // 2. Screen navigation
 // ─────────────────────────────────────────────────────────────
 function selectService(id, name) {
+  if (navigator.vibrate) navigator.vibrate(6);
   AppState.activeService     = id;
   AppState.activeServiceName = name;
 
