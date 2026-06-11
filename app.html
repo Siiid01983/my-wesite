@@ -849,6 +849,7 @@ function selectService(id, name) {
 }
 
 function openBooking() {
+  if (navigator.vibrate) navigator.vibrate(10);
   document.getElementById("booking-title").innerText = AppState.activeServiceName;
   deactivateScreen("screen-detail");
   activateScreen("screen-booking", "fwd");
