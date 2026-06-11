@@ -978,6 +978,7 @@ function confirmFurniture() {
 // 4c. Workers segmented switch (inside date drawer)
 // ─────────────────────────────────────────────────────────────
 function setWorker(count) {
+  if (navigator.vibrate) navigator.vibrate(4);
   AppState.bookingData.workers = count;
   document.getElementById("w2").classList.toggle("on", count === 2);
   document.getElementById("w1").classList.toggle("on", count === 1);
