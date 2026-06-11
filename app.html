@@ -761,6 +761,15 @@ document.addEventListener("DOMContentLoaded", () => {
       if (navigator.vibrate) navigator.vibrate(4);
     }));
 
+  // "この内容で見積もりを取る" long-press haptic
+  const detailCta = document.querySelector('#screen-detail .btn-search');
+  let detailLpTimer = null;
+  detailCta.addEventListener('touchstart', () => {
+    detailLpTimer = setTimeout(() => { if (navigator.vibrate) navigator.vibrate(30); }, 500);
+  }, { passive: true });
+  detailCta.addEventListener('touchend',  () => clearTimeout(detailLpTimer), { passive: true });
+  detailCta.addEventListener('touchmove', () => clearTimeout(detailLpTimer), { passive: true });
+
   // Service card long-press haptic (delegated on grid)
   const grid = document.getElementById('services-grid');
   let lpTimer = null;
