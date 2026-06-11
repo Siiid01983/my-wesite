@@ -65,6 +65,13 @@ html,body{background:var(--canvas);font-family:var(--font);color:var(--forest);-
 .action-footer{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(249,249,246,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:14px 16px 24px;border-top:1px solid rgba(227,227,222,.6);z-index:9}
 .btn-search{width:100%;height:54px;background:var(--forest);color:#fff;border:none;border-radius:27px;font-size:16px;font-weight:800;letter-spacing:.03em;cursor:pointer;box-shadow:0 4px 12px rgba(44,54,38,.2);display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .1s}
 .btn-search:active{transform:scale(.98)}
+.btn-search.loading{opacity:.85;pointer-events:none;cursor:default}
+.btn-search .btn-idle{display:flex;align-items:center;gap:8px}
+.btn-search .btn-spin{display:none;align-items:center;gap:10px}
+.btn-search.loading .btn-idle{display:none}
+.btn-search.loading .btn-spin{display:flex}
+.spinner{width:20px;height:20px;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── Drawer overlay ──────────────────────────────────── */
 .overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:100;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
@@ -257,11 +264,15 @@ html,body{background:var(--canvas);font-family:var(--font);color:var(--forest);-
 
     <!-- Fixed CTA footer -->
     <div class="action-footer">
-      <button class="btn-search" onclick="handleSearch()">
-        <span>この条件で一括見積もり</span>
-        <svg style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
-          <polyline points="9 18 15 12 9 6"/>
-        </svg>
+      <button class="btn-search" id="btn-search" onclick="handleSearch()">
+        <span class="btn-idle">
+          <span>この条件で一括見積もり</span>
+          <svg style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </span>
+        <span class="btn-spin">
+          <span class="spinner"></span>
+          <span>マッチング中...</span>
+        </span>
       </button>
     </div>
   </div>
@@ -902,7 +913,11 @@ function handleSearch() {
     return;
   }
 
-  // Backend integration point — swap showConfirmation() for a fetch() call
+  // Show loading state
+  const btn = document.getElementById("btn-search");
+  btn.classList.add("loading");
+
+  // Backend integration point — replace setTimeout with fetch(), then call showConfirmation()
   console.log("--- SUBMISSION PAYLOAD ---", {
     serviceId:      AppState.activeService,
     origin:         d.from,
@@ -913,7 +928,10 @@ function handleSearch() {
     appliedFilters: d.filters
   });
 
-  showConfirmation();
+  setTimeout(() => {
+    btn.classList.remove("loading");
+    showConfirmation();
+  }, 1800);
 }
 
 function showConfirmation() {
