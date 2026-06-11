@@ -68,7 +68,7 @@ jobs:
       - name: Verify deployment — key files reachable
         if: ${{ inputs.dry_run != true }}
         env:
-          SITE: https://${{ secrets.FTP_HOST }}
+          SITE: https://${{ secrets.SITE_URL }}
         run: |
           check() {
             STATUS=$(curl -k -o /dev/null -s -w "%{http_code}" "$1") || STATUS="ERR"
