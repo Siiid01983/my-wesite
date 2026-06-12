@@ -781,13 +781,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Service card long-press haptic (delegated on grid)
   const grid = document.getElementById('services-grid');
-  let lpTimer = null;
+  let gridLpTimer = null;
   grid.addEventListener('touchstart', e => {
     if (!e.target.closest('.svc-card')) return;
-    lpTimer = setTimeout(() => { if (navigator.vibrate) navigator.vibrate(30); }, 500);
+    gridLpTimer = setTimeout(() => { if (navigator.vibrate) navigator.vibrate(30); }, 500);
   }, { passive: true });
-  grid.addEventListener('touchend',  () => clearTimeout(lpTimer), { passive: true });
-  grid.addEventListener('touchmove', () => clearTimeout(lpTimer), { passive: true });
+  grid.addEventListener('touchend',  () => clearTimeout(gridLpTimer), { passive: true });
+  grid.addEventListener('touchmove', () => clearTimeout(gridLpTimer), { passive: true });
 });
 
 function renderServices() {
