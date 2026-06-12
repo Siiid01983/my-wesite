@@ -349,7 +349,7 @@ html,body{background:var(--canvas);font-family:var(--font);color:var(--forest);-
       <!-- Reference number -->
       <div class="confirm-ref">
         <span class="confirm-ref-label">受付番号</span>
-        <span class="confirm-ref-num" id="confirm-ref"></span>
+        <span class="confirm-ref-num" id="confirm-ref" onclick="if(navigator.vibrate)navigator.vibrate(6)"></span>
       </div>
 
       <!-- Booking summary rows (populated by JS) -->
