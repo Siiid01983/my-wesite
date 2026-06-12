@@ -995,10 +995,16 @@ section#quote .hero-quote-form { border-radius: 0 !important; }
 .sticky-line:hover { background: #05a847 !important; }
 
 /* ── 12. Footer: light gray, 3-col clean ── */
-.site-footer { background: #f7f7f4 !important; border-top: 1px solid #e8e8e4 !important; }
+.site-footer { background: #f7f7f4 !important; border-top: 1px solid #e8e8e4 !important; color: var(--ink-2) !important; }
 .footer-inner { display: grid !important; grid-template-columns: 1.5fr 1fr 1fr 1fr !important; gap: 32px; padding: 40px 0 32px !important; }
 .footer-bottom { background: transparent !important; border-top: 1px solid #e8e8e4 !important; padding: 16px 0; }
-.footer-bottom small { font-size: 12px; color: var(--gray-2); }
+.footer-bottom small { font-size: 12px; color: var(--gray-1) !important; }
+.site-footer .brand-name { color: var(--ink) !important; }
+.site-footer .brand-sub { color: var(--gray-2) !important; }
+.footer-desc { color: var(--gray-1) !important; }
+.footer-col h4 { color: var(--gray-2) !important; }
+.footer-col a { color: var(--ink-2) !important; }
+.footer-col a:hover { color: var(--ink) !important; }
 @media (max-width: 840px) { .footer-inner { grid-template-columns: 1fr 1fr !important; } }
 @media (max-width: 480px) { .footer-inner { grid-template-columns: 1fr !important; } }
 
