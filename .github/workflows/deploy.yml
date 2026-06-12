@@ -83,3 +83,4 @@ jobs:
           check "$SITE/js/services/contentLoader.js"
           check "$SITE/index.html"
           check "$SITE/wmcDashboard.html"
+          check "$SITE/app.html"
