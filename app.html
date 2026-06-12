@@ -1129,7 +1129,7 @@ function showConfirmation() {
   ].filter(Boolean);
 
   document.getElementById("confirm-summary").innerHTML = rows.map((r, i) => `
-    <div class="confirm-row" style="animation-delay:${.65 + i * .07}s">
+    <div class="confirm-row" style="animation-delay:${.65 + i * .07}s" onclick="if(navigator.vibrate)navigator.vibrate(4)">
       <div class="confirm-row-label">${r.label}</div>
       <div class="confirm-row-val">${r.val}</div>
     </div>`).join('');
