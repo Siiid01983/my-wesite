@@ -167,7 +167,7 @@
         const val = link.dataset.service;
         const radio = form.querySelector(`[name="service"][value="${val}"]`);
         if (radio) radio.checked = true;
-        if (current !== 1) showStep(1);
+        showStep(2);
       });
     });
 

@@ -1465,7 +1465,7 @@ section#quote .hero-quote-form { border-radius: 0 !important; }
         <h3>オンライン予約 — 最短2時間で確認</h3>
         <p>日時・住所を入力してかんたん予約リクエスト。</p>
       </div>
-      <a href="app.html" class="booking-cta-btn">
+      <a href="#quote" class="booking-cta-btn">
         今すぐ予約する
         <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M5 12h14M12 5l7 7-7 7"/></svg>
       </a>
@@ -1480,50 +1480,50 @@ var SERVICE_CONFIG = [
   {
     id: 'sameday',
     title: '当日・お急ぎ引越しプラン',
+    serviceValue: '当日・お急ぎ引越しプラン',
     imagePath: 'images/services/sameday.jpg',
     fallback: 'linear-gradient(135deg,#c0392b 0%,#e74c3c 100%)',
-    badge: '当日対応', badgeType: 'urgent',
-    href: 'app.html'
+    badge: '当日対応', badgeType: 'urgent'
   },
   {
     id: 'single',
     title: '単身引越し',
+    serviceValue: '単身引越し',
     imagePath: 'images/services/single.jpg',
     fallback: 'linear-gradient(135deg,#2C3626 0%,#4a6741 100%)',
-    badge: '人気', badgeType: 'popular',
-    href: 'app.html'
+    badge: '人気', badgeType: 'popular'
   },
   {
     id: 'couple',
     title: 'カップル・ご夫婦引越し',
+    serviceValue: 'カップル・ご夫婦引越し',
     imagePath: 'images/services/couple.jpg',
     fallback: 'linear-gradient(135deg,#1a6b8a 0%,#2196a8 100%)',
-    badge: '人気', badgeType: 'popular',
-    href: 'app.html'
+    badge: '人気', badgeType: 'popular'
   },
   {
     id: 'student',
     title: '学生・新生活引越し',
+    serviceValue: '学生・新生活引越し',
     imagePath: 'images/services/student.jpg',
     fallback: 'linear-gradient(135deg,#6b4226 0%,#a0603a 100%)',
-    badge: '人気', badgeType: 'popular',
-    href: 'app.html'
+    badge: '人気', badgeType: 'popular'
   },
   {
     id: 'disposal',
     title: '不用品回収・処分',
+    serviceValue: '不用品回収・処分サービス',
     imagePath: 'images/services/disposal.jpg',
     fallback: 'linear-gradient(135deg,#4a5568 0%,#718096 100%)',
-    badge: null, badgeType: null,
-    href: 'app.html'
+    badge: null, badgeType: null
   },
   {
     id: 'furniture',
     title: '家具組立・分解',
+    serviceValue: '家具組立・分解',
     imagePath: 'images/services/furniture.jpg',
     fallback: 'linear-gradient(135deg,#744210 0%,#c47a22 100%)',
-    badge: null, badgeType: null,
-    href: 'app.html'
+    badge: null, badgeType: null
   }
 ];
 
@@ -1534,7 +1534,7 @@ var SERVICE_CONFIG = [
     var badgeHtml = svc.badge
       ? '<span class="svc-img-card__badge svc-img-card__badge--' + svc.badgeType + '">' + svc.badge + '</span>'
       : '';
-    return '<a class="svc-img-card" href="' + svc.href + '" aria-label="' + svc.title + '">'
+    return '<a class="svc-img-card" href="#quote" data-service="' + svc.serviceValue + '" aria-label="' + svc.title + '">'
       + '<div class="svc-img-card__photo" style="background:' + svc.fallback + '">'
       + '<img src="' + svc.imagePath + '" alt="' + svc.title + '" loading="lazy"'
       + ' onerror="this.style.display=\'none\'">'
