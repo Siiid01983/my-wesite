@@ -163,17 +163,6 @@
 
 
 
-/* Live chat overlay */
-#liveChatOverlay { position: fixed; bottom: 20px; right: 20px; width: 320px; height: 400px; z-index: 9999; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.25); display: none; flex-direction: column; }
-.lco-header { background: #1D9E75; color: #fff; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-.lco-header span { font-weight: 600; font-size: 14px; }
-.lco-close { background: none; border: none; color: #fff; cursor: pointer; font-size: 22px; line-height: 1; padding: 0 4px; }
-.lco-messages { flex: 1; overflow-y: auto; padding: 12px; background: #fff; display: flex; flex-direction: column; gap: 8px; }
-.lco-footer { padding: 10px; background: #f7f8fa; border-top: 1px solid #e6e8ec; display: flex; gap: 8px; flex-shrink: 0; }
-.lco-input { flex: 1; resize: none; border: 1px solid #e6e8ec; border-radius: 8px; padding: 8px; font-size: 13px; font-family: inherit; background: #fff; color: #0b0f17; }
-.lco-send { background: #1D9E75; color: #fff; border: none; border-radius: 8px; padding: 0 14px; cursor: pointer; font-weight: 600; font-size: 13px; }
-.lco-msg-user { margin: 0; padding: 6px 10px; background: #1D9E75; color: #fff; border-radius: 12px 12px 2px 12px; font-size: 13px; align-self: flex-end; max-width: 85%; }
-.lco-msg-bot { margin: 0; padding: 6px 10px; background: #f3f5f8; border-radius: 12px 12px 12px 2px; font-size: 13px; align-self: flex-start; max-width: 85%; }
 .park-btn { background: none; border: 1px solid var(--line); color: var(--gray-2); border-radius: 6px; padding: 4px 12px; font-size: 12px; cursor: pointer; float: right; margin-top: 4px; }
 .park-btn.active { background: #b91c1c; color: #fff; border-color: #b91c1c; }
 #parkModeBanner { display: none; background: #b91c1c; color: #fff; padding: 10px 16px; border-radius: 8px; text-align: center; margin-bottom: 16px; font-size: 14px; }
@@ -915,9 +904,6 @@ body { background: #f2f2ef; }
     </nav>
     <div class="header-cta">
       <div class="header-contacts" aria-label="お問い合わせ">
-        <a href="#" class="header-chat-pill liveChatTrigger" id="liveChatBtn" aria-label="Live Chat">
-          <span class="live-status-dot" aria-hidden="true"></span>Live Chat
-        </a>
         <a href="https://line.me/R/ti/p/~hellomoving" class="header-contact-link header-contact-line" target="_blank" rel="noopener noreferrer" aria-label="LINEで問い合わせ">
           <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.6 1.6 4.9 4 6.4-.1.5-.6 2.1-.7 2.5 0 0 0 .3.2.4.2.1.4 0 .4 0 .6-.1 3-2 3.6-2.4.8.1 1.6.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3Z"/></svg>
           <span>LINE</span>
@@ -946,9 +932,6 @@ body { background: #f2f2ef; }
       <li><a href="#faq">FAQ</a></li>
       <li><a href="#company">会社情報</a></li>
       <li class="mobile-contacts">
-        <a href="#" class="mobile-contact-link liveChatTrigger" aria-label="ライブチャット">
-          <span class="live-status-dot" aria-hidden="true"></span>Live Chat
-        </a>
         <a href="https://line.me/R/ti/p/~hellomoving" class="mobile-contact-link mobile-contact-line" target="_blank" rel="noopener noreferrer" aria-label="LINE">
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.6 1.6 4.9 4 6.4-.1.5-.6 2.1-.7 2.5 0 0 0 .3.2.4.2.1.4 0 .4 0 .6-.1 3-2 3.6-2.4.8.1 1.6.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3Z"/></svg>
           LINE
@@ -1159,7 +1142,7 @@ body { background: #f2f2ef; }
         <div class="form-success-state" id="formSuccess" style="display:none">
           <div class="success-check">✓</div>
           <h3>お問い合わせを受け付けました</h3>
-          <p>通常<strong>当日〜翌営業日</strong>にご返信いたします。<br/>お急ぎの場合は<a href="#" class="liveChatTrigger">Live Chat</a>または<a href="https://line.me/R/ti/p/~hellomoving" target="_blank" rel="noopener">LINE</a>をご利用ください。</p>
+          <p>通常<strong>当日〜翌営業日</strong>にご返信いたします。<br/>お急ぎの場合は<a href="https://line.me/R/ti/p/~hellomoving" target="_blank" rel="noopener">LINE</a>をご利用ください。</p>
           <a id="gcalLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-ghost" style="display:none;margin-top:16px;gap:6px;">
             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
             Googleカレンダーに追加
@@ -1834,10 +1817,6 @@ body { background: #f2f2ef; }
       <h2>まずLINEでご相談ください。</h2>
       <p>料金確認・日程調整・当日対応など、<br/>担当者がご状況に合わせてご案内します。</p>
       <div class="cta-channels">
-        <a href="#" class="cta-channel liveChatTrigger" aria-label="ライブチャット">
-          <span class="cc-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></span>
-          <span class="cc-text"><em>Live Chat</em><strong>今すぐチャット</strong><small>即時対応</small></span>
-        </a>
         <a href="https://line.me/R/ti/p/~hellomoving" id="line" class="cta-channel" target="_blank" rel="noopener noreferrer">
           <span class="cc-icon cc-icon-line" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.6 1.6 4.9 4 6.4-.1.5-.6 2.1-.7 2.5 0 0 0 .3.2.4.2.1.4 0 .4 0 .6-.1 3-2 3.6-2.4.8.1 1.6.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3Z"/></svg></span>
           <span class="cc-text"><em>LINEで</em><strong>友だち追加して相談</strong><small>24時間受付</small></span>
@@ -1893,7 +1872,6 @@ body { background: #f2f2ef; }
     <div class="footer-col" id="footerCol2El">
       <h4 id="footerCol2TitleEl">お問い合わせ</h4>
       <ul id="footerCol2LinksEl">
-        <li><a href="#" class="liveChatTrigger">Live Chat</a></li>
         <li id="footerHoursWeekdayEl">受付：8:00 – 20:00</li>
         <li id="footerHoursWeekendEl" style="display:none"></li>
         <li id="footerHoursNoteEl" style="display:none"></li>
