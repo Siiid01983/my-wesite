@@ -1,1231 +1,536 @@
-<!DOCTYPE html>
+app<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>サービス一覧 — Hello Moving</title>
+<title>Hello Moving</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --forest:#2C3626;
+  --forest:#2C3626; --forest2:#3a4a32;
   --olive:#9AB57A;
   --canvas:#F9F9F6;
   --border:#e3e3de;
+  --muted:#aaa;
+  --active-bg:#fef9f0;
   --font:system-ui,-apple-system,'Helvetica Neue',sans-serif;
-  --text-muted:#767a71;
 }
-html,body{background:var(--canvas);font-family:var(--font);color:var(--forest);-webkit-font-smoothing:antialiased}
+html,body{background:#f2f2ef;font-family:var(--font);color:var(--forest);-webkit-font-smoothing:antialiased;height:100%}
 
-.page{max-width:480px;margin:0 auto;min-height:100dvh;background:var(--canvas);position:relative;display:flex;flex-direction:column}
+/* ── Shell ── */
+.page{max-width:480px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;background:#f2f2ef;position:relative}
 
-/* ── Header ─────────────────────────────────────────── */
-.hdr{display:flex;align-items:center;height:52px;padding:0 16px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
-.hdr__back{display:none;align-items:center;color:var(--forest);text-decoration:none;padding:8px 8px 8px 0;margin-right:8px;cursor:pointer}
-.hdr__back.visible{display:flex}
+/* ── Header ── */
+.hdr{display:flex;align-items:center;height:52px;padding:0 16px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:30;flex-shrink:0}
+.hdr__back{display:flex;align-items:center;color:var(--forest);text-decoration:none;padding:8px 8px 8px 0;margin-right:4px;opacity:0;pointer-events:none;transition:opacity .2s}
+.hdr__back.visible{opacity:1;pointer-events:all}
 .hdr__back svg{width:22px;height:22px}
-.hdr__logo{font-size:16px;font-weight:800;color:var(--forest);letter-spacing:.02em;display:flex;align-items:center;gap:5px}
+.hdr__logo{font-size:16px;font-weight:800;color:var(--forest);letter-spacing:.02em;display:flex;align-items:center;gap:5px;flex:1}
 .hdr__logo .dot{width:8px;height:8px;border-radius:50%;background:var(--olive)}
-.hdr__title{font-size:16px;font-weight:700;display:none;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr__title{font-size:16px;font-weight:800;color:var(--forest);position:absolute;left:50%;transform:translateX(-50%)}
 
-/* ── Screens ─────────────────────────────────────────── */
-.screen{display:none;width:100%;flex:1}
-.screen.active{display:block}
-.screen.slide-fwd { animation:slideInFwd  .22s cubic-bezier(.4,0,.2,1) both; }
-.screen.slide-back{ animation:slideInBack .22s cubic-bezier(.4,0,.2,1) both; }
-@keyframes slideInFwd  { from{transform:translateX(36px); opacity:0} to{transform:none;opacity:1} }
-@keyframes slideInBack { from{transform:translateX(-36px);opacity:0} to{transform:none;opacity:1} }
+/* ── Screens ── */
+.screen{display:none;flex:1;flex-direction:column;animation:fadeIn .18s ease}
+.screen.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-/* ── Section title ───────────────────────────────────── */
-.sec-title{font-size:20px;font-weight:800;padding:20px 16px 14px;color:var(--forest)}
+/* ══════════════════════════════
+   SCREEN 1 — Services
+══════════════════════════════ */
+.sec-title{font-size:20px;font-weight:800;padding:20px 16px 14px;color:var(--forest);background:#f2f2ef;flex-shrink:0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 12px 32px;overflow-y:auto}
 
-/* ── Service grid (Screen 1) ─────────────────────────── */
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 12px 32px}
-.svc-card{background:#fff;border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:0 1px 4px rgba(0,0,0,.06);text-decoration:none;display:block;position:relative}
+.svc-card{background:#fff;border-radius:12px;overflow:hidden;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.06);text-decoration:none;display:block;position:relative;transition:transform .15s}
 .svc-card:active{transform:scale(.97)}
-.svc-card__img{width:100%;aspect-ratio:4/3;object-fit:cover;display:none;background:var(--border)}
+
+/* Image mode */
+.svc-card__img{width:100%;aspect-ratio:4/3;object-fit:cover;display:none}
 .svc-card__img.show{display:block}
+
+/* SVG illustration mode */
 .svc-card__illus{width:100%;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;background:#f0f0ec}
 .svc-card__illus.hide{display:none}
 .svc-card__illus svg{width:52%;height:52%;opacity:.75}
+
 .svc-card__name{font-size:13px;font-weight:700;color:var(--forest);padding:10px 10px 12px;line-height:1.4}
-.badge{position:absolute;top:8px;right:8px;background:var(--forest);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px}
+.badge{position:absolute;top:8px;right:8px;color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px}
 
-/* ── Booking form (Screen 2) ─────────────────────────── */
-.booking-header{padding:24px 16px 16px}
-.booking-header h1{font-size:24px;font-weight:800;letter-spacing:-0.02em}
+/* ══════════════════════════════
+   SCREEN 2 — Booking
+══════════════════════════════ */
+.ptitle{padding:18px 16px 10px;font-size:20px;font-weight:800;color:var(--forest);background:#f2f2ef;flex-shrink:0}
 
-.form-container{padding:0 16px 100px}
-.sel-row{background:#fff;border:1px solid var(--border);border-radius:14px;margin-bottom:12px;padding:16px;display:flex;align-items:center;cursor:pointer;position:relative;transition:background-color .2s,border-color .2s}
-.sel-row:active{background-color:#fafaf8}
-.sel-row.focused{border-color:var(--olive);background-color:#fcfdfb}
-.sel-left{display:flex;flex-direction:column;gap:4px;flex:1;padding-right:12px}
-.sel-label{font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em}
-.sel-val{font-size:16px;font-weight:700;color:var(--text-muted)}
-.sel-val.filled{color:var(--forest)}
-.sel-arrow{color:#b8bcbe;display:flex;align-items:center}
-.sel-arrow svg{width:20px;height:20px}
+.booking-body{flex:1;overflow-y:auto;padding-bottom:80px}
 
-/* ── Fixed search footer ─────────────────────────────── */
-.action-footer{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(249,249,246,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:14px 16px 24px;border-top:1px solid rgba(227,227,222,.6);z-index:9}
-.btn-search{width:100%;height:54px;background:var(--forest);color:#fff;border:none;border-radius:27px;font-size:16px;font-weight:800;letter-spacing:.03em;cursor:pointer;box-shadow:0 4px 12px rgba(44,54,38,.2);display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .1s}
-.btn-search:active{transform:scale(.98)}
-.btn-search.loading{opacity:.85;pointer-events:none;cursor:default}
-.btn-search .btn-idle{display:flex;align-items:center;gap:8px}
-.btn-search .btn-spin{display:none;align-items:center;gap:10px}
-.btn-search.loading .btn-idle{display:none}
-.btn-search.loading .btn-spin{display:flex}
-.spinner{width:20px;height:20px;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
-@keyframes spin{to{transform:rotate(360deg)}}
+.card{background:#fff;border-radius:12px;margin:0 12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.row{display:flex;align-items:center;padding:0 16px;min-height:54px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;position:relative}
+.row:last-child{border-bottom:none}
+.row:active{background:#f7f7f4}
+.row.focused{box-shadow:inset 0 0 0 2px var(--olive)}
+.row__label{font-size:14px;font-weight:700;color:var(--forest);white-space:nowrap;min-width:62px}
+.row__sep{width:1px;height:20px;background:var(--border);margin:0 12px;flex-shrink:0}
+.row__val{flex:1;font-size:14px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row__val.filled{color:var(--forest)}
+.row__chev{flex-shrink:0;color:var(--muted);margin-left:8px}
+.row__chev svg{width:16px;height:16px;display:block}
+.worker-btns{display:flex;gap:8px}
+.wbtn{padding:7px 20px;border-radius:20px;border:none;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;background:#e8e8e4;color:var(--forest);transition:all .15s}
+.wbtn.on{background:var(--forest);color:#fff}
 
-/* ── Drawer overlay ──────────────────────────────────── */
-.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:100;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
-.overlay.open{opacity:1;visibility:visible}
-.drawer{position:absolute;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:480px;background:#fff;border-radius:24px 24px 0 0;padding:20px 20px 34px;transition:transform .28s cubic-bezier(.1,.76,.55,.94);max-height:88dvh;display:flex;flex-direction:column}
-.overlay.open .drawer{transform:translateX(-50%) translateY(0)}
+.cta-wrap{padding:16px 12px 32px;background:#f2f2ef;flex-shrink:0}
+.cta{display:block;width:100%;background:var(--forest);color:#fff;border:none;border-radius:10px;padding:17px;font-size:17px;font-weight:800;font-family:var(--font);cursor:pointer;transition:background .2s,transform .1s;text-align:center}
+.cta:hover{background:var(--forest2)}
+.cta:active{transform:scale(.98)}
 
-/* ── Drawer internals ────────────────────────────────── */
-.drawer-bar{width:36px;height:4px;background:#e3e3de;border-radius:2px;margin:0 auto 18px}
-.drawer-title{font-size:18px;font-weight:800;margin-bottom:18px;color:var(--forest)}
-.drawer-scroll{overflow-y:auto;flex:1;padding-bottom:12px}
-.drawer-cta-wrap{margin-top:20px}
-.drawer-cta{width:100%;height:50px;background:var(--forest);color:#fff;border:none;border-radius:25px;font-size:15px;font-weight:700;cursor:pointer}
+/* ══════════════════════════════
+   DRAWERS
+══════════════════════════════ */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50;align-items:flex-end;justify-content:center}
+.overlay.open{display:flex}
+.drawer{background:#fff;border-radius:16px 16px 0 0;width:100%;max-width:480px;max-height:92dvh;display:flex;flex-direction:column;animation:up .22s ease}
+@keyframes up{from{transform:translateY(50px);opacity:0}to{transform:translateY(0);opacity:1}}
+.drawer__top{flex-shrink:0;padding:12px 16px 0}
+.drawer__handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px}
+.drawer__title{font-size:17px;font-weight:800;color:var(--forest);margin-bottom:14px}
+.drawer__scroll{flex:1;overflow-y:auto;padding:0 16px 16px}
+.drawer-cta-wrap{flex-shrink:0;padding:10px 16px 28px;background:#fff;border-top:1px solid var(--border)}
+.drawer-cta{display:block;width:100%;background:var(--forest);color:#fff;border:none;border-radius:10px;padding:15px;font-size:16px;font-weight:800;font-family:var(--font);cursor:pointer}
 
-/* ── Drawer inputs ───────────────────────────────────── */
-.drawer-input{width:100%;height:48px;border:1px solid var(--border);border-radius:10px;padding:0 14px;font-size:15px;color:var(--forest);outline:none;background:#fcfcfb;margin-bottom:12px}
-.drawer-input:focus{border-color:var(--olive);background:#fff}
+/* Address */
+.addr-input{width:100%;border:1px solid var(--border);border-radius:8px;padding:13px 14px;font-size:15px;font-family:var(--font);color:var(--forest);background:var(--canvas);outline:none;transition:border-color .15s}
+.addr-input:focus{border-color:var(--olive)}
+.pref-section__hd{font-size:12px;font-weight:700;color:var(--muted);padding:8px 0 6px;letter-spacing:.06em;text-transform:uppercase}
+.pref-grid{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--border)}
+.pref-btn{padding:14px 12px;font-size:14px;color:var(--forest);border:none;border-bottom:1px solid var(--border);border-right:1px solid var(--border);background:#fff;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-family:var(--font);transition:background .1s}
+.pref-btn:nth-child(even){border-right:none}
+.pref-btn:hover{background:#f5f5f0}
+.pref-btn svg{width:14px;height:14px;color:var(--muted)}
 
-/* ── Prefecture quick-pick grid ─────────────────────── */
-.pref-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.pref-btn{background:#f4f4f0;border:none;border-radius:6px;padding:10px 4px;font-size:13px;font-weight:600;color:var(--forest);cursor:pointer;text-align:center}
-.pref-btn:active{background:var(--border)}
+/* Furniture */
+.cat-title{font-size:15px;font-weight:800;color:var(--forest);padding:16px 0 10px}
+.items-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+.item-card{background:#f5f5f0;border-radius:10px;padding:12px 10px 10px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;transition:background .12s}
+.item-card.has-count{background:var(--active-bg);border:1.5px solid var(--olive)}
+.item-card__name{font-size:13px;font-weight:600;color:var(--forest);line-height:1.3}
+.item-card__img{width:100%;height:70px;display:flex;align-items:center;justify-content:center}
+.item-card__img svg{width:52px;height:52px;opacity:.7}
+.item-counter{display:flex;align-items:center;width:100%;border:1.5px solid var(--olive);border-radius:22px;overflow:hidden;background:#fff}
+.item-counter button{flex-shrink:0;width:38px;height:34px;border:none;background:transparent;font-size:18px;font-weight:700;color:var(--olive);cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center}
+.item-counter span{flex:1;text-align:center;font-size:15px;font-weight:700;color:var(--forest)}
 
-/* ── Furniture counter cards ─────────────────────────── */
-.item-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.item-card{background:#f9f9f6;border:1px solid var(--border);border-radius:12px;padding:14px 12px;display:flex;flex-direction:column;align-items:center;position:relative;transition:border-color .2s}
-.item-card.has-count{border-color:var(--olive);background:#fff}
-.item-card svg{width:40px;height:40px;margin-bottom:8px;stroke:var(--forest)}
-.item-name{font-size:12px;font-weight:700;margin-bottom:12px}
-.ctrl-row{display:flex;align-items:center;gap:16px;width:100%;justify-content:center}
-.btn-c{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:#fff;font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.btn-c:active{background:#f4f4f0}
-.num-lbl{font-size:15px;font-weight:800;min-width:16px;text-align:center}
-
-/* ── Workers segmented switch (inside date drawer) ───── */
-.seg-control{display:flex;background:#f4f4f0;padding:4px;border-radius:10px;gap:4px}
-.seg-btn{flex:1;border:none;height:40px;border-radius:8px;font-size:14px;font-weight:700;color:var(--text-muted);background:transparent;cursor:pointer}
-.seg-btn.on{background:#fff;color:var(--forest);box-shadow:0 2px 6px rgba(0,0,0,.06)}
-
-/* ── Row done state (checkmark) ─────────────────────────── */
-.sel-arrow .icon-check{display:none}
-.sel-row.done{border-color:#c8ddb2}
-.sel-row.done .sel-arrow .icon-chev{display:none}
-.sel-row.done .sel-arrow .icon-check{display:block;color:var(--olive);animation:checkPop .3s cubic-bezier(.34,1.56,.64,1) both}
-
-/* stroke-draw: polyline total length ≈ 23px, dashoffset starts full then animates to 0 */
-.icon-check polyline{stroke-dasharray:25;stroke-dashoffset:25}
-.sel-row.done .icon-check polyline{animation:checkDraw .28s .04s cubic-bezier(.4,0,.2,1) forwards}
-
-@keyframes checkPop{
-  from{transform:scale(.3);opacity:0}
-  to  {transform:scale(1);opacity:1}
-}
-@keyframes checkDraw{
-  to{stroke-dashoffset:0}
-}
-
-/* ── Service detail screen ───────────────────────────────── */
-.detail-hero{width:100%;aspect-ratio:5/3;background:#f0f0ec;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.detail-hero svg{width:42%;height:42%;opacity:.85}
-.detail-body{padding:24px 20px 120px;display:flex;flex-direction:column;gap:20px}
-.detail-name{font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--forest)}
-.detail-desc{font-size:15px;line-height:1.7;color:var(--text-muted)}
-.detail-section-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px}
-.detail-features{display:flex;flex-direction:column;gap:8px}
-.detail-feature{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--forest)}
-.detail-feature-dot{width:7px;height:7px;border-radius:50%;background:var(--olive);flex-shrink:0}
-.detail-price-card{background:#f4f8f0;border:1px solid #c8ddb2;border-radius:14px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between}
-.detail-price-label{font-size:12px;font-weight:700;color:var(--text-muted)}
-.detail-price-val{font-size:22px;font-weight:800;color:var(--forest)}
-.detail-price-note{font-size:11px;color:var(--text-muted);margin-top:2px;text-align:right}
-
-/* ── Confirmation screen ─────────────────────────────────── */
-.confirm-body{display:flex;flex-direction:column;align-items:center;padding:40px 20px 120px;flex:1}
-.confirm-icon{width:100px;height:100px;margin-bottom:24px}
-.confirm-icon svg{width:100%;height:100%}
-.confirm-ring{stroke-dasharray:214;stroke-dashoffset:214;animation:ringDraw .55s .1s cubic-bezier(.4,0,.2,1) forwards}
-.confirm-check{stroke-dasharray:47;stroke-dashoffset:47;animation:checkDrawBig .35s .6s cubic-bezier(.4,0,.2,1) forwards}
-@keyframes ringDraw{to{stroke-dashoffset:0}}
-@keyframes checkDrawBig{to{stroke-dashoffset:0}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.confirm-title{font-size:22px;font-weight:800;color:var(--forest);text-align:center;margin-bottom:8px;animation:fadeUp .3s .45s both}
-.confirm-sub{font-size:14px;color:var(--text-muted);text-align:center;margin-bottom:24px;animation:fadeUp .3s .55s both}
-.confirm-ref{background:#f4f8f0;border:1px solid #c8ddb2;border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:24px;animation:fadeUp .3s .6s both}
-.confirm-ref-label{font-size:12px;font-weight:700;color:var(--text-muted)}
-.confirm-ref-num{font-size:16px;font-weight:800;color:var(--forest);letter-spacing:.06em}
-.confirm-summary{width:100%;display:flex;flex-direction:column;gap:10px;margin-bottom:32px}
-.confirm-row{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;animation:fadeUp .3s both}
-.confirm-row-label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em}
-.confirm-row-val{font-size:15px;font-weight:700;color:var(--forest)}
-.btn-new-search{width:100%;height:54px;background:var(--forest);color:#fff;border:none;border-radius:27px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(44,54,38,.2);animation:fadeUp .3s .85s both}
-.btn-new-search:active{transform:scale(.98)}
-
-/* ── Booking progress bar ────────────────────────────────── */
-.progress-wrap{padding:2px 0 18px}
-.progress-track{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
-.progress-fill{height:100%;width:0%;background:var(--olive);border-radius:2px;transition:width .4s cubic-bezier(.4,0,.2,1)}
-.progress-meta{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
-.progress-label{font-size:12px;font-weight:700;color:var(--text-muted)}
-.progress-pct{font-size:12px;font-weight:800;color:var(--olive)}
+/* Date */
+.date-input{width:100%;border:1px solid var(--border);border-radius:8px;padding:13px 14px;font-size:15px;font-family:var(--font);color:var(--forest);background:var(--canvas);outline:none}
+.date-input:focus{border-color:var(--olive)}
 </style>
 </head>
 <body>
-<div class="page">
 
-  <!-- ── Header ─────────────────────────────────────────────── -->
+<!-- ════════════════════════════════════════
+  ADMIN CONFIG — Edit here OR via dashboard
+  ─────────────────────────────────────────
+  For each service card, set:
+    icon: "svg"   → show built-in SVG illustration
+    icon: "image" → show photo from imageUrl
+    imageUrl: ""  → full URL or relative path to photo
+  ════════════════════════════════════════ -->
+<script>
+const SERVICE_CONFIG = [
+  {
+    id: "tansin",
+    name: "単身引越し",
+    badge: "人気", badgeColor: "#9AB57A",
+    icon: "svg",         // "svg" | "image"
+    imageUrl: "",        // e.g. "images/tansin.jpg"
+  },
+  {
+    id: "couple",
+    name: "カップル・ご夫婦引越し",
+    badge: "人気", badgeColor: "#9AB57A",
+    icon: "svg",
+    imageUrl: "",
+  },
+  {
+    id: "student",
+    name: "学生・新生活引越し",
+    badge: "人気", badgeColor: "#9AB57A",
+    icon: "svg",
+    imageUrl: "",
+  },
+  {
+    id: "sameday",
+    name: "当日・お急ぎ引越しプラン",
+    badge: "当日対応", badgeColor: "#c0392b",
+    icon: "svg",
+    imageUrl: "",
+  },
+  {
+    id: "disposal",
+    name: "不用品回収・処分",
+    badge: "", badgeColor: "",
+    icon: "svg",
+    imageUrl: "",
+  },
+  {
+    id: "assembly",
+    name: "家具組立・分解",
+    badge: "", badgeColor: "",
+    icon: "svg",
+    imageUrl: "",
+  },
+];
+
+// SVG illustrations keyed by service id
+const SERVICE_SVG = {
+  tansin: `<svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16 30L40 18L64 30L64 58L40 70L16 58Z"/>
+    <path d="M16 30L40 42L64 30"/><line x1="40" y1="42" x2="40" y2="70"/>
+    <path d="M28 24L28 36"/><path d="M52 24L52 36"/>
+    <circle cx="40" cy="10" r="5"/>
+  </svg>`,
+  couple: `<svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="8" y="32" width="28" height="28" rx="3"/>
+    <line x1="8" y1="44" x2="36" y2="44"/>
+    <path d="M14 38L14 42"/><path d="M22 38L22 42"/>
+    <rect x="44" y="26" width="28" height="34" rx="3"/>
+    <line x1="44" y1="40" x2="72" y2="40"/>
+    <path d="M36 18C36 14 42 14 42 18C42 14 48 14 48 18C48 24 42 28 42 28C42 28 36 24 36 18Z"/>
+  </svg>`,
+  student: `<svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <polygon points="40,14 72,28 40,42 8,28"/>
+    <path d="M60 34L60 52C60 52 40 60 20 52L20 34"/>
+    <line x1="72" y1="28" x2="72" y2="44"/>
+    <circle cx="72" cy="46" r="3" fill="var(--forest)" stroke="none"/>
+    <rect x="24" y="54" width="32" height="18" rx="2"/>
+    <line x1="24" y1="63" x2="56" y2="63"/>
+  </svg>`,
+  sameday: `<svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4" y="28" width="46" height="30" rx="3"/>
+    <path d="M50 38L64 38L72 50L72 58L50 58Z"/>
+    <circle cx="18" cy="62" r="7"/><circle cx="56" cy="62" r="7"/>
+    <line x1="25" y1="62" x2="49" y2="62"/>
+    <path d="M36 10L28 30L38 30L30 52" stroke="var(--olive)" stroke-width="2.5"/>
+  </svg>`,
+  disposal: `<svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M40 12L52 32L28 32Z"/>
+    <path d="M28 32C20 32 14 40 18 50"/><path d="M18 50L10 56L22 60"/>
+    <path d="M52 32C60 32 66 40 62 50"/><path d="M62 50L70 44L66 56"/>
+    <rect x="26" y="44" width="28" height="24" rx="2"/>
+    <line x1="22" y1="44" x2="58" y2="44"/>
+    <line x1="34" y1="38" x2="46" y2="38"/>
+    <line x1="34" y1="50" x2="34" y2="62"/>
+    <line x1="40" y1="50" x2="40" y2="62"/>
+    <line x1="46" y1="50" x2="46" y2="62"/>
+  </svg>`,
+  assembly: `<svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 60L46 34C44 28 46 20 52 16C54 20 52 24 54 26C56 28 60 26 62 28C58 34 50 36 46 34"/>
+    <line x1="20" y1="60" x2="26" y2="66"/>
+    <circle cx="23" cy="63" r="5"/>
+    <rect x="42" y="38" width="26" height="30" rx="2" stroke-dasharray="4 2"/>
+    <line x1="42" y1="50" x2="68" y2="50"/>
+  </svg>`,
+};
+</script>
+
+<!-- ════════ PAGE SHELL ════════ -->
+<div class="page" id="app">
+
   <header class="hdr">
-    <div class="hdr__back" id="backBtn" onclick="goBack()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="15 18 9 12 15 6"/>
-      </svg>
-    </div>
-    <div class="hdr__logo" id="hdrLogo" onclick="if(navigator.vibrate)navigator.vibrate(4)"><span class="dot"></span>Hello Moving</div>
-    <div class="hdr__title" id="hdrTitle" onclick="if(navigator.vibrate)navigator.vibrate(4)"></div>
+    <a class="hdr__back" id="backBtn" href="#" onclick="goBack();return false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </a>
+    <div class="hdr__logo" id="hdrLogo"><span class="dot"></span>Hello Moving</div>
+    <div class="hdr__title" id="hdrTitle" style="display:none"></div>
   </header>
 
-  <!-- ══════════════════════════════════════════════════════════
-       SCREEN 1 — SERVICE DIRECTORY
-  ══════════════════════════════════════════════════════════ -->
+  <!-- ══ SCREEN: Services ══ -->
   <div class="screen active" id="screen-services">
-    <div class="sec-title" onclick="if(navigator.vibrate)navigator.vibrate(4)">おすすめのサービス</div>
+    <div class="sec-title">おすすめのサービス</div>
     <div class="grid" id="services-grid"></div>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════
-       SCREEN 1.5 — SERVICE DETAIL
-  ══════════════════════════════════════════════════════════ -->
-  <div class="screen" id="screen-detail">
-    <div class="detail-hero" id="detail-hero" onclick="if(navigator.vibrate)navigator.vibrate(6)"></div>
-    <div class="detail-body">
-      <div class="detail-name" id="detail-name"></div>
-      <p class="detail-desc" id="detail-desc"></p>
-      <div>
-        <div class="detail-section-label">サービス内容</div>
-        <div class="detail-features" id="detail-features"></div>
-      </div>
-      <div class="detail-price-card" onclick="if(navigator.vibrate)navigator.vibrate(4)">
-        <div>
-          <div class="detail-price-label">概算料金（税込）</div>
-          <div class="detail-price-val" id="detail-price"></div>
-        </div>
-        <div class="detail-price-note">距離・荷物量により変動</div>
-      </div>
-    </div>
-    <div class="action-footer">
-      <button class="btn-search" onclick="openBooking()">
-        <span class="btn-idle">
-          <span>この内容で見積もりを取る</span>
-          <svg style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-        </span>
-        <span class="btn-spin"></span>
-      </button>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════════
-       SCREEN 2 — BOOKING FORM
-  ══════════════════════════════════════════════════════════ -->
+  <!-- ══ SCREEN: Booking ══ -->
   <div class="screen" id="screen-booking">
-    <div class="booking-header">
-      <h1 id="booking-title" onclick="if(navigator.vibrate)navigator.vibrate(4)">単身引越し</h1>
-      <div class="progress-wrap" onclick="if(navigator.vibrate)navigator.vibrate(4)">
-        <div class="progress-track">
-          <div class="progress-fill" id="progress-fill"></div>
+    <div class="ptitle" id="booking-title">格安引越し</div>
+    <div class="booking-body">
+      <div class="card">
+        <div class="row" id="row-from" onclick="openDrawer('from')">
+          <span class="row__label">現住所：</span>
+          <div class="row__sep"></div>
+          <span class="row__val" id="val-from">現住所を選択</span>
+          <span class="row__chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
         </div>
-        <div class="progress-meta">
-          <span class="progress-label" id="progress-label">0 / 5 項目入力済</span>
-          <span class="progress-pct" id="progress-pct">0%</span>
+        <div class="row" id="row-to" onclick="openDrawer('to')">
+          <span class="row__label">引越し先：</span>
+          <div class="row__sep"></div>
+          <span class="row__val" id="val-to">引越し先を選択</span>
+          <span class="row__chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        </div>
+        <div class="row" id="row-items" onclick="openDrawer('furniture')">
+          <span class="row__label">荷物：</span>
+          <div class="row__sep"></div>
+          <span class="row__val" id="val-items">荷物を選択</span>
+          <span class="row__chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        </div>
+        <div class="row" style="cursor:default">
+          <span class="row__label">作業員：</span>
+          <div class="row__sep"></div>
+          <div class="worker-btns">
+            <button class="wbtn on" id="w2" onclick="setWorker(2)">2名</button>
+            <button class="wbtn" id="w1" onclick="setWorker(1)">1名</button>
+          </div>
+        </div>
+        <div class="row focused" id="row-date" onclick="openDrawer('date')">
+          <span class="row__label">希望日：</span>
+          <div class="row__sep"></div>
+          <span class="row__val" id="val-date">引越し希望日を選択</span>
+          <span class="row__chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        </div>
+        <div class="row" onclick="openDrawer('filter')">
+          <span class="row__label">絞り込み：</span>
+          <div class="row__sep"></div>
+          <span class="row__val" id="val-filter">条件を選択</span>
+          <span class="row__chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
         </div>
       </div>
     </div>
-
-    <div class="form-container">
-
-      <!-- 現住所 -->
-      <div class="sel-row" id="row-from" onclick="openDrawer('from')">
-        <div class="sel-left">
-          <div class="sel-label">現住所 (出発地)</div>
-          <div class="sel-val" id="val-from">現住所を選択</div>
-        </div>
-        <div class="sel-arrow">
-          <svg class="icon-chev" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-          <svg class="icon-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-      </div>
-
-      <!-- 引越し先 -->
-      <div class="sel-row" id="row-to" onclick="openDrawer('to')">
-        <div class="sel-left">
-          <div class="sel-label">引越し先 (お届け地)</div>
-          <div class="sel-val" id="val-to">引越し先を選択</div>
-        </div>
-        <div class="sel-arrow">
-          <svg class="icon-chev" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-          <svg class="icon-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-      </div>
-
-      <!-- お荷物 -->
-      <div class="sel-row" id="row-furniture" onclick="openDrawer('furniture')">
-        <div class="sel-left">
-          <div class="sel-label">お荷物の選択</div>
-          <div class="sel-val" id="val-items">荷物を選択</div>
-        </div>
-        <div class="sel-arrow">
-          <svg class="icon-chev" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-          <svg class="icon-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-      </div>
-
-      <!-- 引越し希望日 -->
-      <div class="sel-row" id="row-date" onclick="openDrawer('date')">
-        <div class="sel-left">
-          <div class="sel-label">引越し希望日</div>
-          <div class="sel-val" id="val-date">引越し希望日を選択</div>
-        </div>
-        <div class="sel-arrow">
-          <svg class="icon-chev" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-          <svg class="icon-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-      </div>
-
-      <!-- こだわり条件 -->
-      <div class="sel-row" id="row-filter" onclick="openDrawer('filter')">
-        <div class="sel-left">
-          <div class="sel-label">こだわり条件</div>
-          <div class="sel-val" id="val-filter">条件を選択</div>
-        </div>
-        <div class="sel-arrow">
-          <svg class="icon-chev" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-          <svg class="icon-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Fixed CTA footer -->
-    <div class="action-footer">
-      <button class="btn-search" id="btn-search" onclick="handleSearch()">
-        <span class="btn-idle">
-          <span>この条件で一括見積もり</span>
-          <svg style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-        </span>
-        <span class="btn-spin">
-          <span class="spinner"></span>
-          <span>マッチング中...</span>
-        </span>
-      </button>
+    <div class="cta-wrap">
+      <button class="cta" onclick="handleSearch()">検索</button>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════
-       SCREEN 3 — CONFIRMATION
-  ══════════════════════════════════════════════════════════ -->
-  <div class="screen" id="screen-confirm">
-    <div class="confirm-body">
-
-      <!-- Animated ring + checkmark -->
-      <div class="confirm-icon">
-        <svg viewBox="0 0 80 80" fill="none">
-          <circle class="confirm-ring" cx="40" cy="40" r="34"
-            stroke="var(--olive)" stroke-width="3" stroke-linecap="round"/>
-          <polyline class="confirm-check" points="24 40 35 51 56 29"
-            stroke="var(--olive)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-
-      <div class="confirm-title">見積もり依頼を送信しました</div>
-      <div class="confirm-sub">最適な業者をマッチングしています</div>
-
-      <!-- Reference number -->
-      <div class="confirm-ref">
-        <span class="confirm-ref-label">受付番号</span>
-        <span class="confirm-ref-num" id="confirm-ref" onclick="if(navigator.vibrate)navigator.vibrate(6)"></span>
-      </div>
-
-      <!-- Booking summary rows (populated by JS) -->
-      <div class="confirm-summary" id="confirm-summary"></div>
-
-      <button class="btn-new-search" onclick="goHome()">新しい見積もりを取る</button>
-
-    </div>
-  </div>
-
-</div><!-- /.page -->
+</div><!-- /app -->
 
 
-<!-- ══════════════════════════════════════════════════════════
-     DRAWERS
-══════════════════════════════════════════════════════════ -->
+<!-- ══════════════ DRAWERS ══════════════ -->
 
-<!-- Drawer: 現住所 -->
+<!-- From -->
 <div class="overlay" id="drawer-from" onclick="bgClose(event,'from')">
   <div class="drawer">
-    <div class="drawer-bar"></div>
-    <div class="drawer-title">現住所 (出発地) を入力</div>
-    <div class="drawer-scroll">
-      <input type="text" class="drawer-input" id="input-from" placeholder="市区町村・番地などを入力">
-      <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin:8px 0 12px 2px">主要な都道府県から選ぶ</div>
-      <div class="pref-grid">
-        <button class="pref-btn" onclick="setPref('from','東京都')">東京</button>
-        <button class="pref-btn" onclick="setPref('from','神奈川県')">神奈川</button>
-        <button class="pref-btn" onclick="setPref('from','埼玉県')">埼玉</button>
-        <button class="pref-btn" onclick="setPref('from','千葉県')">千葉</button>
-        <button class="pref-btn" onclick="setPref('from','大阪府')">大阪</button>
-        <button class="pref-btn" onclick="setPref('from','京都府')">京都</button>
-        <button class="pref-btn" onclick="setPref('from','兵庫県')">兵庫</button>
-        <button class="pref-btn" onclick="setPref('from','愛知県')">愛知</button>
+    <div class="drawer__top"><div class="drawer__handle"></div><div class="drawer__title">現住所を入力</div></div>
+    <div class="drawer__scroll">
+      <input class="addr-input" id="input-from" type="text" placeholder="例：東京都渋谷区神南1-2-3">
+      <div style="margin-top:20px">
+        <div class="pref-section__hd">都道府県から探す</div>
+        <div style="padding-top:8px;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.06em">関東</div>
+        <div class="pref-grid">
+          <button class="pref-btn" onclick="setPref('from','東京都')">東京都 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+          <button class="pref-btn" onclick="setPref('from','神奈川県')">神奈川県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+          <button class="pref-btn" onclick="setPref('from','埼玉県')">埼玉県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+          <button class="pref-btn" onclick="setPref('from','千葉県')">千葉県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+        <div style="padding-top:12px;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.06em">関西</div>
+        <div class="pref-grid">
+          <button class="pref-btn" onclick="setPref('from','大阪府')">大阪府 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+          <button class="pref-btn" onclick="setPref('from','京都府')">京都府 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+          <button class="pref-btn" onclick="setPref('from','兵庫県')">兵庫県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+          <button class="pref-btn" onclick="setPref('from','奈良県')">奈良県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
       </div>
     </div>
-    <div class="drawer-cta-wrap">
-      <button class="drawer-cta" onclick="confirmAddr('from')">この住所に設定する</button>
-    </div>
+    <div class="drawer-cta-wrap"><button class="drawer-cta" onclick="confirmAddr('from')">確定する</button></div>
   </div>
 </div>
 
-<!-- Drawer: 引越し先 -->
+<!-- To -->
 <div class="overlay" id="drawer-to" onclick="bgClose(event,'to')">
   <div class="drawer">
-    <div class="drawer-bar"></div>
-    <div class="drawer-title">引越し先 (お届け地) を入力</div>
-    <div class="drawer-scroll">
-      <input type="text" class="drawer-input" id="input-to" placeholder="市区町村・番地などを入力">
-      <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin:8px 0 12px 2px">主要な都道府県から選ぶ</div>
-      <div class="pref-grid">
-        <button class="pref-btn" onclick="setPref('to','東京都')">東京</button>
-        <button class="pref-btn" onclick="setPref('to','神奈川県')">神奈川</button>
-        <button class="pref-btn" onclick="setPref('to','埼玉県')">埼玉</button>
-        <button class="pref-btn" onclick="setPref('to','千葉県')">千葉</button>
-        <button class="pref-btn" onclick="setPref('to','大阪府')">大阪</button>
-        <button class="pref-btn" onclick="setPref('to','京都府')">京都</button>
-        <button class="pref-btn" onclick="setPref('to','兵庫県')">兵庫</button>
-        <button class="pref-btn" onclick="setPref('to','愛知県')">愛知</button>
+    <div class="drawer__top"><div class="drawer__handle"></div><div class="drawer__title">引越し先を入力</div></div>
+    <div class="drawer__scroll">
+      <input class="addr-input" id="input-to" type="text" placeholder="例：埼玉県さいたま市大宮区...">
+      <div style="margin-top:20px">
+        <div class="pref-section__hd">都道府県から探す</div>
+        <div style="padding-top:8px;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.06em">関東</div>
+        <div class="pref-grid">
+          <button class="pref-btn" onclick="setPref('to','東京都')">東京都 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+          <button class="pref-btn" onclick="setPref('to','神奈川県')">神奈川県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+          <button class="pref-btn" onclick="setPref('to','埼玉県')">埼玉県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+          <button class="pref-btn" onclick="setPref('to','千葉県')">千葉県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
       </div>
     </div>
-    <div class="drawer-cta-wrap">
-      <button class="drawer-cta" onclick="confirmAddr('to')">この住所に設定する</button>
-    </div>
+    <div class="drawer-cta-wrap"><button class="drawer-cta" onclick="confirmAddr('to')">確定する</button></div>
   </div>
 </div>
 
-<!-- Drawer: お荷物 -->
+<!-- Furniture -->
 <div class="overlay" id="drawer-furniture" onclick="bgClose(event,'furniture')">
   <div class="drawer">
-    <div class="drawer-bar"></div>
-    <div class="drawer-title">お荷物の選択</div>
-    <div class="drawer-scroll">
-      <div class="item-grid">
-
-        <div class="item-card" id="card-tv-s">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          <div class="item-name">テレビ(小)</div>
-          <div class="ctrl-row">
-            <button class="btn-c" onclick="dec('tv-s')">-</button>
-            <span class="num-lbl" id="n-tv-s">0</span>
-            <button class="btn-c" onclick="inc('tv-s')">+</button>
-          </div>
-        </div>
-
-        <div class="item-card" id="card-tv-l">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="2" width="22" height="15" rx="2"/><line x1="7" y1="22" x2="17" y2="22"/><line x1="12" y1="17" x2="12" y2="22"/></svg>
-          <div class="item-name">テレビ(大)</div>
-          <div class="ctrl-row">
-            <button class="btn-c" onclick="dec('tv-l')">-</button>
-            <span class="num-lbl" id="n-tv-l">0</span>
-            <button class="btn-c" onclick="inc('tv-l')">+</button>
-          </div>
-        </div>
-
-        <div class="item-card" id="card-bed-s">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4v16M2 11h20M22 4v16M2 8h20"/></svg>
-          <div class="item-name">ベッド(S)</div>
-          <div class="ctrl-row">
-            <button class="btn-c" onclick="dec('bed-s')">-</button>
-            <span class="num-lbl" id="n-bed-s">0</span>
-            <button class="btn-c" onclick="inc('bed-s')">+</button>
-          </div>
-        </div>
-
-        <div class="item-card" id="card-bed-d">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4v16M2 10h20M22 4v16M2 7h20"/></svg>
-          <div class="item-name">ベッド(D)</div>
-          <div class="ctrl-row">
-            <button class="btn-c" onclick="dec('bed-d')">-</button>
-            <span class="num-lbl" id="n-bed-d">0</span>
-            <button class="btn-c" onclick="inc('bed-d')">+</button>
-          </div>
-        </div>
-
-        <div class="item-card" id="card-sofa1">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7M2 11h20v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8z"/></svg>
-          <div class="item-name">ソファ(1人)</div>
-          <div class="ctrl-row">
-            <button class="btn-c" onclick="dec('sofa1')">-</button>
-            <span class="num-lbl" id="n-sofa1">0</span>
-            <button class="btn-c" onclick="inc('sofa1')">+</button>
-          </div>
-        </div>
-
-        <div class="item-card" id="card-sofa3">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M1 11h22v8a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-8z"/></svg>
-          <div class="item-name">ソファ(3人)</div>
-          <div class="ctrl-row">
-            <button class="btn-c" onclick="dec('sofa3')">-</button>
-            <span class="num-lbl" id="n-sofa3">0</span>
-            <button class="btn-c" onclick="inc('sofa3')">+</button>
-          </div>
-        </div>
-
-        <div class="item-card" id="card-fridge-s">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="4" y1="11" x2="20" y2="11"/><line x1="8" y1="6" x2="8" y2="8"/><line x1="8" y1="14" x2="8" y2="17"/></svg>
-          <div class="item-name">冷蔵庫(小)</div>
-          <div class="ctrl-row">
-            <button class="btn-c" onclick="dec('fridge-s')">-</button>
-            <span class="num-lbl" id="n-fridge-s">0</span>
-            <button class="btn-c" onclick="inc('fridge-s')">+</button>
-          </div>
-        </div>
-
-        <div class="item-card" id="card-fridge-l">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="1" width="18" height="22" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="7" y1="4" x2="7" y2="7"/><line x1="7" y1="14" x2="7" y2="18"/></svg>
-          <div class="item-name">冷蔵庫(大)</div>
-          <div class="ctrl-row">
-            <button class="btn-c" onclick="dec('fridge-l')">-</button>
-            <span class="num-lbl" id="n-fridge-l">0</span>
-            <button class="btn-c" onclick="inc('fridge-l')">+</button>
-          </div>
-        </div>
-
-        <div class="item-card" id="card-wash-v">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="13" r="5"/><line x1="4" y1="7" x2="20" y2="7"/></svg>
-          <div class="item-name">洗濯機(縦)</div>
-          <div class="ctrl-row">
-            <button class="btn-c" onclick="dec('wash-v')">-</button>
-            <span class="num-lbl" id="n-wash-v">0</span>
-            <button class="btn-c" onclick="inc('wash-v')">+</button>
-          </div>
-        </div>
-
-        <div class="item-card" id="card-wash-d">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="13" r="5" stroke-dasharray="3 1"/><line x1="4" y1="6" x2="20" y2="6"/></svg>
-          <div class="item-name">洗濯機(ドラム)</div>
-          <div class="ctrl-row">
-            <button class="btn-c" onclick="dec('wash-d')">-</button>
-            <span class="num-lbl" id="n-wash-d">0</span>
-            <button class="btn-c" onclick="inc('wash-d')">+</button>
-          </div>
-        </div>
-
-        <div class="item-card" id="card-shelf-s">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
-          <div class="item-name">棚(小)</div>
-          <div class="ctrl-row">
-            <button class="btn-c" onclick="dec('shelf-s')">-</button>
-            <span class="num-lbl" id="n-shelf-s">0</span>
-            <button class="btn-c" onclick="inc('shelf-s')">+</button>
-          </div>
-        </div>
-
-        <div class="item-card" id="card-shelf-l">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="2" width="18" height="20" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="16" x2="21" y2="16"/></svg>
-          <div class="item-name">棚(大)</div>
-          <div class="ctrl-row">
-            <button class="btn-c" onclick="dec('shelf-l')">-</button>
-            <span class="num-lbl" id="n-shelf-l">0</span>
-            <button class="btn-c" onclick="inc('shelf-l')">+</button>
-          </div>
-        </div>
-
-        <div class="item-card" id="card-table">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="2" y1="8" x2="22" y2="8"/><line x1="5" y1="8" x2="5" y2="20"/><line x1="19" y1="8" x2="19" y2="20"/></svg>
-          <div class="item-name">テーブル</div>
-          <div class="ctrl-row">
-            <button class="btn-c" onclick="dec('table')">-</button>
-            <span class="num-lbl" id="n-table">0</span>
-            <button class="btn-c" onclick="inc('table')">+</button>
-          </div>
-        </div>
-
-        <div class="item-card" id="card-chest">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><circle cx="12" cy="6" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="18" r="1"/></svg>
-          <div class="item-name">チェスト</div>
-          <div class="ctrl-row">
-            <button class="btn-c" onclick="dec('chest')">-</button>
-            <span class="num-lbl" id="n-chest">0</span>
-            <button class="btn-c" onclick="inc('chest')">+</button>
-          </div>
-        </div>
-
-        <div class="item-card" id="card-bike">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><polyline points="15 17.5 14 11 9 11 5.5 17.5"/><polyline points="18.5 17.5 18 8 13 8"/></svg>
-          <div class="item-name">自転車</div>
-          <div class="ctrl-row">
-            <button class="btn-c" onclick="dec('bike')">-</button>
-            <span class="num-lbl" id="n-bike">0</span>
-            <button class="btn-c" onclick="inc('bike')">+</button>
-          </div>
-        </div>
-
-        <div class="item-card" id="card-box">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M23 3H1v5h22z"/><line x1="12" y1="12" x2="12" y2="18"/></svg>
-          <div class="item-name">ダンボール</div>
-          <div class="ctrl-row">
-            <button class="btn-c" onclick="dec('box')">-</button>
-            <span class="num-lbl" id="n-box">0</span>
-            <button class="btn-c" onclick="inc('box')">+</button>
-          </div>
-        </div>
-
+    <div class="drawer__top"><div class="drawer__handle"></div><div class="drawer__title">荷物を選択</div></div>
+    <div class="drawer__scroll">
+      <div class="cat-title">リビング・寝室</div>
+      <div class="items-grid">
+        <div class="item-card" id="card-tv-s"><div class="item-card__name">テレビ 40型未満</div><div class="item-card__img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="10" width="44" height="30" rx="3"/><line x1="20" y1="40" x2="16" y2="50"/><line x1="40" y1="40" x2="44" y2="50"/><line x1="14" y1="50" x2="46" y2="50"/></svg></div><div class="item-counter"><button onclick="dec('tv-s')">−</button><span id="n-tv-s">0</span><button onclick="inc('tv-s')">＋</button></div></div>
+        <div class="item-card" id="card-tv-l"><div class="item-card__name">テレビ 40型以上</div><div class="item-card__img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="52" height="34" rx="3"/><line x1="18" y1="42" x2="14" y2="52"/><line x1="42" y1="42" x2="46" y2="52"/><line x1="12" y1="52" x2="48" y2="52"/></svg></div><div class="item-counter"><button onclick="dec('tv-l')">−</button><span id="n-tv-l">0</span><button onclick="inc('tv-l')">＋</button></div></div>
+        <div class="item-card" id="card-bed-s"><div class="item-card__name">ベッド シングル</div><div class="item-card__img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="22" width="44" height="24" rx="2"/><rect x="8" y="14" width="16" height="12" rx="2"/><line x1="8" y1="46" x2="8" y2="52"/><line x1="52" y1="46" x2="52" y2="52"/></svg></div><div class="item-counter"><button onclick="dec('bed-s')">−</button><span id="n-bed-s">0</span><button onclick="inc('bed-s')">＋</button></div></div>
+        <div class="item-card" id="card-bed-d"><div class="item-card__name">ベッド ダブル</div><div class="item-card__img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="22" width="52" height="24" rx="2"/><rect x="4" y="14" width="20" height="12" rx="2"/><line x1="4" y1="46" x2="4" y2="52"/><line x1="56" y1="46" x2="56" y2="52"/></svg></div><div class="item-counter"><button onclick="dec('bed-d')">−</button><span id="n-bed-d">0</span><button onclick="inc('bed-d')">＋</button></div></div>
+        <div class="item-card" id="card-sofa1"><div class="item-card__name">ソファ 1人</div><div class="item-card__img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="24" width="40" height="18" rx="4"/><rect x="6" y="18" width="8" height="24" rx="3"/><rect x="46" y="18" width="8" height="24" rx="3"/><rect x="10" y="14" width="40" height="12" rx="3"/><line x1="12" y1="42" x2="12" y2="48"/><line x1="48" y1="42" x2="48" y2="48"/></svg></div><div class="item-counter"><button onclick="dec('sofa1')">−</button><span id="n-sofa1">0</span><button onclick="inc('sofa1')">＋</button></div></div>
+        <div class="item-card" id="card-sofa3"><div class="item-card__name">ソファ 3人</div><div class="item-card__img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="26" width="52" height="16" rx="4"/><rect x="2" y="20" width="8" height="22" rx="3"/><rect x="50" y="20" width="8" height="22" rx="3"/><rect x="4" y="16" width="52" height="12" rx="3"/><line x1="8" y1="42" x2="8" y2="48"/><line x1="52" y1="42" x2="52" y2="48"/></svg></div><div class="item-counter"><button onclick="dec('sofa3')">−</button><span id="n-sofa3">0</span><button onclick="inc('sofa3')">＋</button></div></div>
+      </div>
+      <div class="cat-title">水回り</div>
+      <div class="items-grid">
+        <div class="item-card" id="card-fridge-s"><div class="item-card__name">冷蔵庫 2ドア</div><div class="item-card__img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="4" width="32" height="52" rx="3"/><line x1="14" y1="22" x2="46" y2="22"/><line x1="22" y1="13" x2="22" y2="19"/><line x1="22" y1="31" x2="22" y2="46"/></svg></div><div class="item-counter"><button onclick="dec('fridge-s')">−</button><span id="n-fridge-s">0</span><button onclick="inc('fridge-s')">＋</button></div></div>
+        <div class="item-card" id="card-fridge-l"><div class="item-card__name">冷蔵庫 3ドア</div><div class="item-card__img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="4" width="40" height="52" rx="3"/><line x1="10" y1="18" x2="50" y2="18"/><line x1="10" y1="34" x2="50" y2="34"/><line x1="18" y1="10" x2="18" y2="16"/><line x1="18" y1="24" x2="18" y2="30"/><line x1="18" y1="40" x2="18" y2="52"/></svg></div><div class="item-counter"><button onclick="dec('fridge-l')">−</button><span id="n-fridge-l">0</span><button onclick="inc('fridge-l')">＋</button></div></div>
+        <div class="item-card" id="card-wash-v"><div class="item-card__name">洗濯機 縦型</div><div class="item-card__img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="6" width="44" height="48" rx="3"/><circle cx="30" cy="34" r="12"/><circle cx="30" cy="34" r="6"/><circle cx="18" cy="14" r="3"/></svg></div><div class="item-counter"><button onclick="dec('wash-v')">−</button><span id="n-wash-v">0</span><button onclick="inc('wash-v')">＋</button></div></div>
+        <div class="item-card" id="card-wash-d"><div class="item-card__name">洗濯機 ドラム</div><div class="item-card__img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="8" width="48" height="44" rx="4"/><circle cx="30" cy="32" r="14"/><circle cx="30" cy="32" r="7"/><rect x="10" y="12" width="16" height="8" rx="2"/></svg></div><div class="item-counter"><button onclick="dec('wash-d')">−</button><span id="n-wash-d">0</span><button onclick="inc('wash-d')">＋</button></div></div>
+      </div>
+      <div class="cat-title">収納・家具</div>
+      <div class="items-grid">
+        <div class="item-card" id="card-shelf-s"><div class="item-card__name">棚 小</div><div class="item-card__img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="8" width="32" height="46" rx="2"/><line x1="14" y1="22" x2="46" y2="22"/><line x1="14" y1="36" x2="46" y2="36"/></svg></div><div class="item-counter"><button onclick="dec('shelf-s')">−</button><span id="n-shelf-s">0</span><button onclick="inc('shelf-s')">＋</button></div></div>
+        <div class="item-card" id="card-shelf-l"><div class="item-card__name">棚 大</div><div class="item-card__img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="6" width="44" height="48" rx="2"/><line x1="8" y1="18" x2="52" y2="18"/><line x1="8" y1="32" x2="52" y2="32"/><line x1="8" y1="46" x2="52" y2="46"/></svg></div><div class="item-counter"><button onclick="dec('shelf-l')">−</button><span id="n-shelf-l">0</span><button onclick="inc('shelf-l')">＋</button></div></div>
+        <div class="item-card" id="card-table"><div class="item-card__name">ダイニングテーブル</div><div class="item-card__img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="20" width="48" height="8" rx="2"/><line x1="14" y1="28" x2="14" y2="50"/><line x1="46" y1="28" x2="46" y2="50"/></svg></div><div class="item-counter"><button onclick="dec('table')">−</button><span id="n-table">0</span><button onclick="inc('table')">＋</button></div></div>
+        <div class="item-card" id="card-chest"><div class="item-card__name">チェスト</div><div class="item-card__img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="12" y="6" width="36" height="48" rx="2"/><line x1="12" y1="18" x2="48" y2="18"/><line x1="12" y1="30" x2="48" y2="30"/><line x1="12" y1="42" x2="48" y2="42"/><circle cx="30" cy="12" r="2"/><circle cx="30" cy="24" r="2"/><circle cx="30" cy="36" r="2"/></svg></div><div class="item-counter"><button onclick="dec('chest')">−</button><span id="n-chest">0</span><button onclick="inc('chest')">＋</button></div></div>
+        <div class="item-card" id="card-bike"><div class="item-card__name">自転車</div><div class="item-card__img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="42" r="10"/><circle cx="46" cy="42" r="10"/><path d="M14 42L30 18L46 42"/><line x1="24" y1="18" x2="36" y2="18"/></svg></div><div class="item-counter"><button onclick="dec('bike')">−</button><span id="n-bike">0</span><button onclick="inc('bike')">＋</button></div></div>
+        <div class="item-card" id="card-box"><div class="item-card__name">ダンボール</div><div class="item-card__img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 20L30 10L50 20L50 46L30 56L10 46Z"/><path d="M10 20L30 30L50 20"/><line x1="30" y1="30" x2="30" y2="56"/></svg></div><div class="item-counter"><button onclick="dec('box')">−</button><span id="n-box">0</span><button onclick="inc('box')">＋</button></div></div>
       </div>
     </div>
-    <div class="drawer-cta-wrap">
-      <button class="drawer-cta" onclick="confirmFurniture()">荷物を確定する</button>
-    </div>
+    <div class="drawer-cta-wrap"><button class="drawer-cta" onclick="confirmFurniture()">選択完了</button></div>
   </div>
 </div>
 
-<!-- Drawer: 引越し希望日 + 作業員数 -->
+<!-- Date -->
 <div class="overlay" id="drawer-date" onclick="bgClose(event,'date')">
   <div class="drawer">
-    <div class="drawer-bar"></div>
-    <div class="drawer-title">引越し希望日を選択</div>
-    <div class="drawer-scroll">
-      <input type="date" class="drawer-input" id="input-date">
-      <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin:16px 0 8px 2px">想定される作業員数（目安）</div>
-      <div class="seg-control">
-        <button class="seg-btn" id="w1" onclick="setWorker(1)">1名 (単身小荷物)</button>
-        <button class="seg-btn on" id="w2" onclick="setWorker(2)">2名 (通常プラン)</button>
-      </div>
-    </div>
-    <div class="drawer-cta-wrap">
-      <button class="drawer-cta" onclick="confirmDate()">この日程で設定する</button>
-    </div>
+    <div class="drawer__top"><div class="drawer__handle"></div><div class="drawer__title">引越し希望日</div></div>
+    <div class="drawer__scroll"><input class="date-input" type="date" id="input-date"></div>
+    <div class="drawer-cta-wrap"><button class="drawer-cta" onclick="confirmDate()">確定する</button></div>
   </div>
 </div>
 
-<!-- Drawer: こだわり条件 -->
+<!-- Filter -->
 <div class="overlay" id="drawer-filter" onclick="bgClose(event,'filter')">
   <div class="drawer">
-    <div class="drawer-bar"></div>
-    <div class="drawer-title">こだわり条件</div>
-    <div class="drawer-scroll">
-      <div style="display:flex;flex-direction:column;gap:12px;padding-top:4px">
-        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px">
-          <input type="checkbox" id="f-same-day" style="width:18px;height:18px;accent-color:var(--forest)">
-          当日・翌日対応可能
-        </label>
-        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px">
-          <input type="checkbox" id="f-english" style="width:18px;height:18px;accent-color:var(--forest)">
-          英語対応スタッフ在籍
-        </label>
-        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px">
-          <input type="checkbox" id="f-insurance" style="width:18px;height:18px;accent-color:var(--forest)">
-          運送業者貨物賠償保険加入済
-        </label>
-        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px">
-          <input type="checkbox" id="f-card" style="width:18px;height:18px;accent-color:var(--forest)">
-          クレジットカード決済可
-        </label>
+    <div class="drawer__top"><div class="drawer__handle"></div><div class="drawer__title">絞り込み条件</div></div>
+    <div class="drawer__scroll">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px"><input type="checkbox" id="f-same-day" style="width:18px;height:18px;accent-color:var(--forest)"> 当日・翌日対応可</label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px"><input type="checkbox" id="f-english" style="width:18px;height:18px;accent-color:var(--forest)"> 英語対応可</label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px"><input type="checkbox" id="f-insurance" style="width:18px;height:18px;accent-color:var(--forest)"> 保険加入済</label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px"><input type="checkbox" id="f-disposal" style="width:18px;height:18px;accent-color:var(--forest)"> 不用品回収対応</label>
       </div>
     </div>
-    <div class="drawer-cta-wrap">
-      <button class="drawer-cta" onclick="confirmFilter()">条件を確定する</button>
-    </div>
+    <div class="drawer-cta-wrap"><button class="drawer-cta" onclick="confirmFilter()">確定する</button></div>
   </div>
 </div>
 
 
 <script>
-// ─────────────────────────────────────────────────────────────
-// SERVICE CONFIGURATION — admin-panel managed
-// Set icon:"image" + imageUrl to swap SVG for a real photo
-// without touching any layout code.
-// ─────────────────────────────────────────────────────────────
-const SERVICE_CONFIG = [
-  { id:"single",    name:"単身引越し",               badge:"人気",    badgeColor:"#9AB57A", icon:"svg", imageUrl:"" },
-  { id:"couple",    name:"カップル・ご夫婦引越し",   badge:"人気",    badgeColor:"#9AB57A", icon:"svg", imageUrl:"" },
-  { id:"student",   name:"学生・新生活引越し",        badge:"人気",    badgeColor:"#9AB57A", icon:"svg", imageUrl:"" },
-  { id:"urgent",    name:"当日・お急ぎ引越しプラン", badge:"当日対応", badgeColor:"#c0392b", icon:"svg", imageUrl:"" },
-  { id:"recycle",   name:"不用品回収・処分",          badge:null,      badgeColor:null,      icon:"svg", imageUrl:"" },
-  { id:"furniture", name:"家具組立・分解",            badge:null,      badgeColor:null,      icon:"svg", imageUrl:"" }
-];
-
-// Detailed 80×80 service card illustrations
-const SERVICE_SVG = {
-  single: `<svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 30 L40 18 L64 30 L64 58 L40 70 L16 58 Z"/><path d="M16 30 L40 42 L64 30"/><line x1="40" y1="42" x2="40" y2="70"/><path d="M28 24 L28 36"/><path d="M52 24 L52 36"/><circle cx="40" cy="10" r="5"/></svg>`,
-  couple: `<svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="32" width="28" height="28" rx="3"/><line x1="8" y1="44" x2="36" y2="44"/><path d="M14 38 L14 42"/><path d="M22 38 L22 42"/><rect x="44" y="26" width="28" height="34" rx="3"/><line x1="44" y1="40" x2="72" y2="40"/><path d="M50 32 L50 38"/><path d="M36 18 C36 14 42 14 42 18 C42 14 48 14 48 18 C48 24 42 28 42 28 C42 28 36 24 36 18Z"/></svg>`,
-  student: `<svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="40,14 72,28 40,42 8,28"/><path d="M60 34 L60 52 C60 52 40 60 20 52 L20 34"/><line x1="72" y1="28" x2="72" y2="44"/><circle cx="72" cy="46" r="3" fill="var(--forest)" stroke="none"/><rect x="24" y="54" width="32" height="18" rx="2"/><line x1="24" y1="63" x2="56" y2="63"/></svg>`,
-  urgent: `<svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="28" width="46" height="30" rx="3"/><path d="M50 38 L64 38 L72 50 L72 58 L50 58 Z"/><circle cx="18" cy="62" r="7"/><circle cx="56" cy="62" r="7"/><line x1="25" y1="62" x2="49" y2="62"/><path d="M36 10 L28 30 L38 30 L30 52" stroke="var(--olive)" stroke-width="2.5"/></svg>`,
-  recycle: `<svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M40 12 L52 32 L28 32 Z"/><path d="M28 32 C20 32 14 40 18 50"/><path d="M18 50 L10 56 L22 60"/><path d="M52 32 C60 32 66 40 62 50"/><path d="M62 50 L70 44 L66 56"/><path d="M18 50 C22 60 34 66 46 62"/><path d="M62 50 C58 60 46 66 34 62"/><rect x="26" y="44" width="28" height="24" rx="2"/><line x1="22" y1="44" x2="58" y2="44"/><line x1="34" y1="38" x2="46" y2="38"/><line x1="34" y1="50" x2="34" y2="62"/><line x1="40" y1="50" x2="40" y2="62"/><line x1="46" y1="50" x2="46" y2="62"/></svg>`,
-  furniture: `<svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 60 L46 34 C44 28 46 20 52 16 C54 20 52 24 54 26 C56 28 60 26 62 28 C58 34 50 36 46 34"/><line x1="20" y1="60" x2="26" y2="66"/><circle cx="23" cy="63" r="5"/><rect x="42" y="38" width="26" height="30" rx="2" stroke-dasharray="4 2"/><line x1="42" y1="50" x2="68" y2="50"/></svg>`
-};
-
-// Per-service detail content
-const SERVICE_DETAIL = {
-  single: {
-    desc:     "一人暮らしのお引越しをリーズナブルにサポート。コンパクトな荷物量に最適化されたプランで、効率よく新生活をスタートできます。",
-    features: ["家具・家電の搬出入", "ダンボール資材を無料提供", "即日・翌日対応も相談可能", "エレベーターなし割増なし"],
-    priceFrom: "¥15,000〜"
-  },
-  couple: {
-    desc:     "二人暮らしのお引越しに。大型家具や家電もチームでスムーズに対応。新居への設置・配置まで丁寧にサポートします。",
-    features: ["2名作業員で大型荷物対応", "家具の設置・配置サポート", "梱包・開封サービス", "不用品の同時回収も可"],
-    priceFrom: "¥28,000〜"
-  },
-  student: {
-    desc:     "学生・新社会人の初めてのお引越しを安心サポート。必要な分だけのシンプルプランで、新生活を気軽にスタートできます。",
-    features: ["学割・学生優待あり", "小荷物プランで費用を節約", "平日割引適用可", "引越し資材の貸し出し無料"],
-    priceFrom: "¥12,000〜"
-  },
-  urgent: {
-    desc:     "急なお引越しにも当日・翌日対応。突然の転勤や急遽の退去など、緊急時でも迅速に対応するスペシャルプランです。",
-    features: ["当日・翌日での対応", "24時間相談受付", "最短2時間で見積もり確定", "深夜・早朝の対応も可"],
-    priceFrom: "¥20,000〜"
-  },
-  recycle: {
-    desc:     "不用品の回収・処分をまとめてお任せ。引越し時に出た大型家具や家電から細々した品まで、適切にリサイクル・処分します。",
-    features: ["家電リサイクル法対応", "大型家具の解体・搬出", "当日積み放題プランあり", "回収後の部屋クリーニング対応"],
-    priceFrom: "¥8,000〜"
-  },
-  furniture: {
-    desc:     "家具の組み立て・分解を専門スタッフが対応。IKEAや各種メーカーの家具も対応可能。新居での設置まで安心して任せられます。",
-    features: ["IKEA・ニトリ等各社対応", "電動工具での迅速作業", "壁掛け・取り付け工事も", "1点からでも依頼可能"],
-    priceFrom: "¥5,000〜"
-  }
-};
-
-// Furniture item label map (for summary line)
-const ITEM_LABELS = {
-  "tv-s":"テレビ(小)",    "tv-l":"テレビ(大)",
-  "bed-s":"ベッド(S)",    "bed-d":"ベッド(D)",
-  "sofa1":"ソファ(1人)",  "sofa3":"ソファ(3人)",
-  "fridge-s":"冷蔵庫(小)","fridge-l":"冷蔵庫(大)",
-  "wash-v":"洗濯機(縦)",  "wash-d":"洗濯機(ドラム)",
-  "shelf-s":"棚(小)",     "shelf-l":"棚(大)",
-  "table":"テーブル",     "chest":"チェスト",
-  "bike":"自転車",        "box":"ダンボール"
-};
-
-// ─────────────────────────────────────────────────────────────
-// Application state — single source of truth
-// ─────────────────────────────────────────────────────────────
-const AppState = {
-  activeService:     null,
-  activeServiceName: null,
-  bookingData: {
-    from:    "",
-    to:      "",
-    items:   {},
-    workers: 2,
-    date:    "",
-    filters: []
-  }
-};
-
-// ─────────────────────────────────────────────────────────────
-// 1. Init
-// ─────────────────────────────────────────────────────────────
-// ─────────────────────────────────────────────────────────────
-// Screen switch helpers — apply directional slide animation
-// ─────────────────────────────────────────────────────────────
-function activateScreen(id, dir) {
-  const el = document.getElementById(id);
-  if (dir) {
-    const cls = dir === 'fwd' ? 'slide-fwd' : 'slide-back';
-    el.classList.add(cls);
-    el.addEventListener('animationend', () => el.classList.remove('slide-fwd','slide-back'), { once: true });
-  }
-  el.classList.add('active');
-}
-function deactivateScreen(id) {
-  document.getElementById(id).classList.remove('active');
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  renderServices();
-  initMinDate();
-  initSwipeGestures();
-
-  // Filter checkbox haptic
-  document.querySelectorAll('#drawer-filter input[type="checkbox"]')
-    .forEach(cb => cb.addEventListener('change', () => {
-      if (navigator.vibrate) navigator.vibrate(4);
-    }));
-
-  // Search button long-press haptic
-  const searchBtn = document.getElementById('btn-search');
-  let searchLpTimer = null;
-  searchBtn.addEventListener('touchstart', () => {
-    searchLpTimer = setTimeout(() => { if (navigator.vibrate) navigator.vibrate(30); }, 500);
-  }, { passive: true });
-  searchBtn.addEventListener('touchend',  () => clearTimeout(searchLpTimer), { passive: true });
-  searchBtn.addEventListener('touchmove', () => clearTimeout(searchLpTimer), { passive: true });
-
-  // "この内容で見積もりを取る" long-press haptic
-  const detailCta = document.querySelector('#screen-detail .btn-search');
-  let detailLpTimer = null;
-  detailCta.addEventListener('touchstart', () => {
-    detailLpTimer = setTimeout(() => { if (navigator.vibrate) navigator.vibrate(30); }, 500);
-  }, { passive: true });
-  detailCta.addEventListener('touchend',  () => clearTimeout(detailLpTimer), { passive: true });
-  detailCta.addEventListener('touchmove', () => clearTimeout(detailLpTimer), { passive: true });
-
-  // Service card long-press haptic (delegated on grid)
-  const grid = document.getElementById('services-grid');
-  let gridLpTimer = null;
-  grid.addEventListener('touchstart', e => {
-    if (!e.target.closest('.svc-card')) return;
-    gridLpTimer = setTimeout(() => { if (navigator.vibrate) navigator.vibrate(30); }, 500);
-  }, { passive: true });
-  grid.addEventListener('touchend',  () => clearTimeout(gridLpTimer), { passive: true });
-  grid.addEventListener('touchmove', () => clearTimeout(gridLpTimer), { passive: true });
-});
-
+/* ══════════════════════════════
+   RENDER SERVICE CARDS
+   Reads SERVICE_CONFIG above.
+   Dashboard changes icon/imageUrl there.
+══════════════════════════════ */
 function renderServices() {
-  const grid = document.getElementById("services-grid");
-  if (!grid) return;
-
-  grid.innerHTML = SERVICE_CONFIG.map(svc => {
-    const badge  = svc.badge
-      ? `<span class="badge" style="background:${svc.badgeColor}">${svc.badge}</span>`
-      : "";
-    const isImage = svc.icon === "image" && svc.imageUrl;
-
+  const grid = document.getElementById('services-grid');
+  grid.innerHTML = SERVICE_CONFIG.map(s => {
+    const useImage = s.icon === 'image' && s.imageUrl;
+    const media = useImage
+      ? `<img class="svc-card__img show" src="${s.imageUrl}" alt="${s.name}" loading="lazy">`
+      : `<div class="svc-card__illus">${SERVICE_SVG[s.id] || ''}</div>`;
+    const badge = s.badge
+      ? `<span class="badge" style="background:${s.badgeColor}">${s.badge}</span>`
+      : '';
     return `
-      <div class="svc-card" onclick="selectService('${svc.id}','${svc.name}')">
-        ${badge}
-        <img class="svc-card__img ${isImage ? 'show' : ''}" src="${svc.imageUrl || ''}" alt="${svc.name}">
-        <div class="svc-card__illus ${isImage ? 'hide' : ''}">
-          ${SERVICE_SVG[svc.id] || ''}
-        </div>
-        <div class="svc-card__name">${svc.name}</div>
-      </div>`;
+      <a class="svc-card" href="#" onclick="goBooking('${s.id}','${s.name}');return false">
+        ${media}${badge}
+        <div class="svc-card__name">${s.name}</div>
+      </a>`;
   }).join('');
 }
 
-function initMinDate() {
-  const el = document.getElementById("input-date");
-  if (el) el.min = new Date().toISOString().split('T')[0];
+/* ══════════════════════════════
+   NAVIGATION
+══════════════════════════════ */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  const isHome = id === 'services';
+  document.getElementById('backBtn').classList.toggle('visible', !isHome);
+  document.getElementById('hdrLogo').style.display = isHome ? '' : 'none';
+  document.getElementById('hdrTitle').style.display = isHome ? 'none' : '';
 }
 
-// ─────────────────────────────────────────────────────────────
-// Progress bar — recalculates on every confirm action
-// ─────────────────────────────────────────────────────────────
-function updateProgress() {
-  const d = AppState.bookingData;
-  const steps = [
-    d.from  !== "",
-    d.to    !== "",
-    Object.keys(d.items).length > 0,
-    d.date  !== "",
-    d.filters.length > 0
-  ];
-  const filled = steps.filter(Boolean).length;
-  const pct    = Math.round((filled / steps.length) * 100);
-
-  document.getElementById("progress-fill").style.width  = pct + "%";
-  document.getElementById("progress-label").innerText   = `${filled} / ${steps.length} 項目入力済`;
-  document.getElementById("progress-pct").innerText     = pct + "%";
-
-  updateRowStates();
-}
-
-function updateRowStates() {
-  const d = AppState.bookingData;
-  [
-    { id: "row-from",      done: d.from !== "" },
-    { id: "row-to",        done: d.to   !== "" },
-    { id: "row-furniture", done: Object.keys(d.items).length > 0 },
-    { id: "row-date",      done: d.date !== "" },
-    { id: "row-filter",    done: d.filters.length > 0 }
-  ].forEach(({ id, done }) => {
-    document.getElementById(id).classList.toggle("done", done);
-  });
-}
-
-// ─────────────────────────────────────────────────────────────
-// 2. Screen navigation
-// ─────────────────────────────────────────────────────────────
-function selectService(id, name) {
-  if (navigator.vibrate) navigator.vibrate(6);
-  AppState.activeService     = id;
-  AppState.activeServiceName = name;
-
-  // Populate detail screen
-  const detail = SERVICE_DETAIL[id] || {};
-  document.getElementById("detail-hero").innerHTML     = SERVICE_SVG[id] || "";
-  document.getElementById("detail-name").innerText     = name;
-  document.getElementById("detail-desc").innerText     = detail.desc || "";
-  document.getElementById("detail-price").innerText    = detail.priceFrom || "要見積もり";
-  document.getElementById("detail-features").innerHTML = (detail.features || [])
-    .map(f => `<div class="detail-feature" onclick="if(navigator.vibrate)navigator.vibrate(4)"><span class="detail-feature-dot"></span>${f}</div>`)
-    .join('');
-
-  // Header
-  document.getElementById("hdrLogo").style.display = "none";
-  const hdrTitle = document.getElementById("hdrTitle");
-  hdrTitle.innerText     = name;
-  hdrTitle.style.display = "block";
-  document.getElementById("backBtn").classList.add("visible");
-
-  deactivateScreen("screen-services");
-  activateScreen("screen-detail", "fwd");
-  window.scrollTo({ top: 0, behavior: "instant" });
-}
-
-function openBooking() {
-  if (navigator.vibrate) navigator.vibrate(10);
-  document.getElementById("booking-title").innerText = AppState.activeServiceName;
-  deactivateScreen("screen-detail");
-  activateScreen("screen-booking", "fwd");
-  window.scrollTo({ top: 0, behavior: "instant" });
+function goBooking(serviceId, serviceName) {
+  document.getElementById('booking-title').textContent = serviceName;
+  document.getElementById('hdrTitle').textContent = serviceName;
+  showScreen('booking');
 }
 
 function goBack() {
-  if (navigator.vibrate) navigator.vibrate(6);
-  const onBooking = document.getElementById("screen-booking").classList.contains("active");
-  const onDetail  = document.getElementById("screen-detail").classList.contains("active");
-
-  if (onBooking) {
-    // Booking → Detail
-    deactivateScreen("screen-booking");
-    activateScreen("screen-detail", "back");
-  } else if (onDetail) {
-    // Detail → Services
-    AppState.activeService     = null;
-    AppState.activeServiceName = null;
-    document.getElementById("hdrLogo").style.display = "flex";
-    document.getElementById("hdrTitle").style.display = "none";
-    document.getElementById("backBtn").classList.remove("visible");
-    deactivateScreen("screen-detail");
-    activateScreen("screen-services", "back");
-  }
-  window.scrollTo({ top: 0, behavior: "instant" });
+  showScreen('services');
 }
 
-// ─────────────────────────────────────────────────────────────
-// 3. Drawer open / close
-// ─────────────────────────────────────────────────────────────
-function openDrawer(type) {
-  const el = document.getElementById(`drawer-${type}`);
-  if (!el) return;
-  if (navigator.vibrate) navigator.vibrate(4);
-  el.classList.add("open");
-  document.body.style.overflow = "hidden";
+/* ══════════════════════════════
+   BOOKING LOGIC
+══════════════════════════════ */
+const counts = {};
+const furnitureItems = ['tv-s','tv-l','bed-s','bed-d','sofa1','sofa3','fridge-s','fridge-l','wash-v','wash-d','shelf-s','shelf-l','table','chest','bike','box'];
+furnitureItems.forEach(k => counts[k] = 0);
 
-  const input = el.querySelector('input[type="text"], input[type="date"]');
-  if (input) setTimeout(() => input.focus(), 150);
+function inc(k){ counts[k]++; updateCount(k); }
+function dec(k){ if(counts[k]>0){ counts[k]--; updateCount(k); } }
+function updateCount(k){
+  document.getElementById('n-'+k).textContent = counts[k];
+  document.getElementById('card-'+k).classList.toggle('has-count', counts[k]>0);
 }
 
-function closeDrawer(type) {
-  const el = document.getElementById(`drawer-${type}`);
-  if (!el) return;
-  if (navigator.vibrate) navigator.vibrate(3);
-  el.classList.remove("open");
-  document.body.style.overflow = "";
+function openDrawer(id){ document.getElementById('drawer-'+id).classList.add('open'); }
+function closeDrawer(id){ document.getElementById('drawer-'+id).classList.remove('open'); }
+function bgClose(e,id){ if(e.target===e.currentTarget) closeDrawer(id); }
+
+function setPref(dir, pref){ document.getElementById('input-'+dir).value = pref; }
+
+function confirmAddr(dir){
+  const v = document.getElementById('input-'+dir).value.trim();
+  if(!v) return;
+  const el = document.getElementById('val-'+dir);
+  el.textContent = v; el.classList.add('filled');
+  closeDrawer(dir);
 }
 
-function bgClose(e, type) {
-  if (e.target.classList.contains("overlay")) closeDrawer(type);
+function confirmFurniture(){
+  const total = furnitureItems.reduce((s,k)=>s+counts[k],0);
+  const el = document.getElementById('val-items');
+  el.textContent = total ? total+'点' : '荷物を選択';
+  el.classList.toggle('filled', total>0);
+  closeDrawer('furniture');
 }
 
-// ─────────────────────────────────────────────────────────────
-// 4a. Address drawers
-// ─────────────────────────────────────────────────────────────
-function setPref(type, prefName) {
-  if (navigator.vibrate) navigator.vibrate(4);
-  const input = document.getElementById(`input-${type}`);
-  if (input) { input.value = prefName; input.focus(); }
+function confirmDate(){
+  const v = document.getElementById('input-date').value;
+  if(!v) return;
+  const d = new Date(v);
+  const str = d.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  const el = document.getElementById('val-date');
+  el.textContent = str; el.classList.add('filled');
+  document.getElementById('row-date').classList.remove('focused');
+  closeDrawer('date');
 }
 
-function confirmAddr(type) {
-  if (navigator.vibrate) navigator.vibrate(6);
-  const val     = document.getElementById(`input-${type}`).value.trim();
-  const display = document.getElementById(`val-${type}`);
-
-  if (val) {
-    AppState.bookingData[type] = val;
-    display.innerText = val;
-    display.classList.add("filled");
-  } else {
-    AppState.bookingData[type] = "";
-    display.innerText = type === "from" ? "現住所を選択" : "引越し先を選択";
-    display.classList.remove("filled");
-  }
-  updateProgress();
-  closeDrawer(type);
+function confirmFilter(){
+  const map = [['f-same-day','当日対応'],['f-english','英語対応'],['f-insurance','保険加入'],['f-disposal','不用品回収']];
+  const on = map.filter(([id])=>document.getElementById(id).checked).map(([,l])=>l);
+  const el = document.getElementById('val-filter');
+  el.textContent = on.length ? on.join('・') : '条件を選択';
+  el.classList.toggle('filled', on.length>0);
+  closeDrawer('filter');
 }
 
-// ─────────────────────────────────────────────────────────────
-// 4b. Furniture counters
-// ─────────────────────────────────────────────────────────────
-function inc(itemId) {
-  const cur = AppState.bookingData.items[itemId] || 0;
-  if (cur < 99) { if (navigator.vibrate) navigator.vibrate(3); updateItemCount(itemId, cur + 1); }
+function setWorker(n){
+  document.getElementById('w1').classList.toggle('on', n===1);
+  document.getElementById('w2').classList.toggle('on', n===2);
 }
 
-function dec(itemId) {
-  const cur = AppState.bookingData.items[itemId] || 0;
-  if (cur > 0)  { if (navigator.vibrate) navigator.vibrate(3); updateItemCount(itemId, cur - 1); }
+function handleSearch(){
+  const from = document.getElementById('val-from').classList.contains('filled');
+  const to   = document.getElementById('val-to').classList.contains('filled');
+  if(!from||!to){ alert('現住所と引越し先を入力してください。'); return; }
+  alert('検索中...\n担当者より当日〜翌営業日にご連絡いたします。');
 }
 
-function updateItemCount(itemId, count) {
-  if (count > 0) {
-    AppState.bookingData.items[itemId] = count;
-    document.getElementById(`card-${itemId}`).classList.add("has-count");
-  } else {
-    delete AppState.bookingData.items[itemId];
-    document.getElementById(`card-${itemId}`).classList.remove("has-count");
-  }
-  document.getElementById(`n-${itemId}`).innerText = count;
-}
+document.getElementById('input-date').min = new Date().toISOString().split('T')[0];
 
-function confirmFurniture() {
-  if (navigator.vibrate) navigator.vibrate(6);
-  const keys    = Object.keys(AppState.bookingData.items);
-  const display = document.getElementById("val-items");
-
-  if (keys.length > 0) {
-    const total   = keys.reduce((s, k) => s + AppState.bookingData.items[k], 0);
-    const first   = ITEM_LABELS[keys[0]];
-    const summary = keys.length === 1
-      ? `${first} ×${total}`
-      : `${first} 点など 計${total}点`;
-    display.innerText = summary;
-    display.classList.add("filled");
-  } else {
-    display.innerText = "荷物を選択";
-    display.classList.remove("filled");
-  }
-  updateProgress();
-  closeDrawer("furniture");
-}
-
-// ─────────────────────────────────────────────────────────────
-// 4c. Workers segmented switch (inside date drawer)
-// ─────────────────────────────────────────────────────────────
-function setWorker(count) {
-  if (navigator.vibrate) navigator.vibrate(4);
-  AppState.bookingData.workers = count;
-  document.getElementById("w2").classList.toggle("on", count === 2);
-  document.getElementById("w1").classList.toggle("on", count === 1);
-}
-
-// ─────────────────────────────────────────────────────────────
-// 4d. Date picker
-// ─────────────────────────────────────────────────────────────
-function confirmDate() {
-  if (navigator.vibrate) navigator.vibrate(6);
-  const raw     = document.getElementById("input-date").value;
-  const display = document.getElementById("val-date");
-
-  if (raw) {
-    AppState.bookingData.date = raw;
-    const [y, m, d] = raw.split("-");
-    display.innerText = `${y}年${parseInt(m)}月${parseInt(d)}日`;
-    display.classList.add("filled");
-    document.getElementById("row-date").classList.remove("focused");
-  } else {
-    AppState.bookingData.date = "";
-    display.innerText = "引越し希望日を選択";
-    display.classList.remove("filled");
-  }
-  updateProgress();
-  closeDrawer("date");
-}
-
-// ─────────────────────────────────────────────────────────────
-// 4e. Filter checkboxes
-// ─────────────────────────────────────────────────────────────
-function confirmFilter() {
-  if (navigator.vibrate) navigator.vibrate(6);
-  const FILTER_MAP = [
-    { id: "f-same-day",  label: "当日・翌日対応" },
-    { id: "f-english",   label: "英語対応"       },
-    { id: "f-insurance", label: "保険加入済"      },
-    { id: "f-card",      label: "カード決済可"    }
-  ];
-
-  AppState.bookingData.filters = FILTER_MAP
-    .filter(f => document.getElementById(f.id).checked)
-    .map(f => f.label);
-
-  const display = document.getElementById("val-filter");
-  if (AppState.bookingData.filters.length > 0) {
-    display.innerText = AppState.bookingData.filters.join("・");
-    display.classList.add("filled");
-  } else {
-    display.innerText = "条件を選択";
-    display.classList.remove("filled");
-  }
-  updateProgress();
-  closeDrawer("filter");
-}
-
-// ─────────────────────────────────────────────────────────────
-// 5. Search — validation + payload
-// ─────────────────────────────────────────────────────────────
-function handleSearch() {
-  if (navigator.vibrate) navigator.vibrate(10);
-  const d = AppState.bookingData;
-
-  if (!d.from) {
-    alert("現住所を入力または選択してください。");
-    openDrawer("from");
-    return;
-  }
-  if (!d.date) {
-    alert("引越し希望日を入力してください。");
-    openDrawer("date");
-    return;
-  }
-
-  // Show loading state
-  const btn = document.getElementById("btn-search");
-  btn.classList.add("loading");
-
-  // Backend integration point — replace setTimeout with fetch(), then call showConfirmation()
-  console.log("--- SUBMISSION PAYLOAD ---", {
-    serviceId:      AppState.activeService,
-    origin:         d.from,
-    destination:    d.to,
-    crewMembers:    d.workers,
-    scheduledDate:  d.date,
-    inventory:      d.items,
-    appliedFilters: d.filters
-  });
-
-  setTimeout(() => {
-    btn.classList.remove("loading");
-    showConfirmation();
-  }, 1800);
-}
-
-function showConfirmation() {
-  const d = AppState.bookingData;
-
-  // Unique reference number
-  document.getElementById("confirm-ref").innerText =
-    "HM-" + Date.now().toString(36).toUpperCase().slice(-6);
-
-  // Build summary rows — skip empty optional fields
-  const rows = [
-    { label: "サービス",     val: document.getElementById("booking-title").innerText },
-    { label: "出発地",       val: d.from },
-    d.to                          ? { label: "引越し先",     val: d.to } : null,
-    Object.keys(d.items).length   ? { label: "荷物",         val: document.getElementById("val-items").innerText } : null,
-    { label: "希望日",       val: document.getElementById("val-date").innerText },
-    { label: "作業員数",     val: d.workers + "名" },
-    d.filters.length              ? { label: "こだわり条件", val: d.filters.join("・") } : null,
-  ].filter(Boolean);
-
-  document.getElementById("confirm-summary").innerHTML = rows.map((r, i) => `
-    <div class="confirm-row" style="animation-delay:${.65 + i * .07}s" onclick="if(navigator.vibrate)navigator.vibrate(4)">
-      <div class="confirm-row-label">${r.label}</div>
-      <div class="confirm-row-val">${r.val}</div>
-    </div>`).join('');
-
-  // Switch to Screen 3
-  deactivateScreen("screen-booking");
-  activateScreen("screen-confirm", "fwd");
-  document.getElementById("hdrTitle").innerText = "見積もり完了";
-  document.getElementById("backBtn").classList.remove("visible");
-  if (navigator.vibrate) navigator.vibrate([10, 60, 10]);
-  window.scrollTo({ top: 0, behavior: "instant" });
-}
-
-function goHome() {
-  if (navigator.vibrate) navigator.vibrate(10);
-  // Reset state
-  AppState.activeService     = null;
-  AppState.activeServiceName = null;
-  AppState.bookingData       = { from: "", to: "", items: {}, workers: 2, date: "", filters: [] };
-
-  // Reset form display values
-  [
-    ["val-from",   "現住所を選択"],
-    ["val-to",     "引越し先を選択"],
-    ["val-items",  "荷物を選択"],
-    ["val-date",   "引越し希望日を選択"],
-    ["val-filter", "条件を選択"],
-  ].forEach(([id, placeholder]) => {
-    const el = document.getElementById(id);
-    el.innerText = placeholder;
-    el.classList.remove("filled");
-  });
-
-  // Reset row done states, progress bar, furniture counters
-  ["row-from","row-to","row-furniture","row-date","row-filter"]
-    .forEach(id => document.getElementById(id).classList.remove("done"));
-  document.getElementById("progress-fill").style.width = "0%";
-  document.getElementById("progress-label").innerText  = "0 / 5 項目入力済";
-  document.getElementById("progress-pct").innerText    = "0%";
-  Object.keys(ITEM_LABELS).forEach(id => {
-    const card = document.getElementById(`card-${id}`);
-    if (card) card.classList.remove("has-count");
-    const num = document.getElementById(`n-${id}`);
-    if (num) num.innerText = "0";
-  });
-
-  // Reset worker toggle
-  document.getElementById("w2").classList.add("on");
-  document.getElementById("w1").classList.remove("on");
-
-  // Switch to Screen 1
-  deactivateScreen("screen-confirm");
-  activateScreen("screen-services", "back");
-  document.getElementById("hdrLogo").style.display = "flex";
-  document.getElementById("hdrTitle").style.display = "none";
-}
-// ─────────────────────────────────────────────────────────────
-// Swipe gesture navigation
-// ─────────────────────────────────────────────────────────────
-function initSwipeGestures() {
-  const page = document.querySelector('.page');
-  let startX = 0, startY = 0;
-
-  page.addEventListener('touchstart', e => {
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-  }, { passive: true });
-
-  page.addEventListener('touchend', e => {
-    // Don't fire while a drawer is open
-    if (document.body.style.overflow === 'hidden') return;
-
-    const dx = e.changedTouches[0].clientX - startX;
-    const dy = e.changedTouches[0].clientY - startY;
-
-    // Require predominantly horizontal swipe of at least 60px
-    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-
-    if (dx > 0) {
-      // Swipe right → back
-      const onDetail  = document.getElementById('screen-detail').classList.contains('active');
-      const onBooking = document.getElementById('screen-booking').classList.contains('active');
-      if (onDetail || onBooking) {
-        if (navigator.vibrate) navigator.vibrate(8);
-        goBack();
-      }
-    } else {
-      // Swipe left → advance
-      const onDetail = document.getElementById('screen-detail').classList.contains('active');
-      if (onDetail) {
-        if (navigator.vibrate) navigator.vibrate(8);
-        openBooking();
-      }
-    }
-  }, { passive: true });
-}
+// Boot
+renderServices();
 </script>
 </body>
 </html>
