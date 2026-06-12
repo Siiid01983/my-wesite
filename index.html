@@ -987,18 +987,20 @@ html.dark .zip-bldg input{background:var(--bg);border-color:rgba(255,255,255,.08
 html.dark .zip-bldg input:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(96,165,250,.1)}
 html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
 /* ── Service card grid ── */
-.svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-top:4px}
-@media(max-width:520px){.svc-grid{grid-template-columns:1fr 1fr;gap:10px}}
-.svc-card{background:var(--bg);border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.06);text-decoration:none;display:block;position:relative;transition:transform .15s,box-shadow .15s}
-.svc-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.1);transform:translateY(-2px)}
+:root{--forest:#2C3626;--olive:#9AB57A}
+html.dark{--forest:#c9d1c0}
+.svc-grid-container{max-width:480px;margin:0 auto;padding:0 12px 32px}
+.sec-title{font-size:20px;font-weight:800;padding:20px 4px 14px;color:var(--forest)}
+.svc-grid-container .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.svc-card{background:#fff;border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:0 1px 4px rgba(0,0,0,.06);text-decoration:none;display:block;position:relative}
+html.dark .svc-card{background:var(--bg-soft)}
 .svc-card:active{transform:scale(.97)}
-.svc-card__img{width:100%;aspect-ratio:4/3;object-fit:cover;display:none}
-.svc-card__img.show{display:block}
 .svc-card__illus{width:100%;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;background:#f0f0ec}
 html.dark .svc-card__illus{background:var(--bg-soft-2)}
 .svc-card__illus svg{width:52%;height:52%;opacity:.75}
-.svc-card__name{font-size:13px;font-weight:700;color:var(--ink);padding:10px 10px 12px;line-height:1.4}
-.svc-card__badge{position:absolute;top:8px;right:8px;color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px}
+.svc-card__name{font-size:13px;font-weight:700;color:var(--forest);padding:10px 10px 12px;line-height:1.4}
+.svc-grid-container .badge{position:absolute;top:8px;right:8px;background:var(--forest);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px}
+.svc-grid-container .badge.popular{background:var(--olive)}
 </style><script>(function(){var t=localStorage.getItem('hm_theme');if(t==='dark'||(t===null&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');})()</script>
 </head>
 <body>
@@ -1787,13 +1789,69 @@ html.dark .svc-card__illus{background:var(--bg-soft-2)}
 
 <!-- ============== BOOKING ============== -->
 <section class="section booking" id="booking">
-  <div class="container">
-    <header class="section-head">
-      <span class="eyebrow">Online Booking</span>
-      <h2 class="section-title">おすすめのサービス</h2>
-      <p class="section-lead">ご希望のサービスをお選びください。料金確認から予約までオンライン完結。</p>
-    </header>
-    <div class="svc-grid" id="svcBookingGrid"></div>
+  <div class="svc-grid-container">
+    <div class="sec-title">おすすめのサービス</div>
+    <div class="grid">
+
+      <a class="svc-card" href="#quote">
+        <div class="svc-card__illus">
+          <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 30 L40 18 L64 30 L64 58 L40 70 L16 58 Z"/><path d="M16 30 L40 42 L64 30"/><line x1="40" y1="42" x2="40" y2="70"/><path d="M28 24 L28 36"/><path d="M52 24 L52 36"/><circle cx="40" cy="10" r="5"/>
+          </svg>
+        </div>
+        <span class="badge popular">人気</span>
+        <div class="svc-card__name">単身引越し</div>
+      </a>
+
+      <a class="svc-card" href="#quote">
+        <div class="svc-card__illus">
+          <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="8" y="32" width="28" height="28" rx="3"/><line x1="8" y1="44" x2="36" y2="44"/><path d="M14 38 L14 42"/><path d="M22 38 L22 42"/><rect x="44" y="26" width="28" height="34" rx="3"/><line x1="44" y1="40" x2="72" y2="40"/><path d="M50 32 L50 38"/><path d="M36 18 C36 14 42 14 42 18 C42 14 48 14 48 18 C48 24 42 28 42 28 C42 28 36 24 36 18Z"/>
+          </svg>
+        </div>
+        <span class="badge popular">人気</span>
+        <div class="svc-card__name">カップル・ご夫婦引越し</div>
+      </a>
+
+      <a class="svc-card" href="#quote">
+        <div class="svc-card__illus">
+          <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="40,14 72,28 40,42 8,28"/><path d="M60 34 L60 52 C60 52 40 60 20 52 L20 34"/><line x1="72" y1="28" x2="72" y2="44"/><circle cx="72" cy="46" r="3" fill="var(--forest)" stroke="none"/><rect x="24" y="54" width="32" height="18" rx="2"/><line x1="24" y1="63" x2="56" y2="63"/>
+          </svg>
+        </div>
+        <span class="badge popular">人気</span>
+        <div class="svc-card__name">学生・新生活引越し</div>
+      </a>
+
+      <a class="svc-card" href="#quote">
+        <div class="svc-card__illus">
+          <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="28" width="46" height="30" rx="3"/><path d="M50 38 L64 38 L72 50 L72 58 L50 58 Z"/><circle cx="18" cy="62" r="7"/><circle cx="56" cy="62" r="7"/><line x1="25" y1="62" x2="49" y2="62"/><path d="M36 10 L28 30 L38 30 L30 52" stroke="var(--olive)" stroke-width="2.5"/>
+          </svg>
+        </div>
+        <span class="badge" style="background:#c0392b">当日対応</span>
+        <div class="svc-card__name">当日・お急ぎ引越しプラン</div>
+      </a>
+
+      <a class="svc-card" href="#quote">
+        <div class="svc-card__illus">
+          <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M40 12 L52 32 L28 32 Z"/><path d="M28 32 C20 32 14 40 18 50"/><path d="M18 50 L10 56 L22 60"/><path d="M52 32 C60 32 66 40 62 50"/><path d="M62 50 L70 44 L66 56"/><path d="M18 50 C22 60 34 66 46 62"/><path d="M62 50 C58 60 46 66 34 62"/><rect x="26" y="44" width="28" height="24" rx="2"/><line x1="22" y1="44" x2="58" y2="44"/><line x1="34" y1="38" x2="46" y2="38"/><line x1="34" y1="50" x2="34" y2="62"/><line x1="40" y1="50" x2="40" y2="62"/><line x1="46" y1="50" x2="46" y2="62"/>
+          </svg>
+        </div>
+        <div class="svc-card__name">不用品回収・処分</div>
+      </a>
+
+      <a class="svc-card" href="#quote">
+        <div class="svc-card__illus">
+          <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 60 L46 34 C44 28 46 20 52 16 C54 20 52 24 54 26 C56 28 60 26 62 28 C58 34 50 36 46 34"/><line x1="20" y1="60" x2="26" y2="66"/><circle cx="23" cy="63" r="5"/><rect x="42" y="38" width="26" height="30" rx="2" stroke-dasharray="4 2"/><line x1="42" y1="50" x2="68" y2="50"/>
+          </svg>
+        </div>
+        <div class="svc-card__name">家具組立・分解</div>
+      </a>
+
+    </div>
   </div>
 </section>
 
@@ -3175,49 +3233,6 @@ updateS2Btn();
 })();
 </script>
 
-<!-- ── Service card grid for #booking ── -->
-<script>
-(function(){
-  var SERVICE_CONFIG = [
-    { id:'tansin',   name:'単身引越し',           badge:'人気',   badgeColor:'#9AB57A', icon:'svg', imageUrl:'' },
-    { id:'couple',   name:'カップル・ご夫婦引越し', badge:'人気',   badgeColor:'#9AB57A', icon:'svg', imageUrl:'' },
-    { id:'student',  name:'学生・新生活引越し',     badge:'人気',   badgeColor:'#9AB57A', icon:'svg', imageUrl:'' },
-    { id:'sameday',  name:'当日・お急ぎ引越しプラン',badge:'当日対応',badgeColor:'#c0392b', icon:'svg', imageUrl:'' },
-    { id:'disposal', name:'不用品回収・処分',       badge:'',       badgeColor:'',        icon:'svg', imageUrl:'' },
-    { id:'assembly', name:'家具組立・分解',         badge:'',       badgeColor:'',        icon:'svg', imageUrl:'' },
-  ];
-
-  var SERVICE_SVG = {
-    tansin:   '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 30L40 18L64 30L64 58L40 70L16 58Z"/><path d="M16 30L40 42L64 30"/><line x1="40" y1="42" x2="40" y2="70"/><path d="M28 24L28 36"/><path d="M52 24L52 36"/><circle cx="40" cy="10" r="5"/></svg>',
-    couple:   '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="32" width="28" height="28" rx="3"/><line x1="8" y1="44" x2="36" y2="44"/><path d="M14 38L14 42"/><path d="M22 38L22 42"/><rect x="44" y="26" width="28" height="34" rx="3"/><line x1="44" y1="40" x2="72" y2="40"/><path d="M36 18C36 14 42 14 42 18C42 14 48 14 48 18C48 24 42 28 42 28C42 28 36 24 36 18Z"/></svg>',
-    student:  '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="40,14 72,28 40,42 8,28"/><path d="M60 34L60 52C60 52 40 60 20 52L20 34"/><line x1="72" y1="28" x2="72" y2="44"/><circle cx="72" cy="46" r="3" fill="var(--ink)" stroke="none"/><rect x="24" y="54" width="32" height="18" rx="2"/><line x1="24" y1="63" x2="56" y2="63"/></svg>',
-    sameday:  '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="28" width="46" height="30" rx="3"/><path d="M50 38L64 38L72 50L72 58L50 58Z"/><circle cx="18" cy="62" r="7"/><circle cx="56" cy="62" r="7"/><line x1="25" y1="62" x2="49" y2="62"/><path d="M36 10L28 30L38 30L30 52" stroke="#9AB57A" stroke-width="2.5"/></svg>',
-    disposal: '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M40 12L52 32L28 32Z"/><path d="M28 32C20 32 14 40 18 50"/><path d="M18 50L10 56L22 60"/><path d="M52 32C60 32 66 40 62 50"/><path d="M62 50L70 44L66 56"/><rect x="26" y="44" width="28" height="24" rx="2"/><line x1="22" y1="44" x2="58" y2="44"/><line x1="34" y1="38" x2="46" y2="38"/><line x1="34" y1="50" x2="34" y2="62"/><line x1="40" y1="50" x2="40" y2="62"/><line x1="46" y1="50" x2="46" y2="62"/></svg>',
-    assembly: '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 60L46 34C44 28 46 20 52 16C54 20 52 24 54 26C56 28 60 26 62 28C58 34 50 36 46 34"/><line x1="20" y1="60" x2="26" y2="66"/><circle cx="23" cy="63" r="5"/><rect x="42" y="38" width="26" height="30" rx="2" stroke-dasharray="4 2"/><line x1="42" y1="50" x2="68" y2="50"/></svg>',
-  };
-
-  function renderSvcBookingGrid() {
-    var grid = document.getElementById('svcBookingGrid');
-    if (!grid) return;
-    grid.innerHTML = SERVICE_CONFIG.map(function(s) {
-      var useImage = s.icon === 'image' && s.imageUrl;
-      var media = useImage
-        ? '<img class="svc-card__img show" src="' + s.imageUrl + '" alt="' + s.name + '" loading="lazy">'
-        : '<div class="svc-card__illus">' + (SERVICE_SVG[s.id] || '') + '</div>';
-      var badge = s.badge
-        ? '<span class="svc-card__badge" style="background:' + s.badgeColor + '">' + s.badge + '</span>'
-        : '';
-      return '<a class="svc-card" href="#quote">' + media + badge + '<div class="svc-card__name">' + s.name + '</div></a>';
-    }).join('');
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', renderSvcBookingGrid);
-  } else {
-    renderSvcBookingGrid();
-  }
-})();
-</script>
 
 </body>
 </html>
