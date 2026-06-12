@@ -1001,26 +1001,279 @@ html.dark .svc-card__illus{background:var(--bg-soft-2)}
 .svc-card__name{font-size:13px;font-weight:700;color:var(--forest);padding:10px 10px 12px;line-height:1.4}
 .svc-grid-container .badge{position:absolute;top:8px;right:8px;background:var(--forest);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px}
 .svc-grid-container .badge.popular{background:var(--olive)}
+
+/* ═══════════════════════════════════════════════════════════
+   CURAMA-INSPIRED REDESIGN OVERRIDES
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── 1. Topbar: hide completely + reset offset variable ── */
+.header-topbar { display: none !important; }
+:root { --topbar-h: 0px !important; }
+
+/* ── 2. Header: clean flat single bar ── */
+.site-header {
+  background: #fff !important;
+  border-bottom: 1px solid #e8e8e4 !important;
+  box-shadow: none !important;
+}
+.site-header.scrolled {
+  background: rgba(255,255,255,.96) !important;
+  box-shadow: 0 1px 6px rgba(0,0,0,.06) !important;
+}
+html.dark .site-header { background: #161b22 !important; border-bottom-color: rgba(255,255,255,.08) !important; }
+html.dark .site-header.scrolled { background: rgba(22,27,34,.96) !important; }
+.header-inner { min-height: 60px; }
+
+/* Nav: curama clean links — 6 items, one row */
+.nav ul { gap: 0; flex-wrap: nowrap; }
+.nav a { font-size: 13px; color: #444; padding: 7px 13px; border-radius: 6px; letter-spacing: .01em; white-space: nowrap; }
+.nav a:hover { background: #f2f2ef; color: #2C3626; }
+html.dark .nav a { color: var(--gray-1); }
+html.dark .nav a:hover { background: rgba(255,255,255,.06); color: var(--ink); }
+
+/* ── 3. Page base: light gray ground ── */
+body { background: #f2f2ef; }
+html.dark body { background: #0d1117; }
+
+/* ── 4. Hero: light card feel ── */
+.hero { background: #f7f7f4 !important; }
+html.dark .hero { background: #0a0f1a !important; }
+
+/* ── 5. Sections: white on gray alternation ── */
+.section { background: #fff; }
+.section.hm-calc-section,
+.section.commitments,
+.section.reviews,
+.section.company { background: #f7f7f4; }
+.trust-strip { background: #fff !important; border-top: none; border-bottom: 1px solid #f2f2ef !important; }
+.trust-badges-row { background: #fff !important; border-color: #f2f2ef !important; }
+.booking-calendar-section { background: #f7f7f4; }
+.cta-final { background: #2C3626 !important; }
+html.dark .section { background: var(--bg-soft); }
+html.dark .section.hm-calc-section,
+html.dark .section.commitments,
+html.dark .section.reviews,
+html.dark .section.company { background: var(--bg-soft-2); }
+html.dark .trust-strip { background: var(--bg-soft) !important; border-color: rgba(255,255,255,.06) !important; }
+html.dark .trust-badges-row { background: var(--bg-soft) !important; border-color: rgba(255,255,255,.06) !important; }
+html.dark .booking-calendar-section { background: var(--bg-soft-2); }
+
+/* ── 6. Section titles: bolder, curama-sized ── */
+.section-title { font-size: 22px !important; font-weight: 800 !important; letter-spacing: -.02em !important; }
+
+/* ── 7. Services SVG card grid (in #services) ── */
+.svc-services-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+@media (max-width: 640px) {
+  .svc-services-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.svc-services-grid .svc-card { cursor: pointer; }
+.svc-services-grid .svc-card__illus { background: #f0f0ec; }
+html.dark .svc-services-grid .svc-card__illus { background: var(--bg-soft-2); }
+
+/* "View all services" link */
+.section-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--gray-2);
+  text-decoration: none;
+  letter-spacing: .03em;
+  padding: 8px 0;
+  transition: color .15s;
+}
+.section-view-all:hover { color: #2C3626; }
+.section-view-all::after { content: ' ›'; font-size: 15px; }
+html.dark .section-view-all { color: var(--gray-2); }
+html.dark .section-view-all:hover { color: var(--ink); }
+
+/* ── 8. Booking section: CTA band ── */
+.booking-cta-band {
+  background: #fff;
+  border: 1px solid #e8e8e4;
+  border-radius: 14px;
+  padding: 22px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.booking-cta-band h3 { font-size: 15px; font-weight: 700; color: var(--ink); margin: 0 0 4px; }
+.booking-cta-band p { font-size: 13px; color: var(--gray-2); margin: 0; }
+.booking-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 24px;
+  background: #2C3626;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background .15s;
+  flex-shrink: 0;
+}
+.booking-cta-btn:hover { background: #1a2018; }
+html.dark .booking-cta-band { background: var(--bg-soft-2); border-color: rgba(255,255,255,.08); }
+html.dark .booking-cta-btn { background: #e6edf3; color: #0d1117; }
+html.dark .booking-cta-btn:hover { background: #c9d1d9; }
+
+/* Booking section: widen grid container */
+.section.booking .svc-grid-container { max-width: 100% !important; padding: 0 !important; }
+.section.booking .svc-grid-container .grid { grid-template-columns: repeat(3, 1fr) !important; gap: 14px !important; }
+@media (max-width: 640px) {
+  .section.booking .svc-grid-container .grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+.section.booking .sec-title { font-size: 22px; font-weight: 800; color: var(--forest); padding: 0 0 16px; letter-spacing: -.02em; }
+
+/* ── 9. Review cards: curama bordered style ── */
+.review-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.review-card {
+  background: #fff !important;
+  border: 1px solid #e8e8e4 !important;
+  border-radius: 12px !important;
+  padding: 20px 22px !important;
+  box-shadow: none !important;
+}
+.review-meta-line {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+.review-stars { font-size: 13px; letter-spacing: .08em; display: block; }
+.review-card h3 { font-size: 14px !important; font-weight: 700; margin-bottom: 8px; line-height: 1.5; }
+.review-card p { font-size: 13.5px; line-height: 1.7; }
+.review-card footer { margin-top: 14px; padding-top: 12px; border-top: 1px solid #f2f2ef; }
+html.dark .review-card { background: var(--bg-soft) !important; border-color: rgba(255,255,255,.08) !important; }
+html.dark .review-card footer { border-top-color: rgba(255,255,255,.06); }
+
+/* ── 10. FAQ: curama clean accordion ── */
+.faq-list { display: flex; flex-direction: column; gap: 8px; }
+.faq-item {
+  background: #fff !important;
+  border: 1px solid #e8e8e4 !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  transition: box-shadow .15s;
+}
+.faq-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.faq-item summary {
+  padding: 16px 20px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  cursor: pointer;
+  list-style: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::marker { display: none; }
+.faq-item summary::before { display: none !important; }
+.faq-item summary::after {
+  content: '+';
+  font-size: 20px;
+  font-weight: 300;
+  color: var(--gray-2);
+  flex-shrink: 0;
+  line-height: 1;
+}
+.faq-item[open] summary::after { content: '−'; }
+.faq-item p { padding: 0 20px 16px !important; font-size: 13.5px; line-height: 1.75; margin: 0 !important; }
+html.dark .faq-item { background: var(--bg-soft) !important; border-color: rgba(255,255,255,.08) !important; }
+html.dark .faq-item summary::after { color: var(--gray-1); }
+
+/* ── 11. Sticky CTA: curama white bar ── */
+.sticky-cta {
+  background: #fff !important;
+  border-top: 1px solid #e8e8e4 !important;
+  box-shadow: 0 -2px 8px rgba(0,0,0,.06) !important;
+  display: flex !important;
+  gap: 8px !important;
+  padding: 10px 16px !important;
+  padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  align-items: center;
+}
+.sticky-btn {
+  flex: 1;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px;
+  padding: 12px 14px !important;
+  border-radius: 10px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-decoration: none;
+  border: 1px solid #e8e8e4 !important;
+  color: #2C3626 !important;
+  background: #f2f2ef !important;
+  transition: background .15s !important;
+  cursor: pointer;
+}
+.sticky-btn:hover { background: #e8e8e4 !important; }
+.sticky-book {
+  background: #2C3626 !important;
+  color: #fff !important;
+  border-color: #2C3626 !important;
+  flex: 1.4 !important;
+}
+.sticky-book:hover { background: #1a2018 !important; }
+.sticky-quote { background: #fff !important; color: #2C3626 !important; border-color: #ddd !important; }
+.sticky-quote:hover { background: #f7f7f4 !important; }
+.sticky-line {
+  background: #06C755 !important;
+  color: #fff !important;
+  border-color: #06C755 !important;
+}
+.sticky-line:hover { background: #05a847 !important; }
+html.dark .sticky-cta { background: rgba(22,27,34,.96) !important; border-top-color: rgba(255,255,255,.08) !important; }
+html.dark .sticky-btn { background: var(--bg-soft-2) !important; border-color: rgba(255,255,255,.1) !important; color: var(--ink) !important; }
+html.dark .sticky-book { background: #e6edf3 !important; color: #0d1117 !important; border-color: transparent !important; }
+html.dark .sticky-book:hover { background: #c9d1d9 !important; }
+html.dark .sticky-line { background: #14532d !important; color: #4ade80 !important; border-color: rgba(74,222,128,.2) !important; }
+
+/* ── 12. Footer: light gray, 3-col clean ── */
+.site-footer { background: #f7f7f4 !important; border-top: 1px solid #e8e8e4 !important; }
+.footer-inner { display: grid !important; grid-template-columns: 1.5fr 1fr 1fr 1fr !important; gap: 32px; padding: 40px 0 32px !important; }
+.footer-bottom { background: transparent !important; border-top: 1px solid #e8e8e4 !important; padding: 16px 0; }
+.footer-bottom small { font-size: 12px; color: var(--gray-2); }
+@media (max-width: 840px) { .footer-inner { grid-template-columns: 1fr 1fr !important; } }
+@media (max-width: 480px) { .footer-inner { grid-template-columns: 1fr !important; } }
+html.dark .site-footer { background: var(--bg-soft) !important; border-color: rgba(255,255,255,.06) !important; }
+html.dark .footer-bottom { border-color: rgba(255,255,255,.06) !important; }
+
+/* ── 13. GMB badge cleanup ── */
+.gmb-badge { background: #fff !important; border: 1px solid #e8e8e4 !important; border-radius: 12px !important; }
+html.dark .gmb-badge { background: var(--bg-soft) !important; border-color: rgba(255,255,255,.08) !important; }
+
+/* ── 14. Commit cards: light card on gray bg ── */
+.commit-card { background: #fff !important; border: 1px solid #e8e8e4 !important; border-radius: 12px !important; }
+html.dark .commit-card { background: var(--bg-soft) !important; border-color: rgba(255,255,255,.08) !important; }
+
+/* ── 15. Process timeline: clean ── */
+.process-step { background: #fff; border: 1px solid #e8e8e4; border-radius: 12px; padding: 20px 24px; }
+html.dark .process-step { background: var(--bg-soft); border-color: rgba(255,255,255,.08); }
+
+/* ── 16. Company table: cleaner ── */
+.company-row { border-bottom: 1px solid #f2f2ef !important; }
+html.dark .company-row { border-bottom-color: rgba(255,255,255,.06) !important; }
 </style><script>(function(){var t=localStorage.getItem('hm_theme');if(t==='dark'||(t===null&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');})()</script>
 </head>
 <body>
 
 <a href="#main" class="skip-link">メインコンテンツへスキップ</a>
-
-<!-- ============== TOP BAR ============== -->
-<div class="header-topbar" id="headerTopbar">
-  <div class="container header-topbar-inner">
-    <div class="topbar-left">
-      <svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.5 5H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-      <span>当日対応可能 &nbsp;·&nbsp; 最短2時間でご返信 &nbsp;·&nbsp; 受付 8:00–20:00（年中無休）</span>
-    </div>
-    <div class="topbar-right">
-      <a href="#" class="topbar-link liveChatTrigger"><span class="topbar-dot" aria-hidden="true"></span>Live Chat</a>
-      <a href="https://line.me/R/ti/p/~hellomoving" class="topbar-link topbar-link-line" target="_blank" rel="noopener">LINE</a>
-      <a href="mailto:hellomoving1@gmail.com" class="topbar-link">Email</a>
-    </div>
-  </div>
-</div>
 
 <!-- ============== HEADER ============== -->
 <header class="site-header" id="siteHeader">
@@ -1036,10 +1289,7 @@ html.dark .svc-card__illus{background:var(--bg-soft-2)}
       <ul>
         <li><a href="#booking">予約</a></li>
         <li><a href="#quote">料金見積り</a></li>
-        <li><a href="#services">サービス</a></li>
-        <li><a href="#disposal">不用品回収</a></li>
-        <li><a href="#commitments">お約束</a></li>
-        <li><a href="#flow">引越しの流れ</a></li>
+        <li><a href="services.html">サービス一覧</a></li>
         <li><a href="#reviews">お客様の声</a></li>
         <li><a href="#faq">FAQ</a></li>
         <li><a href="#company">会社情報</a></li>
@@ -1074,6 +1324,7 @@ html.dark .svc-card__illus{background:var(--bg-soft-2)}
       <li><a href="#booking">予約</a></li>
       <li><a href="#quote">料金見積り</a></li>
       <li><a href="#services">サービス</a></li>
+      <li><a href="services.html">サービス一覧</a></li>
       <li><a href="#disposal">不用品回収</a></li>
       <li><a href="#commitments">お約束</a></li>
       <li><a href="#flow">引越しの流れ</a></li>
@@ -1432,90 +1683,71 @@ html.dark .svc-card__illus{background:var(--bg-soft-2)}
       <h2 class="section-title" id="svcTitleEl">承っている引越し</h2>
       <p class="section-lead" id="svcLeadEl">単身・カップル・学生・当日引越しまで対応。</p>
     </header>
-    <div class="service-grid" id="svcGridEl">
-      <article class="service-card service-card-urgent service-card-featured" data-service="emergency">
-        <div class="service-icon urgent-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="32" height="32"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.5 5H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-        </div>
-        <div class="service-featured-body">
-          <span class="service-featured-eyebrow">当日対応</span>
-          <h3>当日・お急ぎ引越しプラン</h3>
-          <p>急な引越しも当日対応。最短2時間でご返信します。</p>
-        </div>
-        <div class="service-featured-actions">
-          <a href="#" class="btn btn-primary liveChatTrigger" aria-label="ライブチャット">
-            <span class="live-status-dot" aria-hidden="true"></span>Live Chat — 今すぐ
-          </a>
-          <a href="https://line.me/R/ti/p/~hellomoving" class="btn btn-ghost" target="_blank" rel="noopener noreferrer">LINE で相談</a>
-        </div>
-      </article>
-      <article class="service-card" data-service="single">
-        <span class="svc-pop-badge">人気サービス</span>
-        <div class="service-icon service-icon-colored sic-single" aria-hidden="true">
-          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
-            <circle cx="9.5" cy="8.5" r="5" fill="#3b82f6"/>
-            <path d="M2 25v-1.5C2 19.701 5.358 16.5 9.5 16.5S17 19.701 17 23.5V25H2z" fill="#3b82f6"/>
-            <path d="M20 14.5 21.5 11h9L32 14.5H20z" fill="#d97706"/>
-            <rect x="20" y="14.5" width="12" height="11.5" rx="1.5" fill="#f59e0b"/>
-            <rect x="23.5" y="14.5" width="5" height="4.5" rx="0.5" fill="#fcd34d"/>
-          </svg>
-        </div>
-        <h3>単身引越し</h3>
-        <p>1人分の荷物に最適化。必要な分だけコンパクトに対応。</p>
-        <a href="#quote" class="service-card-cta" data-service="単身引越し">無料お見積り →</a>
-      </article>
-      <article class="service-card" data-service="couple">
-        <span class="svc-pop-badge">人気サービス</span>
-        <div class="service-icon service-icon-colored sic-couple" aria-hidden="true">
-          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
-            <circle cx="9.5" cy="8.5" r="5" fill="#f43f5e"/>
-            <path d="M2 25v-1.5C2 19.701 5.358 16.5 9.5 16.5S17 19.701 17 23.5V25H2z" fill="#f43f5e"/>
-            <circle cx="22.5" cy="8.5" r="5" fill="#3b82f6"/>
-            <path d="M15 25v-1.5c0-3.799 3.358-7 7.5-7S30 19.701 30 23.5V25H15z" fill="#3b82f6"/>
-          </svg>
-        </div>
-        <h3>カップル・ご夫婦引越し</h3>
-        <p>養生から家具配置まで。二人の新生活をスムーズに。</p>
-        <a href="#quote" class="service-card-cta" data-service="カップル・ご夫婦引越し">無料お見積り →</a>
-      </article>
-      <article class="service-card" data-service="student">
-        <span class="svc-pop-badge">人気サービス</span>
-        <div class="service-icon service-icon-colored sic-student" aria-hidden="true">
-          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
-            <path d="M16 5 29 12 16 19 3 12z" fill="#0d9488"/>
-            <path d="M9.5 15.2v6.3a6.5 6.5 0 0 0 13 0v-6.3l-6.5 3.8-6.5-3.8z" fill="#0f766e"/>
-            <line x1="28" y1="12" x2="28" y2="21" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round"/>
-            <circle cx="28" cy="23.5" r="2.5" fill="#fbbf24"/>
-          </svg>
-        </div>
-        <h3>学生・新生活引越し</h3>
-        <p>初めての引越しも段取りから設置まで対応。</p>
-        <a href="#quote" class="service-card-cta" data-service="学生・新生活引越し">無料お見積り →</a>
-      </article>
-      <article class="service-card" data-service="disposal">
-        <span class="svc-pop-badge">人気サービス</span>
-        <div class="service-icon service-icon-colored sic-disposal" aria-hidden="true">
-          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
-            <rect x="12.5" y="3.5" width="7" height="2.5" rx="1.25" fill="#22c55e"/>
-            <rect x="5" y="7" width="22" height="3.5" rx="1.75" fill="#16a34a"/>
-            <path d="M8.5 10.5h15l-1.5 16H10L8.5 10.5z" fill="#22c55e"/>
-            <line x1="13.5" y1="13.5" x2="13" y2="24.5" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="16" y1="13.5" x2="16" y2="24.5" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="18.5" y1="13.5" x2="19" y2="24.5" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <h3>不用品回収・処分</h3>
-        <p>回収・処分・搬出まで一括。手続き不要。</p>
-        <a href="#quote" class="service-card-cta" data-service="不用品回収・処分サービス">無料お見積り →</a>
-      </article>
-      <article class="service-card" data-service="furniture">
-        <div class="service-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M22 8 12 2 2 8v8l10 6 10-6Zm-10 2.2L4.3 8 12 4.5 19.7 8Z"/></svg>
-        </div>
-        <h3>家具組立・分解</h3>
-        <p>IKEA・大型家具の組立・分解に対応。</p>
-        <a href="#quote" class="service-card-cta" data-service="家具組立・分解">無料お見積り →</a>
-      </article>
+    <div id="svcGridEl">
+      <div class="svc-services-grid">
+
+        <a class="svc-card" href="app.html" aria-label="当日・お急ぎ引越しプラン">
+          <div class="svc-card__illus">
+            <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="28" width="46" height="30" rx="3"/><path d="M50 38 L64 38 L72 50 L72 58 L50 58 Z"/><circle cx="18" cy="62" r="7"/><circle cx="56" cy="62" r="7"/><line x1="25" y1="62" x2="49" y2="62"/><path d="M36 10 L28 30 L38 30 L30 52" stroke="var(--olive)" stroke-width="2.5"/>
+            </svg>
+          </div>
+          <span class="badge" style="background:#c0392b">当日対応</span>
+          <div class="svc-card__name">当日・お急ぎ引越しプラン</div>
+        </a>
+
+        <a class="svc-card" href="app.html" aria-label="単身引越し">
+          <div class="svc-card__illus">
+            <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 30 L40 18 L64 30 L64 58 L40 70 L16 58 Z"/><path d="M16 30 L40 42 L64 30"/><line x1="40" y1="42" x2="40" y2="70"/><path d="M28 24 L28 36"/><path d="M52 24 L52 36"/><circle cx="40" cy="10" r="5"/>
+            </svg>
+          </div>
+          <span class="badge popular">人気</span>
+          <div class="svc-card__name">単身引越し</div>
+        </a>
+
+        <a class="svc-card" href="app.html" aria-label="カップル・ご夫婦引越し">
+          <div class="svc-card__illus">
+            <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="8" y="32" width="28" height="28" rx="3"/><line x1="8" y1="44" x2="36" y2="44"/><path d="M14 38 L14 42"/><path d="M22 38 L22 42"/><rect x="44" y="26" width="28" height="34" rx="3"/><line x1="44" y1="40" x2="72" y2="40"/><path d="M50 32 L50 38"/><path d="M36 18 C36 14 42 14 42 18 C42 14 48 14 48 18 C48 24 42 28 42 28 C42 28 36 24 36 18Z"/>
+            </svg>
+          </div>
+          <span class="badge popular">人気</span>
+          <div class="svc-card__name">カップル・ご夫婦引越し</div>
+        </a>
+
+        <a class="svc-card" href="app.html" aria-label="学生・新生活引越し">
+          <div class="svc-card__illus">
+            <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="40,14 72,28 40,42 8,28"/><path d="M60 34 L60 52 C60 52 40 60 20 52 L20 34"/><line x1="72" y1="28" x2="72" y2="44"/><circle cx="72" cy="46" r="3" fill="var(--forest)" stroke="none"/><rect x="24" y="54" width="32" height="18" rx="2"/><line x1="24" y1="63" x2="56" y2="63"/>
+            </svg>
+          </div>
+          <span class="badge popular">人気</span>
+          <div class="svc-card__name">学生・新生活引越し</div>
+        </a>
+
+        <a class="svc-card" href="app.html" aria-label="不用品回収・処分">
+          <div class="svc-card__illus">
+            <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M40 12 L52 32 L28 32 Z"/><path d="M28 32 C20 32 14 40 18 50"/><path d="M18 50 L10 56 L22 60"/><path d="M52 32 C60 32 66 40 62 50"/><path d="M62 50 L70 44 L66 56"/><path d="M18 50 C22 60 34 66 46 62"/><path d="M62 50 C58 60 46 66 34 62"/><rect x="26" y="44" width="28" height="24" rx="2"/><line x1="22" y1="44" x2="58" y2="44"/><line x1="34" y1="38" x2="46" y2="38"/><line x1="34" y1="50" x2="34" y2="62"/><line x1="40" y1="50" x2="40" y2="62"/><line x1="46" y1="50" x2="46" y2="62"/>
+            </svg>
+          </div>
+          <div class="svc-card__name">不用品回収・処分</div>
+        </a>
+
+        <a class="svc-card" href="app.html" aria-label="家具組立・分解">
+          <div class="svc-card__illus">
+            <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 60 L46 34 C44 28 46 20 52 16 C54 20 52 24 54 26 C56 28 60 26 62 28 C58 34 50 36 46 34"/><line x1="20" y1="60" x2="26" y2="66"/><circle cx="23" cy="63" r="5"/><rect x="42" y="38" width="26" height="30" rx="2" stroke-dasharray="4 2"/><line x1="42" y1="50" x2="68" y2="50"/>
+            </svg>
+          </div>
+          <div class="svc-card__name">家具組立・分解</div>
+        </a>
+
+      </div>
+      <div style="text-align:center;margin-top:18px">
+        <a href="services.html" class="section-view-all">サービス詳細を見る</a>
+      </div>
     </div>
   </div>
 </section>
@@ -1789,68 +2021,86 @@ html.dark .svc-card__illus{background:var(--bg-soft-2)}
 
 <!-- ============== BOOKING ============== -->
 <section class="section booking" id="booking">
-  <div class="svc-grid-container">
-    <div class="sec-title">おすすめのサービス</div>
-    <div class="grid">
+  <div class="container">
+    <header class="section-head">
+      <span class="eyebrow">Online Booking</span>
+      <h2 class="section-title">オンライン予約</h2>
+      <p class="section-lead">サービスを選んで、かんたんオンライン予約。</p>
+    </header>
 
-      <a class="svc-card" href="#quote">
-        <div class="svc-card__illus">
-          <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M16 30 L40 18 L64 30 L64 58 L40 70 L16 58 Z"/><path d="M16 30 L40 42 L64 30"/><line x1="40" y1="42" x2="40" y2="70"/><path d="M28 24 L28 36"/><path d="M52 24 L52 36"/><circle cx="40" cy="10" r="5"/>
-          </svg>
-        </div>
-        <span class="badge popular">人気</span>
-        <div class="svc-card__name">単身引越し</div>
+    <div class="booking-cta-band">
+      <div>
+        <h3>オンライン予約 — 最短2時間で確認</h3>
+        <p>日時・住所を入力してかんたん予約リクエスト。</p>
+      </div>
+      <a href="app.html" class="booking-cta-btn">
+        今すぐ予約する
+        <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M5 12h14M12 5l7 7-7 7"/></svg>
       </a>
+    </div>
 
-      <a class="svc-card" href="#quote">
-        <div class="svc-card__illus">
-          <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="8" y="32" width="28" height="28" rx="3"/><line x1="8" y1="44" x2="36" y2="44"/><path d="M14 38 L14 42"/><path d="M22 38 L22 42"/><rect x="44" y="26" width="28" height="34" rx="3"/><line x1="44" y1="40" x2="72" y2="40"/><path d="M50 32 L50 38"/><path d="M36 18 C36 14 42 14 42 18 C42 14 48 14 48 18 C48 24 42 28 42 28 C42 28 36 24 36 18Z"/>
-          </svg>
-        </div>
-        <span class="badge popular">人気</span>
-        <div class="svc-card__name">カップル・ご夫婦引越し</div>
-      </a>
+    <div class="svc-grid-container">
+      <div class="grid">
 
-      <a class="svc-card" href="#quote">
-        <div class="svc-card__illus">
-          <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="40,14 72,28 40,42 8,28"/><path d="M60 34 L60 52 C60 52 40 60 20 52 L20 34"/><line x1="72" y1="28" x2="72" y2="44"/><circle cx="72" cy="46" r="3" fill="var(--forest)" stroke="none"/><rect x="24" y="54" width="32" height="18" rx="2"/><line x1="24" y1="63" x2="56" y2="63"/>
-          </svg>
-        </div>
-        <span class="badge popular">人気</span>
-        <div class="svc-card__name">学生・新生活引越し</div>
-      </a>
+        <a class="svc-card" href="app.html" aria-label="単身引越しを予約">
+          <div class="svc-card__illus">
+            <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 30 L40 18 L64 30 L64 58 L40 70 L16 58 Z"/><path d="M16 30 L40 42 L64 30"/><line x1="40" y1="42" x2="40" y2="70"/><path d="M28 24 L28 36"/><path d="M52 24 L52 36"/><circle cx="40" cy="10" r="5"/>
+            </svg>
+          </div>
+          <span class="badge popular">人気</span>
+          <div class="svc-card__name">単身引越し</div>
+        </a>
 
-      <a class="svc-card" href="#quote">
-        <div class="svc-card__illus">
-          <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="28" width="46" height="30" rx="3"/><path d="M50 38 L64 38 L72 50 L72 58 L50 58 Z"/><circle cx="18" cy="62" r="7"/><circle cx="56" cy="62" r="7"/><line x1="25" y1="62" x2="49" y2="62"/><path d="M36 10 L28 30 L38 30 L30 52" stroke="var(--olive)" stroke-width="2.5"/>
-          </svg>
-        </div>
-        <span class="badge" style="background:#c0392b">当日対応</span>
-        <div class="svc-card__name">当日・お急ぎ引越しプラン</div>
-      </a>
+        <a class="svc-card" href="app.html" aria-label="カップル引越しを予約">
+          <div class="svc-card__illus">
+            <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="8" y="32" width="28" height="28" rx="3"/><line x1="8" y1="44" x2="36" y2="44"/><path d="M14 38 L14 42"/><path d="M22 38 L22 42"/><rect x="44" y="26" width="28" height="34" rx="3"/><line x1="44" y1="40" x2="72" y2="40"/><path d="M50 32 L50 38"/><path d="M36 18 C36 14 42 14 42 18 C42 14 48 14 48 18 C48 24 42 28 42 28 C42 28 36 24 36 18Z"/>
+            </svg>
+          </div>
+          <span class="badge popular">人気</span>
+          <div class="svc-card__name">カップル・ご夫婦引越し</div>
+        </a>
 
-      <a class="svc-card" href="#quote">
-        <div class="svc-card__illus">
-          <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M40 12 L52 32 L28 32 Z"/><path d="M28 32 C20 32 14 40 18 50"/><path d="M18 50 L10 56 L22 60"/><path d="M52 32 C60 32 66 40 62 50"/><path d="M62 50 L70 44 L66 56"/><path d="M18 50 C22 60 34 66 46 62"/><path d="M62 50 C58 60 46 66 34 62"/><rect x="26" y="44" width="28" height="24" rx="2"/><line x1="22" y1="44" x2="58" y2="44"/><line x1="34" y1="38" x2="46" y2="38"/><line x1="34" y1="50" x2="34" y2="62"/><line x1="40" y1="50" x2="40" y2="62"/><line x1="46" y1="50" x2="46" y2="62"/>
-          </svg>
-        </div>
-        <div class="svc-card__name">不用品回収・処分</div>
-      </a>
+        <a class="svc-card" href="app.html" aria-label="学生引越しを予約">
+          <div class="svc-card__illus">
+            <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="40,14 72,28 40,42 8,28"/><path d="M60 34 L60 52 C60 52 40 60 20 52 L20 34"/><line x1="72" y1="28" x2="72" y2="44"/><circle cx="72" cy="46" r="3" fill="var(--forest)" stroke="none"/><rect x="24" y="54" width="32" height="18" rx="2"/><line x1="24" y1="63" x2="56" y2="63"/>
+            </svg>
+          </div>
+          <span class="badge popular">人気</span>
+          <div class="svc-card__name">学生・新生活引越し</div>
+        </a>
 
-      <a class="svc-card" href="#quote">
-        <div class="svc-card__illus">
-          <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 60 L46 34 C44 28 46 20 52 16 C54 20 52 24 54 26 C56 28 60 26 62 28 C58 34 50 36 46 34"/><line x1="20" y1="60" x2="26" y2="66"/><circle cx="23" cy="63" r="5"/><rect x="42" y="38" width="26" height="30" rx="2" stroke-dasharray="4 2"/><line x1="42" y1="50" x2="68" y2="50"/>
-          </svg>
-        </div>
-        <div class="svc-card__name">家具組立・分解</div>
-      </a>
+        <a class="svc-card" href="app.html" aria-label="当日引越しを予約">
+          <div class="svc-card__illus">
+            <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="28" width="46" height="30" rx="3"/><path d="M50 38 L64 38 L72 50 L72 58 L50 58 Z"/><circle cx="18" cy="62" r="7"/><circle cx="56" cy="62" r="7"/><line x1="25" y1="62" x2="49" y2="62"/><path d="M36 10 L28 30 L38 30 L30 52" stroke="var(--olive)" stroke-width="2.5"/>
+            </svg>
+          </div>
+          <span class="badge" style="background:#c0392b">当日対応</span>
+          <div class="svc-card__name">当日・お急ぎ引越しプラン</div>
+        </a>
 
+        <a class="svc-card" href="app.html" aria-label="不用品回収を予約">
+          <div class="svc-card__illus">
+            <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M40 12 L52 32 L28 32 Z"/><path d="M28 32 C20 32 14 40 18 50"/><path d="M18 50 L10 56 L22 60"/><path d="M52 32 C60 32 66 40 62 50"/><path d="M62 50 L70 44 L66 56"/><path d="M18 50 C22 60 34 66 46 62"/><path d="M62 50 C58 60 46 66 34 62"/><rect x="26" y="44" width="28" height="24" rx="2"/><line x1="22" y1="44" x2="58" y2="44"/><line x1="34" y1="38" x2="46" y2="38"/><line x1="34" y1="50" x2="34" y2="62"/><line x1="40" y1="50" x2="40" y2="62"/><line x1="46" y1="50" x2="46" y2="62"/>
+            </svg>
+          </div>
+          <div class="svc-card__name">不用品回収・処分</div>
+        </a>
+
+        <a class="svc-card" href="app.html" aria-label="家具組立を予約">
+          <div class="svc-card__illus">
+            <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 60 L46 34 C44 28 46 20 52 16 C54 20 52 24 54 26 C56 28 60 26 62 28 C58 34 50 36 46 34"/><line x1="20" y1="60" x2="26" y2="66"/><circle cx="23" cy="63" r="5"/><rect x="42" y="38" width="26" height="30" rx="2" stroke-dasharray="4 2"/><line x1="42" y1="50" x2="68" y2="50"/>
+            </svg>
+          </div>
+          <div class="svc-card__name">家具組立・分解</div>
+        </a>
+
+      </div>
     </div>
   </div>
 </section>
