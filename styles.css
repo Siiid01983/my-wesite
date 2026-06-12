@@ -2246,61 +2246,8 @@ html.dark .upload-file-item { background: var(--bg); border-color: rgba(255,255,
 }
 
 /* =============================================================
-   FOOTER
+   FOOTER — styles live in index.html inline <style> block
    ============================================================= */
-.site-footer {
-  background: #050810;
-  color: rgba(255,255,255,.65);
-  padding: 96px 0 0;
-}
-.footer-inner {
-  display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr 1fr;
-  gap: 64px;
-  padding-bottom: 72px;
-}
-.site-footer .brand-mark { background: #fff; color: var(--ink); }
-.site-footer .brand-name { color: #fff; }
-.site-footer .brand-sub { color: rgba(255,255,255,.4); }
-.footer-desc {
-  font-size: 13.5px;
-  line-height: 2;
-  letter-spacing: .04em;
-  margin-top: 24px;
-  color: rgba(255,255,255,.5);
-  max-width: 320px;
-}
-.footer-col h4 {
-  font-family: var(--font-en);
-  font-weight: 500;
-  font-size: 11px;
-  letter-spacing: .28em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,.5);
-  margin-bottom: 28px;
-}
-.footer-col ul { display: flex; flex-direction: column; gap: 14px; }
-.footer-col a {
-  font-size: 13.5px;
-  color: rgba(255,255,255,.7);
-  letter-spacing: .04em;
-  transition: color .2s var(--easing);
-}
-.footer-col a:hover { color: #fff; }
-.footer-col li { font-size: 13.5px; line-height: 1.8; letter-spacing: .04em; }
-.footer-bottom {
-  border-top: 1px solid rgba(255,255,255,.06);
-  padding: 28px 0;
-}
-.footer-bottom .container {
-  display: flex; justify-content: space-between; align-items: center;
-  flex-wrap: wrap; gap: 12px;
-}
-.footer-bottom small {
-  font-size: 11.5px;
-  color: rgba(255,255,255,.4);
-  letter-spacing: .08em;
-}
 
 /* =============================================================
    STICKY MOBILE CTA
@@ -2382,7 +2329,7 @@ html.dark .upload-file-item { background: var(--bg); border-color: rgba(255,255,
   .company-row { grid-template-columns: 160px 1fr; }
   .cta-final { padding: 100px 0; }
   .cta-final-inner { grid-template-columns: 1fr; gap: 56px; }
-  .footer-inner { grid-template-columns: 1fr 1fr; gap: 48px; }
+  /* footer responsive: handled in index.html inline styles */
 }
 
 @media (max-width: 720px) {
@@ -2463,9 +2410,6 @@ html.dark .upload-file-item { background: var(--bg); border-color: rgba(255,255,
   .cta-form { padding: 32px 24px; }
   .form-row { grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px; }
   .cc-text strong { font-size: 15px; }
-
-  .footer-inner { grid-template-columns: 1fr; gap: 40px; padding-bottom: 48px; }
-  .footer-bottom .container { flex-direction: column; text-align: center; }
 
   .sticky-cta { display: flex; }
   body { padding-bottom: 76px; }
