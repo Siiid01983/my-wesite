@@ -867,7 +867,7 @@ function selectService(id, name) {
   document.getElementById("detail-desc").innerText     = detail.desc || "";
   document.getElementById("detail-price").innerText    = detail.priceFrom || "要見積もり";
   document.getElementById("detail-features").innerHTML = (detail.features || [])
-    .map(f => `<div class="detail-feature"><span class="detail-feature-dot"></span>${f}</div>`)
+    .map(f => `<div class="detail-feature" onclick="if(navigator.vibrate)navigator.vibrate(4)"><span class="detail-feature-dot"></span>${f}</div>`)
     .join('');
 
   // Header
