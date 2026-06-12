@@ -579,7 +579,6 @@ select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{
 }
 
 /* ── Service grid: 2-col for 4 items ───── */
-.hm-calc-services{grid-template-columns:repeat(2,1fr)}
 
 /* ── Emoji icon inside choice-icon ─────── */
 .hmc-emoji{font-size:24px;line-height:1;display:block}
@@ -689,34 +688,7 @@ body { background: #f2f2ef; }
 /* ── 6. Section titles: bolder, curama-sized ── */
 .section-title { font-size: 22px !important; font-weight: 800 !important; letter-spacing: -.02em !important; }
 
-/* ── 7. Services SVG card grid (in #services) ── */
-.svc-services-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-}
-@media (max-width: 640px) {
-  .svc-services-grid { grid-template-columns: repeat(2, 1fr); }
-}
-.svc-services-grid .svc-card { cursor: pointer; }
-.svc-services-grid .svc-card__illus { background: #f0f0ec; }
-
-/* "View all services" link */
-.section-view-all {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  color: var(--gray-2);
-  text-decoration: none;
-  letter-spacing: .03em;
-  padding: 8px 0;
-  transition: color .15s;
-}
-.section-view-all:hover { color: #2C3626; }
-.section-view-all::after { content: ' ›'; font-size: 15px; }
-
-/* ── 8. Booking section: CTA band ── */
+/* ── 7. Booking section: CTA band ── */
 .booking-cta-band {
   background: #fff;
   border: 1px solid #e8e8e4;
@@ -896,7 +868,6 @@ body { background: #f2f2ef; }
       <ul>
         <li><a href="#booking">予約</a></li>
         <li><a href="#quote">料金見積り</a></li>
-        <li><a href="services.html">サービス一覧</a></li>
         <li><a href="#reviews">お客様の声</a></li>
         <li><a href="#faq">FAQ</a></li>
         <li><a href="#company">会社情報</a></li>
@@ -923,8 +894,6 @@ body { background: #f2f2ef; }
     <ul>
       <li><a href="#booking">予約</a></li>
       <li><a href="#quote">料金見積り</a></li>
-      <li><a href="#services">サービス</a></li>
-      <li><a href="services.html">サービス一覧</a></li>
       <li><a href="#disposal">不用品回収</a></li>
       <li><a href="#commitments">お約束</a></li>
       <li><a href="#flow">引越しの流れ</a></li>
@@ -1264,117 +1233,6 @@ body { background: #f2f2ef; }
     </div>
   </div>
 </div>
-
-<!-- ============== SERVICES ============== -->
-<section class="section services" id="services">
-  <div class="container">
-    <header class="section-head">
-      <span class="eyebrow" id="svcEyebrowEl">Services</span>
-      <h2 class="section-title" id="svcTitleEl">承っている引越し</h2>
-      <p class="section-lead" id="svcLeadEl">単身・カップル・学生・当日引越しまで対応。</p>
-    </header>
-    <div id="svcGridEl">
-      <div class="svc-services-grid">
-
-        <a class="svc-card" href="app.html" aria-label="当日・お急ぎ引越しプラン">
-          <div class="svc-card__illus">
-            <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="4" y="28" width="46" height="30" rx="3"/><path d="M50 38 L64 38 L72 50 L72 58 L50 58 Z"/><circle cx="18" cy="62" r="7"/><circle cx="56" cy="62" r="7"/><line x1="25" y1="62" x2="49" y2="62"/><path d="M36 10 L28 30 L38 30 L30 52" stroke="var(--olive)" stroke-width="2.5"/>
-            </svg>
-          </div>
-          <span class="badge" style="background:#c0392b">当日対応</span>
-          <div class="svc-card__name">当日・お急ぎ引越しプラン</div>
-        </a>
-
-        <a class="svc-card" href="app.html" aria-label="単身引越し">
-          <div class="svc-card__illus">
-            <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M16 30 L40 18 L64 30 L64 58 L40 70 L16 58 Z"/><path d="M16 30 L40 42 L64 30"/><line x1="40" y1="42" x2="40" y2="70"/><path d="M28 24 L28 36"/><path d="M52 24 L52 36"/><circle cx="40" cy="10" r="5"/>
-            </svg>
-          </div>
-          <span class="badge popular">人気</span>
-          <div class="svc-card__name">単身引越し</div>
-        </a>
-
-        <a class="svc-card" href="app.html" aria-label="カップル・ご夫婦引越し">
-          <div class="svc-card__illus">
-            <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="8" y="32" width="28" height="28" rx="3"/><line x1="8" y1="44" x2="36" y2="44"/><path d="M14 38 L14 42"/><path d="M22 38 L22 42"/><rect x="44" y="26" width="28" height="34" rx="3"/><line x1="44" y1="40" x2="72" y2="40"/><path d="M50 32 L50 38"/><path d="M36 18 C36 14 42 14 42 18 C42 14 48 14 48 18 C48 24 42 28 42 28 C42 28 36 24 36 18Z"/>
-            </svg>
-          </div>
-          <span class="badge popular">人気</span>
-          <div class="svc-card__name">カップル・ご夫婦引越し</div>
-        </a>
-
-        <a class="svc-card" href="app.html" aria-label="学生・新生活引越し">
-          <div class="svc-card__illus">
-            <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="40,14 72,28 40,42 8,28"/><path d="M60 34 L60 52 C60 52 40 60 20 52 L20 34"/><line x1="72" y1="28" x2="72" y2="44"/><circle cx="72" cy="46" r="3" fill="var(--forest)" stroke="none"/><rect x="24" y="54" width="32" height="18" rx="2"/><line x1="24" y1="63" x2="56" y2="63"/>
-            </svg>
-          </div>
-          <span class="badge popular">人気</span>
-          <div class="svc-card__name">学生・新生活引越し</div>
-        </a>
-
-        <a class="svc-card" href="app.html" aria-label="不用品回収・処分">
-          <div class="svc-card__illus">
-            <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M40 12 L52 32 L28 32 Z"/><path d="M28 32 C20 32 14 40 18 50"/><path d="M18 50 L10 56 L22 60"/><path d="M52 32 C60 32 66 40 62 50"/><path d="M62 50 L70 44 L66 56"/><path d="M18 50 C22 60 34 66 46 62"/><path d="M62 50 C58 60 46 66 34 62"/><rect x="26" y="44" width="28" height="24" rx="2"/><line x1="22" y1="44" x2="58" y2="44"/><line x1="34" y1="38" x2="46" y2="38"/><line x1="34" y1="50" x2="34" y2="62"/><line x1="40" y1="50" x2="40" y2="62"/><line x1="46" y1="50" x2="46" y2="62"/>
-            </svg>
-          </div>
-          <div class="svc-card__name">不用品回収・処分</div>
-        </a>
-
-        <a class="svc-card" href="app.html" aria-label="家具組立・分解">
-          <div class="svc-card__illus">
-            <svg viewBox="0 0 80 80" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 60 L46 34 C44 28 46 20 52 16 C54 20 52 24 54 26 C56 28 60 26 62 28 C58 34 50 36 46 34"/><line x1="20" y1="60" x2="26" y2="66"/><circle cx="23" cy="63" r="5"/><rect x="42" y="38" width="26" height="30" rx="2" stroke-dasharray="4 2"/><line x1="42" y1="50" x2="68" y2="50"/>
-            </svg>
-          </div>
-          <div class="svc-card__name">家具組立・分解</div>
-        </a>
-
-      </div>
-      <div style="text-align:center;margin-top:18px">
-        <a href="services.html" class="section-view-all">サービス詳細を見る</a>
-      </div>
-    </div>
-  </div>
-</section>
-<script>
-/* Services content loader — applies admin-saved content from localStorage */
-(function(){
-  try {
-    var rawSvcs = localStorage.getItem('hm_services');
-    var rawMeta = localStorage.getItem('hm_services_section');
-    var el = function(id){ return document.getElementById(id); };
-    var set = function(id, val){ var e = el(id); if (e && val) e.textContent = val; };
-    if (rawMeta) {
-      var mt = JSON.parse(rawMeta);
-      set('svcEyebrowEl', mt.eyebrow);
-      set('svcTitleEl',   mt.title);
-      set('svcLeadEl',    mt.lead);
-    }
-    if (rawSvcs) {
-      var svcs  = JSON.parse(rawSvcs);
-      var cards = document.querySelectorAll('#svcGridEl .service-card');
-      svcs.forEach(function(svc, i) {
-        if (!cards[i]) return;
-        var card     = cards[i];
-        var featured = card.classList.contains('service-card-featured');
-        var h3 = card.querySelector('h3');
-        if (h3 && svc.title) h3.textContent = svc.title;
-        var p = card.querySelector(featured ? '.service-featured-body p' : 'p');
-        if (p && svc.description) p.textContent = svc.description;
-        var badge = card.querySelector(featured ? '.service-featured-eyebrow' : '.svc-pop-badge');
-        if (badge && svc.badge) badge.textContent = svc.badge;
-        var cta = card.querySelector('.service-card-cta');
-        if (cta && svc.cta_text) cta.textContent = svc.cta_text;
-      });
-    }
-  } catch(e) {}
-})();
-</script>
 
 <!-- ============== BOOKING ============== -->
 <section class="section booking" id="booking">
@@ -1851,12 +1709,12 @@ body { background: #f2f2ef; }
       <h4 id="footerCol0TitleEl">サービス</h4>
       <ul id="footerCol0LinksEl">
         <li><a href="#booking">オンライン予約</a></li>
-        <li><a href="#services">当日・お急ぎ引越しプラン</a></li>
-        <li><a href="#services">単身引越し</a></li>
-        <li><a href="#services">カップル・ご夫婦引越し</a></li>
-        <li><a href="#services">学生・新生活引越し</a></li>
-        <li><a href="#services">不用品回収・処分サービス</a></li>
-        <li><a href="#services">家具組立・分解</a></li>
+        <li><a href="#booking">当日・お急ぎ引越しプラン</a></li>
+        <li><a href="#booking">単身引越し</a></li>
+        <li><a href="#booking">カップル・ご夫婦引越し</a></li>
+        <li><a href="#booking">学生・新生活引越し</a></li>
+        <li><a href="#booking">不用品回収・処分サービス</a></li>
+        <li><a href="#booking">家具組立・分解</a></li>
       </ul>
     </div>
     <div class="footer-col" id="footerCol1El">
