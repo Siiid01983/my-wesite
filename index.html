@@ -994,26 +994,37 @@ section#quote .hero-quote-form { border-radius: 0 !important; }
 }
 .sticky-line:hover { background: #05a847 !important; }
 
-/* ── 12. Footer: light gray, 3-col clean ── */
-.site-footer { background: #f7f7f4 !important; border-top: 1px solid #e8e8e4 !important; color: var(--ink-2) !important; }
-.footer-inner { display: grid !important; grid-template-columns: 1.5fr 1fr 1fr 1fr !important; gap: 32px; padding: 40px 0 32px !important; }
-.footer-bottom { background: transparent !important; border-top: 1px solid #e8e8e4 !important; padding: 16px 0; }
-.footer-bottom small { font-size: 12px; color: var(--gray-1) !important; }
-.site-footer .brand-name { color: var(--ink) !important; }
-.site-footer .brand-sub { color: var(--gray-2) !important; }
-.footer-desc { color: var(--gray-1) !important; }
-.footer-col h4 { color: var(--gray-2) !important; }
-.footer-col a { color: var(--ink-2) !important; }
-.footer-col a:hover { color: var(--ink) !important; }
-@media (max-width: 840px) { .footer-inner { grid-template-columns: 1fr 1fr !important; gap: 24px !important; } }
-@media (max-width: 480px) {
-  .site-footer { padding-top: 36px !important; }
-  .footer-inner { grid-template-columns: 1fr 1fr !important; gap: 20px 16px !important; padding: 24px 0 20px !important; }
-  .footer-col h4 { margin-bottom: 12px !important; }
-  .footer-col ul { gap: 8px !important; }
-  .footer-col a, .footer-col li { font-size: 12.5px !important; }
-  .footer-bottom { padding: 12px 0 !important; }
-  .footer-bottom small { font-size: 11px !important; }
+/* ── Footer redesign ─────────────────────────────── */
+.site-footer { background:#f7f7f4 !important; border-top:1px solid #e3e3de !important; padding:0 !important; }
+.hm-ft { display:grid; grid-template-columns:1.8fr 2fr 1.4fr; gap:48px; padding:52px 0 40px; }
+.hm-ft__brand .brand-name { color:#2C3626 !important; font-size:17px; font-weight:800; }
+.hm-ft__brand .brand-sub  { color:#6b7280 !important; }
+.hm-ft__desc { margin-top:16px; font-size:13px; line-height:1.85; color:#3a4150; max-width:280px; }
+.hm-ft__nav { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+.hm-ft__heading { font-size:11px !important; font-weight:700 !important; letter-spacing:.14em !important; text-transform:uppercase !important; color:#2C3626 !important; margin-bottom:16px !important; }
+.hm-ft__links { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; }
+.hm-ft__links li { border-bottom:1px solid #ebebea; }
+.hm-ft__links li:last-child { border-bottom:none; }
+.hm-ft__links a { display:block; padding:10px 0; font-size:13.5px; color:#2C3626 !important; text-decoration:none; letter-spacing:.01em; transition:color .15s; }
+.hm-ft__links a:hover { color:#9AB57A !important; }
+.hm-ft__contact-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; }
+.hm-ft__contact-list li { display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid #ebebea; font-size:13.5px; color:#3a4150; }
+.hm-ft__contact-list li:last-child { border-bottom:none; }
+.hm-ft__icon { width:16px; height:16px; flex-shrink:0; color:#9AB57A; }
+.hm-ft__bottom { border-top:1px solid #e3e3de; padding:16px 0; }
+.hm-ft__bottom .container { display:flex; flex-wrap:wrap; gap:6px 24px; justify-content:space-between; align-items:center; }
+.hm-ft__bottom small { font-size:11px; color:#6b7280; letter-spacing:.04em; line-height:1.6; }
+@media (max-width:900px) {
+  .hm-ft { grid-template-columns:1fr 1fr; gap:32px; }
+  .hm-ft__brand { grid-column:1 / -1; }
+}
+@media (max-width:540px) {
+  .hm-ft { grid-template-columns:1fr; gap:28px; padding:36px 0 28px; }
+  .hm-ft__nav { grid-template-columns:1fr 1fr; gap:16px; }
+  .hm-ft__links a { padding:10px 0; font-size:13px; }
+  .hm-ft__contact-list li { padding:10px 0; font-size:13px; }
+  .hm-ft__bottom .container { flex-direction:column; align-items:flex-start; gap:4px; }
+  .hm-ft__bottom { padding-bottom:calc(80px + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* ── 13. GMB badge cleanup ── */
@@ -1934,53 +1945,80 @@ var SERVICE_CONFIG = [
 
 <!-- ============== FOOTER ============== -->
 <footer class="site-footer">
-  <div class="container footer-inner">
-    <div class="footer-brand">
-      <a href="#" class="brand">
+  <div class="container hm-ft">
+
+    <!-- S1: Brand + mission -->
+    <div class="hm-ft__brand">
+      <a href="/" class="brand" aria-label="Hello Moving ホーム">
         <span class="brand-mark">H</span>
-        <span class="brand-text"><span class="brand-name">Hello Moving</span><span class="brand-sub">14+ Years — Tokyo</span></span>
+        <span class="brand-text">
+          <span class="brand-name">Hello Moving</span>
+          <span class="brand-sub">14+ Years — Tokyo</span>
+        </span>
       </a>
-      <p class="footer-desc" id="footerDescEl">東京を拠点に、丁寧で安心の引越しを承っております。日本語・英語対応。</p>
-      <p id="footerAddressEl" style="font-size:13px;color:var(--gray-1);margin-top:6px;display:none"></p>
-      <p id="footerContactLineEl" style="font-size:13px;color:var(--gray-1);margin-top:4px;display:none">
-        <a id="footerPhoneEl" href="#" style="color:inherit;display:none"></a>
-        <a id="footerEmailEl" href="#" style="color:inherit;display:none"></a>
+      <p class="hm-ft__desc" id="footerDescEl">東京を拠点に、丁寧で安心の引越しを承っております。日本語・英語対応。</p>
+      <p id="footerAddressEl" style="display:none"></p>
+      <p id="footerContactLineEl" style="display:none">
+        <a id="footerPhoneEl" href="#" style="display:none"></a>
+        <a id="footerEmailEl" href="#" style="display:none"></a>
       </p>
     </div>
-    <div class="footer-col" id="footerCol0El">
-      <h4 id="footerCol0TitleEl">サービス</h4>
-      <ul id="footerCol0LinksEl">
-        <li><a href="#booking">オンライン予約</a></li>
-        <li><a href="#booking">当日・お急ぎ引越しプラン</a></li>
-        <li><a href="#booking">単身引越し</a></li>
-        <li><a href="#booking">カップル・ご夫婦引越し</a></li>
-        <li><a href="#booking">学生・新生活引越し</a></li>
-        <li><a href="#booking">不用品回収・処分サービス</a></li>
-        <li><a href="#booking">家具組立・分解</a></li>
-      </ul>
+
+    <!-- S2: Services + Company nav -->
+    <div class="hm-ft__nav">
+      <div id="footerCol0El">
+        <h4 class="hm-ft__heading" id="footerCol0TitleEl">サービス</h4>
+        <ul class="hm-ft__links" id="footerCol0LinksEl">
+          <li><a href="#booking">オンライン予約</a></li>
+          <li><a href="#booking">当日・お急ぎ引越しプラン</a></li>
+          <li><a href="#booking">単身引越し</a></li>
+          <li><a href="#booking">カップル・ご夫婦引越し</a></li>
+          <li><a href="#booking">学生・新生活引越し</a></li>
+          <li><a href="#booking">不用品回収・処分サービス</a></li>
+          <li><a href="#booking">家具組立・分解</a></li>
+        </ul>
+      </div>
+      <div id="footerCol1El">
+        <h4 class="hm-ft__heading" id="footerCol1TitleEl">会社</h4>
+        <ul class="hm-ft__links" id="footerCol1LinksEl">
+          <li><a href="#commitments">私たちのお約束</a></li>
+          <li><a href="#flow">引越しの流れ</a></li>
+          <li><a href="#reviews">お客様の声</a></li>
+          <li><a href="#faq">よくある質問</a></li>
+          <li><a href="#company">会社情報</a></li>
+        </ul>
+      </div>
     </div>
-    <div class="footer-col" id="footerCol1El">
-      <h4 id="footerCol1TitleEl">会社</h4>
-      <ul id="footerCol1LinksEl">
-        <li><a href="#commitments">私たちのお約束</a></li>
-        <li><a href="#flow">引越しの流れ</a></li>
-        <li><a href="#reviews">お客様の声</a></li>
-        <li><a href="#faq">よくある質問</a></li>
-        <li><a href="#company">会社情報</a></li>
-      </ul>
-    </div>
-    <div class="footer-col" id="footerCol2El">
-      <h4 id="footerCol2TitleEl">お問い合わせ</h4>
-      <ul id="footerCol2LinksEl">
-        <li id="footerHoursWeekdayEl">受付：8:00 – 20:00</li>
+
+    <!-- S3: Contact with icons -->
+    <div id="footerCol2El">
+      <h4 class="hm-ft__heading" id="footerCol2TitleEl">お問い合わせ</h4>
+      <ul class="hm-ft__contact-list" id="footerCol2LinksEl">
+        <li id="footerHoursWeekdayEl">
+          <svg class="hm-ft__icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="M10 6v4l2.5 2.5"/></svg>
+          <span>受付：8:00 – 20:00（年中無休）</span>
+        </li>
         <li id="footerHoursWeekendEl" style="display:none"></li>
         <li id="footerHoursNoteEl" style="display:none"></li>
-        <li>対応エリア：日本全国</li>
-        <li>対応言語：日本語 / English</li>
+        <li>
+          <svg class="hm-ft__icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2C6.69 2 4 4.69 4 8c0 5 6 10 6 10s6-5 6-10c0-3.31-2.69-6-6-6z"/><circle cx="10" cy="8" r="2"/></svg>
+          <span>対応エリア：日本全国</span>
+        </li>
+        <li>
+          <svg class="hm-ft__icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="16" height="11" rx="2"/><path d="M2 7l8 5 8-5"/></svg>
+          <span>対応言語：日本語 / English</span>
+        </li>
+        <li>
+          <svg class="hm-ft__icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 13.4c-.9-.1-1.8-.3-2.6-.6-.3-.1-.6 0-.8.2l-1.1 1.4c-2.3-1.1-4.2-3-5.3-5.3l1.4-1.1c.2-.2.3-.5.2-.8-.3-.8-.5-1.7-.6-2.6C7.6 4.1 7 3.5 6.3 3.5H3.7C2.9 3.5 2.5 4.1 2.5 4.7 2.6 11.8 8.2 17.4 15.3 17.5c.6 0 1.2-.4 1.2-1.2v-2.6c0-.7-.6-1.3-1-1.3z"/></svg>
+          <span><a href="tel:+819024893402" style="color:inherit;text-decoration:none">090-2489-3402</a></span>
+        </li>
       </ul>
     </div>
+
   </div>
-  <div class="footer-bottom">
+
+  <!-- Bottom bar -->
+  <div class="hm-ft__bottom">
     <div class="container">
       <small id="footerCopyrightEl">© 2026 Hello Moving. All Rights Reserved.</small>
       <small id="footerLicenseEl">国土交通省 認可運送事業者 第 431320058126 号 ／ Licensed Moving Company in Japan</small>
