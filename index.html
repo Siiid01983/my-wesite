@@ -2641,6 +2641,7 @@ updateS2Btn();
 .ba-svc-card:active{transform:scale(.97)}
 .ba-svc-card__illus{width:100%;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;background:#f0f0ec}
 .ba-svc-card__illus svg{width:52%;height:52%;opacity:.75}
+.ba-svc-card__illus img{width:100%;height:100%;object-fit:cover;display:block}
 .ba-svc-card__name{font-size:13px;font-weight:700;color:var(--ba-forest);padding:10px 10px 12px;line-height:1.4}
 .ba-svc-badge{position:absolute;top:8px;right:8px;color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px}
 </style>
@@ -2849,12 +2850,12 @@ updateS2Btn();
 
   // ── Service selection ────────────────────────────────────
   var BA_SVC_CFG = [
-    {id:'tansin',  name:'単身引越し',             badge:'人気',    bc:'#9AB57A'},
-    {id:'couple',  name:'カップル・ご夫婦引越し',  badge:'人気',    bc:'#9AB57A'},
-    {id:'student', name:'学生・新生活引越し',      badge:'人気',    bc:'#9AB57A'},
-    {id:'sameday', name:'当日・お急ぎ引越しプラン', badge:'当日対応', bc:'#c0392b'},
-    {id:'disposal',name:'不用品回収・処分',        badge:'',        bc:''},
-    {id:'assembly',name:'家具組立・分解',          badge:'',        bc:''},
+    {id:'tansin',  name:'単身引越し',             badge:'人気',    bc:'#9AB57A', img:'https://images.unsplash.com/photo-1616432043562-3671ea2e5242?auto=format&fit=crop&w=600&q=80'},
+    {id:'couple',  name:'カップル・ご夫婦引越し',  badge:'人気',    bc:'#9AB57A', img:'https://images.unsplash.com/photo-1758523670969-dd1b1254062d?auto=format&fit=crop&w=600&q=80'},
+    {id:'student', name:'学生・新生活引越し',      badge:'人気',    bc:'#9AB57A', img:'https://images.unsplash.com/photo-1772724317350-520faccb15e6?auto=format&fit=crop&w=600&q=80'},
+    {id:'sameday', name:'当日・お急ぎ引越しプラン', badge:'当日対応', bc:'#c0392b', img:'https://images.unsplash.com/photo-1614976523626-d598aafd4fda?auto=format&fit=crop&w=600&q=80'},
+    {id:'disposal',name:'不用品回収・処分',        badge:'',        bc:'',         img:'https://images.unsplash.com/photo-1574974671999-24b7dfbb0d53?auto=format&fit=crop&w=600&q=80'},
+    {id:'assembly',name:'家具組立・分解',          badge:'',        bc:'',         img:'https://images.unsplash.com/photo-1567361808960-dec9cb578182?auto=format&fit=crop&w=600&q=80'},
   ];
   var BA_SVC_SVG = {
     tansin:   '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ba-forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 30L40 18L64 30L64 58L40 70L16 58Z"/><path d="M16 30L40 42L64 30"/><line x1="40" y1="42" x2="40" y2="70"/><path d="M28 24L28 36"/><path d="M52 24L52 36"/><circle cx="40" cy="10" r="5"/></svg>',
@@ -2869,8 +2870,11 @@ updateS2Btn();
     if (!grid) return;
     grid.innerHTML = BA_SVC_CFG.map(function(s) {
       var badge = s.badge ? '<span class="ba-svc-badge" style="background:' + s.bc + '">' + s.badge + '</span>' : '';
+      var media = s.img
+        ? '<img src="' + s.img + '" alt="' + s.name + '" loading="lazy">'
+        : (BA_SVC_SVG[s.id] || '');
       return '<button class="ba-svc-card" onclick="baGoBooking(\'' + s.id + '\',\'' + s.name + '\')">'
-        + '<div class="ba-svc-card__illus">' + (BA_SVC_SVG[s.id] || '') + '</div>'
+        + '<div class="ba-svc-card__illus">' + media + '</div>'
         + badge
         + '<div class="ba-svc-card__name">' + s.name + '</div>'
         + '</button>';
