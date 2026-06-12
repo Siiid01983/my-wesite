@@ -986,6 +986,19 @@ html.dark .zip-bldg label{color:var(--ink)}
 html.dark .zip-bldg input{background:var(--bg);border-color:rgba(255,255,255,.08);color:var(--ink)}
 html.dark .zip-bldg input:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(96,165,250,.1)}
 html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
+/* ── Service card grid ── */
+.svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-top:4px}
+@media(max-width:520px){.svc-grid{grid-template-columns:1fr 1fr;gap:10px}}
+.svc-card{background:var(--bg);border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.06);text-decoration:none;display:block;position:relative;transition:transform .15s,box-shadow .15s}
+.svc-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.1);transform:translateY(-2px)}
+.svc-card:active{transform:scale(.97)}
+.svc-card__img{width:100%;aspect-ratio:4/3;object-fit:cover;display:none}
+.svc-card__img.show{display:block}
+.svc-card__illus{width:100%;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;background:#f0f0ec}
+html.dark .svc-card__illus{background:var(--bg-soft-2)}
+.svc-card__illus svg{width:52%;height:52%;opacity:.75}
+.svc-card__name{font-size:13px;font-weight:700;color:var(--ink);padding:10px 10px 12px;line-height:1.4}
+.svc-card__badge{position:absolute;top:8px;right:8px;color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px}
 </style><script>(function(){var t=localStorage.getItem('hm_theme');if(t==='dark'||(t===null&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');})()</script>
 </head>
 <body>
@@ -1019,7 +1032,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
     </a>
     <nav class="nav" aria-label="メインナビゲーション">
       <ul>
-        <li><a href="app.html">予約</a></li>
+        <li><a href="#booking">予約</a></li>
         <li><a href="#quote">料金見積り</a></li>
         <li><a href="#services">サービス</a></li>
         <li><a href="#disposal">不用品回収</a></li>
@@ -1056,7 +1069,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
   </div>
   <div class="mobile-nav" id="mobileNav" aria-hidden="true">
     <ul>
-      <li><a href="app.html">予約</a></li>
+      <li><a href="#booking">予約</a></li>
       <li><a href="#quote">料金見積り</a></li>
       <li><a href="#services">サービス</a></li>
       <li><a href="#disposal">不用品回収</a></li>
@@ -1085,7 +1098,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
           <span>ダークモード</span>
         </button>
       </li>
-      <li class="mobile-cta"><a href="app.html" class="btn btn-primary btn-block">今すぐ予約する</a></li>
+      <li class="mobile-cta"><a href="#booking" class="btn btn-primary btn-block">今すぐ予約する</a></li>
     </ul>
   </div>
 </header>
@@ -1124,7 +1137,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
         <span class="hsb-item" role="listitem">♻️ 不用品回収</span>
       </div>
       <div class="hero-cta">
-        <a href="app.html" class="btn-hero-book">
+        <a href="#booking" class="btn-hero-book">
           <span class="btn-sup" id="heroCtaBookSup">オンライン予約</span>
           <span class="btn-lbl" id="heroCtaBookLbl">今すぐ予約する</span>
         </a>
@@ -1749,7 +1762,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
           </div>
           <p class="hm-calc-conversion-msg">料金確認から予約までオンライン完結</p>
           <div class="hm-calc-ctas">
-            <a href="app.html" class="btn-hero-book">
+            <a href="#booking" class="btn-hero-book">
               <span class="btn-sup">オンライン予約</span>
               <span class="btn-lbl">今すぐ予約する</span>
             </a>
@@ -1777,272 +1790,10 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
   <div class="container">
     <header class="section-head">
       <span class="eyebrow">Online Booking</span>
-      <h2 class="section-title">オンライン予約</h2>
-      <p class="section-lead">引越し日が決まっている方。日時・サービスを選んでその場で予約リクエストを送信。</p>
+      <h2 class="section-title">おすすめのサービス</h2>
+      <p class="section-lead">ご希望のサービスをお選びください。料金確認から予約までオンライン完結。</p>
     </header>
-    <div class="bk-wrap">
-
-      <!-- Progress -->
-      <div class="bk-prog" id="bkProg">
-        <div class="bk-prog-labels">
-          <div class="bk-prog-label active" data-step="1">① サービス</div>
-          <div class="bk-prog-label" data-step="2">② 日時</div>
-          <div class="bk-prog-label" data-step="3">③ 住所</div>
-          <div class="bk-prog-label" data-step="4">④ お荷物</div>
-          <div class="bk-prog-label" data-step="5">⑤ お客様</div>
-          <div class="bk-prog-label" data-step="6">⑥ 確認</div>
-        </div>
-        <div class="bk-prog-track"><div class="bk-prog-fill" id="bkProgFill" style="width:16.7%"></div></div>
-      </div>
-
-      <!-- ─── Step 1: サービス選択 ─── -->
-      <div id="bkStep1">
-        <p class="step-heading">どのサービスをご希望ですか？</p>
-        <div class="service-choice-grid">
-          <label class="service-choice">
-            <input type="radio" name="bk_service" value="単身引越し" />
-            <div class="choice-body">
-              <div class="choice-icon"><svg viewBox="0 0 24 24" fill="none" width="22" height="22"><circle cx="7" cy="6.5" r="3.5" fill="#3b82f6"/><path d="M1.5 18.5v-1C1.5 14.567 4.067 12 7 12s5.5 2.567 5.5 5.5v1H1.5z" fill="#3b82f6"/><path d="M14.5 10.5 15.5 8h7l1 2.5" fill="#d97706"/><rect x="14" y="10.5" width="9" height="9" rx="1" fill="#f59e0b"/><rect x="16.5" y="10.5" width="4" height="3.5" rx="0.5" fill="#fcd34d"/></svg></div>
-              <strong>単身引越し</strong><em>お一人様向け</em>
-            </div>
-          </label>
-          <label class="service-choice">
-            <input type="radio" name="bk_service" value="カップル・ご夫婦引越し" />
-            <div class="choice-body">
-              <div class="choice-icon"><svg viewBox="0 0 24 24" fill="none" width="22" height="22"><circle cx="7" cy="6.5" r="3.5" fill="#f43f5e"/><path d="M1.5 18.5v-1C1.5 14.567 4.067 12 7 12s5.5 2.567 5.5 5.5v1H1.5z" fill="#f43f5e"/><circle cx="17" cy="6.5" r="3.5" fill="#3b82f6"/><path d="M11.5 18.5v-1c0-2.933 2.567-5.5 5.5-5.5s5.5 2.567 5.5 5.5v1H11.5z" fill="#3b82f6"/></svg></div>
-              <strong>カップル・夫婦</strong><em>二人暮らし向け</em>
-            </div>
-          </label>
-          <label class="service-choice">
-            <input type="radio" name="bk_service" value="学生・新生活引越し" />
-            <div class="choice-body">
-              <div class="choice-icon"><svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M12 4 22 9.5 12 15 2 9.5z" fill="#0d9488"/><path d="M7 12.5v4a5 5 0 0 0 10 0v-4l-5 2.9-5-2.9z" fill="#0f766e"/><line x1="21" y1="9.5" x2="21" y2="15.5" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round"/><circle cx="21" cy="17" r="1.8" fill="#fbbf24"/></svg></div>
-              <strong>学生・新生活</strong><em>初めての引越し</em>
-            </div>
-          </label>
-          <label class="service-choice">
-            <input type="radio" name="bk_service" value="当日・お急ぎ引越し" />
-            <div class="choice-body">
-              <div class="choice-icon"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.5 5H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg></div>
-              <strong>当日・お急ぎ</strong><em>今日・明日対応</em>
-            </div>
-          </label>
-          <label class="service-choice">
-            <input type="radio" name="bk_service" value="不用品回収・処分サービス" />
-            <div class="choice-body">
-              <div class="choice-icon"><svg viewBox="0 0 24 24" fill="none" width="22" height="22"><rect x="9.5" y="2.5" width="5" height="2" rx="1" fill="#22c55e"/><rect x="4" y="5.5" width="16" height="2.5" rx="1.25" fill="#16a34a"/><path d="M6.5 8h11l-1.2 12H7.7z" fill="#22c55e"/><line x1="10.5" y1="10" x2="10" y2="18.5" stroke="rgba(255,255,255,0.45)" stroke-width="1.2" stroke-linecap="round"/><line x1="12" y1="10" x2="12" y2="18.5" stroke="rgba(255,255,255,0.45)" stroke-width="1.2" stroke-linecap="round"/><line x1="13.5" y1="10" x2="14" y2="18.5" stroke="rgba(255,255,255,0.45)" stroke-width="1.2" stroke-linecap="round"/></svg></div>
-              <strong>不用品回収</strong><em>処分も一括で</em>
-            </div>
-          </label>
-        </div>
-        <p class="bk-err" id="bkS1Err">サービスをお選びください。</p>
-        <div class="bk-step-actions">
-          <button type="button" class="bk-submit" id="bkS1Next">次のステップへ →</button>
-        </div>
-      </div>
-
-      <!-- ─── Step 2: 日時選択 ─── -->
-      <div id="bkStep2" style="display:none">
-        <p class="step-heading">引越しご希望日をお選びください</p>
-        <div id="hmCalBook" aria-label="引越し予約カレンダー"></div>
-        <p id="bkDateDisplay" style="margin-top:10px;min-height:22px;color:#2563eb;font-weight:600;font-size:15px;"></p>
-        <div class="bk-time-section" id="bkTimeSection" aria-live="polite">
-          <p style="font-weight:600;color:var(--ink);margin-bottom:4px;">時間帯を選択</p>
-          <p style="font-size:13px;color:var(--gray-1);margin-bottom:12px;" id="bkTimeEcho"></p>
-          <div class="bk-time-slots" role="radiogroup" aria-label="希望時間帯">
-            <label class="bk-time-pill"><input type="radio" name="booking_time" value="午前 8:00〜12:00" /><span class="bk-time-radio"></span><span>午前 8:00〜12:00</span></label>
-            <label class="bk-time-pill"><input type="radio" name="booking_time" value="午後 12:00〜17:00" /><span class="bk-time-radio"></span><span>午後 12:00〜17:00</span></label>
-            <label class="bk-time-pill"><input type="radio" name="booking_time" value="夕方 17:00〜20:00" /><span class="bk-time-radio"></span><span>夕方 17:00〜20:00</span></label>
-          </div>
-          <p id="bkTimeErr" class="bk-err" aria-live="polite">時間帯をお選びください。</p>
-        </div>
-        <p id="bkDateErr" class="bk-err" aria-live="polite" style="margin-top:8px">日付をお選びください。</p>
-        <div class="bk-step-actions">
-          <button type="button" class="bk-back-btn" id="bkS2Back">← 戻る</button>
-          <button type="button" class="bk-submit" id="bkS2Next" disabled>次のステップへ →</button>
-        </div>
-      </div>
-
-      <!-- ─── Step 3: 住所入力 ─── -->
-      <div id="bkStep3" style="display:none">
-        <p class="step-heading">引越し元・引越し先の住所をご入力ください</p>
-        <div class="bk-field" id="bkfFrom">
-          <label for="bkFromZip">郵便番号 <em>*</em></label>
-          <div class="zip-row">
-            <input type="text" id="bkFromZip" class="zip-input" placeholder="例：160-0023" maxlength="8" inputmode="numeric" autocomplete="postal-code" />
-            <span class="zip-status" id="bkFromZipStatus" aria-live="polite" aria-atomic="true"></span>
-          </div>
-          <div class="zip-addr-block" id="bkFromAddrBlock" style="display:none">
-            <div class="zip-addr-label">住所</div>
-            <div class="zip-addr-value" id="bkFromAddrVal"></div>
-          </div>
-          <div class="zip-bldg" id="bkFromBldgField" style="display:none">
-            <label for="bkFromBldg">建物名・部屋番号（任意）</label>
-            <input type="text" id="bkFromBldg" placeholder="例：〇〇マンション101号室" autocomplete="address-line2" />
-          </div>
-          <input type="hidden" id="bkFrom" />
-          <p class="bk-err" id="bkfFromErr">住所をご入力ください。</p>
-        </div>
-        <div class="bk-field-row">
-          <div class="bk-field">
-            <label for="bkFromFloor">引越し元 階数</label>
-            <select id="bkFromFloor">
-              <option value="">階数を選択</option>
-              <option>1階</option><option>2階</option><option>3階</option><option>4階</option><option>5階</option>
-              <option>6〜10階</option><option>11〜20階</option><option>21階以上</option>
-            </select>
-          </div>
-          <div class="bk-field">
-            <label>引越し元 エレベーター</label>
-            <div class="bk-ev-radios">
-              <label class="bk-ev-pill"><input type="radio" name="bk_from_ev" value="あり" /><span>あり</span></label>
-              <label class="bk-ev-pill"><input type="radio" name="bk_from_ev" value="なし" /><span>なし</span></label>
-              <label class="bk-ev-pill"><input type="radio" name="bk_from_ev" value="不明" /><span>不明</span></label>
-            </div>
-          </div>
-        </div>
-        <hr class="bk-section-sep" />
-        <div class="bk-field" id="bkfTo">
-          <label for="bkToZip">郵便番号 <em>*</em></label>
-          <div class="zip-row">
-            <input type="text" id="bkToZip" class="zip-input" placeholder="例：160-0023" maxlength="8" inputmode="numeric" autocomplete="postal-code" />
-            <span class="zip-status" id="bkToZipStatus" aria-live="polite" aria-atomic="true"></span>
-          </div>
-          <div class="zip-addr-block" id="bkToAddrBlock" style="display:none">
-            <div class="zip-addr-label">住所</div>
-            <div class="zip-addr-value" id="bkToAddrVal"></div>
-          </div>
-          <div class="zip-bldg" id="bkToBldgField" style="display:none">
-            <label for="bkToBldg">建物名・部屋番号（任意）</label>
-            <input type="text" id="bkToBldg" placeholder="例：〇〇マンション101号室" autocomplete="address-line2" />
-          </div>
-          <input type="hidden" id="bkTo" />
-          <p class="bk-err" id="bkfToErr">住所をご入力ください。</p>
-        </div>
-        <div class="bk-field-row">
-          <div class="bk-field">
-            <label for="bkToFloor">引越し先 階数</label>
-            <select id="bkToFloor">
-              <option value="">階数を選択</option>
-              <option>1階</option><option>2階</option><option>3階</option><option>4階</option><option>5階</option>
-              <option>6〜10階</option><option>11〜20階</option><option>21階以上</option>
-            </select>
-          </div>
-          <div class="bk-field">
-            <label>引越し先 エレベーター</label>
-            <div class="bk-ev-radios">
-              <label class="bk-ev-pill"><input type="radio" name="bk_to_ev" value="あり" /><span>あり</span></label>
-              <label class="bk-ev-pill"><input type="radio" name="bk_to_ev" value="なし" /><span>なし</span></label>
-              <label class="bk-ev-pill"><input type="radio" name="bk_to_ev" value="不明" /><span>不明</span></label>
-            </div>
-          </div>
-        </div>
-        <div class="bk-step-actions">
-          <button type="button" class="bk-back-btn" id="bkS3Back">← 戻る</button>
-          <button type="button" class="bk-submit" id="bkS3Next">次のステップへ →</button>
-        </div>
-      </div>
-
-      <!-- ─── Step 4: お荷物・不用品 ─── -->
-      <div id="bkStep4" style="display:none">
-        <p class="step-heading">お荷物・不用品をお教えください（任意）</p>
-        <div class="furniture-checklist">
-          <span class="fieldset-title">移動するお荷物</span>
-          <div class="checklist-grid">
-            <label class="checklist-item"><input type="checkbox" name="furniture[]" value="冷蔵庫" /><span>冷蔵庫</span></label>
-            <label class="checklist-item"><input type="checkbox" name="furniture[]" value="洗濯機" /><span>洗濯機</span></label>
-            <label class="checklist-item"><input type="checkbox" name="furniture[]" value="テレビ" /><span>テレビ</span></label>
-            <label class="checklist-item"><input type="checkbox" name="furniture[]" value="ベッド" /><span>ベッド</span></label>
-            <label class="checklist-item"><input type="checkbox" name="furniture[]" value="ソファ" /><span>ソファ</span></label>
-            <label class="checklist-item"><input type="checkbox" name="furniture[]" value="テーブル" /><span>テーブル</span></label>
-            <label class="checklist-item"><input type="checkbox" name="furniture[]" value="電子レンジ" /><span>電子レンジ</span></label>
-            <label class="checklist-item"><input type="checkbox" name="furniture[]" value="自転車" /><span>自転車</span></label>
-            <label class="checklist-item"><input type="checkbox" name="furniture[]" value="ダンボール多数" /><span>ダンボール多数</span></label>
-            <label class="checklist-item"><input type="checkbox" name="furniture[]" value="その他" /><span>その他</span></label>
-          </div>
-        </div>
-        <hr class="bk-section-sep" />
-        <div class="furniture-checklist">
-          <span class="fieldset-title">処分するお荷物（不用品）</span>
-          <div class="checklist-grid">
-            <label class="checklist-item"><input type="checkbox" name="disposal[]" value="ベッド・マットレス" /><span>ベッド・マットレス</span></label>
-            <label class="checklist-item"><input type="checkbox" name="disposal[]" value="ソファ" /><span>ソファ</span></label>
-            <label class="checklist-item"><input type="checkbox" name="disposal[]" value="冷蔵庫" /><span>冷蔵庫</span></label>
-            <label class="checklist-item"><input type="checkbox" name="disposal[]" value="洗濯機" /><span>洗濯機</span></label>
-            <label class="checklist-item"><input type="checkbox" name="disposal[]" value="テレビ" /><span>テレビ</span></label>
-            <label class="checklist-item"><input type="checkbox" name="disposal[]" value="テーブル・棚" /><span>テーブル・棚</span></label>
-            <label class="checklist-item"><input type="checkbox" name="disposal[]" value="その他" /><span>その他</span></label>
-          </div>
-        </div>
-        <hr class="bk-section-sep" />
-        <div class="bk-field">
-          <span class="form-label-text">お部屋の写真（任意）</span>
-          <label class="upload-drop-zone" id="bkUploadZone" for="bkPhotoUpload">
-            <input type="file" id="bkPhotoUpload" name="bk_photos" accept="image/*" multiple />
-            <div class="upload-drop-inner">
-              <svg class="upload-drop-icon" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path fill="currentColor" d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
-              <span class="upload-drop-label">写真をドラッグ&amp;ドロップ<br><em>またはクリックして選択</em></span>
-              <span class="upload-drop-hint">JPG / PNG · 最大 5 枚</span>
-            </div>
-            <div class="upload-file-list" id="bkUploadFileList"></div>
-          </label>
-        </div>
-        <div class="bk-step-actions">
-          <button type="button" class="bk-back-btn" id="bkS4Back">← 戻る</button>
-          <button type="button" class="bk-submit" id="bkS4Next">次のステップへ →</button>
-        </div>
-      </div>
-
-      <!-- ─── Step 5: お客様情報 ─── -->
-      <div id="bkStep5" style="display:none">
-        <p class="step-heading">お客様情報をご入力ください</p>
-        <div class="bk-field" id="bkfName">
-          <label for="bkName">お名前 <em>*</em></label>
-          <input type="text" id="bkName" placeholder="山田 太郎" autocomplete="name" aria-describedby="bkfNameErr" />
-          <p class="bk-err" id="bkfNameErr">お名前は2文字以上で入力してください。</p>
-        </div>
-        <div class="bk-field" id="bkfEmail">
-          <label for="bkEmail">メールアドレス <em>*</em></label>
-          <input type="email" id="bkEmail" placeholder="example@email.com" autocomplete="email" aria-describedby="bkfEmailErr" />
-          <p class="bk-err" id="bkfEmailErr">正しいメールアドレスを入力してください。</p>
-        </div>
-        <div class="bk-field">
-          <label for="bkNotes">ご要望（任意）</label>
-          <textarea id="bkNotes" rows="3" placeholder="その他ご希望・注意点などをご記入ください。"></textarea>
-        </div>
-        <div class="bk-step-actions">
-          <button type="button" class="bk-back-btn" id="bkS5Back">← 戻る</button>
-          <button type="button" class="bk-submit" id="bkS5Next" disabled>確認画面へ →</button>
-        </div>
-      </div>
-
-      <!-- ─── Step 6: 確認画面 ─── -->
-      <div id="bkStep6" style="display:none" role="dialog" aria-label="予約内容確認">
-        <p class="step-heading">ご予約内容の確認</p>
-        <table class="bk-conf-table" id="bkConfTable"></table>
-        <p style="font-size:13px;color:#ef4444;margin:12px 0;display:none;" id="bkSubmitErr" aria-live="polite"></p>
-        <div class="bk-step-actions">
-          <button type="button" class="bk-back-btn" id="bkS6Back">← 戻る</button>
-          <button type="button" class="bk-submit" id="bkSubmitBtn">予約リクエストを送信</button>
-        </div>
-        <p style="font-size:12px;color:var(--gray-2);margin-top:14px;text-align:center;">ご入力いただいた情報は、厳重に管理し、予約対応以外には使用いたしません。</p>
-      </div>
-
-      <!-- ─── Success ─── -->
-      <div id="bkSuccess" style="display:none">
-        <div class="bk-success">
-          <div class="bk-success-icon" aria-hidden="true">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          </div>
-          <h3>予約完了</h3>
-          <p style="color:var(--gray-1);margin-bottom:0;">ご予約リクエストを受け付けました</p>
-          <div class="bk-ref-card" id="bkRefCard"></div>
-          <p style="font-size:14px;color:var(--gray-1);line-height:1.8;">担当者より当日〜翌営業日にご連絡いたします。<br>お急ぎの場合はLINEまたはチャットよりお問い合わせください。</p>
-          <button type="button" class="bk-reset-btn" id="bkResetBtn">新規予約</button>
-        </div>
-      </div>
-
-    </div>
+    <div class="svc-grid" id="svcBookingGrid"></div>
   </div>
 </section>
 
@@ -2282,7 +2033,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
         <span class="midpage-panel-who">引越し日が決まっている方</span>
         <p class="midpage-panel-title">オンライン予約</p>
         <p class="midpage-panel-desc">日時・住所を入力して予約リクエストを送信。</p>
-        <a href="app.html" class="btn btn-light">今すぐ予約する →</a>
+        <a href="#booking" class="btn btn-light">今すぐ予約する →</a>
       </div>
       <div class="midpage-divider" aria-hidden="true"></div>
       <div class="midpage-panel">
@@ -2471,7 +2222,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
     <div class="footer-col" id="footerCol0El">
       <h4 id="footerCol0TitleEl">サービス</h4>
       <ul id="footerCol0LinksEl">
-        <li><a href="app.html">オンライン予約</a></li>
+        <li><a href="#booking">オンライン予約</a></li>
         <li><a href="#services">当日・お急ぎ引越しプラン</a></li>
         <li><a href="#services">単身引越し</a></li>
         <li><a href="#services">カップル・ご夫婦引越し</a></li>
@@ -2540,7 +2291,7 @@ html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
 
 <!-- ============== STICKY MOBILE CTA ============== -->
 <div class="sticky-cta" aria-label="予約・見積り">
-  <a href="app.html" class="sticky-btn sticky-book">
+  <a href="#booking" class="sticky-btn sticky-book">
     <span>今すぐ予約</span>
   </a>
   <a href="#quote" class="sticky-btn sticky-quote">
@@ -3421,6 +3172,50 @@ updateS2Btn();
       grid.insertBefore(tmp.firstElementChild,grid.firstChild);
     });
   }catch(e){}
+})();
+</script>
+
+<!-- ── Service card grid for #booking ── -->
+<script>
+(function(){
+  var SERVICE_CONFIG = [
+    { id:'tansin',   name:'単身引越し',           badge:'人気',   badgeColor:'#9AB57A', icon:'svg', imageUrl:'' },
+    { id:'couple',   name:'カップル・ご夫婦引越し', badge:'人気',   badgeColor:'#9AB57A', icon:'svg', imageUrl:'' },
+    { id:'student',  name:'学生・新生活引越し',     badge:'人気',   badgeColor:'#9AB57A', icon:'svg', imageUrl:'' },
+    { id:'sameday',  name:'当日・お急ぎ引越しプラン',badge:'当日対応',badgeColor:'#c0392b', icon:'svg', imageUrl:'' },
+    { id:'disposal', name:'不用品回収・処分',       badge:'',       badgeColor:'',        icon:'svg', imageUrl:'' },
+    { id:'assembly', name:'家具組立・分解',         badge:'',       badgeColor:'',        icon:'svg', imageUrl:'' },
+  ];
+
+  var SERVICE_SVG = {
+    tansin:   '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 30L40 18L64 30L64 58L40 70L16 58Z"/><path d="M16 30L40 42L64 30"/><line x1="40" y1="42" x2="40" y2="70"/><path d="M28 24L28 36"/><path d="M52 24L52 36"/><circle cx="40" cy="10" r="5"/></svg>',
+    couple:   '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="32" width="28" height="28" rx="3"/><line x1="8" y1="44" x2="36" y2="44"/><path d="M14 38L14 42"/><path d="M22 38L22 42"/><rect x="44" y="26" width="28" height="34" rx="3"/><line x1="44" y1="40" x2="72" y2="40"/><path d="M36 18C36 14 42 14 42 18C42 14 48 14 48 18C48 24 42 28 42 28C42 28 36 24 36 18Z"/></svg>',
+    student:  '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="40,14 72,28 40,42 8,28"/><path d="M60 34L60 52C60 52 40 60 20 52L20 34"/><line x1="72" y1="28" x2="72" y2="44"/><circle cx="72" cy="46" r="3" fill="var(--ink)" stroke="none"/><rect x="24" y="54" width="32" height="18" rx="2"/><line x1="24" y1="63" x2="56" y2="63"/></svg>',
+    sameday:  '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="28" width="46" height="30" rx="3"/><path d="M50 38L64 38L72 50L72 58L50 58Z"/><circle cx="18" cy="62" r="7"/><circle cx="56" cy="62" r="7"/><line x1="25" y1="62" x2="49" y2="62"/><path d="M36 10L28 30L38 30L30 52" stroke="#9AB57A" stroke-width="2.5"/></svg>',
+    disposal: '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M40 12L52 32L28 32Z"/><path d="M28 32C20 32 14 40 18 50"/><path d="M18 50L10 56L22 60"/><path d="M52 32C60 32 66 40 62 50"/><path d="M62 50L70 44L66 56"/><rect x="26" y="44" width="28" height="24" rx="2"/><line x1="22" y1="44" x2="58" y2="44"/><line x1="34" y1="38" x2="46" y2="38"/><line x1="34" y1="50" x2="34" y2="62"/><line x1="40" y1="50" x2="40" y2="62"/><line x1="46" y1="50" x2="46" y2="62"/></svg>',
+    assembly: '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 60L46 34C44 28 46 20 52 16C54 20 52 24 54 26C56 28 60 26 62 28C58 34 50 36 46 34"/><line x1="20" y1="60" x2="26" y2="66"/><circle cx="23" cy="63" r="5"/><rect x="42" y="38" width="26" height="30" rx="2" stroke-dasharray="4 2"/><line x1="42" y1="50" x2="68" y2="50"/></svg>',
+  };
+
+  function renderSvcBookingGrid() {
+    var grid = document.getElementById('svcBookingGrid');
+    if (!grid) return;
+    grid.innerHTML = SERVICE_CONFIG.map(function(s) {
+      var useImage = s.icon === 'image' && s.imageUrl;
+      var media = useImage
+        ? '<img class="svc-card__img show" src="' + s.imageUrl + '" alt="' + s.name + '" loading="lazy">'
+        : '<div class="svc-card__illus">' + (SERVICE_SVG[s.id] || '') + '</div>';
+      var badge = s.badge
+        ? '<span class="svc-card__badge" style="background:' + s.badgeColor + '">' + s.badge + '</span>'
+        : '';
+      return '<a class="svc-card" href="#quote">' + media + badge + '<div class="svc-card__name">' + s.name + '</div></a>';
+    }).join('');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderSvcBookingGrid);
+  } else {
+    renderSvcBookingGrid();
+  }
 })();
 </script>
 
