@@ -1005,8 +1005,16 @@ section#quote .hero-quote-form { border-radius: 0 !important; }
 .footer-col h4 { color: var(--gray-2) !important; }
 .footer-col a { color: var(--ink-2) !important; }
 .footer-col a:hover { color: var(--ink) !important; }
-@media (max-width: 840px) { .footer-inner { grid-template-columns: 1fr 1fr !important; } }
-@media (max-width: 480px) { .footer-inner { grid-template-columns: 1fr !important; } }
+@media (max-width: 840px) { .footer-inner { grid-template-columns: 1fr 1fr !important; gap: 24px !important; } }
+@media (max-width: 480px) {
+  .site-footer { padding-top: 36px !important; }
+  .footer-inner { grid-template-columns: 1fr 1fr !important; gap: 20px 16px !important; padding: 24px 0 20px !important; }
+  .footer-col h4 { margin-bottom: 12px !important; }
+  .footer-col ul { gap: 8px !important; }
+  .footer-col a, .footer-col li { font-size: 12.5px !important; }
+  .footer-bottom { padding: 12px 0 !important; }
+  .footer-bottom small { font-size: 11px !important; }
+}
 
 /* ── 13. GMB badge cleanup ── */
 .gmb-badge { background: #fff !important; border: 1px solid #e8e8e4 !important; border-radius: 12px !important; }
