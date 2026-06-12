@@ -898,6 +898,43 @@ body { background: #f2f2ef; }
 /* ── 15. Process timeline: clean ── */
 .process-step { background: #fff; border: 1px solid #e8e8e4; border-radius: 12px; padding: 20px 24px; }
 
+/* ── Process steps: mobile fix ── */
+@media (max-width: 720px) {
+  /* Switch to column layout so text gets full card width */
+  .process-timeline { grid-template-columns: 1fr !important; gap: 10px !important; }
+  .process-timeline::before { display: none !important; }
+  .process-step {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    padding: 18px 20px !important;
+  }
+  .step-num {
+    width: 44px !important; height: 44px !important;
+    font-size: 12px !important;
+    margin: 0 0 12px !important;
+    align-self: flex-start;
+  }
+  .process-step h3 {
+    font-size: 15px !important;
+    margin-top: 0 !important;
+    line-height: 1.5;
+    letter-spacing: .04em;
+  }
+  .process-step p {
+    font-size: 12.5px !important;
+    line-height: 1.85;
+    margin-top: 8px;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    letter-spacing: .02em;
+  }
+}
+@media (max-width: 480px) {
+  .process-step { padding: 14px 16px !important; }
+  .process-step p { font-size: 12px !important; }
+}
+
 /* ── 16. Company table: cleaner ── */
 .company-row { border-bottom: 1px solid #f2f2ef !important; }
 </style>
