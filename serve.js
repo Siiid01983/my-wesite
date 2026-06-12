@@ -57,6 +57,7 @@ http.createServer((req, res) => {
 }).listen(PORT, '127.0.0.1', () => {
   console.log(`\n  Hello Moving — dev server`);
   console.log(`  http://localhost:${PORT}/`);
+  console.log(`  http://localhost:${PORT}/app.html`);
   console.log(`  http://localhost:${PORT}/admin.html`);
   console.log(`  http://localhost:${PORT}/admin-reviews.html\n`);
 });
