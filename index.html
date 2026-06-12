@@ -161,31 +161,7 @@
 @keyframes formPulse { 0% { box-shadow: 0 0 0 0 rgba(29,158,117,0.35); } 60% { box-shadow: 0 0 0 14px rgba(29,158,117,0); } 100% { box-shadow: none; } }
 .form-pulse { animation: formPulse 0.7s ease-out; }
 
-/* Dark mode toggle icon states */
-.icon-sun { display: none; }
-html.dark .icon-moon { display: none; }
-html.dark .icon-sun { display: inline; }
-.dark-mode-toggle { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 6px; color: var(--ink); display: inline-flex; align-items: center; gap: 4px; vertical-align: middle; }
-.dark-mode-toggle:hover { background: var(--line-3); }
-.mobile-dark-toggle { padding: 12px 24px; }
-.mobile-dark-toggle .dark-mode-toggle { color: var(--ink); font-size: 14px; }
 
-/* Dark mode variables */
-html.dark { color-scheme: dark; --bg: #0d1117; --bg-soft: #161b22; --bg-soft-2: #1c2128; --ink: #e6edf3; --ink-2: #c9d1d9; --gray-1: #8b949e; --gray-2: #8b949e; --gray-3: #6e7681; --line: rgba(255,255,255,0.08); --line-2: rgba(255,255,255,0.06); --line-3: rgba(255,255,255,0.04); }
-html.dark .site-header { background: #161b22; border-bottom-color: rgba(255,255,255,0.08); }
-html.dark .site-header.scrolled { background: rgba(22,27,34,0.96); }
-html.dark .mobile-nav { background: #161b22; }
-html.dark body { background: #0d1117; }
-html.dark .hero { background: #0a0f1a; }
-html.dark .hero-card { background: #161b22; }
-html.dark .sticky-cta { background: rgba(22,27,34,0.96); border-top-color: rgba(255,255,255,0.08); }
-html.dark .calendar-day { background: #161b22; border-color: rgba(255,255,255,0.08); color: #e6edf3; }
-html.dark .calendar-day.booked { background: rgba(107,114,128,0.12); color: #6e7681; border-color: rgba(255,255,255,0.06); }
-html.dark .calendar-day.selected { background: #e6edf3; color: #0d1117; }
-html.dark .compact-calendar button.compact-day { background: #161b22; border-color: rgba(255,255,255,0.08); color: #e6edf3; }
-html.dark .compact-calendar button.compact-day.booked { background: rgba(107,114,128,0.12); color: #6e7681; }
-html.dark .compact-calendar button.compact-day.selected { background: #e6edf3; color: #0d1117; }
-html.dark .dark-mode-toggle { color: #e6edf3; }
 
 /* Live chat overlay */
 #liveChatOverlay { position: fixed; bottom: 20px; right: 20px; width: 320px; height: 400px; z-index: 9999; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.25); display: none; flex-direction: column; }
@@ -198,20 +174,13 @@ html.dark .dark-mode-toggle { color: #e6edf3; }
 .lco-send { background: #1D9E75; color: #fff; border: none; border-radius: 8px; padding: 0 14px; cursor: pointer; font-weight: 600; font-size: 13px; }
 .lco-msg-user { margin: 0; padding: 6px 10px; background: #1D9E75; color: #fff; border-radius: 12px 12px 2px 12px; font-size: 13px; align-self: flex-end; max-width: 85%; }
 .lco-msg-bot { margin: 0; padding: 6px 10px; background: #f3f5f8; border-radius: 12px 12px 12px 2px; font-size: 13px; align-self: flex-start; max-width: 85%; }
-html.dark .lco-messages { background: #0d1117; }
-html.dark .lco-msg-bot { background: #161b22; color: #e6edf3; }
-html.dark .lco-footer { background: #161b22; border-top-color: rgba(255,255,255,0.08); }
-html.dark .lco-input { background: #0d1117; color: #e6edf3; border-color: rgba(255,255,255,0.08); }
 .park-btn { background: none; border: 1px solid var(--line); color: var(--gray-2); border-radius: 6px; padding: 4px 12px; font-size: 12px; cursor: pointer; float: right; margin-top: 4px; }
 .park-btn.active { background: #b91c1c; color: #fff; border-color: #b91c1c; }
 #parkModeBanner { display: none; background: #b91c1c; color: #fff; padding: 10px 16px; border-radius: 8px; text-align: center; margin-bottom: 16px; font-size: 14px; }
-html.dark .park-btn { border-color: rgba(255,255,255,0.08); }
 .time-slot-grid { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
 .time-slot-grid label { display:flex; align-items:center; gap:8px; padding:10px 16px; border:1px solid var(--line); border-radius:8px; cursor:pointer; font-size:14px; transition:.15s; }
 .time-slot-grid input[type="radio"] { display:none; }
 .time-slot-grid label:has(input:checked) { border-color:var(--navy); background:var(--navy); color:#fff; }
-html.dark .time-slot-grid label { background:var(--bg-soft); }
-html.dark .time-slot-grid label:has(input:checked) { background:var(--navy-2); border-color:var(--navy-3); }
 /* ── Booking wrap ─────────────────────────── */
 .bk-wrap{background:var(--bg-soft);border:1px solid var(--line);border-radius:16px;padding:40px 48px;max-width:760px;margin:0 auto}
 @media(max-width:720px){.bk-wrap{padding:24px 18px}}
@@ -304,52 +273,13 @@ html.dark .time-slot-grid label:has(input:checked) { background:var(--navy-2); b
 .bk-step-actions{display:flex;gap:12px;margin-top:24px}
 .bk-step-actions .bk-submit{flex:1}
 /* ── Dark mode ────────────────────────────── */
-html.dark .bk-wrap{background:var(--bg-soft)}
-html.dark .hm-nav-btn{border-color:rgba(255,255,255,.12);color:var(--ink)}
-html.dark .hm-nav-btn:hover:not([disabled]){border-color:#60a5fa;color:#60a5fa}
-html.dark .hm-day{background:var(--bg-soft);border-color:rgba(255,255,255,.08);color:var(--ink)}
-html.dark .hm-day:not([disabled]):not(.hm-day-empty):hover{border-color:#60a5fa;box-shadow:0 0 0 2px rgba(96,165,250,.2)}
-html.dark .hm-day-today{border-color:#60a5fa!important}
-html.dark .hm-day-today .hm-day-num{color:#60a5fa}
-html.dark .hm-day-selected{background:rgba(37,99,235,.2)!important;border-color:#60a5fa!important;box-shadow:0 0 0 3px rgba(96,165,250,.2)!important}
-html.dark .hm-day-selected .hm-day-num{color:#93c5fd}
-html.dark .hm-day-limited{background:rgba(245,158,11,.08)}
-html.dark .hm-day-booked{background:rgba(239,68,68,.08)}
-html.dark .bk-time-pill{background:var(--bg-soft);border-color:rgba(255,255,255,.08);color:var(--ink)}
-html.dark .bk-time-pill:hover{border-color:#60a5fa}
-html.dark .bk-time-pill:has(input:checked){border-color:#60a5fa;background:rgba(37,99,235,.15);color:#93c5fd}
-html.dark .bk-time-pill:has(input:checked) .bk-time-radio{border-color:#60a5fa;background:#60a5fa}
-html.dark .bk-field input,html.dark .bk-field select,html.dark .bk-field textarea{background:var(--bg);border-color:rgba(255,255,255,.08);color:var(--ink)}
-html.dark .bk-submit[disabled]{background:rgba(255,255,255,.08);color:var(--gray-2)}
-html.dark .bk-conf-table td:first-child{color:var(--gray-1)}
-html.dark .bk-success-icon{background:rgba(16,185,129,.15)}
-html.dark .bk-ref-card{background:var(--bg)}
-html.dark .bk-reset-btn{border-color:rgba(255,255,255,.12)}
 
 /* ── New elements dark mode ──────────────────── */
-html.dark .header-topbar{background:#0a0f1a;border-bottom:1px solid rgba(255,255,255,.06)}
-html.dark .site-header{background:rgba(22,27,34,.82)}
-html.dark .site-header.scrolled{background:rgba(22,27,34,.96)}
-html.dark .hero-trust-item{background:var(--bg-soft);border-color:rgba(255,255,255,.06)}
-html.dark .hero-trust-item strong{color:#033d23}
-html.dark .cta-form{background:var(--bg-soft);color:#033d23}
-html.dark .cta-form input,html.dark .cta-form select,html.dark .cta-form textarea{background:var(--bg);border-color:rgba(255,255,255,.1);color:#e6edf3}
-html.dark .cta-form input:focus,html.dark .cta-form select:focus,html.dark .cta-form textarea:focus{border-color:#60a5fa}
-html.dark .choice-body{background:var(--bg-soft-2);border-color:rgba(255,255,255,.08);color:#e6edf3}
-html.dark .choice-body:hover{background:var(--bg-soft);border-color:rgba(255,255,255,.2)}
-html.dark .service-choice input[type="radio"]:checked + .choice-body{border-color:#60a5fa;background:rgba(96,165,250,.1)}
-html.dark .checklist-item{background:var(--bg-soft);border-color:rgba(255,255,255,.08)}
-html.dark .checklist-item span{color:#033d23}
-html.dark .form-checkbox{background:var(--bg-soft);border-color:rgba(255,255,255,.08)}
-html.dark .step-error{background:rgba(185,28,28,.12);border-color:rgba(185,28,28,.3)}
-html.dark .sticky-chat{background:var(--navy);color:#fff}
-html.dark .form-label-text{color:var(--gray-1)}
 
 /* ── Hero trust strip ────────────────────────── */
 .hero-trust-strip{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
 .hero-trust-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;letter-spacing:.02em;background:rgba(29,158,117,.12);color:#1D9E75;border:1px solid rgba(29,158,117,.25)}
 .hero-trust-pill svg{flex-shrink:0}
-html.dark .hero-trust-pill{background:rgba(29,158,117,.15);border-color:rgba(29,158,117,.3);color:#34d399}
 
 /* ── Hero CTA grid ───────────────────────────── */
 .hero-cta{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
@@ -366,8 +296,6 @@ html.dark .hero-trust-pill{background:rgba(29,158,117,.15);border-color:rgba(29,
 .hero-urgency-avail svg{animation:urgencyPulse 2s ease-in-out infinite}
 .hero-urgency-note{color:var(--gray-2);font-size:12px}
 @keyframes urgencyPulse{0%,100%{opacity:1}50%{opacity:.4}}
-html.dark .hero-urgency{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.25)}
-html.dark .hero-urgency-label{color:var(--ink)}
 
 /* ── 6-step booking additions ──────────────── */
 .bk-field-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:18px}
@@ -376,8 +304,6 @@ html.dark .hero-urgency-label{color:var(--ink)}
 .bk-ev-pill input[type="radio"]{display:none}
 .bk-ev-pill span{display:inline-block;padding:8px 14px;border:1px solid var(--line);border-radius:8px;cursor:pointer;font-size:14px;transition:.15s;color:var(--ink)}
 .bk-ev-pill:has(input:checked) span{border-color:#2563eb;background:#eff6ff;color:#1d4ed8;font-weight:500}
-html.dark .bk-ev-pill span{background:var(--bg-soft);border-color:rgba(255,255,255,.08)}
-html.dark .bk-ev-pill:has(input:checked) span{border-color:#60a5fa;background:rgba(37,99,235,.15);color:#93c5fd}
 .bk-section-sep{border:none;border-top:1px solid var(--line);margin:24px 0}
 
 /* ── Trust badges strip ─────────────────────── */
@@ -385,8 +311,6 @@ html.dark .bk-ev-pill:has(input:checked) span{border-color:#60a5fa;background:rg
 .trust-badges-inner{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center}
 .trust-badge-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.03em;background:var(--bg);border:1px solid var(--line);color:var(--ink-2)}
 .trust-badge-pill svg{color:#10b981;flex-shrink:0}
-html.dark .trust-badges-row{background:var(--bg-soft);border-color:rgba(255,255,255,.06)}
-html.dark .trust-badge-pill{background:var(--bg-soft-2);border-color:rgba(255,255,255,.08);color:var(--ink-2)}
 
 /* ── Insurance card ─────────────────────────── */
 .insurance-card{display:flex;align-items:center;gap:16px;padding:16px 24px;background:var(--bg-soft);border:1px solid rgba(16,185,129,.2);border-radius:12px;max-width:560px;margin:16px auto 0;flex-wrap:wrap}
@@ -395,8 +319,6 @@ html.dark .trust-badge-pill{background:var(--bg-soft-2);border-color:rgba(255,25
 .insurance-card-title{font-size:13px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .insurance-card-verified{font-size:10px;font-weight:700;letter-spacing:.05em;color:#10b981;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);border-radius:20px;padding:2px 8px}
 .insurance-card-sub{font-size:11px;color:var(--gray-2);margin-top:4px}
-html.dark .insurance-card{background:var(--bg-soft);border-color:rgba(16,185,129,.25)}
-html.dark .insurance-card-icon{background:rgba(16,185,129,.12)}
 
 /* ── Google Reviews badge ───────────────────── */
 .gmb-badge{display:inline-flex;align-items:center;gap:14px;padding:14px 20px;background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;margin-bottom:24px;flex-wrap:wrap}
@@ -406,221 +328,59 @@ html.dark .insurance-card-icon{background:rgba(16,185,129,.12)}
 .gmb-meta{font-size:12px;color:var(--gray-2);margin-top:2px}
 .gmb-platform{font-size:11px;color:var(--gray-2);font-weight:500}
 .gmb-divider{width:1px;height:44px;background:var(--line);flex-shrink:0}
-html.dark .gmb-badge{background:var(--bg-soft);border-color:rgba(255,255,255,.08)}
-html.dark .gmb-divider{background:rgba(255,255,255,.08)}
 
 /* ── Review source attribution ───────────────── */
 .review-source{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:20px;font-size:12px;color:var(--gray-2)}
 .review-source-g{font-size:14px;font-weight:900;color:#4285f4;font-family:Georgia,serif}
 
-/* ═══════════════════════════════════════════════════════════
-   DARK MODE COMPREHENSIVE FIX + ACCESSIBILITY
-   All rules use html.dark prefix. No layout changes.
-   ═══════════════════════════════════════════════════════════ */
 
-/* ── A. Fix critical #033d23 color bugs (near-black on dark bg) ── */
-html.dark .hero-trust-item strong{color:var(--ink)}
-html.dark .cta-form{color:var(--ink)}
-html.dark .checklist-item span{color:var(--ink)}
 
 /* ── B. Global :focus-visible accessibility ── */
 a:focus-visible,button:focus-visible,input:focus-visible,
 select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{
   outline:2px solid #2563eb;outline-offset:2px;border-radius:4px}
-html.dark a:focus-visible,html.dark button:focus-visible,html.dark input:focus-visible,
-html.dark select:focus-visible,html.dark textarea:focus-visible,html.dark [tabindex]:focus-visible{
-  outline-color:#60a5fa}
 
 /* ── C. Topbar ── */
-html.dark .header-topbar{color:rgba(255,255,255,.55)}
-html.dark .topbar-link{color:rgba(255,255,255,.6)}
-html.dark .topbar-link:hover{color:#fff}
-html.dark .topbar-left svg{color:rgba(255,255,255,.45)}
 
 /* ── D. Header navigation + contacts ── */
-html.dark .nav a{color:var(--gray-1)}
-html.dark .nav a:hover{color:var(--ink)}
-html.dark .brand-sub{color:var(--gray-2)}
-html.dark .header-contact-link{color:var(--gray-1)}
-html.dark .header-contact-link svg{color:var(--gray-1)}
-html.dark .header-contact-link:hover{color:var(--ink)}
-html.dark .header-contact-link:hover svg{color:var(--ink)}
-html.dark .header-chat-pill{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.1);color:var(--ink)}
-html.dark .header-chat-pill:hover{background:rgba(255,255,255,.1)}
 
 /* ── E. Mobile navigation ── */
-html.dark .mobile-nav a{color:var(--ink)}
-html.dark .mobile-nav a:hover{color:#60a5fa}
-html.dark .mobile-contact-link{color:var(--gray-1)}
-html.dark .mobile-contact-link svg{color:var(--gray-1)}
-html.dark .mobile-contact-link:hover{color:var(--ink)}
-html.dark .mobile-contact-link:hover svg{color:var(--ink)}
-html.dark .mobile-contact-line,html.dark .mobile-contact-line svg{color:#4ade80}
 
 /* ── F. Hero content text + form elements ── */
-html.dark .eyebrow{color:var(--gray-2)}
-html.dark .hero-lead{color:var(--ink-2)}
-html.dark .hero-license{color:var(--gray-1)}
-html.dark .hero-license svg{color:#34d399}
-html.dark .hero-form-badge{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08);color:var(--ink)}
-html.dark .hero-form-badge-dot{background:#10b981}
-html.dark .form-note{color:var(--gray-2)}
-html.dark .step-heading{color:var(--ink)}
-html.dark .fieldset-title{color:var(--gray-1)}
-html.dark .step-label{color:var(--gray-2)}
-html.dark .step-label.active{color:#60a5fa;font-weight:600}
-html.dark .step-label.done{color:#34d399}
-html.dark .step-error{color:#f87171;background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.2)}
-html.dark .choice-icon{color:var(--ink)}
-html.dark .choice-icon svg{color:var(--ink)}
-html.dark .choice-body strong{color:var(--ink)}
-html.dark .choice-body em{color:var(--gray-2)}
-html.dark .upload-drop-zone{background:var(--bg-soft);border-color:rgba(255,255,255,.1)}
-html.dark .upload-drop-icon{color:var(--gray-2)}
-html.dark .upload-drop-label{color:var(--ink)}
-html.dark .upload-drop-label em{color:var(--gray-2)}
-html.dark .upload-drop-hint{color:var(--gray-2)}
-html.dark .checkbox-label{color:var(--ink)}
-html.dark .cta-form input::placeholder,html.dark .cta-form select::placeholder,html.dark .cta-form textarea::placeholder{color:var(--gray-2)}
-html.dark .bk-field input::placeholder,html.dark .bk-field textarea::placeholder{color:var(--gray-2)}
 
 /* ── G. Trust strip (below hero) ── */
-html.dark .trust-strip{background:var(--bg-soft-2);border-color:rgba(255,255,255,.06)}
-html.dark .trust-key{color:var(--ink)}
-html.dark .trust-sub{color:var(--gray-1)}
 
 /* ── H. Service cards (all variants) ── */
-html.dark .service-card{background:var(--bg-soft);border-color:rgba(255,255,255,.08)}
-html.dark .service-card h3{color:var(--ink)}
-html.dark .service-card p{color:var(--gray-1)}
-html.dark .service-card-cta{color:#60a5fa}
-html.dark .service-card-cta:hover{color:#93c5fd}
-html.dark .service-icon{color:var(--ink-2)}
-html.dark .service-icon svg{color:var(--ink-2)}
-html.dark .service-card-featured{background:var(--bg-soft-2);border-color:rgba(255,255,255,.1)}
-html.dark .service-card-urgent{border-color:rgba(239,68,68,.3)!important}
-html.dark .urgent-icon{color:#f87171}
-html.dark .urgent-icon svg{color:#f87171}
-html.dark .service-featured-eyebrow{color:#f87171}
-html.dark .service-featured-body h3{color:var(--ink)}
-html.dark .service-featured-body p{color:var(--gray-1)}
 
 /* ── I. Booking system ── */
-html.dark .bk-prog-label{color:var(--gray-2)}
-html.dark .bk-prog-label.active{color:#60a5fa}
-html.dark .bk-prog-label.done{color:#34d399}
-html.dark .bk-time-radio{border-color:rgba(255,255,255,.2)}
-html.dark .bk-field label{color:var(--ink)}
-html.dark .bk-back-btn{border-color:rgba(255,255,255,.12);color:var(--ink)}
-html.dark .bk-back-btn:hover{border-color:#60a5fa;color:#60a5fa}
-html.dark .bk-err{color:#f87171}
-html.dark .bk-field.has-error input,html.dark .bk-field.has-error select,html.dark .bk-field.has-error textarea{border-color:#f87171}
-html.dark .bk-field.is-valid input,html.dark .bk-field.is-valid select{border-color:#34d399}
 
 /* ── J. Commitment cards ── */
-html.dark .commit-card{background:var(--bg-soft);border-color:rgba(255,255,255,.08)}
-html.dark .commit-card h3{color:var(--ink)}
-html.dark .commit-card p{color:var(--gray-1)}
-html.dark .commit-num{color:rgba(255,255,255,.1)}
 
 /* ── K. Process timeline ── */
-html.dark .process-step{border-color:rgba(255,255,255,.08)}
-html.dark .process-step h3{color:var(--ink)}
-html.dark .process-step p{color:var(--gray-1)}
-html.dark .step-num{color:var(--gray-2)}
 
 /* ── L. Review cards ── */
-html.dark .review-card{background:var(--bg-soft);border-color:rgba(255,255,255,.08)}
-html.dark .review-card h3{color:var(--ink)}
-html.dark .review-card p{color:var(--gray-1)}
-html.dark .review-stars{color:#fbbf24}
-html.dark .avatar{background:var(--bg-soft-2);color:var(--ink);border-color:rgba(255,255,255,.08)}
-html.dark .meta strong{color:var(--ink)}
-html.dark .meta em{color:var(--gray-2)}
-html.dark .review-meta-line{color:var(--gray-2)}
 
 /* ── M. Mid-page CTA band ── */
-html.dark .midpage-cta{background:var(--bg-soft-2);border-color:rgba(255,255,255,.06)}
-html.dark .midpage-cta p{color:var(--ink)}
-html.dark .midpage-cta strong{color:var(--ink)}
-html.dark .btn-light{background:rgba(255,255,255,.08);color:var(--ink);border-color:rgba(255,255,255,.14)}
-html.dark .btn-light:hover{background:rgba(255,255,255,.14)}
 
 /* ── N. FAQ ── */
-html.dark .faq-item{background:var(--bg-soft);border-color:rgba(255,255,255,.08)}
-html.dark .faq-item summary{color:var(--ink)}
-html.dark .faq-item summary:hover{color:#60a5fa}
-html.dark .faq-item[open] summary{color:var(--ink)}
-html.dark .faq-item p{color:var(--gray-1)}
 
 /* ── O. Company table ── */
-html.dark .company-table{border-color:rgba(255,255,255,.06)}
-html.dark .company-row{border-color:rgba(255,255,255,.06)}
-html.dark .company-row dt{color:var(--gray-1)}
-html.dark .company-row dd{color:var(--ink)}
-html.dark .company-sub{color:var(--gray-2)}
 
 /* ── P. Availability calendar section ── */
-html.dark .selection-text{color:var(--gray-1)}
-html.dark .urgent-notice{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.2);color:var(--ink)}
-html.dark .urgent-notice svg{color:#f59e0b}
 
 /* ── Q. Calendar symbols ── */
-html.dark .hm-sym-avail{color:#34d399}
-html.dark .hm-sym-limited{color:#fbbf24}
-html.dark .hm-sym-booked{color:#f87171}
 
 /* ── R. Final CTA / contact section ── */
-html.dark .cta-channel{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08)}
-html.dark .cta-channel:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.18)}
-html.dark .cc-icon{color:#e6edf3}
-html.dark .cc-icon-line{color:#4ade80}
-html.dark .cc-text em{color:rgba(255,255,255,.55)}
-html.dark .cc-text strong{color:#fff}
-html.dark .cc-text small{color:rgba(255,255,255,.45)}
-html.dark .eyebrow.light{color:rgba(255,255,255,.5)}
 
 /* ── S. Footer ── */
-html.dark .site-footer{background:var(--bg-soft);border-color:rgba(255,255,255,.06)}
-html.dark .footer-col h4{color:var(--ink)}
-html.dark .footer-col li{color:var(--gray-1)}
-html.dark .footer-col a{color:var(--gray-1)}
-html.dark .footer-col a:hover{color:var(--ink)}
-html.dark .footer-desc{color:var(--gray-2)}
-html.dark .footer-bottom{border-color:rgba(255,255,255,.06)}
-html.dark .footer-bottom small{color:var(--gray-2)}
 
 /* ── T. Sticky mobile CTA ── */
-html.dark .sticky-btn{border-color:rgba(255,255,255,.08)}
-html.dark .sticky-line{color:#4ade80}
-html.dark .sticky-quote{background:var(--blue);color:#fff}
 
 /* ── U. Icon-specific dark mode containers ── */
-html.dark .icon-wrapper{color:var(--ink-2)}
-html.dark .icon-wrapper svg{color:var(--ink-2)}
-html.dark .feature-icon{color:var(--ink-2)}
-html.dark .feature-icon svg{color:var(--ink-2)}
-html.dark .booking-icon{color:var(--ink-2)}
-html.dark .booking-icon svg{color:var(--ink-2)}
-html.dark .calculator-icon{color:var(--ink-2)}
-html.dark .calculator-icon svg{color:var(--ink-2)}
-html.dark .faq-icon{color:var(--gray-1)}
-html.dark .faq-icon svg{color:var(--gray-1)}
-html.dark .footer-icon{color:var(--gray-1)}
-html.dark .footer-icon svg{color:var(--gray-1)}
-html.dark .trust-badge-pill svg{color:#34d399}
-html.dark .trust-badge-icon svg{color:#34d399}
-html.dark .insurance-card-icon{color:#34d399}
-html.dark .hero-trust-pill svg{color:#34d399}
-html.dark .hero-urgency-avail{color:#34d399}
 
 /* ── V. Section-level typography ── */
-html.dark .section-title{color:var(--ink)}
-html.dark .section-lead{color:var(--gray-1)}
 
 /* ── W. Live chat widget ── */
-html.dark #liveChatOverlay{box-shadow:0 8px 32px rgba(0,0,0,.5)}
-html.dark .lco-send:hover{background:#059669}
 
 /* ── X. Mobile icon minimum sizing (touch targets) ── */
 @media(max-width:768px){
@@ -639,85 +399,38 @@ html.dark .lco-send:hover{background:#059669}
    ═══════════════════════════════════════════════════════════ */
 
 /* ── 1. Quote form: labels, asterisks, option text ── */
-html.dark .cta-form label span{color:var(--ink)}
-html.dark .cta-form label span em{color:#f87171}
-html.dark .form-field label span{color:var(--ink)}
-html.dark .form-field label span em{color:#f87171}
-html.dark .cta-form select option{background:var(--bg-soft);color:var(--ink)}
-html.dark .bk-field select option{background:var(--bg-soft);color:var(--ink)}
 
 /* ── 2. Time-slot-grid selected state (--navy-2/3 undefined in dark) ── */
-html.dark .time-slot-grid label:has(input:checked){
-  background:rgba(37,99,235,.2);border-color:#60a5fa;color:#93c5fd}
 
 /* ── 3. Compact calendar (quote form step 3): hover + avail border ── */
-html.dark .compact-calendar button.compact-day:hover:not(.booked):not(.selected){
-  border-color:#60a5fa;box-shadow:0 0 0 2px rgba(96,165,250,.15)}
-html.dark .hm-day-avail{border-color:rgba(52,211,153,.35)}
 
 /* ── 4. Sticky bottom CTA bar backgrounds ── */
-html.dark .sticky-cta{background:rgba(22,27,34,.96);border-top-color:rgba(255,255,255,.08)}
-html.dark .sticky-btn{background:var(--bg-soft-2);color:var(--ink);border-color:rgba(255,255,255,.1)}
-html.dark .sticky-btn:hover{background:rgba(255,255,255,.1)}
-html.dark .sticky-chat.sticky-btn{background:var(--navy);color:#fff;border-color:transparent}
-html.dark .sticky-line.sticky-btn{background:#14532d;color:#4ade80;border-color:rgba(74,222,128,.2)}
 
 /* ── 5. Checklist checkboxes: visible accent in dark mode ── */
-html.dark .checklist-item input[type="checkbox"]:checked{accent-color:#60a5fa}
-html.dark .checklist-item input[type="checkbox"]{accent-color:#60a5fa}
-html.dark .form-checkbox input[type="checkbox"]{accent-color:#60a5fa}
 
 /* ── 6. Upload zone hover state ── */
-html.dark .upload-drop-zone:hover{border-color:rgba(255,255,255,.25);background:var(--bg-soft-2)}
 
 /* ── 7. Booking wrap border (uses --line which resolves fine, but ensure) ── */
-html.dark .bk-wrap{border-color:rgba(255,255,255,.08)}
 
 /* ── 8. bk-prog track in dark ── */
-html.dark .bk-prog-track{background:rgba(255,255,255,.08)}
 
 /* ── 9. bk-submit hover in dark ── */
-html.dark .bk-submit:hover:not([disabled]){background:#1d4ed8;box-shadow:0 4px 12px rgba(37,99,235,.4)}
 
 /* ── 10. Booking step section separator ── */
-html.dark .bk-section-sep{border-color:rgba(255,255,255,.08)}
 
 /* ── 11. ev-pill hover ── */
-html.dark .bk-ev-pill span:hover{border-color:rgba(255,255,255,.25)}
 
 /* ── 12. Booking confirmation table ── */
-html.dark .bk-conf-table tr{border-color:rgba(255,255,255,.06)}
-html.dark .bk-conf-table td:last-child{color:var(--ink)}
 
 /* ── 13. Booking success text ── */
-html.dark .bk-success h3{color:var(--ink)}
-html.dark .bk-success p{color:var(--gray-1)}
-html.dark .bk-ref-num{color:#60a5fa}
 
 /* ── 14. Live chat: full widget contrast ── */
-html.dark .lco-header{background:#0d7a5c}
-html.dark .lco-msg-user{background:#0d7a5c}
-html.dark .lco-input::placeholder{color:var(--gray-2)}
-html.dark .lco-send{background:#0d7a5c}
-html.dark .lco-send:hover{background:#065f46}
 
 /* ── 15. Mobile nav: current item + border ── */
-html.dark .mobile-nav{border-top-color:rgba(255,255,255,.06)}
-html.dark .mobile-nav li{border-color:rgba(255,255,255,.04)}
-html.dark .mobile-cta a{background:#2563eb;color:#fff}
-html.dark .mobile-cta a:hover{background:#1d4ed8;color:#fff}
 
 /* ── 16. FAQ summary arrow/marker contrast ── */
-html.dark .faq-item summary::marker,
-html.dark .faq-item summary::-webkit-details-marker{color:var(--gray-1)}
-html.dark .faq-item[open] summary::marker,
-html.dark .faq-item[open] summary::-webkit-details-marker{color:#60a5fa}
 
 /* ── 17. Disposal cards inherit service-card, ensure icon colours ── */
-html.dark .disposal .service-icon{color:var(--ink-2)}
-html.dark .disposal .service-icon svg{color:var(--ink-2)}
-html.dark .disposal .service-card-cta{color:#60a5fa}
-html.dark .disposal .service-card-cta:hover{color:#93c5fd}
 
 /* ── Disposal pricing ──────────────────── */
 .disposal-pricing{margin-top:48px}
@@ -733,24 +446,12 @@ html.dark .disposal .service-card-cta:hover{color:#93c5fd}
 .disposal-price-val.addon{color:#059669}
 .disposal-price-note{font-size:12px;color:var(--gray-2);margin:16px 0 0;line-height:1.6}
 @media(max-width:600px){.disposal-price-cols{grid-template-columns:1fr}}
-html.dark .disposal-pricing-hd{border-color:rgba(255,255,255,.1)}
-html.dark .disposal-price-block{background:var(--bg-soft);border-color:rgba(255,255,255,.08)}
-html.dark .disposal-price-row{border-color:rgba(255,255,255,.08)}
-html.dark .disposal-price-val{color:#93c5fd}
-html.dark .disposal-price-val.addon{color:#34d399}
 
 /* ── 18. Calendar legend text ── */
-html.dark .hm-cal-legend{border-color:rgba(255,255,255,.06);color:var(--gray-1)}
-html.dark .hm-leg-item{color:var(--gray-1)}
 
 /* ── 19. Calendar dow (day-of-week headers) ── */
-html.dark .hm-dow{color:var(--gray-2)}
-html.dark .hm-dow-sun{color:#f87171}
-html.dark .hm-dow-sat{color:#60a5fa}
 
 /* ── 20. Calendar past/booked/limited contrast ── */
-html.dark .hm-day-booked{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.2)}
-html.dark .hm-day-limited{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3)}
 
 /* ═══════════════════════════════════════════════════════════
    HERO CRO PASS — CTA hierarchy + trust message
@@ -760,8 +461,6 @@ html.dark .hm-day-limited{background:rgba(245,158,11,.1);border-color:rgba(245,1
 .hero-trust-online{margin-bottom:28px}
 .hero-trust-online-primary{display:block;font-size:15px;font-weight:600;color:var(--ink);letter-spacing:.04em}
 .hero-trust-online-sub{display:block;font-size:13px;color:var(--gray-2);letter-spacing:.03em;margin-top:4px}
-html.dark .hero-trust-online-primary{color:#e6edf3}
-html.dark .hero-trust-online-sub{color:#8b949e}
 
 /* ── Hero CTA — three-tier button hierarchy ─── */
 .btn-hero-book,.btn-hero-quote{
@@ -789,12 +488,6 @@ html.dark .hero-trust-online-sub{color:#8b949e}
 .btn-hero-line:hover{background:rgba(6,199,85,.13);border-color:rgba(6,199,85,.42)}
 .btn-hero-line svg{flex-shrink:0}
 /* Dark mode — hero CTAs */
-html.dark .btn-hero-book{background:#e6edf3;color:#0d1117}
-html.dark .btn-hero-book:hover{background:#c9d1d9;box-shadow:0 10px 24px rgba(0,0,0,.35)}
-html.dark .btn-hero-quote{color:var(--ink);border-color:rgba(255,255,255,.3)}
-html.dark .btn-hero-quote:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.52)}
-html.dark .btn-hero-line{background:rgba(74,222,128,.09);color:#4ade80;border-color:rgba(74,222,128,.25)}
-html.dark .btn-hero-line:hover{background:rgba(74,222,128,.16);border-color:rgba(74,222,128,.48)}
 /* Mobile — full width stack */
 @media(max-width:600px){
   .btn-hero-book,.btn-hero-quote,.btn-hero-line{width:100%;justify-content:center}
@@ -807,8 +500,6 @@ html.dark .btn-hero-line:hover{background:rgba(74,222,128,.16);border-color:rgba
   background:rgba(11,15,23,.06);color:var(--gray-2);
   border:1px solid var(--line);margin-bottom:18px
 }
-html.dark .svc-pop-badge{
-  background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1);color:var(--gray-1)}
 
 /* ── Service badges ─────────────────────── */
 .hero-service-badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:36px}
@@ -819,7 +510,6 @@ html.dark .svc-pop-badge{
   background:var(--bg-soft);border:1px solid var(--line);
   color:var(--ink);white-space:nowrap;line-height:1.4
 }
-html.dark .hsb-item{background:var(--bg-soft-2);border-color:rgba(255,255,255,.1);color:var(--ink)}
 @media(max-width:600px){
   .hero-service-badges{gap:6px}
   .hsb-item{font-size:12px;padding:5px 10px}
@@ -827,13 +517,8 @@ html.dark .hsb-item{background:var(--bg-soft-2);border-color:rgba(255,255,255,.1
 
 /* ── Trust pills — improved contrast light + dark ─── */
 .hero-trust-pill{background:rgba(29,158,117,.09);color:#0c6b4e;border:1px solid rgba(29,158,117,.22)}
-html.dark .hero-trust-pill{background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.28);color:#34d399}
-html.dark .hero-trust-pill svg{color:#34d399}
 
 /* ── Hero icons dark mode guarantee ─── */
-html.dark .hero-trust-strip svg{color:currentColor}
-html.dark .hero-urgency svg{color:#34d399}
-html.dark .hero-license svg{color:#34d399}
 
 /* ═══════════════════════════════════════════════════════════
    DUAL CONVERSION BAND
@@ -871,18 +556,10 @@ html.dark .hero-license svg{color:#34d399}
 }
 .midpage-line-row a:hover{color:rgba(255,255,255,.9)}
 /* dark mode — midpage dual (bg changes to bg-soft-2) */
-html.dark .midpage-divider{background:rgba(255,255,255,.08)}
-html.dark .midpage-panel-who{color:var(--gray-2)}
-html.dark .midpage-panel-title{color:var(--ink)}
-html.dark .midpage-panel-desc{color:var(--gray-1)}
-html.dark .midpage-line-row{border-color:rgba(255,255,255,.06)}
-html.dark .midpage-line-row a{color:var(--gray-2)}
-html.dark .midpage-line-row a:hover{color:var(--ink)}
 @media(max-width:720px){
   .midpage-dual{grid-template-columns:1fr;gap:0}
   .midpage-divider{width:100%;height:1px;align-self:auto;background:rgba(255,255,255,.12)}
   .midpage-panel{padding:20px 0}
-  html.dark .midpage-divider{background:rgba(255,255,255,.08)}
 }
 
 /* ── Outlined button for dark band ─────── */
@@ -897,8 +574,6 @@ html.dark .midpage-line-row a:hover{color:var(--ink)}
   border-color:rgba(255,255,255,.65);background:rgba(255,255,255,.07);color:#fff;
   transform:translateY(-1px)
 }
-html.dark .btn-outline-white{color:rgba(230,237,243,.8);border-color:rgba(255,255,255,.22)}
-html.dark .btn-outline-white:hover{border-color:rgba(255,255,255,.42);background:rgba(255,255,255,.05)}
 
 /* ═══════════════════════════════════════════════════════════
    CALCULATOR INTEGRATION PASS
@@ -913,8 +588,6 @@ html.dark .btn-outline-white:hover{border-color:rgba(255,255,255,.42);background
   border:1px solid rgba(37,99,235,.2);
   margin:8px auto 0;
 }
-html.dark .calc-foreign-badge{
-  background:rgba(96,165,250,.1);border-color:rgba(96,165,250,.25);color:#60a5fa}
 
 /* ── Service grid: 2-col for 4 items ───── */
 .hm-calc-services{grid-template-columns:repeat(2,1fr)}
@@ -932,8 +605,6 @@ html.dark .calc-foreign-badge{
   content:'';display:inline-block;
   width:6px;height:6px;border-radius:50%;background:#10b981;flex-shrink:0
 }
-html.dark .hm-calc-conversion-msg{color:var(--gray-1)}
-html.dark .hm-calc-conversion-msg::before{background:#34d399}
 
 /* ── Result CTA area alignment ──────────── */
 .hm-calc-ctas{align-items:center}
@@ -944,8 +615,6 @@ html.dark .hm-calc-conversion-msg::before{background:#34d399}
 /* ── Sticky CTA: booking primary slot ──── */
 .sticky-book{background:var(--navy);color:#fff;flex:1.5;font-weight:600}
 .sticky-book:hover{background:var(--navy-2)}
-html.dark .sticky-book{background:#e6edf3;color:#0d1117}
-html.dark .sticky-book:hover{background:#c9d1d9}
 
 /* ── Verified Customer badge ─────────────── */
 .verified-badge{
@@ -957,8 +626,6 @@ html.dark .sticky-book:hover{background:#c9d1d9}
   margin-bottom:10px;line-height:1.4
 }
 .verified-badge svg{flex-shrink:0;color:currentColor}
-html.dark .verified-badge{
-  background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.25);color:#34d399}
 
 /* ── Postal code lookup ─────────────────── */
 .zip-row{display:flex;align-items:center;gap:10px;margin-bottom:0}
@@ -976,27 +643,14 @@ html.dark .verified-badge{
 .zip-bldg label{display:block !important;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;gap:0}
 .zip-bldg input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;color:var(--ink);background:var(--bg);transition:.15s;box-sizing:border-box}
 .zip-bldg input:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
-html.dark .zip-status.loading{color:var(--gray-2)}
-html.dark .zip-status.ok{color:#34d399}
-html.dark .zip-status.err{color:#f87171}
-html.dark .zip-addr-block{background:var(--bg-soft);border-color:rgba(255,255,255,.08)}
-html.dark .zip-addr-label{color:var(--gray-2)}
-html.dark .zip-addr-value{color:var(--ink)}
-html.dark .zip-bldg label{color:var(--ink)}
-html.dark .zip-bldg input{background:var(--bg);border-color:rgba(255,255,255,.08);color:var(--ink)}
-html.dark .zip-bldg input:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(96,165,250,.1)}
-html.dark .zip-bldg input::placeholder{color:var(--gray-2)}
 /* ── Service card grid ── */
 :root{--forest:#2C3626;--olive:#9AB57A}
-html.dark{--forest:#c9d1c0}
 .svc-grid-container{max-width:480px;margin:0 auto;padding:0 12px 32px}
 .sec-title{font-size:20px;font-weight:800;padding:20px 4px 14px;color:var(--forest)}
 .svc-grid-container .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .svc-card{background:#fff;border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:0 1px 4px rgba(0,0,0,.06);text-decoration:none;display:block;position:relative}
-html.dark .svc-card{background:var(--bg-soft)}
 .svc-card:active{transform:scale(.97)}
 .svc-card__illus{width:100%;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;background:#f0f0ec}
-html.dark .svc-card__illus{background:var(--bg-soft-2)}
 .svc-card__illus svg{width:52%;height:52%;opacity:.75}
 .svc-card__name{font-size:13px;font-weight:700;color:var(--forest);padding:10px 10px 12px;line-height:1.4}
 .svc-grid-container .badge{position:absolute;top:8px;right:8px;background:var(--forest);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px}
@@ -1020,24 +674,18 @@ html.dark .svc-card__illus{background:var(--bg-soft-2)}
   background: rgba(255,255,255,.96) !important;
   box-shadow: 0 1px 6px rgba(0,0,0,.06) !important;
 }
-html.dark .site-header { background: #161b22 !important; border-bottom-color: rgba(255,255,255,.08) !important; }
-html.dark .site-header.scrolled { background: rgba(22,27,34,.96) !important; }
 .header-inner { min-height: 60px; }
 
 /* Nav: curama clean links — 6 items, one row */
 .nav ul { gap: 0; flex-wrap: nowrap; }
 .nav a { font-size: 13px; color: #444; padding: 7px 13px; border-radius: 6px; letter-spacing: .01em; white-space: nowrap; }
 .nav a:hover { background: #f2f2ef; color: #2C3626; }
-html.dark .nav a { color: var(--gray-1); }
-html.dark .nav a:hover { background: rgba(255,255,255,.06); color: var(--ink); }
 
 /* ── 3. Page base: light gray ground ── */
 body { background: #f2f2ef; }
-html.dark body { background: #0d1117; }
 
 /* ── 4. Hero: light card feel ── */
 .hero { background: #f7f7f4 !important; }
-html.dark .hero { background: #0a0f1a !important; }
 
 /* ── 5. Sections: white on gray alternation ── */
 .section { background: #fff; }
@@ -1048,13 +696,6 @@ html.dark .hero { background: #0a0f1a !important; }
 .trust-badges-row { background: #fff !important; border-color: #f2f2ef !important; }
 .booking-calendar-section { background: #f7f7f4; }
 .cta-final { background: #2C3626 !important; }
-html.dark .section { background: var(--bg-soft); }
-html.dark .section.commitments,
-html.dark .section.reviews,
-html.dark .section.company { background: var(--bg-soft-2); }
-html.dark .trust-strip { background: var(--bg-soft) !important; border-color: rgba(255,255,255,.06) !important; }
-html.dark .trust-badges-row { background: var(--bg-soft) !important; border-color: rgba(255,255,255,.06) !important; }
-html.dark .booking-calendar-section { background: var(--bg-soft-2); }
 
 /* ── 6. Section titles: bolder, curama-sized ── */
 .section-title { font-size: 22px !important; font-weight: 800 !important; letter-spacing: -.02em !important; }
@@ -1070,7 +711,6 @@ html.dark .booking-calendar-section { background: var(--bg-soft-2); }
 }
 .svc-services-grid .svc-card { cursor: pointer; }
 .svc-services-grid .svc-card__illus { background: #f0f0ec; }
-html.dark .svc-services-grid .svc-card__illus { background: var(--bg-soft-2); }
 
 /* "View all services" link */
 .section-view-all {
@@ -1086,8 +726,6 @@ html.dark .svc-services-grid .svc-card__illus { background: var(--bg-soft-2); }
 }
 .section-view-all:hover { color: #2C3626; }
 .section-view-all::after { content: ' ›'; font-size: 15px; }
-html.dark .section-view-all { color: var(--gray-2); }
-html.dark .section-view-all:hover { color: var(--ink); }
 
 /* ── 8. Booking section: CTA band ── */
 .booking-cta-band {
@@ -1120,9 +758,6 @@ html.dark .section-view-all:hover { color: var(--ink); }
   flex-shrink: 0;
 }
 .booking-cta-btn:hover { background: #1a2018; }
-html.dark .booking-cta-band { background: var(--bg-soft-2); border-color: rgba(255,255,255,.08); }
-html.dark .booking-cta-btn { background: #e6edf3; color: #0d1117; }
-html.dark .booking-cta-btn:hover { background: #c9d1d9; }
 
 /* Booking section: widen grid container */
 .section.booking .svc-grid-container { max-width: 100% !important; padding: 0 !important; }
@@ -1151,8 +786,6 @@ html.dark .booking-cta-btn:hover { background: #c9d1d9; }
 .review-card h3 { font-size: 14px !important; font-weight: 700; margin-bottom: 8px; line-height: 1.5; }
 .review-card p { font-size: 13.5px; line-height: 1.7; }
 .review-card footer { margin-top: 14px; padding-top: 12px; border-top: 1px solid #f2f2ef; }
-html.dark .review-card { background: var(--bg-soft) !important; border-color: rgba(255,255,255,.08) !important; }
-html.dark .review-card footer { border-top-color: rgba(255,255,255,.06); }
 
 /* ── 10. FAQ: curama clean accordion ── */
 .faq-list { display: flex; flex-direction: column; gap: 8px; }
@@ -1189,8 +822,6 @@ html.dark .review-card footer { border-top-color: rgba(255,255,255,.06); }
 }
 .faq-item[open] summary::after { content: '−'; }
 .faq-item p { padding: 0 20px 16px !important; font-size: 13.5px; line-height: 1.75; margin: 0 !important; }
-html.dark .faq-item { background: var(--bg-soft) !important; border-color: rgba(255,255,255,.08) !important; }
-html.dark .faq-item summary::after { color: var(--gray-1); }
 
 /* ── 11. Sticky CTA: curama white bar ── */
 .sticky-cta {
@@ -1236,11 +867,6 @@ html.dark .faq-item summary::after { color: var(--gray-1); }
   border-color: #06C755 !important;
 }
 .sticky-line:hover { background: #05a847 !important; }
-html.dark .sticky-cta { background: rgba(22,27,34,.96) !important; border-top-color: rgba(255,255,255,.08) !important; }
-html.dark .sticky-btn { background: var(--bg-soft-2) !important; border-color: rgba(255,255,255,.1) !important; color: var(--ink) !important; }
-html.dark .sticky-book { background: #e6edf3 !important; color: #0d1117 !important; border-color: transparent !important; }
-html.dark .sticky-book:hover { background: #c9d1d9 !important; }
-html.dark .sticky-line { background: #14532d !important; color: #4ade80 !important; border-color: rgba(74,222,128,.2) !important; }
 
 /* ── 12. Footer: light gray, 3-col clean ── */
 .site-footer { background: #f7f7f4 !important; border-top: 1px solid #e8e8e4 !important; }
@@ -1249,25 +875,19 @@ html.dark .sticky-line { background: #14532d !important; color: #4ade80 !importa
 .footer-bottom small { font-size: 12px; color: var(--gray-2); }
 @media (max-width: 840px) { .footer-inner { grid-template-columns: 1fr 1fr !important; } }
 @media (max-width: 480px) { .footer-inner { grid-template-columns: 1fr !important; } }
-html.dark .site-footer { background: var(--bg-soft) !important; border-color: rgba(255,255,255,.06) !important; }
-html.dark .footer-bottom { border-color: rgba(255,255,255,.06) !important; }
 
 /* ── 13. GMB badge cleanup ── */
 .gmb-badge { background: #fff !important; border: 1px solid #e8e8e4 !important; border-radius: 12px !important; }
-html.dark .gmb-badge { background: var(--bg-soft) !important; border-color: rgba(255,255,255,.08) !important; }
 
 /* ── 14. Commit cards: light card on gray bg ── */
 .commit-card { background: #fff !important; border: 1px solid #e8e8e4 !important; border-radius: 12px !important; }
-html.dark .commit-card { background: var(--bg-soft) !important; border-color: rgba(255,255,255,.08) !important; }
 
 /* ── 15. Process timeline: clean ── */
 .process-step { background: #fff; border: 1px solid #e8e8e4; border-radius: 12px; padding: 20px 24px; }
-html.dark .process-step { background: var(--bg-soft); border-color: rgba(255,255,255,.08); }
 
 /* ── 16. Company table: cleaner ── */
 .company-row { border-bottom: 1px solid #f2f2ef !important; }
-html.dark .company-row { border-bottom-color: rgba(255,255,255,.06) !important; }
-</style><script>(function(){var t=localStorage.getItem('hm_theme');if(t==='dark'||(t===null&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');})()</script>
+</style>
 </head>
 <body>
 
@@ -1307,10 +927,6 @@ html.dark .company-row { border-bottom-color: rgba(255,255,255,.06) !important; 
           <span>Email</span>
         </a>
       </div>
-      <button class="dark-mode-toggle" id="darkToggle" aria-label="ダークモード切替">
-        <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.36-6.36-.71.71M6.34 17.66l-.7.7M17.66 17.66l.7.7M6.34 6.34l-.7-.7M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
-      </button>
       <a href="#quote" class="btn btn-primary" id="headerCtaBtnEl">無料見積り</a>
     </div>
     <button class="nav-toggle" id="navToggle" aria-label="メニューを開く" aria-expanded="false">
@@ -1341,13 +957,6 @@ html.dark .company-row { border-bottom-color: rgba(255,255,255,.06) !important; 
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
           Email
         </a>
-      </li>
-      <li class="mobile-dark-toggle">
-        <button class="dark-mode-toggle" id="darkToggleMobile" aria-label="ダークモード切替">
-          <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.36-6.36-.71.71M6.34 17.66l-.7.7M17.66 17.66l.7.7M6.34 6.34l-.7-.7M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
-          <span>ダークモード</span>
-        </button>
       </li>
       <li class="mobile-cta"><a href="#booking" class="btn btn-primary btn-block">今すぐ予約する</a></li>
     </ul>
