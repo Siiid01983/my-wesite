@@ -1465,10 +1465,10 @@ section#quote .hero-quote-form { border-radius: 0 !important; }
         <h3>オンライン予約 — 最短2時間で確認</h3>
         <p>日時・住所を入力してかんたん予約リクエスト。</p>
       </div>
-      <a href="#quote" class="booking-cta-btn">
+      <button class="booking-cta-btn" onclick="openBookingApp()">
         今すぐ予約する
         <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </a>
+      </button>
     </div>
 
     <div id="serviceCardsGrid" class="svc-img-grid"></div>
@@ -2556,6 +2556,462 @@ updateS2Btn();
 })();
 </script>
 
+
+<!-- ════════════════════════════════════════════════
+     BOOKING APP OVERLAY
+     Opened when any service card is clicked.
+     All classes prefixed ba- to avoid style conflicts.
+════════════════════════════════════════════════ -->
+<style>
+#booking-app{position:fixed;inset:0;z-index:9000;display:none;justify-content:center;background:rgba(0,0,0,.55);--ba-forest:#2C3626;--ba-forest2:#3a4a32;--ba-olive:#9AB57A;--ba-canvas:#F9F9F6;--ba-border:#e3e3de;--ba-muted:#aaa;--ba-active:#fef9f0}
+#booking-app.open{display:flex}
+.ba-panel{background:#f2f2ef;width:100%;max-width:480px;height:100%;display:flex;flex-direction:column;overflow:hidden;font-family:system-ui,-apple-system,'Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;color:var(--ba-forest)}
+.ba-hdr{display:flex;align-items:center;height:52px;padding:0 16px;background:#fff;border-bottom:1px solid var(--ba-border);flex-shrink:0;gap:4px}
+.ba-back-btn{display:flex;align-items:center;background:none;border:none;cursor:pointer;color:var(--ba-forest);padding:6px 10px 6px 0;flex-shrink:0}
+.ba-back-btn svg{width:22px;height:22px;display:block}
+.ba-hdr-title{font-size:16px;font-weight:800;color:var(--ba-forest);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.ba-body{flex:1;overflow-y:auto;padding-bottom:20px}
+.ba-card{background:#fff;border-radius:12px;margin:12px 12px 0;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.ba-row{display:flex;align-items:center;padding:0 16px;min-height:54px;border-bottom:1px solid var(--ba-border);cursor:pointer;transition:background .12s}
+.ba-row:last-child{border-bottom:none}
+.ba-row:active{background:#f7f7f4}
+.ba-row--focused{box-shadow:inset 0 0 0 2px var(--ba-olive)}
+.ba-row--static{cursor:default}
+.ba-label{font-size:14px;font-weight:700;white-space:nowrap;min-width:62px}
+.ba-sep{width:1px;height:20px;background:var(--ba-border);margin:0 12px;flex-shrink:0}
+.ba-val{flex:1;font-size:14px;color:var(--ba-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ba-val.filled{color:var(--ba-forest)}
+.ba-chev{flex-shrink:0;color:var(--ba-muted);margin-left:8px}
+.ba-chev svg{width:16px;height:16px;display:block}
+.ba-wbtns{display:flex;gap:8px}
+.ba-wbtn{padding:7px 20px;border-radius:20px;border:none;font-size:14px;font-weight:700;cursor:pointer;background:#e8e8e4;color:var(--ba-forest);transition:all .15s;font-family:inherit}
+.ba-wbtn.on{background:var(--ba-forest);color:#fff}
+.ba-cta-wrap{padding:16px 12px 32px;background:#f2f2ef;flex-shrink:0}
+.ba-cta{display:block;width:100%;background:var(--ba-forest);color:#fff;border:none;border-radius:10px;padding:17px;font-size:17px;font-weight:800;cursor:pointer;transition:background .2s,transform .1s;font-family:inherit;text-align:center}
+.ba-cta:hover{background:var(--ba-forest2)}
+.ba-cta:active{transform:scale(.98)}
+/* Drawers */
+.ba-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9100;align-items:flex-end;justify-content:center}
+.ba-overlay.open{display:flex}
+.ba-drawer{background:#fff;border-radius:16px 16px 0 0;width:100%;max-width:480px;max-height:92dvh;display:flex;flex-direction:column;animation:baUp .22s ease}
+@keyframes baUp{from{transform:translateY(50px);opacity:0}to{transform:none;opacity:1}}
+.ba-drawer-top{flex-shrink:0;padding:12px 16px 0}
+.ba-drawer-handle{width:36px;height:4px;background:var(--ba-border);border-radius:2px;margin:0 auto 14px}
+.ba-drawer-title{font-size:17px;font-weight:800;margin-bottom:14px}
+.ba-drawer-scroll{flex:1;overflow-y:auto;padding:0 16px 16px}
+.ba-drawer-footer{flex-shrink:0;padding:10px 16px 28px;background:#fff;border-top:1px solid var(--ba-border)}
+.ba-drawer-cta{display:block;width:100%;background:var(--ba-forest);color:#fff;border:none;border-radius:10px;padding:15px;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit}
+/* Address */
+.ba-addr-input{width:100%;border:1px solid var(--ba-border);border-radius:8px;padding:13px 14px;font-size:15px;color:var(--ba-forest);background:var(--ba-canvas);outline:none;transition:border-color .15s;font-family:inherit;box-sizing:border-box}
+.ba-addr-input:focus{border-color:var(--ba-olive)}
+.ba-pref-hd{font-size:12px;font-weight:700;color:var(--ba-muted);padding:8px 0 6px;letter-spacing:.06em;text-transform:uppercase}
+.ba-region-hd{padding-top:8px;font-size:12px;font-weight:700;color:var(--ba-muted);letter-spacing:.06em;margin-bottom:4px}
+.ba-pref-grid{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--ba-border)}
+.ba-pref-btn{padding:14px 12px;font-size:14px;color:var(--ba-forest);border:none;border-bottom:1px solid var(--ba-border);border-right:1px solid var(--ba-border);background:#fff;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-family:inherit;transition:background .1s}
+.ba-pref-btn:nth-child(even){border-right:none}
+.ba-pref-btn:hover{background:#f5f5f0}
+.ba-pref-btn svg{width:14px;height:14px;color:var(--ba-muted)}
+/* Furniture */
+.ba-cat-title{font-size:15px;font-weight:800;padding:16px 0 10px;color:var(--ba-forest)}
+.ba-items-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+.ba-item-card{background:#f5f5f0;border-radius:10px;padding:12px 10px 10px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;transition:background .12s;box-sizing:border-box;border:1.5px solid transparent}
+.ba-item-card.has-count{background:var(--ba-active);border-color:var(--ba-olive)}
+.ba-item-name{font-size:13px;font-weight:600;color:var(--ba-forest);line-height:1.3}
+.ba-item-img{width:100%;height:70px;display:flex;align-items:center;justify-content:center}
+.ba-item-img svg{width:52px;height:52px;opacity:.7}
+.ba-counter{display:flex;align-items:center;width:100%;border:1.5px solid var(--ba-olive);border-radius:22px;overflow:hidden;background:#fff}
+.ba-counter button{flex-shrink:0;width:38px;height:34px;border:none;background:transparent;font-size:18px;font-weight:700;color:var(--ba-olive);cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center}
+.ba-counter span{flex:1;text-align:center;font-size:15px;font-weight:700;color:var(--ba-forest)}
+/* Date */
+.ba-date-input{width:100%;border:1px solid var(--ba-border);border-radius:8px;padding:13px 14px;font-size:15px;color:var(--ba-forest);background:var(--ba-canvas);outline:none;font-family:inherit;box-sizing:border-box}
+.ba-date-input:focus{border-color:var(--ba-olive)}
+/* Filter */
+.ba-filter-list{display:flex;flex-direction:column;gap:10px}
+.ba-filter-label{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--ba-border);border-radius:8px;cursor:pointer;font-size:14px;color:var(--ba-forest)}
+.ba-filter-label input{width:18px;height:18px;accent-color:var(--ba-forest);flex-shrink:0}
+/* Screens */
+.ba-screen{display:none;flex:1;flex-direction:column;overflow:hidden}
+.ba-screen.active{display:flex;animation:baScreenIn .18s ease}
+@keyframes baScreenIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.ba-hdr-logo{font-size:16px;font-weight:800;color:var(--ba-forest);display:flex;align-items:center;gap:5px;flex:1}
+.ba-hdr-dot{width:8px;height:8px;border-radius:50%;background:var(--ba-olive);flex-shrink:0}
+.ba-sec-title{font-size:20px;font-weight:800;padding:20px 16px 14px;color:var(--ba-forest);background:#f2f2ef;flex-shrink:0}
+.ba-svc-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 12px 32px;overflow-y:auto;align-content:start}
+.ba-svc-card{background:#fff;border-radius:12px;overflow:hidden;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.06);border:none;width:100%;text-align:left;font-family:inherit;display:block;position:relative;transition:transform .15s}
+.ba-svc-card:active{transform:scale(.97)}
+.ba-svc-card__illus{width:100%;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;background:#f0f0ec}
+.ba-svc-card__illus svg{width:52%;height:52%;opacity:.75}
+.ba-svc-card__name{font-size:13px;font-weight:700;color:var(--ba-forest);padding:10px 10px 12px;line-height:1.4}
+.ba-svc-badge{position:absolute;top:8px;right:8px;color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px}
+</style>
+
+<div id="booking-app" role="dialog" aria-modal="true" aria-label="引越し予約">
+  <div class="ba-panel">
+
+    <div class="ba-hdr">
+      <button class="ba-back-btn" id="ba-back-btn" onclick="baGoBack()" aria-label="戻る" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="ba-hdr-logo" id="ba-hdr-logo"><span class="ba-hdr-dot"></span>Hello Moving</div>
+      <span class="ba-hdr-title" id="ba-service-title" style="display:none"></span>
+    </div>
+
+    <!-- Screen 1: Service Selection -->
+    <div class="ba-screen active" id="ba-screen-services">
+      <div class="ba-sec-title">サービスを選択</div>
+      <div class="ba-svc-grid" id="ba-svc-grid"></div>
+    </div>
+
+    <!-- Screen 2: Booking Form -->
+    <div class="ba-screen" id="ba-screen-booking">
+    <div class="ba-body">
+      <div class="ba-card">
+        <div class="ba-row" onclick="baOpenDrawer('from')">
+          <span class="ba-label">現住所：</span><div class="ba-sep"></div>
+          <span class="ba-val" id="ba-val-from">現住所を選択</span>
+          <span class="ba-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        </div>
+        <div class="ba-row" onclick="baOpenDrawer('to')">
+          <span class="ba-label">引越し先：</span><div class="ba-sep"></div>
+          <span class="ba-val" id="ba-val-to">引越し先を選択</span>
+          <span class="ba-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        </div>
+        <div class="ba-row" onclick="baOpenDrawer('furniture')">
+          <span class="ba-label">荷物：</span><div class="ba-sep"></div>
+          <span class="ba-val" id="ba-val-items">荷物を選択</span>
+          <span class="ba-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        </div>
+        <div class="ba-row ba-row--static">
+          <span class="ba-label">作業員：</span><div class="ba-sep"></div>
+          <div class="ba-wbtns">
+            <button class="ba-wbtn on" id="ba-w2" onclick="baSetWorker(2)">2名</button>
+            <button class="ba-wbtn" id="ba-w1" onclick="baSetWorker(1)">1名</button>
+          </div>
+        </div>
+        <div class="ba-row ba-row--focused" id="ba-row-date" onclick="baOpenDrawer('date')">
+          <span class="ba-label">希望日：</span><div class="ba-sep"></div>
+          <span class="ba-val" id="ba-val-date">引越し希望日を選択</span>
+          <span class="ba-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        </div>
+        <div class="ba-row" onclick="baOpenDrawer('filter')">
+          <span class="ba-label">絞り込み：</span><div class="ba-sep"></div>
+          <span class="ba-val" id="ba-val-filter">条件を選択</span>
+          <span class="ba-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="ba-cta-wrap">
+      <button class="ba-cta" onclick="baHandleSearch()">見積りを依頼する</button>
+    </div>
+
+    </div><!-- /#ba-screen-booking -->
+
+  </div><!-- /.ba-panel -->
+
+  <!-- Drawer: From -->
+  <div class="ba-overlay" id="ba-drawer-from" onclick="baBgClose(event,'from')">
+    <div class="ba-drawer">
+      <div class="ba-drawer-top"><div class="ba-drawer-handle"></div><div class="ba-drawer-title">現住所を入力</div></div>
+      <div class="ba-drawer-scroll">
+        <input class="ba-addr-input" id="ba-input-from" type="text" placeholder="例：東京都渋谷区神南1-2-3">
+        <div style="margin-top:20px">
+          <div class="ba-pref-hd">都道府県から探す</div>
+          <div class="ba-region-hd">関東</div>
+          <div class="ba-pref-grid">
+            <button class="ba-pref-btn" onclick="baSetPref('from','東京都')">東京都 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+            <button class="ba-pref-btn" onclick="baSetPref('from','神奈川県')">神奈川県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+            <button class="ba-pref-btn" onclick="baSetPref('from','埼玉県')">埼玉県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+            <button class="ba-pref-btn" onclick="baSetPref('from','千葉県')">千葉県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+          </div>
+          <div class="ba-region-hd" style="margin-top:12px">関西</div>
+          <div class="ba-pref-grid">
+            <button class="ba-pref-btn" onclick="baSetPref('from','大阪府')">大阪府 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+            <button class="ba-pref-btn" onclick="baSetPref('from','京都府')">京都府 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+            <button class="ba-pref-btn" onclick="baSetPref('from','兵庫県')">兵庫県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+            <button class="ba-pref-btn" onclick="baSetPref('from','奈良県')">奈良県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="ba-drawer-footer"><button class="ba-drawer-cta" onclick="baConfirmAddr('from')">確定する</button></div>
+    </div>
+  </div>
+
+  <!-- Drawer: To -->
+  <div class="ba-overlay" id="ba-drawer-to" onclick="baBgClose(event,'to')">
+    <div class="ba-drawer">
+      <div class="ba-drawer-top"><div class="ba-drawer-handle"></div><div class="ba-drawer-title">引越し先を入力</div></div>
+      <div class="ba-drawer-scroll">
+        <input class="ba-addr-input" id="ba-input-to" type="text" placeholder="例：埼玉県さいたま市大宮区...">
+        <div style="margin-top:20px">
+          <div class="ba-pref-hd">都道府県から探す</div>
+          <div class="ba-region-hd">関東</div>
+          <div class="ba-pref-grid">
+            <button class="ba-pref-btn" onclick="baSetPref('to','東京都')">東京都 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+            <button class="ba-pref-btn" onclick="baSetPref('to','神奈川県')">神奈川県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+            <button class="ba-pref-btn" onclick="baSetPref('to','埼玉県')">埼玉県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+            <button class="ba-pref-btn" onclick="baSetPref('to','千葉県')">千葉県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="ba-drawer-footer"><button class="ba-drawer-cta" onclick="baConfirmAddr('to')">確定する</button></div>
+    </div>
+  </div>
+
+  <!-- Drawer: Furniture -->
+  <div class="ba-overlay" id="ba-drawer-furniture" onclick="baBgClose(event,'furniture')">
+    <div class="ba-drawer">
+      <div class="ba-drawer-top"><div class="ba-drawer-handle"></div><div class="ba-drawer-title">荷物を選択</div></div>
+      <div class="ba-drawer-scroll">
+        <div class="ba-cat-title">リビング・寝室</div>
+        <div class="ba-items-grid">
+          <div class="ba-item-card" id="ba-card-tv-s"><div class="ba-item-name">テレビ 40型未満</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="10" width="44" height="30" rx="3"/><line x1="20" y1="40" x2="16" y2="50"/><line x1="40" y1="40" x2="44" y2="50"/><line x1="14" y1="50" x2="46" y2="50"/></svg></div><div class="ba-counter"><button onclick="baDec('tv-s')">−</button><span id="ba-n-tv-s">0</span><button onclick="baInc('tv-s')">＋</button></div></div>
+          <div class="ba-item-card" id="ba-card-tv-l"><div class="ba-item-name">テレビ 40型以上</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="52" height="34" rx="3"/><line x1="18" y1="42" x2="14" y2="52"/><line x1="42" y1="42" x2="46" y2="52"/><line x1="12" y1="52" x2="48" y2="52"/></svg></div><div class="ba-counter"><button onclick="baDec('tv-l')">−</button><span id="ba-n-tv-l">0</span><button onclick="baInc('tv-l')">＋</button></div></div>
+          <div class="ba-item-card" id="ba-card-bed-s"><div class="ba-item-name">ベッド シングル</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="22" width="44" height="24" rx="2"/><rect x="8" y="14" width="16" height="12" rx="2"/><line x1="8" y1="46" x2="8" y2="52"/><line x1="52" y1="46" x2="52" y2="52"/></svg></div><div class="ba-counter"><button onclick="baDec('bed-s')">−</button><span id="ba-n-bed-s">0</span><button onclick="baInc('bed-s')">＋</button></div></div>
+          <div class="ba-item-card" id="ba-card-bed-d"><div class="ba-item-name">ベッド ダブル</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="22" width="52" height="24" rx="2"/><rect x="4" y="14" width="20" height="12" rx="2"/><line x1="4" y1="46" x2="4" y2="52"/><line x1="56" y1="46" x2="56" y2="52"/></svg></div><div class="ba-counter"><button onclick="baDec('bed-d')">−</button><span id="ba-n-bed-d">0</span><button onclick="baInc('bed-d')">＋</button></div></div>
+          <div class="ba-item-card" id="ba-card-sofa1"><div class="ba-item-name">ソファ 1人</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="24" width="40" height="18" rx="4"/><rect x="6" y="18" width="8" height="24" rx="3"/><rect x="46" y="18" width="8" height="24" rx="3"/><rect x="10" y="14" width="40" height="12" rx="3"/><line x1="12" y1="42" x2="12" y2="48"/><line x1="48" y1="42" x2="48" y2="48"/></svg></div><div class="ba-counter"><button onclick="baDec('sofa1')">−</button><span id="ba-n-sofa1">0</span><button onclick="baInc('sofa1')">＋</button></div></div>
+          <div class="ba-item-card" id="ba-card-sofa3"><div class="ba-item-name">ソファ 3人</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="26" width="52" height="16" rx="4"/><rect x="2" y="20" width="8" height="22" rx="3"/><rect x="50" y="20" width="8" height="22" rx="3"/><rect x="4" y="16" width="52" height="12" rx="3"/><line x1="8" y1="42" x2="8" y2="48"/><line x1="52" y1="42" x2="52" y2="48"/></svg></div><div class="ba-counter"><button onclick="baDec('sofa3')">−</button><span id="ba-n-sofa3">0</span><button onclick="baInc('sofa3')">＋</button></div></div>
+        </div>
+        <div class="ba-cat-title">水回り</div>
+        <div class="ba-items-grid">
+          <div class="ba-item-card" id="ba-card-fridge-s"><div class="ba-item-name">冷蔵庫 2ドア</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="4" width="32" height="52" rx="3"/><line x1="14" y1="22" x2="46" y2="22"/><line x1="22" y1="13" x2="22" y2="19"/><line x1="22" y1="31" x2="22" y2="46"/></svg></div><div class="ba-counter"><button onclick="baDec('fridge-s')">−</button><span id="ba-n-fridge-s">0</span><button onclick="baInc('fridge-s')">＋</button></div></div>
+          <div class="ba-item-card" id="ba-card-fridge-l"><div class="ba-item-name">冷蔵庫 3ドア</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="4" width="40" height="52" rx="3"/><line x1="10" y1="18" x2="50" y2="18"/><line x1="10" y1="34" x2="50" y2="34"/><line x1="18" y1="10" x2="18" y2="16"/><line x1="18" y1="24" x2="18" y2="30"/><line x1="18" y1="40" x2="18" y2="52"/></svg></div><div class="ba-counter"><button onclick="baDec('fridge-l')">−</button><span id="ba-n-fridge-l">0</span><button onclick="baInc('fridge-l')">＋</button></div></div>
+          <div class="ba-item-card" id="ba-card-wash-v"><div class="ba-item-name">洗濯機 縦型</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="6" width="44" height="48" rx="3"/><circle cx="30" cy="34" r="12"/><circle cx="30" cy="34" r="6"/><circle cx="18" cy="14" r="3"/></svg></div><div class="ba-counter"><button onclick="baDec('wash-v')">−</button><span id="ba-n-wash-v">0</span><button onclick="baInc('wash-v')">＋</button></div></div>
+          <div class="ba-item-card" id="ba-card-wash-d"><div class="ba-item-name">洗濯機 ドラム</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="8" width="48" height="44" rx="4"/><circle cx="30" cy="32" r="14"/><circle cx="30" cy="32" r="7"/><rect x="10" y="12" width="16" height="8" rx="2"/></svg></div><div class="ba-counter"><button onclick="baDec('wash-d')">−</button><span id="ba-n-wash-d">0</span><button onclick="baInc('wash-d')">＋</button></div></div>
+        </div>
+        <div class="ba-cat-title">収納・家具</div>
+        <div class="ba-items-grid">
+          <div class="ba-item-card" id="ba-card-shelf-s"><div class="ba-item-name">棚 小</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="8" width="32" height="46" rx="2"/><line x1="14" y1="22" x2="46" y2="22"/><line x1="14" y1="36" x2="46" y2="36"/></svg></div><div class="ba-counter"><button onclick="baDec('shelf-s')">−</button><span id="ba-n-shelf-s">0</span><button onclick="baInc('shelf-s')">＋</button></div></div>
+          <div class="ba-item-card" id="ba-card-shelf-l"><div class="ba-item-name">棚 大</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="6" width="44" height="48" rx="2"/><line x1="8" y1="18" x2="52" y2="18"/><line x1="8" y1="32" x2="52" y2="32"/><line x1="8" y1="46" x2="52" y2="46"/></svg></div><div class="ba-counter"><button onclick="baDec('shelf-l')">−</button><span id="ba-n-shelf-l">0</span><button onclick="baInc('shelf-l')">＋</button></div></div>
+          <div class="ba-item-card" id="ba-card-table"><div class="ba-item-name">ダイニングテーブル</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="20" width="48" height="8" rx="2"/><line x1="14" y1="28" x2="14" y2="50"/><line x1="46" y1="28" x2="46" y2="50"/></svg></div><div class="ba-counter"><button onclick="baDec('table')">−</button><span id="ba-n-table">0</span><button onclick="baInc('table')">＋</button></div></div>
+          <div class="ba-item-card" id="ba-card-chest"><div class="ba-item-name">チェスト</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="12" y="6" width="36" height="48" rx="2"/><line x1="12" y1="18" x2="48" y2="18"/><line x1="12" y1="30" x2="48" y2="30"/><line x1="12" y1="42" x2="48" y2="42"/><circle cx="30" cy="12" r="2"/><circle cx="30" cy="24" r="2"/><circle cx="30" cy="36" r="2"/></svg></div><div class="ba-counter"><button onclick="baDec('chest')">−</button><span id="ba-n-chest">0</span><button onclick="baInc('chest')">＋</button></div></div>
+          <div class="ba-item-card" id="ba-card-bike"><div class="ba-item-name">自転車</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="42" r="10"/><circle cx="46" cy="42" r="10"/><path d="M14 42L30 18L46 42"/><line x1="24" y1="18" x2="36" y2="18"/></svg></div><div class="ba-counter"><button onclick="baDec('bike')">−</button><span id="ba-n-bike">0</span><button onclick="baInc('bike')">＋</button></div></div>
+          <div class="ba-item-card" id="ba-card-box"><div class="ba-item-name">ダンボール</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 20L30 10L50 20L50 46L30 56L10 46Z"/><path d="M10 20L30 30L50 20"/><line x1="30" y1="30" x2="30" y2="56"/></svg></div><div class="ba-counter"><button onclick="baDec('box')">−</button><span id="ba-n-box">0</span><button onclick="baInc('box')">＋</button></div></div>
+        </div>
+      </div>
+      <div class="ba-drawer-footer"><button class="ba-drawer-cta" onclick="baConfirmFurniture()">選択完了</button></div>
+    </div>
+  </div>
+
+  <!-- Drawer: Date -->
+  <div class="ba-overlay" id="ba-drawer-date" onclick="baBgClose(event,'date')">
+    <div class="ba-drawer">
+      <div class="ba-drawer-top"><div class="ba-drawer-handle"></div><div class="ba-drawer-title">引越し希望日</div></div>
+      <div class="ba-drawer-scroll"><input class="ba-date-input" type="date" id="ba-input-date"></div>
+      <div class="ba-drawer-footer"><button class="ba-drawer-cta" onclick="baConfirmDate()">確定する</button></div>
+    </div>
+  </div>
+
+  <!-- Drawer: Filter -->
+  <div class="ba-overlay" id="ba-drawer-filter" onclick="baBgClose(event,'filter')">
+    <div class="ba-drawer">
+      <div class="ba-drawer-top"><div class="ba-drawer-handle"></div><div class="ba-drawer-title">絞り込み条件</div></div>
+      <div class="ba-drawer-scroll">
+        <div class="ba-filter-list">
+          <label class="ba-filter-label"><input type="checkbox" id="ba-f-same-day"> 当日・翌日対応可</label>
+          <label class="ba-filter-label"><input type="checkbox" id="ba-f-english"> 英語対応可</label>
+          <label class="ba-filter-label"><input type="checkbox" id="ba-f-insurance"> 保険加入済</label>
+          <label class="ba-filter-label"><input type="checkbox" id="ba-f-disposal"> 不用品回収対応</label>
+        </div>
+      </div>
+      <div class="ba-drawer-footer"><button class="ba-drawer-cta" onclick="baConfirmFilter()">確定する</button></div>
+    </div>
+  </div>
+
+</div><!-- /#booking-app -->
+
+<script>
+(function () {
+  var BA_ITEMS = ['tv-s','tv-l','bed-s','bed-d','sofa1','sofa3','fridge-s','fridge-l','wash-v','wash-d','shelf-s','shelf-l','table','chest','bike','box'];
+
+  // Short display names used in the booking-panel summary row
+  var BA_ITEM_NAMES = {
+    'tv-s':     'テレビ 小',
+    'tv-l':     'テレビ 大',
+    'bed-s':    'ベッド S',
+    'bed-d':    'ベッド D',
+    'sofa1':    'ソファ 1人',
+    'sofa3':    'ソファ 3人',
+    'fridge-s': '冷蔵庫 2ドア',
+    'fridge-l': '冷蔵庫 3ドア',
+    'wash-v':   '洗濯機 縦型',
+    'wash-d':   '洗濯機 ドラム',
+    'shelf-s':  '棚 小',
+    'shelf-l':  '棚 大',
+    'table':    'テーブル',
+    'chest':    'チェスト',
+    'bike':     '自転車',
+    'box':      'ダンボール'
+  };
+
+  var baCounts = {};
+  BA_ITEMS.forEach(function (k) { baCounts[k] = 0; });
+
+  // ── Service selection ────────────────────────────────────
+  var BA_SVC_CFG = [
+    {id:'tansin',  name:'単身引越し',             badge:'人気',    bc:'#9AB57A'},
+    {id:'couple',  name:'カップル・ご夫婦引越し',  badge:'人気',    bc:'#9AB57A'},
+    {id:'student', name:'学生・新生活引越し',      badge:'人気',    bc:'#9AB57A'},
+    {id:'sameday', name:'当日・お急ぎ引越しプラン', badge:'当日対応', bc:'#c0392b'},
+    {id:'disposal',name:'不用品回収・処分',        badge:'',        bc:''},
+    {id:'assembly',name:'家具組立・分解',          badge:'',        bc:''},
+  ];
+  var BA_SVC_SVG = {
+    tansin:   '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ba-forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 30L40 18L64 30L64 58L40 70L16 58Z"/><path d="M16 30L40 42L64 30"/><line x1="40" y1="42" x2="40" y2="70"/><path d="M28 24L28 36"/><path d="M52 24L52 36"/><circle cx="40" cy="10" r="5"/></svg>',
+    couple:   '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ba-forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="32" width="28" height="28" rx="3"/><line x1="8" y1="44" x2="36" y2="44"/><path d="M14 38L14 42"/><path d="M22 38L22 42"/><rect x="44" y="26" width="28" height="34" rx="3"/><line x1="44" y1="40" x2="72" y2="40"/><path d="M36 18C36 14 42 14 42 18C42 14 48 14 48 18C48 24 42 28 42 28C42 28 36 24 36 18Z"/></svg>',
+    student:  '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ba-forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="40,14 72,28 40,42 8,28"/><path d="M60 34L60 52C60 52 40 60 20 52L20 34"/><line x1="72" y1="28" x2="72" y2="44"/><circle cx="72" cy="46" r="3" fill="var(--ba-forest)" stroke="none"/><rect x="24" y="54" width="32" height="18" rx="2"/><line x1="24" y1="63" x2="56" y2="63"/></svg>',
+    sameday:  '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ba-forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="28" width="46" height="30" rx="3"/><path d="M50 38L64 38L72 50L72 58L50 58Z"/><circle cx="18" cy="62" r="7"/><circle cx="56" cy="62" r="7"/><line x1="25" y1="62" x2="49" y2="62"/><path d="M36 10L28 30L38 30L30 52" stroke="var(--ba-olive)" stroke-width="2.5"/></svg>',
+    disposal: '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ba-forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M40 12L52 32L28 32Z"/><path d="M28 32C20 32 14 40 18 50"/><path d="M18 50L10 56L22 60"/><path d="M52 32C60 32 66 40 62 50"/><path d="M62 50L70 44L66 56"/><rect x="26" y="44" width="28" height="24" rx="2"/><line x1="22" y1="44" x2="58" y2="44"/><line x1="34" y1="38" x2="46" y2="38"/><line x1="34" y1="50" x2="34" y2="62"/><line x1="40" y1="50" x2="40" y2="62"/><line x1="46" y1="50" x2="46" y2="62"/></svg>',
+    assembly: '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ba-forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 60L46 34C44 28 46 20 52 16C54 20 52 24 54 26C56 28 60 26 62 28C58 34 50 36 46 34"/><line x1="20" y1="60" x2="26" y2="66"/><circle cx="23" cy="63" r="5"/><rect x="42" y="38" width="26" height="30" rx="2" stroke-dasharray="4 2"/><line x1="42" y1="50" x2="68" y2="50"/></svg>',
+  };
+  function baRenderServices() {
+    var grid = document.getElementById('ba-svc-grid');
+    if (!grid) return;
+    grid.innerHTML = BA_SVC_CFG.map(function(s) {
+      var badge = s.badge ? '<span class="ba-svc-badge" style="background:' + s.bc + '">' + s.badge + '</span>' : '';
+      return '<button class="ba-svc-card" onclick="baGoBooking(\'' + s.id + '\',\'' + s.name + '\')">'
+        + '<div class="ba-svc-card__illus">' + (BA_SVC_SVG[s.id] || '') + '</div>'
+        + badge
+        + '<div class="ba-svc-card__name">' + s.name + '</div>'
+        + '</button>';
+    }).join('');
+  }
+  function baShowScreen(id) {
+    document.querySelectorAll('#booking-app .ba-screen').forEach(function(s) { s.classList.remove('active'); });
+    document.getElementById('ba-screen-' + id).classList.add('active');
+    var isHome = id === 'services';
+    document.getElementById('ba-back-btn').style.display = isHome ? 'none' : '';
+    document.getElementById('ba-hdr-logo').style.display = isHome ? '' : 'none';
+    document.getElementById('ba-service-title').style.display = isHome ? 'none' : '';
+  }
+  function baGoBooking(serviceId, serviceName) {
+    document.getElementById('ba-service-title').textContent = serviceName;
+    baShowScreen('booking');
+  }
+  function baGoBack() {
+    if (!document.getElementById('ba-screen-services').classList.contains('active')) {
+      baShowScreen('services');
+    } else {
+      closeBookingApp();
+    }
+  }
+  window.baGoBack     = baGoBack;
+  window.baGoBooking  = baGoBooking;
+  window.baShowScreen = baShowScreen;
+
+  // ── Public API ──────────────────────────────────────────
+  window.openBookingApp = function (serviceName) {
+    document.getElementById('booking-app').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    if (serviceName) {
+      document.getElementById('ba-service-title').textContent = serviceName;
+      baShowScreen('booking');
+      setTimeout(function () { baOpenDrawer('furniture'); }, 80);
+    } else {
+      baShowScreen('services');
+    }
+  };
+
+  window.closeBookingApp = function () {
+    document.getElementById('booking-app').classList.remove('open');
+    document.body.style.overflow = '';
+    ['from','to','furniture','date','filter'].forEach(function (id) {
+      document.getElementById('ba-drawer-' + id).classList.remove('open');
+    });
+    baShowScreen('services');
+  };
+
+  // ── Drawers ─────────────────────────────────────────────
+  function baOpenDrawer(id) { document.getElementById('ba-drawer-' + id).classList.add('open'); }
+  function baCloseDrawer(id) { document.getElementById('ba-drawer-' + id).classList.remove('open'); }
+  window.baOpenDrawer  = baOpenDrawer;
+  window.baCloseDrawer = baCloseDrawer;
+  window.baBgClose = function (e, id) { if (e.target === e.currentTarget) baCloseDrawer(id); };
+
+  // ── Item counters ────────────────────────────────────────
+  window.baInc = function (k) { baCounts[k]++; _baSync(k); };
+  window.baDec = function (k) { if (baCounts[k] > 0) { baCounts[k]--; _baSync(k); } };
+  function _baSync(k) {
+    document.getElementById('ba-n-' + k).textContent = baCounts[k];
+    document.getElementById('ba-card-' + k).classList.toggle('has-count', baCounts[k] > 0);
+  }
+
+  // ── Address ─────────────────────────────────────────────
+  window.baSetPref = function (dir, pref) { document.getElementById('ba-input-' + dir).value = pref; };
+  window.baConfirmAddr = function (dir) {
+    var v = document.getElementById('ba-input-' + dir).value.trim();
+    if (!v) return;
+    var el = document.getElementById('ba-val-' + dir);
+    el.textContent = v; el.classList.add('filled');
+    baCloseDrawer(dir);
+  };
+
+  // ── Furniture ───────────────────────────────────────────
+  // Build the summary label from current baCounts — no price logic, names only.
+  function _baItemsSummary() {
+    var selected = BA_ITEMS.filter(function (k) { return baCounts[k] > 0; });
+    if (selected.length === 0) return '荷物を選択';
+    var total = selected.reduce(function (s, k) { return s + baCounts[k]; }, 0);
+    // ≤3 distinct kinds: list names; >3: compact total + type count
+    if (selected.length <= 3) {
+      return selected.map(function (k) {
+        return BA_ITEM_NAMES[k] + (baCounts[k] > 1 ? ' × ' + baCounts[k] : '');
+      }).join('・');
+    }
+    return '計 ' + total + '点（' + selected.length + '種類）';
+  }
+
+  window.baConfirmFurniture = function () {
+    var summary = _baItemsSummary();
+    var hasItems = summary !== '荷物を選択';
+    var el = document.getElementById('ba-val-items');
+    el.textContent = summary;
+    el.classList.toggle('filled', hasItems);
+    baCloseDrawer('furniture');
+  };
+
+  // ── Date ────────────────────────────────────────────────
+  window.baConfirmDate = function () {
+    var v = document.getElementById('ba-input-date').value;
+    if (!v) return;
+    var d = new Date(v);
+    var str = d.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+    var el = document.getElementById('ba-val-date');
+    el.textContent = str; el.classList.add('filled');
+    document.getElementById('ba-row-date').classList.remove('ba-row--focused');
+    baCloseDrawer('date');
+  };
+
+  // ── Filter ──────────────────────────────────────────────
+  window.baConfirmFilter = function () {
+    var pairs = [['ba-f-same-day','当日対応'],['ba-f-english','英語対応'],['ba-f-insurance','保険加入'],['ba-f-disposal','不用品回収']];
+    var on = pairs.filter(function (p) { return document.getElementById(p[0]).checked; }).map(function (p) { return p[1]; });
+    var el = document.getElementById('ba-val-filter');
+    el.textContent = on.length ? on.join('・') : '条件を選択';
+    el.classList.toggle('filled', on.length > 0);
+    baCloseDrawer('filter');
+  };
+
+  // ── Workers ─────────────────────────────────────────────
+  window.baSetWorker = function (n) {
+    document.getElementById('ba-w1').classList.toggle('on', n === 1);
+    document.getElementById('ba-w2').classList.toggle('on', n === 2);
+  };
+
+  // ── Submit ──────────────────────────────────────────────
+  window.baHandleSearch = function () {
+    var from = document.getElementById('ba-val-from').classList.contains('filled');
+    var to   = document.getElementById('ba-val-to').classList.contains('filled');
+    if (!from || !to) { alert('現住所と引越し先を入力してください。'); return; }
+    window.location.href = 'https://hello-moving.com/#quote';
+  };
+
+  // ── Init ────────────────────────────────────────────────
+  document.getElementById('ba-input-date').min = new Date().toISOString().split('T')[0];
+  baRenderServices();
+  baShowScreen('services');
+})();
+</script>
 
 </body>
 </html>

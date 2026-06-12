@@ -163,11 +163,12 @@
     });
 
     document.querySelectorAll('[data-service]').forEach(link => {
-      link.addEventListener('click', () => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
         const val = link.dataset.service;
         const radio = form.querySelector(`[name="service"][value="${val}"]`);
         if (radio) radio.checked = true;
-        showStep(2);
+        openBookingApp(val);
       });
     });
 
