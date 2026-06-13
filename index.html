@@ -2847,6 +2847,22 @@ updateS2Btn();
 .ba-filter-list{display:flex;flex-direction:column;gap:10px}
 .ba-filter-label{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--ba-border);border-radius:8px;cursor:pointer;font-size:14px;color:var(--ba-forest)}
 .ba-filter-label input{width:18px;height:18px;accent-color:var(--ba-forest);flex-shrink:0}
+/* Contact form */
+.ba-contact-card{padding:20px 16px}
+.ba-contact-title{font-size:15px;font-weight:800;color:var(--ba-forest);margin-bottom:16px}
+.ba-contact-field{margin-bottom:14px}
+.ba-contact-field label{display:block;font-size:13px;font-weight:600;color:var(--ba-forest);margin-bottom:6px}
+.ba-req{color:#c0392b}
+.ba-field-err{display:none;font-size:12px;color:#c0392b;margin-top:4px}
+/* Success screen */
+.ba-success-icon{width:64px;height:64px;border-radius:50%;background:#d1fae5;display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+.ba-success-title{font-size:20px;font-weight:800;color:var(--ba-forest);margin-bottom:8px}
+.ba-success-sub{font-size:13px;color:var(--ba-muted);line-height:1.65;margin-bottom:24px}
+.ba-success-ref-card{background:#f5f5f0;border-radius:10px;padding:16px 24px;width:100%;margin-bottom:28px}
+.ba-success-ref-label{font-size:11px;color:var(--ba-muted);font-weight:700;letter-spacing:.06em;margin-bottom:6px;text-transform:uppercase}
+.ba-success-ref-num{font-size:22px;font-weight:800;color:#2563eb;letter-spacing:.04em}
+.ba-success-close{border:1.5px solid var(--ba-border);background:none;border-radius:8px;padding:12px 32px;font-size:14px;font-weight:600;color:var(--ba-forest);cursor:pointer;font-family:inherit;transition:background .15s}
+.ba-success-close:hover{background:#f5f5f0}
 /* Screens */
 .ba-screen{display:none;flex:1;flex-direction:column;overflow:hidden}
 .ba-screen.active{display:flex;animation:baScreenIn .18s ease}
@@ -2925,6 +2941,66 @@ updateS2Btn();
     </div>
 
     </div><!-- /#ba-screen-booking -->
+
+    <!-- Screen 3: Contact Info -->
+    <div class="ba-screen" id="ba-screen-contact">
+      <div class="ba-body">
+        <div class="ba-card">
+          <div class="ba-row ba-row--static">
+            <span class="ba-label">サービス：</span><div class="ba-sep"></div>
+            <span class="ba-val filled" id="ba-confirm-service"></span>
+          </div>
+          <div class="ba-row ba-row--static">
+            <span class="ba-label">現住所：</span><div class="ba-sep"></div>
+            <span class="ba-val filled" id="ba-confirm-from" style="white-space:normal;font-size:13px"></span>
+          </div>
+          <div class="ba-row ba-row--static">
+            <span class="ba-label">引越し先：</span><div class="ba-sep"></div>
+            <span class="ba-val filled" id="ba-confirm-to" style="white-space:normal;font-size:13px"></span>
+          </div>
+          <div class="ba-row ba-row--static">
+            <span class="ba-label">希望日：</span><div class="ba-sep"></div>
+            <span class="ba-val filled" id="ba-confirm-date"></span>
+          </div>
+        </div>
+        <div class="ba-card ba-contact-card">
+          <div class="ba-contact-title">お客様情報をご入力ください</div>
+          <div class="ba-contact-field">
+            <label>お名前 <span class="ba-req">*</span></label>
+            <input type="text" id="ba-input-name" autocomplete="name" placeholder="例：山田太郎" class="ba-addr-input">
+            <span class="ba-field-err" id="ba-err-name">お名前をご入力ください</span>
+          </div>
+          <div class="ba-contact-field">
+            <label>メールアドレス <span class="ba-req">*</span></label>
+            <input type="email" id="ba-input-email" autocomplete="email" placeholder="例：yamada@example.com" class="ba-addr-input">
+            <span class="ba-field-err" id="ba-err-email">有効なメールアドレスをご入力ください</span>
+          </div>
+          <div class="ba-contact-field">
+            <label>電話番号</label>
+            <input type="tel" id="ba-input-phone" autocomplete="tel" placeholder="例：090-1234-5678" class="ba-addr-input">
+          </div>
+        </div>
+      </div>
+      <div class="ba-cta-wrap">
+        <button class="ba-cta" id="ba-submit-btn" onclick="baSubmitBooking()">見積りを依頼する</button>
+      </div>
+    </div><!-- /#ba-screen-contact -->
+
+    <!-- Screen 4: Success -->
+    <div class="ba-screen" id="ba-screen-success">
+      <div class="ba-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:48px 24px">
+        <div class="ba-success-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="ba-success-title">ご依頼ありがとうございます</div>
+        <p class="ba-success-sub">担当者よりご連絡いたします。<br>下記の番号をお控えください。</p>
+        <div class="ba-success-ref-card">
+          <div class="ba-success-ref-label">予約受付番号</div>
+          <div id="ba-success-ref" class="ba-success-ref-num"></div>
+        </div>
+        <button class="ba-success-close" onclick="closeBookingApp()">閉じる</button>
+      </div>
+    </div><!-- /#ba-screen-success -->
 
   </div><!-- /.ba-panel -->
 
@@ -3043,7 +3119,6 @@ updateS2Btn();
 (function () {
   var BA_ITEMS = ['tv-s','tv-l','bed-s','bed-d','sofa1','sofa3','fridge-s','fridge-l','wash-v','wash-d','shelf-s','shelf-l','table','chest','bike','box'];
 
-  // Short display names used in the booking-panel summary row
   var BA_ITEM_NAMES = {
     'tv-s':     'テレビ 小',
     'tv-l':     'テレビ 大',
@@ -3066,6 +3141,10 @@ updateS2Btn();
   var baCounts = {};
   BA_ITEMS.forEach(function (k) { baCounts[k] = 0; });
 
+  // ── Navigation history & selected service ────────────────
+  var _baHistory = ['services'];
+  var _baSelectedService = { id: '', name: '' };
+
   // ── Service selection ────────────────────────────────────
   var BA_SVC_CFG = [
     {id:'tansin',  name:'単身引越し',             badge:'人気',    bc:'#9AB57A', img:'https://images.unsplash.com/photo-1616432043562-3671ea2e5242?auto=format&fit=crop&w=600&q=80'},
@@ -3083,6 +3162,7 @@ updateS2Btn();
     disposal: '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ba-forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M40 12L52 32L28 32Z"/><path d="M28 32C20 32 14 40 18 50"/><path d="M18 50L10 56L22 60"/><path d="M52 32C60 32 66 40 62 50"/><path d="M62 50L70 44L66 56"/><rect x="26" y="44" width="28" height="24" rx="2"/><line x1="22" y1="44" x2="58" y2="44"/><line x1="34" y1="38" x2="46" y2="38"/><line x1="34" y1="50" x2="34" y2="62"/><line x1="40" y1="50" x2="40" y2="62"/><line x1="46" y1="50" x2="46" y2="62"/></svg>',
     assembly: '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ba-forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 60L46 34C44 28 46 20 52 16C54 20 52 24 54 26C56 28 60 26 62 28C58 34 50 36 46 34"/><line x1="20" y1="60" x2="26" y2="66"/><circle cx="23" cy="63" r="5"/><rect x="42" y="38" width="26" height="30" rx="2" stroke-dasharray="4 2"/><line x1="42" y1="50" x2="68" y2="50"/></svg>',
   };
+
   function baRenderServices() {
     var grid = document.getElementById('ba-svc-grid');
     if (!grid) return;
@@ -3098,36 +3178,53 @@ updateS2Btn();
         + '</button>';
     }).join('');
   }
+
+  // ── Screen navigation ─────────────────────────────────────
   function baShowScreen(id) {
     document.querySelectorAll('#booking-app .ba-screen').forEach(function(s) { s.classList.remove('active'); });
     document.getElementById('ba-screen-' + id).classList.add('active');
-    var isHome = id === 'services';
-    document.getElementById('ba-back-btn').style.display = isHome ? 'none' : '';
-    document.getElementById('ba-hdr-logo').style.display = isHome ? '' : 'none';
-    document.getElementById('ba-service-title').style.display = isHome ? 'none' : '';
+    var isHome    = id === 'services';
+    var isSuccess = id === 'success';
+    var backBtn  = document.getElementById('ba-back-btn');
+    var logo     = document.getElementById('ba-hdr-logo');
+    var titleEl  = document.getElementById('ba-service-title');
+    backBtn.style.display  = (isHome || isSuccess) ? 'none' : '';
+    logo.style.display     = isHome ? '' : 'none';
+    titleEl.style.display  = (isHome || isSuccess) ? 'none' : '';
+    if (!isHome && !isSuccess) titleEl.textContent = _baSelectedService.name || '';
   }
+
+  function baPush(id) {
+    _baHistory.push(id);
+    baShowScreen(id);
+  }
+
   function baGoBooking(serviceId, serviceName) {
-    document.getElementById('ba-service-title').textContent = serviceName;
-    baShowScreen('booking');
+    _baSelectedService = { id: serviceId, name: serviceName };
+    baPush('booking');
   }
+
   function baGoBack() {
-    if (!document.getElementById('ba-screen-services').classList.contains('active')) {
-      baShowScreen('services');
+    if (_baHistory.length > 1) {
+      _baHistory.pop();
+      baShowScreen(_baHistory[_baHistory.length - 1]);
     } else {
       closeBookingApp();
     }
   }
+
   window.baGoBack     = baGoBack;
   window.baGoBooking  = baGoBooking;
   window.baShowScreen = baShowScreen;
 
   // ── Public API ──────────────────────────────────────────
   window.openBookingApp = function (serviceName) {
+    _baHistory = ['services'];
     document.getElementById('booking-app').classList.add('open');
     document.body.style.overflow = 'hidden';
     if (serviceName) {
-      document.getElementById('ba-service-title').textContent = serviceName;
-      baShowScreen('booking');
+      _baSelectedService = { id: '', name: serviceName };
+      baPush('booking');
       setTimeout(function () { baOpenDrawer('furniture'); }, 80);
     } else {
       baShowScreen('services');
@@ -3135,6 +3232,7 @@ updateS2Btn();
   };
 
   window.closeBookingApp = function () {
+    _baHistory = ['services'];
     document.getElementById('booking-app').classList.remove('open');
     document.body.style.overflow = '';
     ['from','to','furniture','date','filter'].forEach(function (id) {
@@ -3169,12 +3267,10 @@ updateS2Btn();
   };
 
   // ── Furniture ───────────────────────────────────────────
-  // Build the summary label from current baCounts — no price logic, names only.
   function _baItemsSummary() {
     var selected = BA_ITEMS.filter(function (k) { return baCounts[k] > 0; });
     if (selected.length === 0) return '荷物を選択';
     var total = selected.reduce(function (s, k) { return s + baCounts[k]; }, 0);
-    // ≤3 distinct kinds: list names; >3: compact total + type count
     if (selected.length <= 3) {
       return selected.map(function (k) {
         return BA_ITEM_NAMES[k] + (baCounts[k] > 1 ? ' × ' + baCounts[k] : '');
@@ -3196,7 +3292,7 @@ updateS2Btn();
   window.baConfirmDate = function () {
     var v = document.getElementById('ba-input-date').value;
     if (!v) return;
-    var d = new Date(v);
+    var d = new Date(v + 'T00:00:00');
     var str = d.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
     var el = document.getElementById('ba-val-date');
     el.textContent = str; el.classList.add('filled');
@@ -3220,12 +3316,86 @@ updateS2Btn();
     document.getElementById('ba-w2').classList.toggle('on', n === 2);
   };
 
-  // ── Submit ──────────────────────────────────────────────
+  // ── Step 2 → Step 3: validate addresses, show contact screen ──
   window.baHandleSearch = function () {
     var from = document.getElementById('ba-val-from').classList.contains('filled');
     var to   = document.getElementById('ba-val-to').classList.contains('filled');
-    if (!from || !to) { alert('現住所と引越し先を入力してください。'); return; }
-    window.location.href = 'https://hello-moving.com/#quote';
+    if (!from || !to) {
+      alert('現住所と引越し先を入力してください。');
+      return;
+    }
+    // Populate confirmation summary on the contact screen
+    document.getElementById('ba-confirm-service').textContent = _baSelectedService.name || '—';
+    document.getElementById('ba-confirm-from').textContent    = document.getElementById('ba-val-from').textContent;
+    document.getElementById('ba-confirm-to').textContent      = document.getElementById('ba-val-to').textContent;
+    document.getElementById('ba-confirm-date').textContent    = document.getElementById('ba-val-date').classList.contains('filled')
+      ? document.getElementById('ba-val-date').textContent : '未定';
+    baPush('contact');
+  };
+
+  // ── Step 3 → submit: write directly to Supabase via BookingService ──
+  window.baSubmitBooking = function () {
+    var name  = document.getElementById('ba-input-name').value.trim();
+    var email = document.getElementById('ba-input-email').value.trim();
+    var nameErr  = document.getElementById('ba-err-name');
+    var emailErr = document.getElementById('ba-err-email');
+    nameErr.style.display  = name ? 'none' : 'block';
+    emailErr.style.display = (email && email.includes('@')) ? 'none' : 'block';
+    if (!name || !email || !email.includes('@')) return;
+
+    var btn = document.getElementById('ba-submit-btn');
+    btn.disabled = true;
+    btn.textContent = '送信中...';
+
+    var fromAddr   = document.getElementById('ba-val-from').textContent;
+    var toAddr     = document.getElementById('ba-val-to').textContent;
+    var itemsText  = document.getElementById('ba-val-items').textContent;
+    var filterText = document.getElementById('ba-val-filter').textContent;
+    var workers    = document.getElementById('ba-w2').classList.contains('on') ? 2 : 1;
+    var notesParts = [];
+    if (itemsText)  notesParts.push('荷物: ' + itemsText);
+    if (filterText) notesParts.push('フィルター: ' + filterText);
+    notesParts.push('作業員: ' + workers + '名');
+
+    var payload = {
+      name:     name,
+      email:    email,
+      phone:    document.getElementById('ba-input-phone').value.trim(),
+      service:  _baSelectedService.name || '',
+      date:     document.getElementById('ba-input-date').value || '',
+      fromAddr: fromAddr,
+      toAddr:   toAddr,
+      notes:    notesParts.join(' / '),
+      status:   '新規',
+    };
+
+    Promise.resolve()
+      .then(function () {
+        if (typeof BookingService !== 'undefined') return BookingService.createBooking(payload);
+        throw new Error('BookingService not available');
+      })
+      .then(function (bk) {
+        var ref = (bk && bk.id) || '';
+        document.getElementById('ba-success-ref').textContent = ref;
+        _baHistory = ['success'];
+        baShowScreen('success');
+        // Confirmation email — silent fail on GitHub Pages / missing PHP
+        fetch('send_email.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to_email: email, to_name: name, booking_ref: ref,
+            service: payload.service, move_date: payload.date,
+            time_slot: '未定', from_addr: fromAddr, to_addr: toAddr,
+          }),
+        }).catch(function (_e) { console.warn('[ba send_email] skipped:', _e.message); });
+      })
+      .catch(function (err) {
+        console.error('[baSubmit] Supabase error:', err);
+        alert('送信に失敗しました。もう一度お試しください。');
+        btn.disabled = false;
+        btn.textContent = '見積りを依頼する';
+      });
   };
 
   // ── Init ────────────────────────────────────────────────
