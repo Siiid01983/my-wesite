@@ -121,6 +121,13 @@ html,body{background:#f2f2ef;font-family:var(--font);color:var(--forest);-webkit
 /* Date */
 .date-input{width:100%;border:1px solid var(--border);border-radius:8px;padding:13px 14px;font-size:15px;font-family:var(--font);color:var(--forest);background:var(--canvas);outline:none}
 .date-input:focus{border-color:var(--olive)}
+
+/* Contact & Success screens */
+.contact-field{margin-bottom:14px}
+.contact-field:last-child{margin-bottom:0}
+.contact-label{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em}
+.success-icon{width:64px;height:64px;background:var(--olive);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.success-ref-card{background:#fff;border-radius:12px;padding:18px 24px;width:100%;box-shadow:0 1px 4px rgba(0,0,0,.07);text-align:center}
 </style>
 </head>
 <body>
@@ -279,11 +286,12 @@ const SERVICE_SVG = {
             <button class="wbtn" id="w1" onclick="setWorker(1)">1名</button>
           </div>
         </div>
-        <div class="row focused" id="row-date" onclick="openDrawer('date')">
+        <div class="row focused" id="row-date" style="position:relative">
           <span class="row__label">希望日：</span>
           <div class="row__sep"></div>
           <span class="row__val" id="val-date">引越し希望日を選択</span>
           <span class="row__chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+          <input type="date" id="input-date" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;z-index:1" onchange="onDateChange(event)">
         </div>
         <div class="row" onclick="openDrawer('filter')">
           <span class="row__label">絞り込み：</span>
@@ -294,7 +302,51 @@ const SERVICE_SVG = {
       </div>
     </div>
     <div class="cta-wrap">
-      <button class="cta" onclick="handleSearch()">検索</button>
+      <div id="search-error" style="display:none;color:#c0392b;font-size:13px;font-weight:600;margin-bottom:10px;text-align:center;padding:0 4px"></div>
+      <button class="cta" onclick="handleSearch()">次へ進む</button>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN: Contact ══ -->
+  <div class="screen" id="screen-contact">
+    <div class="ptitle">お客様情報</div>
+    <div class="booking-body">
+      <div class="card" style="padding:16px 16px 18px">
+        <div class="contact-field">
+          <div class="contact-label">お名前 *</div>
+          <input class="addr-input" id="input-name" type="text" placeholder="山田太郎" autocomplete="name">
+        </div>
+        <div class="contact-field">
+          <div class="contact-label">電話番号 *</div>
+          <input class="addr-input" id="input-phone" type="tel" placeholder="09012345678" autocomplete="tel" inputmode="tel">
+        </div>
+        <div class="contact-field">
+          <div class="contact-label">メールアドレス（任意）</div>
+          <input class="addr-input" id="input-email" type="email" placeholder="example@email.com" autocomplete="email" inputmode="email">
+        </div>
+      </div>
+      <div id="contact-error" style="display:none;color:#c0392b;padding:10px 16px;font-size:13px;font-weight:600">名前と電話番号を入力してください。</div>
+    </div>
+    <div class="cta-wrap">
+      <button class="cta" id="submitBtn" onclick="submitBooking()">見積りを依頼する</button>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN: Success ══ -->
+  <div class="screen" id="screen-success">
+    <div class="booking-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:48px 24px;gap:24px">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div>
+        <div style="font-size:22px;font-weight:800;color:var(--forest);margin-bottom:8px">見積もりを受け付けました</div>
+        <div style="font-size:14px;color:var(--muted);line-height:1.6">最短2時間以内にご連絡いたします</div>
+      </div>
+      <div class="success-ref-card">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">受付番号</div>
+        <div id="success-ref" style="font-size:22px;font-weight:800;color:var(--forest);letter-spacing:.04em;word-break:break-all"></div>
+      </div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.8">担当者より電話またはメールにて<br>ご連絡いたします。<br>お急ぎの方はお電話ください。</div>
     </div>
   </div>
 
@@ -387,15 +439,6 @@ const SERVICE_SVG = {
   </div>
 </div>
 
-<!-- Date -->
-<div class="overlay" id="drawer-date" onclick="bgClose(event,'date')">
-  <div class="drawer">
-    <div class="drawer__top"><div class="drawer__handle"></div><div class="drawer__title">引越し希望日</div></div>
-    <div class="drawer__scroll"><input class="date-input" type="date" id="input-date"></div>
-    <div class="drawer-cta-wrap"><button class="drawer-cta" onclick="confirmDate()">確定する</button></div>
-  </div>
-</div>
-
 <!-- Filter -->
 <div class="overlay" id="drawer-filter" onclick="bgClose(event,'filter')">
   <div class="drawer">
@@ -444,18 +487,25 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + id).classList.add('active');
   const isHome = id === 'services';
-  document.getElementById('backBtn').classList.toggle('visible', !isHome);
+  const isSuccess = id === 'success';
+  document.getElementById('backBtn').classList.toggle('visible', !isHome && !isSuccess);
   document.getElementById('hdrLogo').style.display = isHome ? '' : 'none';
   document.getElementById('hdrTitle').style.display = isHome ? 'none' : '';
 }
 
 function goBooking(serviceId, serviceName) {
+  selectedServiceId = serviceId;
+  selectedServiceName = serviceName;
   document.getElementById('booking-title').textContent = serviceName;
   document.getElementById('hdrTitle').textContent = serviceName;
   showScreen('booking');
 }
 
 function goBack() {
+  if (document.getElementById('screen-contact').classList.contains('active')) {
+    showScreen('booking');
+    return;
+  }
   showScreen('services');
 }
 
@@ -463,6 +513,9 @@ function goBack() {
    BOOKING LOGIC
 ══════════════════════════════ */
 const counts = {};
+let selectedServiceId = '';
+let selectedServiceName = '';
+let selectedWorkers = 2;
 const furnitureItems = ['tv-s','tv-l','bed-s','bed-d','sofa1','sofa3','fridge-s','fridge-l','wash-v','wash-d','shelf-s','shelf-l','table','chest','bike','box'];
 furnitureItems.forEach(k => counts[k] = 0);
 
@@ -495,15 +548,21 @@ function confirmFurniture(){
   closeDrawer('furniture');
 }
 
-function confirmDate(){
-  const v = document.getElementById('input-date').value;
-  if(!v) return;
-  const d = new Date(v);
-  const str = d.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+function onDateChange(e) {
+  const v = e.target.value;
   const el = document.getElementById('val-date');
-  el.textContent = str; el.classList.add('filled');
+  if (!v) {
+    el.textContent = '引越し希望日を選択';
+    el.classList.remove('filled');
+    document.getElementById('row-date').classList.add('focused');
+    return;
+  }
+  const d = new Date(v + 'T00:00:00');
+  el.textContent = d.toLocaleDateString('ja-JP', {year:'numeric', month:'long', day:'numeric'});
+  el.classList.add('filled');
   document.getElementById('row-date').classList.remove('focused');
-  closeDrawer('date');
+  const searchErr = document.getElementById('search-error');
+  if (searchErr) searchErr.style.display = 'none';
 }
 
 function confirmFilter(){
@@ -516,15 +575,86 @@ function confirmFilter(){
 }
 
 function setWorker(n){
+  selectedWorkers = n;
   document.getElementById('w1').classList.toggle('on', n===1);
   document.getElementById('w2').classList.toggle('on', n===2);
 }
 
 function handleSearch(){
-  const from = document.getElementById('val-from').classList.contains('filled');
-  const to   = document.getElementById('val-to').classList.contains('filled');
-  if(!from||!to){ alert('現住所と引越し先を入力してください。'); return; }
-  window.location.href = 'https://hello-moving.com/#quote';
+  const from  = document.getElementById('val-from').classList.contains('filled');
+  const to    = document.getElementById('val-to').classList.contains('filled');
+  const date  = document.getElementById('val-date').classList.contains('filled');
+  const errEl = document.getElementById('search-error');
+  if (!from || !to) {
+    errEl.textContent = '現住所と引越し先を入力してください。';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!date) {
+    errEl.textContent = '引越し希望日を選択してください。';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+  showScreen('contact');
+}
+
+async function submitBooking() {
+  const name  = document.getElementById('input-name').value.trim();
+  const phone = document.getElementById('input-phone').value.trim();
+  const email = document.getElementById('input-email').value.trim();
+  const errEl = document.getElementById('contact-error');
+
+  if (!name || !phone) {
+    errEl.textContent = '名前と電話番号を入力してください。';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '送信中...';
+
+  const fromFilled = document.getElementById('val-from').classList.contains('filled');
+  const toFilled   = document.getElementById('val-to').classList.contains('filled');
+  const date       = document.getElementById('input-date').value;
+
+  const selectedItems = furnitureItems
+    .filter(function(k){ return counts[k] > 0; })
+    .map(function(k){ return k + '×' + counts[k]; })
+    .join(', ');
+  const filterMap = [['f-same-day','当日対応'],['f-english','英語対応'],['f-insurance','保険加入'],['f-disposal','不用品回収']];
+  const activeFilters = filterMap
+    .filter(function(p){ return document.getElementById(p[0]).checked; })
+    .map(function(p){ return p[1]; }).join('・');
+
+  const notesParts = [];
+  if (selectedItems) notesParts.push('荷物: ' + selectedItems);
+  notesParts.push('作業員: ' + selectedWorkers + '名');
+  if (activeFilters) notesParts.push('条件: ' + activeFilters);
+
+  try {
+    const booking = await BookingService.createBooking({
+      name:     name,
+      email:    email || '',
+      phone:    phone,
+      service:  selectedServiceName || '',
+      date:     date,
+      fromAddr: fromFilled ? document.getElementById('val-from').textContent : '',
+      toAddr:   toFilled   ? document.getElementById('val-to').textContent   : '',
+      notes:    notesParts.join(' | '),
+      status:   '新規',
+    });
+    document.getElementById('success-ref').textContent = booking.id;
+    showScreen('success');
+  } catch(err) {
+    console.error('[booking-app] submit error:', err.message);
+    errEl.textContent = '送信に失敗しました。通信環境をご確認の上、再度お試しください。';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = '見積りを依頼する';
+  }
 }
 
 document.getElementById('input-date').min = new Date().toISOString().split('T')[0];
@@ -532,5 +662,12 @@ document.getElementById('input-date').min = new Date().toISOString().split('T')[
 // Boot
 renderServices();
 </script>
+
+<!-- Supabase + BookingService — load after inline JS so BookingService is available on submit -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/config/appConfig.js"></script>
+<script src="js/config/env.js" onerror="console.warn('[booking-app] env.js not found — Supabase writes disabled')"></script>
+<script src="js/services/supabaseClient.js"></script>
+<script src="bookingService.js"></script>
 </body>
 </html>

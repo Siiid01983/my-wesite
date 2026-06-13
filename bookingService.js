@@ -11,39 +11,66 @@ const _BK_TO_LOCAL = {
   pending: '新規', confirmed: '確定', completed: '完了', cancelled: 'キャンセル',
 };
 
+// ── Notes encoding — fields not in DB schema are packed into notes ────────────
+// Format: {user notes}\n[HM_EXTRAS]\nref:…\nfrom:…\nto:…\nservice:…\ntime:…
+
+const _HM_SEP = '\n[HM_EXTRAS]\n';
+
+function _packNotes(b) {
+  const extras = [];
+  if (b.id)       extras.push(`ref:${b.id}`);
+  if (b.fromAddr) extras.push(`from:${b.fromAddr}`);
+  if (b.toAddr)   extras.push(`to:${b.toAddr}`);
+  if (b.service)  extras.push(`service:${b.service}`);
+  if (b.time)     extras.push(`time:${b.time}`);
+  const block = extras.join('\n');
+  const user  = b.notes || '';
+  if (!block) return user || null;
+  return user ? `${user}${_HM_SEP}${block}` : block;
+}
+
+function _unpackNotes(raw) {
+  const idx = (raw || '').indexOf(_HM_SEP);
+  const userNotes  = idx >= 0 ? raw.slice(0, idx) : (raw || '');
+  const extraBlock = idx >= 0 ? raw.slice(idx + _HM_SEP.length) : '';
+  const extra = {};
+  extraBlock.split('\n').forEach(line => {
+    const c = line.indexOf(':');
+    if (c > 0) extra[line.slice(0, c).trim()] = line.slice(c + 1).trim();
+  });
+  return { userNotes, extra };
+}
+
 // ── Field mappers ─────────────────────────────────────────────────────────────
 
 function _bookingToRow(b) {
   return {
-    reference_id:  b.id,
-    customer_name: b.name      || '',
-    email:         b.email     || null,
-    phone:         b.phone     || null,
-    move_date:     b.date      || null,
-    move_from:     b.fromAddr  || null,
-    move_to:       b.toAddr    || null,
-    service_type:  b.service   || null,
-    status:        _BK_TO_SB[b.status] || 'pending',
-    notes:         b.notes     || null,
-    time_slot:     b.time      || null,
-    created_at:    b.createdAt || new Date().toISOString(),
+    customer_name:  b.name      || '',
+    customer_email: b.email     || null,
+    customer_phone: b.phone     || null,
+    booking_date:   b.date      || null,
+    status:         _BK_TO_SB[b.status] || 'pending',
+    notes:          _packNotes(b),
+    created_at:     b.createdAt || new Date().toISOString(),
   };
 }
 
 function _rowToBooking(r) {
+  const { userNotes, extra } = _unpackNotes(r.notes);
   return {
-    id:        r.reference_id || r.id,
-    name:      r.customer_name || '',
-    email:     r.email         || '',
-    phone:     r.phone         || '',
-    date:      r.move_date     || '',
-    fromAddr:  r.move_from     || '',
-    toAddr:    r.move_to       || '',
-    service:   r.service_type  || '',
+    _dbId:     r.id,
+    id:        extra.ref     || String(r.id),
+    name:      r.customer_name  || '',
+    email:     r.customer_email || '',
+    phone:     r.customer_phone || '',
+    date:      r.booking_date   || '',
+    fromAddr:  extra.from    || '',
+    toAddr:    extra.to      || '',
+    service:   extra.service || '',
     status:    _BK_TO_LOCAL[r.status] || '新規',
-    notes:     r.notes         || '',
-    time:      r.time_slot     || '',
-    createdAt: r.created_at    || new Date().toISOString(),
+    notes:     userNotes     || '',
+    time:      extra.time    || '',
+    createdAt: r.created_at  || new Date().toISOString(),
   };
 }
 
@@ -121,10 +148,17 @@ const BookingService = (() => {
   async function getBookingById(id) {
     const sb = _sb();
     if (!sb) { console.warn('[BookingService] Supabase not available'); return null; }
+    // Numeric DB id — direct lookup
+    if (/^\d+$/.test(String(id))) {
+      const { data, error } = await sb.from('bookings').select('*').eq('id', id).maybeSingle();
+      if (error) { console.error('[BookingService] getBookingById:', error.message); return null; }
+      return data ? _rowToBooking(data) : null;
+    }
+    // Reference ID (HM-xxx) stored in notes
     const { data, error } = await sb
       .from('bookings')
       .select('*')
-      .eq('reference_id', id)
+      .ilike('notes', `%ref:${id}%`)
       .maybeSingle();
     if (error) { console.error('[BookingService] getBookingById:', error.message); return null; }
     return data ? _rowToBooking(data) : null;
@@ -144,10 +178,9 @@ const BookingService = (() => {
 
     const sb = _sb();
     if (sb) {
-      // eslint-disable-next-line no-unused-vars
       const { created_at, ...fields } = _bookingToRow(updated);
       const row = { ...fields, updated_at: updatedAt };
-      const { error } = await sb.from('bookings').update(row).eq('reference_id', id);
+      const { error } = await sb.from('bookings').update(row).eq('id', current._dbId);
       if (error) {
         console.error('[BookingService] updateBooking:', error.message);
         throw new Error(error.message);
@@ -174,7 +207,7 @@ const BookingService = (() => {
       const { error } = await sb
         .from('bookings')
         .update({ status: 'cancelled', updated_at: updatedAt })
-        .eq('reference_id', id);
+        .eq('id', current._dbId);
       if (error) {
         console.error('[BookingService] cancelBooking:', error.message);
         throw new Error(error.message);

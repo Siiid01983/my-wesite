@@ -127,38 +127,63 @@
   const CAL_TO_SB    = { booked: 'full' };
   const CAL_TO_LOCAL = { full: 'booked' };
 
+  /* ── Notes encoding — fields not in DB schema are packed into notes ─── */
+  const _HM_SEP = '\n[HM_EXTRAS]\n';
+
+  function _packBookingNotes(b) {
+    const extras = [];
+    if (b.id)       extras.push(`ref:${b.id}`);
+    if (b.fromAddr) extras.push(`from:${b.fromAddr}`);
+    if (b.toAddr)   extras.push(`to:${b.toAddr}`);
+    if (b.service)  extras.push(`service:${b.service}`);
+    if (b.time)     extras.push(`time:${b.time}`);
+    const block = extras.join('\n');
+    const user  = b.notes || '';
+    if (!block) return user || null;
+    return user ? `${user}${_HM_SEP}${block}` : block;
+  }
+
+  function _unpackBookingNotes(raw) {
+    const idx = (raw || '').indexOf(_HM_SEP);
+    const userNotes  = idx >= 0 ? raw.slice(0, idx) : (raw || '');
+    const extraBlock = idx >= 0 ? raw.slice(idx + _HM_SEP.length) : '';
+    const extra = {};
+    extraBlock.split('\n').forEach(line => {
+      const c = line.indexOf(':');
+      if (c > 0) extra[line.slice(0, c).trim()] = line.slice(c + 1).trim();
+    });
+    return { userNotes, extra };
+  }
+
   /* ── Data mappers ─────────────────────────────────────── */
   function bookingToSb(b) {
     return {
-      reference_id:  b.id,
-      customer_name: b.name        || '',
-      email:         b.email       || null,
-      phone:         b.phone       || null,
-      move_date:     b.date        || null,
-      move_from:     b.fromAddr    || null,
-      move_to:       b.toAddr      || null,
-      service_type:  b.service     || null,
-      status:        BK_TO_SB[b.status] || 'pending',
-      notes:         b.notes       || null,
-      time_slot:     b.time        || null,
-      created_at:    b.createdAt   || new Date().toISOString(),
+      customer_name:  b.name      || '',
+      customer_email: b.email     || null,
+      customer_phone: b.phone     || null,
+      booking_date:   b.date      || null,
+      status:         BK_TO_SB[b.status] || 'pending',
+      notes:          _packBookingNotes(b),
+      created_at:     b.createdAt || new Date().toISOString(),
     };
   }
 
   function sbToBooking(r) {
+    const { userNotes, extra } = _unpackBookingNotes(r.notes);
     return {
-      id:       r.reference_id || r.id,
-      name:     r.customer_name || '',
-      email:    r.email    || '',
-      phone:    r.phone    || '',
-      date:     r.move_date || '',
-      fromAddr: r.move_from || '',
-      toAddr:   r.move_to  || '',
-      service:  r.service_type || '',
-      status:   BK_TO_LOCAL[r.status] || '新規',
-      notes:    r.notes    || '',
-      time:     r.time_slot || '',
-      createdAt: r.created_at || new Date().toISOString(),
+      _dbId:     r.id,
+      id:        extra.ref     || String(r.id),
+      name:      r.customer_name  || '',
+      email:     r.customer_email || '',
+      phone:     r.customer_phone || '',
+      date:      r.booking_date   || '',
+      fromAddr:  extra.from    || '',
+      toAddr:    extra.to      || '',
+      service:   extra.service || '',
+      status:    BK_TO_LOCAL[r.status] || '新規',
+      notes:     userNotes     || '',
+      time:      extra.time    || '',
+      createdAt: r.created_at  || new Date().toISOString(),
     };
   }
 
@@ -273,7 +298,12 @@
     addBooking(b) {
       if (!_checkCanWrite()) return;
       const a = this.getBookings(); a.unshift(b); _set(K.bk, a);
-      _upsert('bookings', bookingToSb(b), 'reference_id');
+      if (!_sb) { console.warn('[Adapter] addBooking: SupabaseClient null'); return; }
+      _sb.from('bookings').insert(bookingToSb(b))
+        .then(({ error }) => {
+          if (error) console.error('[SUPABASE ERROR] bookings insert failed:', error.message);
+          else        console.log('[SUPABASE RESPONSE] bookings insert ok');
+        });
     },
 
     updateBooking(id, p) {
@@ -281,13 +311,20 @@
       const list = this.getBookings().map(b => b.id === id ? { ...b, ...p } : b);
       _set(K.bk, list);
       const updated = list.find(b => b.id === id);
-      if (updated) _upsert('bookings', bookingToSb(updated), 'reference_id');
+      if (updated && updated._dbId && _sb) {
+        const { created_at, ...fields } = bookingToSb(updated);
+        const row = { ...fields, updated_at: new Date().toISOString() };
+        _sb.from('bookings').update(row).eq('id', updated._dbId)
+          .then(({ error }) => { if (error) console.error('[SUPABASE ERROR] bookings update failed:', error.message); });
+      }
     },
 
     deleteBooking(id) {
       if (!_checkCanWrite()) return;
+      const bk = this.getBookings().find(b => b.id === id);
+      const dbId = bk && bk._dbId;
       _set(K.bk, this.getBookings().filter(b => b.id !== id));
-      _del('bookings', 'reference_id', id);
+      if (dbId) _del('bookings', 'id', dbId);
     },
 
     /* ── Availability ─────────────────────────────────── */
@@ -663,10 +700,10 @@
           .on('postgres_changes',
             { event: 'DELETE', schema: 'public', table: 'bookings' },
             async (payload) => {
-              console.log('[Realtime] Booking updated', payload.old);
-              const refId = payload.old?.reference_id;
-              if (refId) {
-                _set(K.bk, this.getBookings().filter(b => b.id !== refId));
+              console.log('[Realtime] Booking deleted', payload.old);
+              const dbId = payload.old?.id;
+              if (dbId) {
+                _set(K.bk, this.getBookings().filter(b => b._dbId !== dbId));
               } else {
                 // REPLICA IDENTITY not FULL — re-fetch to stay in sync
                 const { data } = await _sb.from('bookings').select('*')
@@ -674,7 +711,7 @@
                 if (data) _set(K.bk, data.map(sbToBooking));
               }
               document.dispatchEvent(new CustomEvent('booking:updated', {
-                detail: { bookingId: refId }
+                detail: { bookingId: dbId }
               }));
             })
           .subscribe();

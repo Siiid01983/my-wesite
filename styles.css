@@ -2412,7 +2412,7 @@ html.dark .upload-file-item { background: var(--bg); border-color: rgba(255,255,
   .cc-text strong { font-size: 15px; }
 
   .sticky-cta { display: flex; }
-  body { padding-bottom: 76px; }
+  body { padding-bottom: max(76px, calc(60px + env(safe-area-inset-bottom))); }
 }
 
 @media (prefers-reduced-motion: reduce) {

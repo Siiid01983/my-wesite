@@ -117,6 +117,23 @@
           headers: { 'Accept': 'application/json' }
         });
         if (resp.ok) {
+          try {
+            if (typeof BookingService !== 'undefined') {
+              await BookingService.createBooking({
+                name:     form.querySelector('[name="name"]').value.trim()    || '',
+                email:    form.querySelector('[name="email"]').value.trim()   || '',
+                phone:    form.querySelector('[name="tel"]').value.trim()     || '',
+                service:  (form.querySelector('[name="service"]:checked') || {}).value || '',
+                date:     form.querySelector('[name="date"]').value            || '',
+                fromAddr: form.querySelector('[name="currentAddress"]').value.trim() || '',
+                toAddr:   form.querySelector('[name="newAddress"]').value.trim()     || '',
+                notes:    (form.querySelector('[name="message"]') || {value:''}).value || '',
+                status:   '新規',
+              });
+            }
+          } catch(sbErr) {
+            console.warn('[quote] Supabase write failed:', sbErr.message);
+          }
           sessionStorage.removeItem('hm_quote');
           stepEls.forEach(el => { el.classList.remove('active'); el.style.display = 'none'; });
           if (progressWrap) progressWrap.style.display = 'none';
