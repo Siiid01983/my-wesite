@@ -2903,6 +2903,11 @@ updateS2Btn();
 .ba-zip-loading{color:var(--ba-muted)}
 .ba-zip-ok{color:#10b981;font-weight:600}
 .ba-zip-err{color:#c0392b}
+/* Address field rows */
+.ba-field-row{margin-bottom:12px}
+.ba-field-lbl{display:block;font-size:11px;font-weight:700;color:var(--ba-muted);margin-bottom:6px;letter-spacing:.05em;text-transform:uppercase}
+.ba-addr-select{width:100%;border:1px solid var(--ba-border);border-radius:8px;padding:13px 36px 13px 14px;font-size:15px;color:var(--ba-forest);background:var(--ba-canvas) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23aaa' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 12px center;outline:none;-webkit-appearance:none;appearance:none;font-family:inherit;box-sizing:border-box;transition:border-color .15s}
+.ba-addr-select:focus{border-color:var(--ba-olive)}
 </style>
 
 <div id="booking-app" role="dialog" aria-modal="true" aria-label="引越し予約">
@@ -3039,23 +3044,13 @@ updateS2Btn();
           <input class="ba-addr-input ba-zip-inp" id="ba-zip-from" type="text" inputmode="numeric" maxlength="8" placeholder="123-4567（郵便番号）">
         </div>
         <span class="ba-zip-status" id="ba-zip-status-from"></span>
-        <input class="ba-addr-input" id="ba-input-from" type="text" placeholder="例：東京都渋谷区神南1-2-3">
-        <div style="margin-top:20px">
-          <div class="ba-pref-hd">都道府県から探す</div>
-          <div class="ba-region-hd">関東</div>
-          <div class="ba-pref-grid">
-            <button class="ba-pref-btn" onclick="baSetPref('from','東京都')">東京都 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-            <button class="ba-pref-btn" onclick="baSetPref('from','神奈川県')">神奈川県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-            <button class="ba-pref-btn" onclick="baSetPref('from','埼玉県')">埼玉県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-            <button class="ba-pref-btn" onclick="baSetPref('from','千葉県')">千葉県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-          </div>
-          <div class="ba-region-hd" style="margin-top:12px">関西</div>
-          <div class="ba-pref-grid">
-            <button class="ba-pref-btn" onclick="baSetPref('from','大阪府')">大阪府 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-            <button class="ba-pref-btn" onclick="baSetPref('from','京都府')">京都府 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-            <button class="ba-pref-btn" onclick="baSetPref('from','兵庫県')">兵庫県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-            <button class="ba-pref-btn" onclick="baSetPref('from','奈良県')">奈良県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-          </div>
+        <div class="ba-field-row">
+          <label class="ba-field-lbl" for="ba-pref-from">都道府県</label>
+          <select class="ba-addr-select" id="ba-pref-from"><option value="">選択してください</option></select>
+        </div>
+        <div class="ba-field-row">
+          <label class="ba-field-lbl" for="ba-input-from">市区町村・番地</label>
+          <input class="ba-addr-input" id="ba-input-from" type="text" placeholder="例：渋谷区神南1-2-3">
         </div>
       </div>
       <div class="ba-drawer-footer"><button class="ba-drawer-cta" onclick="baConfirmAddr('from')">確定する</button></div>
@@ -3072,16 +3067,13 @@ updateS2Btn();
           <input class="ba-addr-input ba-zip-inp" id="ba-zip-to" type="text" inputmode="numeric" maxlength="8" placeholder="123-4567（郵便番号）">
         </div>
         <span class="ba-zip-status" id="ba-zip-status-to"></span>
-        <input class="ba-addr-input" id="ba-input-to" type="text" placeholder="例：埼玉県さいたま市大宮区...">
-        <div style="margin-top:20px">
-          <div class="ba-pref-hd">都道府県から探す</div>
-          <div class="ba-region-hd">関東</div>
-          <div class="ba-pref-grid">
-            <button class="ba-pref-btn" onclick="baSetPref('to','東京都')">東京都 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-            <button class="ba-pref-btn" onclick="baSetPref('to','神奈川県')">神奈川県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-            <button class="ba-pref-btn" onclick="baSetPref('to','埼玉県')">埼玉県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-            <button class="ba-pref-btn" onclick="baSetPref('to','千葉県')">千葉県 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-          </div>
+        <div class="ba-field-row">
+          <label class="ba-field-lbl" for="ba-pref-to">都道府県</label>
+          <select class="ba-addr-select" id="ba-pref-to"><option value="">選択してください</option></select>
+        </div>
+        <div class="ba-field-row">
+          <label class="ba-field-lbl" for="ba-input-to">市区町村・番地</label>
+          <input class="ba-addr-input" id="ba-input-to" type="text" placeholder="例：さいたま市大宮区...">
         </div>
       </div>
       <div class="ba-drawer-footer"><button class="ba-drawer-cta" onclick="baConfirmAddr('to')">確定する</button></div>
@@ -3298,12 +3290,21 @@ updateS2Btn();
   }
 
   // ── Address ─────────────────────────────────────────────
-  window.baSetPref = function (dir, pref) { document.getElementById('ba-input-' + dir).value = pref; };
+  // Programmatic prefecture selection (used by zip lookup and legacy callers)
+  window.baSetPref = function (dir, pref) {
+    var sel = document.getElementById('ba-pref-' + dir);
+    if (sel) sel.value = pref;
+  };
+
   window.baConfirmAddr = function (dir) {
-    var v = document.getElementById('ba-input-' + dir).value.trim();
-    if (!v) return;
+    var sel  = document.getElementById('ba-pref-' + dir);
+    var inp  = document.getElementById('ba-input-' + dir);
+    var pref = sel  ? sel.value.trim()  : '';
+    var city = inp  ? inp.value.trim()  : '';
+    var combined = (pref + city).trim();
+    if (!combined) return;
     var el = document.getElementById('ba-val-' + dir);
-    el.textContent = v; el.classList.add('filled');
+    el.textContent = combined; el.classList.add('filled');
     baCloseDrawer(dir);
   };
 
@@ -3357,9 +3358,22 @@ updateS2Btn();
     document.getElementById('ba-w2').classList.toggle('on', n === 2);
   };
 
+  // ── Prefecture dropdown builder (all 47, shared for both drawers) ──
+  var _BA_PREFS = ['北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'];
+  function _baBuildPrefSelect(id) {
+    var sel = document.getElementById(id);
+    if (!sel || sel.options.length > 1) return;
+    _BA_PREFS.forEach(function (p) { var o = document.createElement('option'); o.value = p; o.textContent = p; sel.appendChild(o); });
+  }
+  _baBuildPrefSelect('ba-pref-from');
+  _baBuildPrefSelect('ba-pref-to');
+
   // ── Postal code lookup (zipcloud.ibsnet.co.jp) ──────────
-  function baWireZip(zipId, inputId, statusId) {
-    var z = document.getElementById(zipId);
+  // prefId: auto-selects the prefecture dropdown
+  // inputId: fills city/street field with address2+address3
+  function baWireZip(zipId, prefId, inputId, statusId) {
+    var z   = document.getElementById(zipId);
+    var sel = document.getElementById(prefId);
     var inp = document.getElementById(inputId);
     var st  = document.getElementById(statusId);
     if (!z || !inp || !st) return;
@@ -3374,7 +3388,8 @@ updateS2Btn();
         .then(function (data) {
           if (data.results && data.results[0]) {
             var r = data.results[0];
-            inp.value = r.address1 + r.address2 + r.address3;
+            if (sel) sel.value = r.address1;          // ← select the prefecture
+            inp.value = r.address2 + r.address3;      // ← city + town (editable)
             st.textContent = '✓ 住所が見つかりました'; st.className = 'ba-zip-status ba-zip-ok';
           } else {
             st.textContent = '該当する住所が見つかりません'; st.className = 'ba-zip-status ba-zip-err';
@@ -3385,8 +3400,8 @@ updateS2Btn();
         });
     });
   }
-  baWireZip('ba-zip-from', 'ba-input-from', 'ba-zip-status-from');
-  baWireZip('ba-zip-to',   'ba-input-to',   'ba-zip-status-to');
+  baWireZip('ba-zip-from', 'ba-pref-from', 'ba-input-from', 'ba-zip-status-from');
+  baWireZip('ba-zip-to',   'ba-pref-to',   'ba-input-to',   'ba-zip-status-to');
 
   // ── Step 2 → Step 3: validate addresses, show contact screen ──
   window.baHandleSearch = function () {
