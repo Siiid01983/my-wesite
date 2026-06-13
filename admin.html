@@ -851,6 +851,9 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
         <button class="sb-link" data-view="crm" onclick="go('crm')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 2.75c1.24 0 2.25 1.01 2.25 2.25S13.24 11.25 12 11.25 9.75 10.24 9.75 9 10.76 6.75 12 6.75zM17 17H7v-.75c0-1.66 3.33-2.5 5-2.5s5 .84 5 2.5V17z"/></svg>CRM
         </button>
+        <button class="sb-link" data-view="overlay-bookings" onclick="go('overlay-bookings')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM7 17v-2h10v2H7zm0-4v-2h6v2H7z"/></svg>フォーム予約
+        </button>
         <button class="sb-link" data-view="quotes" onclick="go('quotes')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>見積り管理
         </button>
@@ -1025,6 +1028,9 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
             </div>
           </div>
         </div>
+
+        <!-- OVERLAY BOOKINGS (from save_booking.php) -->
+        <div id="view-overlay-bookings" class="view"></div>
 
         <!-- 2. BOOKINGS -->
         <div id="view-bookings" class="view">
@@ -2602,6 +2608,9 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 <script src="js/modules/seo/seoCenter.js"></script>
 <script src="js/modules/blog/blogManager.js"></script>
 <script src="js/modules/settings/siteSettings.js"></script>
+
+<!-- ── Overlay bookings view ── -->
+<script src="js/modules/overlay-bookings/overlayBookings.js"></script>
 
 <!-- ── Service registry (populated after all services/core/utils are loaded) ── -->
 <script src="js/services/serviceRegistry.js"></script>

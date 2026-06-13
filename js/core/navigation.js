@@ -42,6 +42,7 @@ const VIEW_TITLES = {
   'seo':'SEO センター',
   'blog':'ブログ管理',
   'site-settings':'ウェブサイト設定',
+  'overlay-bookings':'フォーム予約一覧',
 };
 
 /* Views only accessible to the admin role */
@@ -114,6 +115,7 @@ function go(view) {
   if (view==='seo')           { renderSEO(); _syncSEOFromSupabase(); }
   if (view==='blog')          renderBlog();
   if (view==='site-settings') { renderSiteSettings(); _syncSiteSettingsFromSupabase(); }
+  if (view==='overlay-bookings') renderOverlayBookings();
   if (window.I18n) I18n.applyToDOM(document.getElementById('adminApp'));
 }
 
