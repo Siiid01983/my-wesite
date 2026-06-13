@@ -3188,6 +3188,25 @@ updateS2Btn();
   var _baHistory = ['services'];
   var _baSelectedService = { id: '', name: '' };
 
+  // sessionStorage helpers — persist nav state so accidental closes or page reloads
+  // can restore the user to the correct step without replaying the open animation.
+  var _BA_SS_KEY = 'hm_ba_nav';
+  function _baSave() {
+    try { sessionStorage.setItem(_BA_SS_KEY, JSON.stringify({ h: _baHistory.slice(), svc: _baSelectedService })); } catch (_e) {}
+  }
+  function _baLoad() {
+    try {
+      var _s = JSON.parse(sessionStorage.getItem(_BA_SS_KEY) || 'null');
+      if (_s && Array.isArray(_s.h) && _s.h.length) {
+        _baHistory = _s.h;
+        _baSelectedService = _s.svc || { id: '', name: '' };
+        return true;
+      }
+    } catch (_e) {}
+    return false;
+  }
+  function _baClearSS() { try { sessionStorage.removeItem(_BA_SS_KEY); } catch (_e) {} }
+
   // ── Service selection ────────────────────────────────────
   var BA_SVC_CFG = [
     {id:'tansin',  name:'単身引越し',             badge:'人気',    bc:'#9AB57A', img:'https://images.unsplash.com/photo-1616432043562-3671ea2e5242?auto=format&fit=crop&w=600&q=80'},
@@ -3238,8 +3257,11 @@ updateS2Btn();
   }
 
   function baPush(id) {
+    // Deduplication guard: skip if already at this screen to prevent a stuck Back button
+    if (_baHistory[_baHistory.length - 1] === id) { baShowScreen(id); return; }
     _baHistory.push(id);
     baShowScreen(id);
+    _baSave();
   }
 
   function baGoBooking(serviceId, serviceName) {
@@ -3257,6 +3279,7 @@ updateS2Btn();
     if (_baHistory.length > 1) {
       _baHistory.pop();
       baShowScreen(_baHistory[_baHistory.length - 1]);
+      _baSave();
     } else {
       closeBookingApp();
     }
@@ -3268,20 +3291,32 @@ updateS2Btn();
 
   // ── Public API ──────────────────────────────────────────
   window.openBookingApp = function (serviceName) {
-    _baHistory = ['services'];
-    document.getElementById('booking-app').classList.add('open');
+    var _app = document.getElementById('booking-app');
+    // Singleton guard: overlay is already visible — never reset history mid-flow
+    if (_app.classList.contains('open')) { return; }
+    _app.classList.add('open');
     document.body.style.overflow = 'hidden';
     if (serviceName) {
+      // Explicit service entry always starts a fresh booking for that service
+      _baHistory = ['services'];
       _baSelectedService = { id: '', name: serviceName };
       baPush('booking');
       setTimeout(function () { baOpenDrawer('furniture'); }, 80);
+    } else if (_baLoad()) {
+      // Restore previous step from sessionStorage — no intro animation because
+      // the overlay element was already present in the DOM; only the class changed.
+      baShowScreen(_baHistory[_baHistory.length - 1]);
     } else {
+      _baHistory = ['services'];
+      _baSelectedService = { id: '', name: '' };
       baShowScreen('services');
     }
   };
 
   window.closeBookingApp = function () {
+    _baClearSS();
     _baHistory = ['services'];
+    _baSelectedService = { id: '', name: '' };
     document.getElementById('booking-app').classList.remove('open');
     document.body.style.overflow = '';
     ['from','to','furniture','date','filter'].forEach(function (id) {
@@ -3389,8 +3424,10 @@ updateS2Btn();
   _baBuildPrefSelect('ba-pref-to');
 
   // ── Postal code lookup (zipcloud.ibsnet.co.jp) ──────────
-  // address1 → prefId select  |  address2 → cityId input  |  address3 → streetId input
-  // Building field intentionally left empty for manual entry
+  // address1 → prefecture select (always)
+  // address2 (city)   → never auto-filled; user types manually
+  // address3 (town)   → fills street only when field is empty; user can edit freely
+  // building          → always blank; user types manually
   function baWireZip(zipId, prefId, cityId, streetId, statusId) {
     var z      = document.getElementById(zipId);
     var sel    = document.getElementById(prefId);
@@ -3409,10 +3446,13 @@ updateS2Btn();
         .then(function (data) {
           if (data.results && data.results[0]) {
             var r = data.results[0];
-            if (sel)    sel.value    = r.address1; // 都道府県
-            if (cityEl) cityEl.value = r.address2; // 市区町村
-            if (strtEl) strtEl.value = r.address3; // 町名
-            st.textContent = '✓ 住所が見つかりました'; st.className = 'ba-zip-status ba-zip-ok';
+            // Prefecture: always auto-select — the only mandatory fill
+            if (sel) sel.value = r.address1;
+            // City/Ward: never auto-filled — user types manually
+            // Street: fill with town name only when the field is still empty (never overwrite user input)
+            if (strtEl && !strtEl.value.trim() && r.address3) strtEl.value = r.address3;
+            var _filled = r.address1 + (strtEl && strtEl.value ? ' / 町名：' + strtEl.value : '');
+            st.textContent = '✓ ' + _filled; st.className = 'ba-zip-status ba-zip-ok';
           } else {
             st.textContent = '該当する住所が見つかりません'; st.className = 'ba-zip-status ba-zip-err';
           }
