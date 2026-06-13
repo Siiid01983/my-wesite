@@ -2885,7 +2885,7 @@ updateS2Btn();
 .ba-screen.active{display:flex;animation:baScreenIn .18s ease}
 .ba-screen.active.ba-no-anim{animation:none}
 @keyframes baScreenIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.ba-hdr-logo{font-size:16px;font-weight:800;color:var(--ba-forest);display:flex;align-items:center;gap:5px;flex:1}
+.ba-hdr-logo{font-size:13px;font-weight:800;color:var(--ba-forest);display:flex;align-items:center;gap:5px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ba-hdr-dot{width:8px;height:8px;border-radius:50%;background:var(--ba-olive);flex-shrink:0}
 .ba-sec-title{font-size:20px;font-weight:800;padding:20px 16px 14px;color:var(--ba-forest);background:#f2f2ef;flex-shrink:0}
 .ba-svc-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 12px 32px;overflow-y:auto;align-content:start}
@@ -2915,10 +2915,10 @@ updateS2Btn();
   <div class="ba-panel">
 
     <div class="ba-hdr">
-      <button class="ba-back-btn" id="ba-back-btn" onclick="baGoBack()" aria-label="戻る" style="display:none">
+      <button class="ba-back-btn" id="ba-back-btn" onclick="baGoBack()" aria-label="戻る">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <div class="ba-hdr-logo" id="ba-hdr-logo"><span class="ba-hdr-dot"></span>Hello Moving</div>
+      <div class="ba-hdr-logo" id="ba-hdr-logo"><span class="ba-hdr-dot"></span>ハロームービングサービス</div>
       <span class="ba-hdr-title" id="ba-service-title" style="display:none"></span>
     </div>
 
@@ -3254,10 +3254,13 @@ updateS2Btn();
     var backBtn = document.getElementById('ba-back-btn');
     var logo    = document.getElementById('ba-hdr-logo');
     var titleEl = document.getElementById('ba-service-title');
-    if (backBtn)  backBtn.style.display  = (isHome || isSuccess) ? 'none' : '';
-    if (logo)     logo.style.display     = isHome ? '' : 'none';
+    // Back button: always visible — closes overlay on home/success, navigates back elsewhere
+    if (backBtn)  backBtn.style.display  = '';
+    // Brand logo: show on home + success screens
+    if (logo)     logo.style.display     = (isHome || isSuccess) ? '' : 'none';
+    // Service title: show only during mid-flow screens (booking / contact)
     if (titleEl) {
-      titleEl.style.display = (isHome || isSuccess) ? 'none' : '';
+      titleEl.style.display = (!isHome && !isSuccess) ? '' : 'none';
       if (!isHome && !isSuccess) titleEl.textContent = _baSelectedService.name || '';
     }
   }
