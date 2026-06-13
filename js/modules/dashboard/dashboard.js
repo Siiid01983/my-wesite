@@ -180,7 +180,8 @@ function renderObservability() {
             <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${sbOk ? 'var(--green)' : 'var(--red)'};display:inline-block"></span>
             Supabase&nbsp;${sbOk ? 'オンライン' : 'オフライン'}
           </span>
-          <button class="btn btn-ghost btn-sm" onclick="renderObservability()">更新</button>
+          <button class="btn btn-ghost btn-sm" onclick="renderObservability()">状態更新</button>
+          <button class="btn btn-ghost btn-sm" onclick="_refreshAllCaches()" title="期限切れキャッシュをすべてSupabaseから再取得します">キャッシュ更新</button>
         </div>
       </div>
 
@@ -247,6 +248,17 @@ function _obsAgo(ts) {
   if (s < 60)   return s + '秒前';
   if (s < 3600) return Math.round(s / 60) + '分前';
   return Math.round(s / 3600) + '時間前';
+}
+
+async function _refreshAllCaches() {
+  if (!window.Adapter || !Adapter.supabaseReady) {
+    toast('Supabaseがオフラインのためキャッシュを更新できません');
+    return;
+  }
+  if (window.DataProvider) DataProvider.clearAllCache();
+  await Adapter.syncFromSupabase();
+  renderObservability();
+  toast('キャッシュをSupabaseから再取得しました');
 }
 
 /* Refresh stat grid when Realtime fires a change */

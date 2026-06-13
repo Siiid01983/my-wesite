@@ -217,6 +217,11 @@
 
     invalidate(table) { _cacheInvalidate(table); },
 
+    /* Seed the cache with raw Supabase rows without making a network request.
+       Used by Adapter.syncFromSupabase() so the observability panel shows all
+       tables as valid immediately after login, not only after each view is visited. */
+    seed(table, data) { _cacheSet(table, data); },
+
     clearAllCache() {
       Object.keys(localStorage)
         .filter(k => k.startsWith('hm_dp_'))

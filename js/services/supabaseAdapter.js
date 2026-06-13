@@ -301,8 +301,10 @@
       if (kvRes.data) kvRes.data.forEach(({ key, value }) => _set(key, value));
 
       // Bookings
-      if (bkRes.data)  _set(K.bk, bkRes.data.map(sbToBooking));
-      else if (bkRes.error)  console.warn('[Adapter] bookings sync:', bkRes.error.message);
+      if (bkRes.data) {
+        _set(K.bk, bkRes.data.map(sbToBooking));
+        if (window.DataProvider) DataProvider.seed('bookings', bkRes.data);
+      } else if (bkRes.error) console.warn('[Adapter] bookings sync:', bkRes.error.message);
 
       // Calendar overrides
       if (calRes.data) {
@@ -312,15 +314,20 @@
           if (local !== 'available') avail[row.date] = local;
         });
         _set(K.av, avail);
+        if (window.DataProvider) DataProvider.seed('calendar_availability', calRes.data);
       }
 
       // Reviews
-      if (revRes.data) _set('hm_reviews', revRes.data.map(sbToReview));
-      else if (revRes.error) console.warn('[Adapter] reviews sync:', revRes.error.message);
+      if (revRes.data) {
+        _set('hm_reviews', revRes.data.map(sbToReview));
+        if (window.DataProvider) DataProvider.seed('reviews', revRes.data);
+      } else if (revRes.error) console.warn('[Adapter] reviews sync:', revRes.error.message);
 
       // Services (only overwrite if the table has rows)
-      if (svcRes.data && svcRes.data.length) _set('hm_services', svcRes.data.map(sbToService));
-      else if (svcRes.error) console.warn('[Adapter] services sync:', svcRes.error.message);
+      if (svcRes.data && svcRes.data.length) {
+        _set('hm_services', svcRes.data.map(sbToService));
+        if (window.DataProvider) DataProvider.seed('services', svcRes.data);
+      } else if (svcRes.error) console.warn('[Adapter] services sync:', svcRes.error.message);
     },
 
     /* ── Bookings ─────────────────────────────────────── */
@@ -329,6 +336,7 @@
     addBooking(b) {
       if (!_checkCanWrite()) return;
       const a = this.getBookings(); a.unshift(b); _set(K.bk, a);
+      if (window.DataProvider) DataProvider.invalidate('bookings');
       if (!_sb) { console.warn('[Adapter] addBooking: SupabaseClient null'); return; }
       _sb.from('bookings').insert(bookingToSb(b))
         .then(({ error }) => {
@@ -341,6 +349,7 @@
       if (!_checkCanWrite()) return;
       const list = this.getBookings().map(b => b.id === id ? { ...b, ...p } : b);
       _set(K.bk, list);
+      if (window.DataProvider) DataProvider.invalidate('bookings');
       const updated = list.find(b => b.id === id);
       if (updated && updated._dbId && _sb) {
         const { created_at, ...fields } = bookingToSb(updated);
@@ -355,6 +364,7 @@
       const bk = this.getBookings().find(b => b.id === id);
       const dbId = bk && bk._dbId;
       _set(K.bk, this.getBookings().filter(b => b.id !== id));
+      if (window.DataProvider) DataProvider.invalidate('bookings');
       if (dbId) _del('bookings', 'id', dbId);
     },
 
@@ -365,6 +375,7 @@
       const a = this.getAvail();
       if (status === 'available') delete a[date]; else a[date] = status;
       _set(K.av, a);
+      if (window.DataProvider) DataProvider.invalidate('calendar_availability');
       // Keep hm_booked in sync for the public calendar
       let booked = _ls(K.booked, []);
       booked = booked.filter(d => d !== date);
@@ -385,6 +396,7 @@
       localStorage.removeItem(K.av);
       localStorage.removeItem(K.booked);
       localStorage.removeItem(K.counts);
+      if (window.DataProvider) DataProvider.invalidate('calendar_availability');
       if (_sb) {
         _sb.from('calendar_availability').delete().not('date', 'is', null)
           .then(({ error }) => { if (error) console.warn('[Adapter] clearAvail error:', error.message); });
@@ -434,6 +446,7 @@
     addService(s) {
       if (!_checkCanWrite()) return;
       const a = this.getServices(); a.push(s); _set('hm_services', a);
+      if (window.DataProvider) DataProvider.invalidate('services');
       _upsert('services', serviceToSb(s, a.length - 1), 'reference_id');
     },
 
@@ -441,6 +454,7 @@
       if (!_checkCanWrite()) return;
       const svcs = this.getServices().map(s => s.id === id ? { ...s, ...p } : s);
       _set('hm_services', svcs);
+      if (window.DataProvider) DataProvider.invalidate('services');
       const updated = svcs.find(s => s.id === id);
       if (updated) _upsert('services', serviceToSb(updated, svcs.indexOf(updated)), 'reference_id');
     },
@@ -448,12 +462,14 @@
     deleteService(id) {
       if (!_checkCanWrite()) return;
       _set('hm_services', this.getServices().filter(s => s.id !== id));
+      if (window.DataProvider) DataProvider.invalidate('services');
       _del('services', 'reference_id', id);
     },
 
     saveServices(svcs) {
       if (!_checkCanWrite()) return;
       _set('hm_services', svcs);
+      if (window.DataProvider) DataProvider.invalidate('services');
       if (!_sb || !svcs.length) return;
       _sb.from('services')
         .upsert(svcs.map((s, i) => serviceToSb(s, i)), { onConflict: 'reference_id' })
@@ -507,6 +523,7 @@
     addReview(r) {
       if (!_checkCanWrite()) return;
       const a = this.getReviews(); a.unshift(r); _set('hm_reviews', a);
+      if (window.DataProvider) DataProvider.invalidate('reviews');
       _upsert('reviews', reviewToSb(r), 'reference_id');
     },
 
@@ -514,6 +531,7 @@
       if (!_checkCanWrite()) return;
       const list = this.getReviews().map(r => r.id === id ? { ...r, ...p } : r);
       _set('hm_reviews', list);
+      if (window.DataProvider) DataProvider.invalidate('reviews');
       const updated = list.find(r => r.id === id);
       if (updated) _upsert('reviews', reviewToSb(updated), 'reference_id');
     },
@@ -521,6 +539,7 @@
     deleteReview(id) {
       if (!_checkCanWrite()) return;
       _set('hm_reviews', this.getReviews().filter(r => r.id !== id));
+      if (window.DataProvider) DataProvider.invalidate('reviews');
       _del('reviews', 'reference_id', id);
     },
 
