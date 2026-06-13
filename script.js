@@ -177,28 +177,23 @@
           }
           _hmTrack('quote_success');
 
-          /* ── EmailJS confirmation email ─────────────────────────
-             Set YOUR_EMAILJS_SERVICE_ID and YOUR_EMAILJS_TEMPLATE_ID
-             in your EmailJS dashboard (https://www.emailjs.com/).
-             Template variables: to_email, to_name, booking_ref,
-             service, move_date, from_addr, to_addr              */
-          try {
-            var _ejsSvc = 'YOUR_EMAILJS_SERVICE_ID';
-            var _ejsTpl = 'YOUR_EMAILJS_TEMPLATE_ID';
-            if (typeof emailjs !== 'undefined' &&
-                _ejsSvc !== 'YOUR_EMAILJS_SERVICE_ID') {
-              emailjs.send(_ejsSvc, _ejsTpl, {
-                to_email:   form.querySelector('[name="email"]').value.trim(),
-                to_name:    form.querySelector('[name="name"]').value.trim(),
-                booking_ref: bookingRef,
-                service:    (form.querySelector('[name="service"]:checked') || {}).value || '',
-                move_date:  form.querySelector('[name="date"]').value || '',
-                time_slot:  (form.querySelector('[name="time"]') || {value:''}).value || '未定',
-                from_addr:  form.querySelector('[name="currentAddress"]').value.trim() || '',
-                to_addr:    form.querySelector('[name="newAddress"]').value.trim() || '',
-              });
-            }
-          } catch(_ejsErr) { console.warn('[EmailJS] send failed:', _ejsErr); }
+          /* ── PHP mailer — confirmation email via send_email.php ── */
+          fetch('send_email.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to_email:    form.querySelector('[name="email"]').value.trim(),
+              to_name:     form.querySelector('[name="name"]').value.trim(),
+              booking_ref: bookingRef,
+              service:     (form.querySelector('[name="service"]:checked') || {}).value || '',
+              move_date:   form.querySelector('[name="date"]').value || '',
+              time_slot:   (form.querySelector('[name="time"]') || {value:''}).value || '未定',
+              from_addr:   form.querySelector('[name="currentAddress"]').value.trim() || '',
+              to_addr:     form.querySelector('[name="newAddress"]').value.trim() || '',
+            }),
+          }).catch(function(_mailErr) {
+            console.warn('[send_email] request failed:', _mailErr);
+          });
 
           /* ── Redirect to home after 5 s so user can note the reference number ── */
           setTimeout(function() { window.location.href = '/'; }, 5000);
