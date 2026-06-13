@@ -13,9 +13,9 @@
 
 /* ── Configuration ─────────────────────────────────────────────── */
 define('ADMIN_EMAIL',  'hellomoving1@gmail.com');       // you receive alerts here
-define('FROM_EMAIL',   'noreply@hellomovingjapan.com'); // must exist in cPanel → Email Accounts
+define('FROM_EMAIL',   'noreply@hello-moving.com'); // must exist in cPanel → Email Accounts
 define('FROM_NAME',    'Hello Moving');
-define('SITE_ORIGIN',  'https://hellomovingjapan.com'); // change if using the .io URL during dev
+define('SITE_ORIGIN',  'https://hello-moving.com');
 
 /* ── CORS + response type ──────────────────────────────────────── */
 header('Content-Type: application/json; charset=utf-8');
@@ -189,7 +189,7 @@ $admin_body = implode("\n", [
     "引越し元　：{$from_addr}",
     "引越し先　：{$to_addr}",
     '',
-    '管理パネル: https://hellomovingjapan.com/admin.html',
+    '管理パネル: https://hello-moving.com/admin.html',
 ]);
 
 $admin_headers = array_merge($base_headers, [
@@ -234,15 +234,15 @@ function sendViaSMTP(string $to, string $toName, string $subject, string $body, 
     $mail = new PHPMailer(true);
     try {
         $mail->isSMTP();
-        $mail->Host       = 'mail.hellomovingjapan.com'; // cPanel SMTP host
+        $mail->Host       = 'mail.hello-moving.com'; // cPanel SMTP host
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'noreply@hellomovingjapan.com';
+        $mail->Username   = 'noreply@hello-moving.com';
         $mail->Password   = 'YOUR_CPANEL_EMAIL_PASSWORD';
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = 587;
         $mail->CharSet    = 'UTF-8';
 
-        $mail->setFrom('noreply@hellomovingjapan.com', 'Hello Moving');
+        $mail->setFrom('noreply@hello-moving.com', 'Hello Moving');
         $mail->addAddress($to, $toName);
         $mail->Subject  = $subject;
         $mail->isHTML($isHtml);
