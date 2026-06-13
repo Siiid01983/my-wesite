@@ -83,10 +83,9 @@
         if (!form.querySelector('[name="date"]').value) { showError('step3Error'); return false; }
       }
       if (step === 4) {
-        const name = form.querySelector('[name="name"]').value.trim();
-        const tel  = form.querySelector('[name="tel"]').value.trim();
+        const name  = form.querySelector('[name="name"]').value.trim();
         const email = form.querySelector('[name="email"]').value.trim();
-        if (!name || !tel || (email && !email.includes('@'))) { showError('step4Error'); return false; }
+        if (!name || !email || !email.includes('@')) { showError('step4Error'); return false; }
       }
       return true;
     }
@@ -122,7 +121,7 @@
               await BookingService.createBooking({
                 name:     form.querySelector('[name="name"]').value.trim()    || '',
                 email:    form.querySelector('[name="email"]').value.trim()   || '',
-                phone:    form.querySelector('[name="tel"]').value.trim()     || '',
+                phone:    (form.querySelector('[name="tel"]') || {value:''}).value.trim() || '',
                 service:  (form.querySelector('[name="service"]:checked') || {}).value || '',
                 date:     form.querySelector('[name="date"]').value            || '',
                 fromAddr: form.querySelector('[name="currentAddress"]').value.trim() || '',
