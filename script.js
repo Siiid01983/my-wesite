@@ -61,7 +61,8 @@
       });
       if (progressFill) progressFill.style.width = (n / 4 * 100) + '%';
       current = n;
-      const firstInput = stepEls[n - 1].querySelector('input:not([type="radio"]):not([type="checkbox"]), textarea');
+      const _allInputs = stepEls[n - 1].querySelectorAll('input:not([type="radio"]):not([type="checkbox"]), textarea');
+      const firstInput = Array.from(_allInputs).find(el => el.offsetParent !== null);
       if (firstInput) setTimeout(() => firstInput.focus(), 80);
     }
 
@@ -70,7 +71,7 @@
 
     function validate(step) {
       hideError('step1Error'); hideError('step2Error');
-      hideError('step3Error'); hideError('step4Error');
+      hideError('step3Error'); hideError('step4Error'); hideError('submitError');
       if (step === 1) {
         if (!form.querySelector('[name="service"]:checked')) { showError('step1Error'); return false; }
       }
@@ -107,6 +108,7 @@
       e.preventDefault();
       if (!validate(4)) return;
       const btn = document.getElementById('submitBtn');
+      const _btnText = btn.textContent;
       btn.disabled = true;
       btn.textContent = '送信中...';
       try {
@@ -131,7 +133,7 @@
               });
             }
           } catch(sbErr) {
-            console.warn('[quote] Supabase write failed:', sbErr.message);
+            console.error('[QuoteForm] Supabase write failed:', sbErr.message);
           }
           sessionStorage.removeItem('hm_quote');
           stepEls.forEach(el => { el.classList.remove('active'); el.style.display = 'none'; });
@@ -169,12 +171,16 @@
             }
           }
         } else {
+          console.error('[QuoteForm] Formspree error status:', resp.status);
           btn.disabled = false;
-          btn.textContent = '送信に失敗しました。お電話でご連絡ください。';
+          btn.textContent = _btnText;
+          showError('submitError');
         }
-      } catch {
+      } catch(submitErr) {
+        console.error('[QuoteForm] submit error:', submitErr);
         btn.disabled = false;
-        btn.textContent = '送信に失敗しました。お電話でご連絡ください。';
+        btn.textContent = _btnText;
+        showError('submitError');
       }
     });
 
@@ -197,6 +203,11 @@
     const _saved = JSON.parse(sessionStorage.getItem('hm_quote') || 'null');
     if (_saved) {
       Object.entries(_saved).forEach(([k, v]) => {
+        const radios = form.querySelectorAll(`[name="${k}"][type="radio"],[name="${k}"][type="checkbox"]`);
+        if (radios.length) {
+          radios.forEach(r => { if (r.value === v) r.checked = true; });
+          return;
+        }
         const el = form.querySelector(`[name="${k}"]`);
         if (el) el.value = v;
       });
