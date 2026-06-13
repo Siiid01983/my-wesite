@@ -2450,7 +2450,7 @@ function goToStep(n,skipScroll){
   var prog=document.getElementById('bkProg');if(prog)prog.style.display='';
   updateProgress(n);
   if(!skipScroll){
-    var sec=document.getElementById('booking');
+    var sec=document.getElementById('book');
     if(sec)sec.scrollIntoView({behavior:'smooth',block:'start'});
   }
 }
@@ -2722,6 +2722,23 @@ loadSession();
 goToStep(1,true);
 updateS2Btn();
 
+// Fetch real booked dates from Supabase and mark them on the calendar.
+// Polls every 1.5 s until BookingService is loaded by bootstrap.js.
+(function _pollCalAvail(){
+  if(typeof BookingService!=='undefined'&&typeof BookingService.getBookings==='function'){
+    BookingService.getBookings().then(function(bks){
+      bks.forEach(function(b){
+        if(b.status!=='キャンセル'&&b.date&&ADMIN_AVAILABILITY.booked.indexOf(b.date)<0){
+          ADMIN_AVAILABILITY.booked.push(b.date);
+        }
+      });
+      renderCal('hmCalBook',true);renderCal('hmCalAvail',false);
+    }).catch(function(){});
+  }else{
+    setTimeout(_pollCalAvail,1500);
+  }
+})();
+
 })();
 </script>
 
@@ -2878,6 +2895,14 @@ updateS2Btn();
 .ba-svc-card__illus img{width:100%;height:100%;object-fit:cover;display:block}
 .ba-svc-card__name{font-size:13px;font-weight:700;color:var(--ba-forest);padding:10px 10px 12px;line-height:1.4}
 .ba-svc-badge{position:absolute;top:8px;right:8px;color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px}
+/* Postal code lookup */
+.ba-zip-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ba-zip-prefix{font-size:16px;font-weight:700;color:var(--ba-forest);flex-shrink:0}
+.ba-zip-inp{flex:1;min-width:0}
+.ba-zip-status{display:block;font-size:12px;min-height:18px;margin-bottom:8px;padding-left:2px}
+.ba-zip-loading{color:var(--ba-muted)}
+.ba-zip-ok{color:#10b981;font-weight:600}
+.ba-zip-err{color:#c0392b}
 </style>
 
 <div id="booking-app" role="dialog" aria-modal="true" aria-label="引越し予約">
@@ -3009,6 +3034,11 @@ updateS2Btn();
     <div class="ba-drawer">
       <div class="ba-drawer-top"><div class="ba-drawer-handle"></div><div class="ba-drawer-title">現住所を入力</div></div>
       <div class="ba-drawer-scroll">
+        <div class="ba-zip-row">
+          <span class="ba-zip-prefix">〒</span>
+          <input class="ba-addr-input ba-zip-inp" id="ba-zip-from" type="text" inputmode="numeric" maxlength="8" placeholder="123-4567（郵便番号）">
+        </div>
+        <span class="ba-zip-status" id="ba-zip-status-from"></span>
         <input class="ba-addr-input" id="ba-input-from" type="text" placeholder="例：東京都渋谷区神南1-2-3">
         <div style="margin-top:20px">
           <div class="ba-pref-hd">都道府県から探す</div>
@@ -3037,6 +3067,11 @@ updateS2Btn();
     <div class="ba-drawer">
       <div class="ba-drawer-top"><div class="ba-drawer-handle"></div><div class="ba-drawer-title">引越し先を入力</div></div>
       <div class="ba-drawer-scroll">
+        <div class="ba-zip-row">
+          <span class="ba-zip-prefix">〒</span>
+          <input class="ba-addr-input ba-zip-inp" id="ba-zip-to" type="text" inputmode="numeric" maxlength="8" placeholder="123-4567（郵便番号）">
+        </div>
+        <span class="ba-zip-status" id="ba-zip-status-to"></span>
         <input class="ba-addr-input" id="ba-input-to" type="text" placeholder="例：埼玉県さいたま市大宮区...">
         <div style="margin-top:20px">
           <div class="ba-pref-hd">都道府県から探す</div>
@@ -3205,6 +3240,12 @@ updateS2Btn();
   }
 
   function baGoBack() {
+    // If a drawer is open, close it first rather than leaving the screen
+    var _drawers = ['from', 'to', 'furniture', 'date', 'filter'];
+    for (var _i = 0; _i < _drawers.length; _i++) {
+      var _d = document.getElementById('ba-drawer-' + _drawers[_i]);
+      if (_d && _d.classList.contains('open')) { _d.classList.remove('open'); return; }
+    }
     if (_baHistory.length > 1) {
       _baHistory.pop();
       baShowScreen(_baHistory[_baHistory.length - 1]);
@@ -3315,6 +3356,37 @@ updateS2Btn();
     document.getElementById('ba-w1').classList.toggle('on', n === 1);
     document.getElementById('ba-w2').classList.toggle('on', n === 2);
   };
+
+  // ── Postal code lookup (zipcloud.ibsnet.co.jp) ──────────
+  function baWireZip(zipId, inputId, statusId) {
+    var z = document.getElementById(zipId);
+    var inp = document.getElementById(inputId);
+    var st  = document.getElementById(statusId);
+    if (!z || !inp || !st) return;
+    z.addEventListener('input', function () {
+      var raw = z.value.replace(/[^\d]/g, '').slice(0, 7);
+      z.value = raw.length > 3 ? raw.slice(0, 3) + '-' + raw.slice(3) : raw;
+      st.textContent = ''; st.className = 'ba-zip-status';
+      if (raw.length < 7) return;
+      st.textContent = '検索中…'; st.className = 'ba-zip-status ba-zip-loading';
+      fetch('https://zipcloud.ibsnet.co.jp/api/search?zipcode=' + raw)
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.results && data.results[0]) {
+            var r = data.results[0];
+            inp.value = r.address1 + r.address2 + r.address3;
+            st.textContent = '✓ 住所が見つかりました'; st.className = 'ba-zip-status ba-zip-ok';
+          } else {
+            st.textContent = '該当する住所が見つかりません'; st.className = 'ba-zip-status ba-zip-err';
+          }
+        })
+        .catch(function () {
+          st.textContent = '検索に失敗しました'; st.className = 'ba-zip-status ba-zip-err';
+        });
+    });
+  }
+  baWireZip('ba-zip-from', 'ba-input-from', 'ba-zip-status-from');
+  baWireZip('ba-zip-to',   'ba-input-to',   'ba-zip-status-to');
 
   // ── Step 2 → Step 3: validate addresses, show contact screen ──
   window.baHandleSearch = function () {
