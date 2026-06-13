@@ -111,17 +111,21 @@
         window.__BOOTSTRAP__.stage = 'app-config';
         await _load('js/config/appConfig.js');
 
-        /* Stage 3 — Credentials (optional — graceful fallback if file absent) */
+        /* Stage 3 — Credentials: try env.js (local dev), fall back to env.public.js (deployed) */
         window.__BOOTSTRAP__.stage = 'env';
         try {
           await _load('js/config/env.js');
         } catch (_) {
-          /* env.js not present (e.g. GitHub Pages deployment) — static-only mode */
-          window.ENV = window.ENV || { ready: false };
+          /* env.js absent (e.g. GitHub Pages) — try the committed public-credential file */
+          try {
+            await _load('js/config/env.public.js');
+          } catch (_2) {
+            window.ENV = { ready: false };
+          }
         }
         if (!window.ENV || !window.ENV.ready) {
           window.ENV = { ready: false };
-          console.warn('[Bootstrap] env.js missing or credentials invalid — running in static-content mode.');
+          console.warn('[Bootstrap] No valid credentials found — running in static-content mode.');
         }
 
         /* Stage 4 — Supabase client */
