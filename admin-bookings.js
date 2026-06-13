@@ -507,6 +507,14 @@ function openDetail(id) {
   document.getElementById('detailPdfBtn').onclick   = () => downloadPDFBooking(id);
   document.getElementById('detailPrintBtn').onclick = () => printBooking(id);
   document.getElementById('detailInvBtn').onclick   = () => InvoiceManager.openModal(id);
+  document.getElementById('detailReplyBtn').onclick = () => {
+    if (!b.email) { alert('このお客様のメールアドレスが登録されていません'); return; }
+    const subject = encodeURIComponent(`[Hello Moving] ご予約について — ${b.id}`);
+    const body = encodeURIComponent(
+      `${b.name || 'お客様'}様\n\nHello Movingです。\nこの度はお問い合わせいただきありがとうございます。\n\n予約番号：${b.id}\nサービス：${b.service || '—'}\n引越し日：${b.date || '—'}\n\n`
+    );
+    window.open(`mailto:${b.email}?subject=${subject}&body=${body}`);
+  };
   document.getElementById('detailEditBtn').onclick  = () => openEdit(id);
   document.getElementById('detailCrmBtn').onclick   = () => {
     closeDetail();

@@ -3,12 +3,12 @@
 // ── Status maps ───────────────────────────────────────────────────────────────
 
 const _BK_TO_SB = {
-  '新規': 'pending', '確認中': 'pending',
+  '新規': 'pending', '確認中': 'checking',
   '確定': 'confirmed', '完了': 'completed', 'キャンセル': 'cancelled',
 };
 
 const _BK_TO_LOCAL = {
-  pending: '新規', confirmed: '確定', completed: '完了', cancelled: 'キャンセル',
+  pending: '新規', checking: '確認中', confirmed: '確定', completed: '完了', cancelled: 'キャンセル',
 };
 
 // ── Notes encoding — fields not in DB schema are packed into notes ────────────

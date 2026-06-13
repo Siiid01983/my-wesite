@@ -25,6 +25,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Noto+Serif+JP:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
 <link rel="stylesheet" href="styles.css" />
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  /* ── EmailJS: fill in your credentials from https://www.emailjs.com/ ── */
+  (function(){
+    if (typeof emailjs === 'undefined') return;
+    emailjs.init({ publicKey: 'YOUR_EMAILJS_PUBLIC_KEY' });
+  })();
+</script>
 <script>/* Theme Customizer override — applied from wmcDashboard.html */
 (function(){var c=localStorage.getItem('hm_custom_theme_css');if(!c)return;var s=document.createElement('style');s.id='hm-theme-override';s.textContent=c;document.head.appendChild(s);})();
 </script>
@@ -1381,7 +1389,8 @@ body { padding-bottom: 76px; }
         <div class="form-step" id="formStep3">
           <p class="step-heading">引越し日とお荷物を確認</p>
           <div id="compactCalendar" class="compact-calendar"></div>
-          <div class="form-field" style="display:none"><label><span>引越し希望日 <em>*</em></span><input type="date" name="date" required /></label></div>
+          <div class="form-field" style="margin-top:16px"><label><span>引越し希望日 <em>*</em></span><input type="date" name="date" required /></label></div>
+          <div class="form-field" style="margin-top:12px"><label><span>希望時間帯</span><select name="time"><option value="">-- 時間帯を選択（任意）--</option><option value="午前 8:00〜12:00">午前 8:00〜12:00</option><option value="午後 12:00〜16:00">午後 12:00〜16:00</option><option value="午後 16:00〜20:00">午後 16:00〜20:00</option></select></label></div>
           <label class="form-checkbox"><input type="checkbox" name="quickMoving" /><span class="checkbox-label">当日・お急ぎプランを希望する</span></label>
           <div class="furniture-checklist">
             <span class="fieldset-title">主なお荷物（任意）</span>
@@ -1446,6 +1455,7 @@ body { padding-bottom: 76px; }
           <div class="success-check">✓</div>
           <h3>お問い合わせを受け付けました</h3>
           <p>通常<strong>当日〜翌営業日</strong>にご返信いたします。</p>
+          <p style="font-size:12px;color:var(--gray-2);margin-top:8px">5秒後にトップページへ移動します…</p>
           <div class="success-ref-wrap" id="successRefWrap" style="display:none">
             <span class="success-ref-label">受付番号</span>
             <strong class="success-ref-num" id="successRefNum"></strong>
