@@ -17,7 +17,7 @@ const isPast = ds => ds < todayStr();
 function fmtD(ds) {
   if (!ds) return '—';
   const d = new Date(ds + 'T00:00:00');
-  return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())}（${DN[d.getDay()]}）`;
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${DN[d.getDay()]}）`;
 }
 function fmtDT(iso) {
   if (!iso) return '—';

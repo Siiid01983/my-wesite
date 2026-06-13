@@ -23,6 +23,8 @@ function _packNotes(b) {
   if (b.toAddr)   extras.push(`to:${b.toAddr}`);
   if (b.service)  extras.push(`service:${b.service}`);
   if (b.time)     extras.push(`time:${b.time}`);
+  if (b.items && b.items.length) extras.push(`items:${b.items.join('|')}`);
+  if (b.workers)  extras.push(`workers:${b.workers}`);
   const block = extras.join('\n');
   const user  = b.notes || '';
   if (!block) return user || null;
@@ -41,6 +43,26 @@ function _unpackNotes(raw) {
   return { userNotes, extra };
 }
 
+function _parseItems(raw) {
+  if (!raw) return { items: [], workers: null, cleanNotes: '' };
+  const segs = raw.split(' / ');
+  const items = [];
+  let workers = null;
+  const kept = [];
+  segs.forEach(s => {
+    const t = s.trim();
+    if (t.startsWith('荷物: ')) {
+      const v = t.slice(4).trim();
+      if (v && v !== '荷物を選択') v.split('・').filter(Boolean).forEach(i => items.push(i.trim()));
+    } else if (t.startsWith('作業員: ')) {
+      workers = t.slice(4).trim();
+    } else if (t) {
+      kept.push(t);
+    }
+  });
+  return { items, workers, cleanNotes: kept.join(' / ') };
+}
+
 // ── Field mappers ─────────────────────────────────────────────────────────────
 
 function _bookingToRow(b) {
@@ -57,6 +79,8 @@ function _bookingToRow(b) {
 
 function _rowToBooking(r) {
   const { userNotes, extra } = _unpackNotes(r.notes);
+  const extraItems = extra.items ? extra.items.split('|').filter(Boolean) : null;
+  const { items: parsedItems, workers: parsedWorkers, cleanNotes } = _parseItems(userNotes);
   return {
     _dbId:     r.id,
     id:        extra.ref     || String(r.id),
@@ -68,7 +92,11 @@ function _rowToBooking(r) {
     toAddr:    extra.to      || '',
     service:   extra.service || '',
     status:    _BK_TO_LOCAL[r.status] || '新規',
-    notes:     userNotes     || '',
+    notes:     cleanNotes,
+    items:     (Array.isArray(r.items) && r.items.length ? r.items : null)
+               || extraItems
+               || parsedItems,
+    workers:   extra.workers || parsedWorkers,
     time:      extra.time    || '',
     createdAt: r.created_at  || new Date().toISOString(),
   };

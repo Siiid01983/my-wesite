@@ -498,11 +498,21 @@ function openDetail(id) {
   const b = BookingService.getBookings().find(b => b.id === id); if (!b) return;
   document.getElementById('detailRef').textContent = b.id;
   const r = (l,v) => `<div style="display:flex;padding:8px 0;border-bottom:1px solid var(--line-2);gap:12px"><span style="font-size:12px;color:var(--gray-1);font-weight:500;width:110px;flex-shrink:0">${l}</span><span style="font-size:13px;color:var(--ink);flex:1">${esc(String(v||'—'))}</span></div>`;
+  const itemsRow = (b.items && b.items.length)
+    ? `<div style="display:flex;padding:8px 0;border-bottom:1px solid var(--line-2);gap:12px">
+        <span style="font-size:12px;color:var(--gray-1);font-weight:500;width:110px;flex-shrink:0">お荷物</span>
+        <span style="font-size:13px;color:var(--ink);flex:1;display:flex;flex-wrap:wrap;gap:4px;align-items:center">
+          ${b.items.map(i => `<span style="display:inline-block;background:var(--bg-2,#f8f9fa);border:1px solid var(--line,#e5e7eb);border-radius:4px;padding:2px 8px;font-size:11px">${esc(i)}</span>`).join('')}
+          ${b.workers ? `<span style="font-size:11px;color:var(--gray-1);margin-left:4px">作業員 ${esc(b.workers)}</span>` : ''}
+        </span>
+      </div>`
+    : '';
   document.getElementById('detailBody').innerHTML =
     `<div style="margin-bottom:12px">${badge(b.status||'新規')}</div>` +
     r('サービス',b.service) + r('引越し日',fmtD(b.date)) + r('希望時間帯',b.time) +
     r('お客様名',b.name) + r('メール',b.email) +
     r('引越し元',b.fromAddr) + r('引越し先',b.toAddr) +
+    itemsRow +
     r('備考',b.notes) + r('受付日時',fmtDT(b.createdAt));
   document.getElementById('detailPdfBtn').onclick   = () => downloadPDFBooking(id);
   document.getElementById('detailPrintBtn').onclick = () => printBooking(id);
@@ -590,6 +600,7 @@ body{font-family:-apple-system,'Hiragino Sans','Meiryo','Yu Gothic',sans-serif;f
   ${row('メールアドレス', b.email)}
   ${row('引越し元住所', b.fromAddr)}
   ${row('引越し先住所', b.toAddr)}
+  ${(b.items && b.items.length) ? row('お荷物', b.items.join(' ／ ') + (b.workers ? `　作業員 ${e(b.workers)}` : '')) : ''}
   ${row('備考・ご要望', b.notes)}
   ${row('受付日時',    fmtDT(b.createdAt))}
 </table>

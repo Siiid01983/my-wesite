@@ -137,6 +137,8 @@
     if (b.toAddr)   extras.push(`to:${b.toAddr}`);
     if (b.service)  extras.push(`service:${b.service}`);
     if (b.time)     extras.push(`time:${b.time}`);
+    if (b.items && b.items.length) extras.push(`items:${b.items.join('|')}`);
+    if (b.workers)  extras.push(`workers:${b.workers}`);
     const block = extras.join('\n');
     const user  = b.notes || '';
     if (!block) return user || null;
@@ -155,6 +157,28 @@
     return { userNotes, extra };
   }
 
+  /* Parse furniture items and worker count from the booking-overlay's
+     human-readable notes pattern: "荷物: A・B / 作業員: 1名 / ..."  */
+  function _parseBookingItems(raw) {
+    if (!raw) return { items: [], workers: null, cleanNotes: '' };
+    const segs = raw.split(' / ');
+    const items = [];
+    let workers = null;
+    const kept = [];
+    segs.forEach(s => {
+      const t = s.trim();
+      if (t.startsWith('荷物: ')) {
+        const v = t.slice(4).trim();
+        if (v && v !== '荷物を選択') v.split('・').filter(Boolean).forEach(i => items.push(i.trim()));
+      } else if (t.startsWith('作業員: ')) {
+        workers = t.slice(4).trim();
+      } else if (t) {
+        kept.push(t);
+      }
+    });
+    return { items, workers, cleanNotes: kept.join(' / ') };
+  }
+
   /* ── Data mappers ─────────────────────────────────────── */
   function bookingToSb(b) {
     return {
@@ -170,6 +194,9 @@
 
   function sbToBooking(r) {
     const { userNotes, extra } = _unpackBookingNotes(r.notes);
+    // Items: prefer dedicated `items` DB column (if added), then packed extras, then notes parsing
+    const extraItems = extra.items ? extra.items.split('|').filter(Boolean) : null;
+    const { items: parsedItems, workers: parsedWorkers, cleanNotes } = _parseBookingItems(userNotes);
     return {
       _dbId:     r.id,
       id:        extra.ref     || String(r.id),
@@ -181,7 +208,11 @@
       toAddr:    extra.to      || '',
       service:   extra.service || '',
       status:    BK_TO_LOCAL[r.status] || '新規',
-      notes:     userNotes     || '',
+      notes:     cleanNotes,
+      items:     (Array.isArray(r.items) && r.items.length ? r.items : null)
+                 || extraItems
+                 || parsedItems,
+      workers:   extra.workers || parsedWorkers,
       time:      extra.time    || '',
       createdAt: r.created_at  || new Date().toISOString(),
     };
