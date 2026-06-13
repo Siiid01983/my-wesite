@@ -3049,8 +3049,16 @@ updateS2Btn();
           <select class="ba-addr-select" id="ba-pref-from"><option value="">選択してください</option></select>
         </div>
         <div class="ba-field-row">
-          <label class="ba-field-lbl" for="ba-input-from">市区町村・番地</label>
-          <input class="ba-addr-input" id="ba-input-from" type="text" placeholder="例：渋谷区神南1-2-3">
+          <label class="ba-field-lbl" for="ba-input-city-from">市区町村</label>
+          <input class="ba-addr-input" id="ba-input-city-from" type="text" placeholder="例：渋谷区">
+        </div>
+        <div class="ba-field-row">
+          <label class="ba-field-lbl" for="ba-input-street-from">町名・番地</label>
+          <input class="ba-addr-input" id="ba-input-street-from" type="text" placeholder="例：神南1-2-3">
+        </div>
+        <div class="ba-field-row">
+          <label class="ba-field-lbl" for="ba-input-bldg-from">建物名・部屋番号 <span style="font-weight:400;text-transform:none;letter-spacing:0">（任意）</span></label>
+          <input class="ba-addr-input" id="ba-input-bldg-from" type="text" placeholder="例：ハローマンション 201号室">
         </div>
       </div>
       <div class="ba-drawer-footer"><button class="ba-drawer-cta" onclick="baConfirmAddr('from')">確定する</button></div>
@@ -3072,8 +3080,16 @@ updateS2Btn();
           <select class="ba-addr-select" id="ba-pref-to"><option value="">選択してください</option></select>
         </div>
         <div class="ba-field-row">
-          <label class="ba-field-lbl" for="ba-input-to">市区町村・番地</label>
-          <input class="ba-addr-input" id="ba-input-to" type="text" placeholder="例：さいたま市大宮区...">
+          <label class="ba-field-lbl" for="ba-input-city-to">市区町村</label>
+          <input class="ba-addr-input" id="ba-input-city-to" type="text" placeholder="例：さいたま市大宮区">
+        </div>
+        <div class="ba-field-row">
+          <label class="ba-field-lbl" for="ba-input-street-to">町名・番地</label>
+          <input class="ba-addr-input" id="ba-input-street-to" type="text" placeholder="例：宮町1-2-3">
+        </div>
+        <div class="ba-field-row">
+          <label class="ba-field-lbl" for="ba-input-bldg-to">建物名・部屋番号 <span style="font-weight:400;text-transform:none;letter-spacing:0">（任意）</span></label>
+          <input class="ba-addr-input" id="ba-input-bldg-to" type="text" placeholder="例：グリーンマンション 305号室">
         </div>
       </div>
       <div class="ba-drawer-footer"><button class="ba-drawer-cta" onclick="baConfirmAddr('to')">確定する</button></div>
@@ -3290,21 +3306,25 @@ updateS2Btn();
   }
 
   // ── Address ─────────────────────────────────────────────
-  // Programmatic prefecture selection (used by zip lookup and legacy callers)
   window.baSetPref = function (dir, pref) {
     var sel = document.getElementById('ba-pref-' + dir);
     if (sel) sel.value = pref;
   };
 
   window.baConfirmAddr = function (dir) {
-    var sel  = document.getElementById('ba-pref-' + dir);
-    var inp  = document.getElementById('ba-input-' + dir);
-    var pref = sel  ? sel.value.trim()  : '';
-    var city = inp  ? inp.value.trim()  : '';
-    var combined = (pref + city).trim();
-    if (!combined) return;
+    var sel    = document.getElementById('ba-pref-'          + dir);
+    var cityEl = document.getElementById('ba-input-city-'    + dir);
+    var strtEl = document.getElementById('ba-input-street-'  + dir);
+    var bldgEl = document.getElementById('ba-input-bldg-'    + dir);
+    var pref   = sel    ? sel.value.trim()    : '';
+    var city   = cityEl ? cityEl.value.trim() : '';
+    var street = strtEl ? strtEl.value.trim() : '';
+    var bldg   = bldgEl ? bldgEl.value.trim() : '';
+    // Require at least prefecture or city to confirm
+    if (!pref && !city) return;
+    var parts = [pref, city, street, bldg].filter(Boolean);
     var el = document.getElementById('ba-val-' + dir);
-    el.textContent = combined; el.classList.add('filled');
+    el.textContent = parts.join(' '); el.classList.add('filled');
     baCloseDrawer(dir);
   };
 
@@ -3358,8 +3378,8 @@ updateS2Btn();
     document.getElementById('ba-w2').classList.toggle('on', n === 2);
   };
 
-  // ── Prefecture dropdown builder (all 47, shared for both drawers) ──
-  var _BA_PREFS = ['北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'];
+  // ── Prefecture dropdown builder — 7 Kanto prefectures only ─
+  var _BA_PREFS = ['東京都','神奈川県','埼玉県','千葉県','茨城県','栃木県','群馬県'];
   function _baBuildPrefSelect(id) {
     var sel = document.getElementById(id);
     if (!sel || sel.options.length > 1) return;
@@ -3369,14 +3389,15 @@ updateS2Btn();
   _baBuildPrefSelect('ba-pref-to');
 
   // ── Postal code lookup (zipcloud.ibsnet.co.jp) ──────────
-  // prefId: auto-selects the prefecture dropdown
-  // inputId: fills city/street field with address2+address3
-  function baWireZip(zipId, prefId, inputId, statusId) {
-    var z   = document.getElementById(zipId);
-    var sel = document.getElementById(prefId);
-    var inp = document.getElementById(inputId);
-    var st  = document.getElementById(statusId);
-    if (!z || !inp || !st) return;
+  // address1 → prefId select  |  address2 → cityId input  |  address3 → streetId input
+  // Building field intentionally left empty for manual entry
+  function baWireZip(zipId, prefId, cityId, streetId, statusId) {
+    var z      = document.getElementById(zipId);
+    var sel    = document.getElementById(prefId);
+    var cityEl = document.getElementById(cityId);
+    var strtEl = document.getElementById(streetId);
+    var st     = document.getElementById(statusId);
+    if (!z || !st) return;
     z.addEventListener('input', function () {
       var raw = z.value.replace(/[^\d]/g, '').slice(0, 7);
       z.value = raw.length > 3 ? raw.slice(0, 3) + '-' + raw.slice(3) : raw;
@@ -3388,8 +3409,9 @@ updateS2Btn();
         .then(function (data) {
           if (data.results && data.results[0]) {
             var r = data.results[0];
-            if (sel) sel.value = r.address1;          // ← select the prefecture
-            inp.value = r.address2 + r.address3;      // ← city + town (editable)
+            if (sel)    sel.value    = r.address1; // 都道府県
+            if (cityEl) cityEl.value = r.address2; // 市区町村
+            if (strtEl) strtEl.value = r.address3; // 町名
             st.textContent = '✓ 住所が見つかりました'; st.className = 'ba-zip-status ba-zip-ok';
           } else {
             st.textContent = '該当する住所が見つかりません'; st.className = 'ba-zip-status ba-zip-err';
@@ -3400,8 +3422,8 @@ updateS2Btn();
         });
     });
   }
-  baWireZip('ba-zip-from', 'ba-pref-from', 'ba-input-from', 'ba-zip-status-from');
-  baWireZip('ba-zip-to',   'ba-pref-to',   'ba-input-to',   'ba-zip-status-to');
+  baWireZip('ba-zip-from','ba-pref-from','ba-input-city-from','ba-input-street-from','ba-zip-status-from');
+  baWireZip('ba-zip-to',  'ba-pref-to',  'ba-input-city-to',  'ba-input-street-to',  'ba-zip-status-to');
 
   // ── Step 2 → Step 3: validate addresses, show contact screen ──
   window.baHandleSearch = function () {
