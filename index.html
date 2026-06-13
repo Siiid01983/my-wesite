@@ -1143,6 +1143,33 @@ body { padding-bottom: 76px; }
 
 /* ── 16. Company table: cleaner ── */
 .company-row { border-bottom: 1px solid #f2f2ef !important; }
+
+/* ── Manual address fallback ── */
+.zip-manual { margin-top: 10px; }
+.zip-manual-hint { font-size: 12px; color: #ef4444; font-weight: 500; margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+.zip-manual input { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--ink); background: var(--bg); transition: .15s; box-sizing: border-box; }
+.zip-manual input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+
+/* ── Success reference card ── */
+.success-ref-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; padding: 12px 16px; margin: 16px 0; }
+.success-ref-label { font-size: 11px; font-weight: 700; color: #0369a1; text-transform: uppercase; letter-spacing: .07em; white-space: nowrap; }
+.success-ref-num { font-size: 17px; font-weight: 700; color: #1d4ed8; font-variant-numeric: tabular-nums; flex: 1; min-width: 0; word-break: break-all; }
+.success-copy-btn { background: #2563eb; color: #fff; border: none; border-radius: 6px; padding: 5px 13px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .15s; white-space: nowrap; flex-shrink: 0; }
+.success-copy-btn:hover { background: #1d4ed8; }
+
+/* ── Success CTA buttons ── */
+.success-ctas { display: flex; gap: 10px; margin: 16px 0 4px; flex-wrap: wrap; }
+.success-cta-line, .success-cta-phone { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 12px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none; transition: .15s; flex: 1; min-width: 130px; }
+.success-cta-line { background: #06C755; color: #fff; }
+.success-cta-line:hover { background: #05a847; }
+.success-cta-phone { background: #fff; color: #2C3626; border: 1px solid #e8e8e4; }
+.success-cta-phone:hover { background: #f7f7f4; }
+
+/* ── Mobile: stack form-row on very small screens ── */
+@media(max-width:400px) {
+  .form-row { flex-direction: column; }
+  section#quote .hero-form-side { padding: 20px 14px !important; }
+}
 </style>
 </head>
 <body>
@@ -1315,6 +1342,10 @@ body { padding-bottom: 76px; }
                 <label for="qFromBldg">建物名・部屋番号（任意）</label>
                 <input type="text" id="qFromBldg" placeholder="例：〇〇マンション101号室" autocomplete="address-line2" />
               </div>
+              <div class="zip-manual" id="qFromManual" style="display:none">
+                <p class="zip-manual-hint">住所が見つかりませんでした。手動で入力してください。</p>
+                <input type="text" placeholder="例：東京都新宿区新宿1-1-1" autocomplete="street-address" aria-label="引越し元の住所（手動入力）" />
+              </div>
               <input type="hidden" id="qFromAddr" name="currentAddress" />
             </div>
             <div class="form-field">
@@ -1330,6 +1361,10 @@ body { padding-bottom: 76px; }
               <div class="zip-bldg" id="qToBldgField" style="display:none">
                 <label for="qToBldg">建物名・部屋番号（任意）</label>
                 <input type="text" id="qToBldg" placeholder="例：〇〇マンション101号室" autocomplete="address-line2" />
+              </div>
+              <div class="zip-manual" id="qToManual" style="display:none">
+                <p class="zip-manual-hint">住所が見つかりませんでした。手動で入力してください。</p>
+                <input type="text" placeholder="例：東京都渋谷区渋谷1-1-1" autocomplete="street-address" aria-label="引越し先の住所（手動入力）" />
               </div>
               <input type="hidden" id="qToAddr" name="newAddress" />
             </div>
@@ -1407,8 +1442,23 @@ body { padding-bottom: 76px; }
         <div class="form-success-state" id="formSuccess" style="display:none">
           <div class="success-check">✓</div>
           <h3>お問い合わせを受け付けました</h3>
-          <p>通常<strong>当日〜翌営業日</strong>にご返信いたします。<br/>お急ぎの場合は<a href="https://line.me/R/ti/p/~hellomoving" target="_blank" rel="noopener">LINE</a>をご利用ください。</p>
-          <a id="gcalLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-ghost" style="display:none;margin-top:16px;gap:6px;">
+          <p>通常<strong>当日〜翌営業日</strong>にご返信いたします。</p>
+          <div class="success-ref-wrap" id="successRefWrap" style="display:none">
+            <span class="success-ref-label">受付番号</span>
+            <strong class="success-ref-num" id="successRefNum"></strong>
+            <button type="button" class="success-copy-btn" id="successCopyBtn">コピー</button>
+          </div>
+          <div class="success-ctas">
+            <a href="https://line.me/R/ti/p/~hellomoving" class="success-cta-line" target="_blank" rel="noopener" aria-label="LINEで確認する">
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.6 1.6 4.9 4 6.4-.1.5-.6 2.1-.7 2.5 0 0 0 .3.2.4.2.1.4 0 .4 0 .6-.1 3-2 3.6-2.4.8.1 1.6.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3Z"/></svg>
+              LINEで確認する
+            </a>
+            <a href="tel:+819024893402" class="success-cta-phone" aria-label="090-2489-3402に電話する">
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg>
+              090-2489-3402
+            </a>
+          </div>
+          <a id="gcalLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-ghost" style="display:none;margin-top:8px;gap:6px;">
             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
             Googleカレンダーに追加
           </a>

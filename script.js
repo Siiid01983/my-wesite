@@ -52,6 +52,15 @@
     const successEl = document.getElementById('formSuccess');
     const progressWrap = form.querySelector('.form-progress-wrap');
     let current = 1;
+    let _trackStarted = false;
+
+    function _hmTrack(name, params) {
+      try {
+        const p = Object.assign({ form: 'quote' }, params || {});
+        if (typeof gtag === 'function') gtag('event', name, p);
+        if (Array.isArray(window.dataLayer)) window.dataLayer.push(Object.assign({ event: name }, p));
+      } catch(_) {}
+    }
 
     function showStep(n) {
       stepEls.forEach((el, i) => el.classList.toggle('active', i + 1 === n));
@@ -60,6 +69,8 @@
         el.classList.toggle('done', i + 1 < n);
       });
       if (progressFill) progressFill.style.width = (n / 4 * 100) + '%';
+      if (!_trackStarted && n === 1) { _hmTrack('quote_started'); _trackStarted = true; }
+      else if (n > current) _hmTrack('quote_step_completed', { step: current });
       current = n;
       const _allInputs = stepEls[n - 1].querySelectorAll('input:not([type="radio"]):not([type="checkbox"]), textarea');
       const firstInput = Array.from(_allInputs).find(el => el.offsetParent !== null);
@@ -78,7 +89,11 @@
       if (step === 2) {
         const a = form.querySelector('[name="currentAddress"]').value.trim();
         const b = form.querySelector('[name="newAddress"]').value.trim();
-        if (!a || !b) { showError('step2Error'); return false; }
+        if (!a || !b) {
+          const _e2 = document.getElementById('step2Error');
+          if (_e2) _e2.textContent = !a && !b ? '引越し元と引越し先の住所を両方ご入力ください。' : !a ? '引越し元の住所をご入力ください。' : '引越し先の住所をご入力ください。';
+          showError('step2Error'); return false;
+        }
       }
       if (step === 3) {
         if (!form.querySelector('[name="date"]').value) { showError('step3Error'); return false; }
@@ -107,6 +122,7 @@
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!validate(4)) return;
+      _hmTrack('quote_submitted');
       const btn = document.getElementById('submitBtn');
       const _btnText = btn.textContent;
       btn.disabled = true;
@@ -118,9 +134,10 @@
           headers: { 'Accept': 'application/json' }
         });
         if (resp.ok) {
+          let bookingRef = null;
           try {
             if (typeof BookingService !== 'undefined') {
-              await BookingService.createBooking({
+              const _bk = await BookingService.createBooking({
                 name:     form.querySelector('[name="name"]').value.trim()    || '',
                 email:    form.querySelector('[name="email"]').value.trim()   || '',
                 phone:    (form.querySelector('[name="tel"]') || {value:''}).value.trim() || '',
@@ -131,14 +148,33 @@
                 notes:    (form.querySelector('[name="message"]') || {value:''}).value || '',
                 status:   '新規',
               });
+              bookingRef = _bk && _bk.id;
             }
           } catch(sbErr) {
             console.error('[QuoteForm] Supabase write failed:', sbErr.message);
+          }
+          if (!bookingRef) {
+            const _d = new Date(), _p = n => String(n).padStart(2, '0');
+            bookingRef = 'HM-' + _d.getFullYear() + _p(_d.getMonth()+1) + _p(_d.getDate()) + '-' + Math.random().toString(36).slice(2,6).toUpperCase();
           }
           sessionStorage.removeItem('hm_quote');
           stepEls.forEach(el => { el.classList.remove('active'); el.style.display = 'none'; });
           if (progressWrap) progressWrap.style.display = 'none';
           if (successEl) successEl.style.display = 'block';
+          const _refNum = document.getElementById('successRefNum');
+          const _refWrap = document.getElementById('successRefWrap');
+          if (_refNum) _refNum.textContent = bookingRef;
+          if (_refWrap) _refWrap.style.display = '';
+          const _copyBtn = document.getElementById('successCopyBtn');
+          if (_copyBtn) {
+            _copyBtn.onclick = function() {
+              navigator.clipboard.writeText(bookingRef).then(function() {
+                _copyBtn.textContent = 'コピーしました ✓';
+                setTimeout(function() { _copyBtn.textContent = 'コピー'; }, 2000);
+              }).catch(function() {});
+            };
+          }
+          _hmTrack('quote_success');
           const bookedDate = form.querySelector('[name="date"]').value;
           if (bookedDate) {
             BOOKED_DATES.add(bookedDate);
@@ -172,12 +208,14 @@
           }
         } else {
           console.error('[QuoteForm] Formspree error status:', resp.status);
+          _hmTrack('quote_error', { reason: 'formspree', status: resp.status });
           btn.disabled = false;
           btn.textContent = _btnText;
           showError('submitError');
         }
       } catch(submitErr) {
         console.error('[QuoteForm] submit error:', submitErr);
+        _hmTrack('quote_error', { reason: 'network' });
         btn.disabled = false;
         btn.textContent = _btnText;
         showError('submitError');
@@ -550,7 +588,7 @@
 })();
 
 // ── Postal code lookup (ZipCloud API) ───────────────────
-function zipLookup(zipEl, addrBlockEl, addrValEl, bldgFieldEl, hiddenEl, statusEl) {
+function zipLookup(zipEl, addrBlockEl, addrValEl, bldgFieldEl, hiddenEl, statusEl, manualEl) {
   var raw = zipEl.value.replace(/[^\d]/g, '');
   if (raw.length < 7) { statusEl.className = 'zip-status'; statusEl.textContent = ''; return; }
   statusEl.className = 'zip-status loading';
@@ -564,6 +602,7 @@ function zipLookup(zipEl, addrBlockEl, addrValEl, bldgFieldEl, hiddenEl, statusE
         addrValEl.textContent = base;
         addrBlockEl.style.display = '';
         bldgFieldEl.style.display = '';
+        if (manualEl) { manualEl.style.display = 'none'; var _mi = manualEl.querySelector('input'); if (_mi) _mi.value = ''; }
         var bldgIn = bldgFieldEl.querySelector('input');
         hiddenEl.value = base + (bldgIn && bldgIn.value ? '　' + bldgIn.value : '');
         statusEl.className = 'zip-status ok';
@@ -573,7 +612,8 @@ function zipLookup(zipEl, addrBlockEl, addrValEl, bldgFieldEl, hiddenEl, statusE
         bldgFieldEl.style.display = 'none';
         hiddenEl.value = '';
         statusEl.className = 'zip-status err';
-        statusEl.textContent = '郵便番号が見つかりません';
+        statusEl.textContent = '住所が見つかりませんでした';
+        if (manualEl) manualEl.style.display = '';
       }
     })
     .catch(function() {
@@ -581,11 +621,12 @@ function zipLookup(zipEl, addrBlockEl, addrValEl, bldgFieldEl, hiddenEl, statusE
       bldgFieldEl.style.display = 'none';
       hiddenEl.value = '';
       statusEl.className = 'zip-status err';
-      statusEl.textContent = '取得に失敗しました';
+      statusEl.textContent = '住所が見つかりませんでした';
+      if (manualEl) manualEl.style.display = '';
     });
 }
 
-function wireZip(zipId, addrBlockId, addrValId, bldgFieldId, hiddenId, statusId) {
+function wireZip(zipId, addrBlockId, addrValId, bldgFieldId, hiddenId, statusId, manualId) {
   var zipEl = document.getElementById(zipId);
   if (!zipEl) return;
   var addrBlockEl = document.getElementById(addrBlockId);
@@ -593,6 +634,7 @@ function wireZip(zipId, addrBlockId, addrValId, bldgFieldId, hiddenId, statusId)
   var bldgFieldEl = document.getElementById(bldgFieldId);
   var hiddenEl    = document.getElementById(hiddenId);
   var statusEl    = document.getElementById(statusId);
+  var manualEl    = manualId ? document.getElementById(manualId) : null;
   if (!addrBlockEl || !addrValEl || !bldgFieldEl || !hiddenEl || !statusEl) return;
 
   var timer;
@@ -602,7 +644,7 @@ function wireZip(zipId, addrBlockId, addrValId, bldgFieldId, hiddenId, statusId)
     clearTimeout(timer);
     if (digits.length >= 7) {
       timer = setTimeout(function() {
-        zipLookup(zipEl, addrBlockEl, addrValEl, bldgFieldEl, hiddenEl, statusEl);
+        zipLookup(zipEl, addrBlockEl, addrValEl, bldgFieldEl, hiddenEl, statusEl, manualEl);
       }, 400);
     } else {
       statusEl.className = 'zip-status';
@@ -610,6 +652,7 @@ function wireZip(zipId, addrBlockId, addrValId, bldgFieldId, hiddenId, statusId)
       addrBlockEl.style.display = 'none';
       bldgFieldEl.style.display = 'none';
       hiddenEl.value = '';
+      if (manualEl && digits.length === 0) manualEl.style.display = 'none';
     }
   });
 
@@ -621,8 +664,17 @@ function wireZip(zipId, addrBlockId, addrValId, bldgFieldId, hiddenId, statusId)
       }
     });
   }
+
+  if (manualEl) {
+    var manualIn = manualEl.querySelector('input');
+    if (manualIn) {
+      manualIn.addEventListener('input', function() {
+        hiddenEl.value = manualIn.value.trim();
+      });
+    }
+  }
 }
 
 // Wire hero quote form postal code fields
-wireZip('qFromZip', 'qFromAddrBlock', 'qFromAddrVal', 'qFromBldgField', 'qFromAddr', 'qFromZipStatus');
-wireZip('qToZip',   'qToAddrBlock',   'qToAddrVal',   'qToBldgField',   'qToAddr',   'qToZipStatus');
+wireZip('qFromZip', 'qFromAddrBlock', 'qFromAddrVal', 'qFromBldgField', 'qFromAddr', 'qFromZipStatus', 'qFromManual');
+wireZip('qToZip',   'qToAddrBlock',   'qToAddrVal',   'qToBldgField',   'qToAddr',   'qToZipStatus',   'qToManual');
