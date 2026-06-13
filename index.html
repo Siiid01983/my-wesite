@@ -2883,6 +2883,7 @@ updateS2Btn();
 /* Screens */
 .ba-screen{display:none;flex:1;flex-direction:column;overflow:hidden}
 .ba-screen.active{display:flex;animation:baScreenIn .18s ease}
+.ba-screen.active.ba-no-anim{animation:none}
 @keyframes baScreenIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .ba-hdr-logo{font-size:16px;font-weight:800;color:var(--ba-forest);display:flex;align-items:center;gap:5px;flex:1}
 .ba-hdr-dot{width:8px;height:8px;border-radius:50%;background:var(--ba-olive);flex-shrink:0}
@@ -2967,6 +2968,7 @@ updateS2Btn();
     </div>
 
     <div class="ba-cta-wrap">
+      <p id="ba-search-err" style="display:none;font-size:13px;color:#c0392b;text-align:center;padding:0 0 8px;margin:0"></p>
       <button class="ba-cta" onclick="baHandleSearch()">見積りを依頼する</button>
     </div>
 
@@ -3219,7 +3221,8 @@ updateS2Btn();
 
   function baRenderServices() {
     var grid = document.getElementById('ba-svc-grid');
-    if (!grid) return;
+    // Idempotency guard — never re-inject HTML; service cards are rendered once only
+    if (!grid || grid.children.length > 0) return;
     grid.innerHTML = BA_SVC_CFG.map(function(s) {
       var badge = s.badge ? '<span class="ba-svc-badge" style="background:' + s.bc + '">' + s.badge + '</span>' : '';
       var media = s.img
@@ -3234,25 +3237,36 @@ updateS2Btn();
   }
 
   // ── Screen navigation ─────────────────────────────────────
-  function baShowScreen(id) {
-    document.querySelectorAll('#booking-app .ba-screen').forEach(function(s) { s.classList.remove('active'); });
-    document.getElementById('ba-screen-' + id).classList.add('active');
+  // Single source of truth for all screen switching.
+  // noAnim=true suppresses the enter animation (used on Back to prevent
+  // the "new screen appearing" effect that users mistake for re-rendering).
+  function baShowScreen(id, noAnim) {
+    var target = document.getElementById('ba-screen-' + id);
+    if (!target) return; // null guard — unknown screen id, do nothing
+    document.querySelectorAll('#booking-app .ba-screen').forEach(function(s) {
+      s.classList.remove('active');
+      s.classList.remove('ba-no-anim');
+    });
+    if (noAnim) target.classList.add('ba-no-anim');
+    target.classList.add('active');
     var isHome    = id === 'services';
     var isSuccess = id === 'success';
-    var backBtn  = document.getElementById('ba-back-btn');
-    var logo     = document.getElementById('ba-hdr-logo');
-    var titleEl  = document.getElementById('ba-service-title');
-    backBtn.style.display  = (isHome || isSuccess) ? 'none' : '';
-    logo.style.display     = isHome ? '' : 'none';
-    titleEl.style.display  = (isHome || isSuccess) ? 'none' : '';
-    if (!isHome && !isSuccess) titleEl.textContent = _baSelectedService.name || '';
+    var backBtn = document.getElementById('ba-back-btn');
+    var logo    = document.getElementById('ba-hdr-logo');
+    var titleEl = document.getElementById('ba-service-title');
+    if (backBtn)  backBtn.style.display  = (isHome || isSuccess) ? 'none' : '';
+    if (logo)     logo.style.display     = isHome ? '' : 'none';
+    if (titleEl) {
+      titleEl.style.display = (isHome || isSuccess) ? 'none' : '';
+      if (!isHome && !isSuccess) titleEl.textContent = _baSelectedService.name || '';
+    }
   }
 
   function baPush(id) {
     // Deduplication guard: skip if already at this screen to prevent a stuck Back button
     if (_baHistory[_baHistory.length - 1] === id) { baShowScreen(id); return; }
     _baHistory.push(id);
-    baShowScreen(id);
+    baShowScreen(id); // forward navigation: play enter animation
     _baSave();
   }
 
@@ -3262,15 +3276,16 @@ updateS2Btn();
   }
 
   function baGoBack() {
-    // If a drawer is open, close it first rather than leaving the screen
+    // Step 1 — close any open drawer first; never navigate while a drawer is visible
     var _drawers = ['from', 'to', 'furniture', 'date', 'filter'];
     for (var _i = 0; _i < _drawers.length; _i++) {
       var _d = document.getElementById('ba-drawer-' + _drawers[_i]);
       if (_d && _d.classList.contains('open')) { _d.classList.remove('open'); return; }
     }
+    // Step 2 — pure class toggle: no HTML injection, no API calls, no re-init
     if (_baHistory.length > 1) {
       _baHistory.pop();
-      baShowScreen(_baHistory[_baHistory.length - 1]);
+      baShowScreen(_baHistory[_baHistory.length - 1], true); // noAnim=true on back
       _baSave();
     } else {
       closeBookingApp();
@@ -3459,10 +3474,12 @@ updateS2Btn();
   window.baHandleSearch = function () {
     var from = document.getElementById('ba-val-from').classList.contains('filled');
     var to   = document.getElementById('ba-val-to').classList.contains('filled');
+    var _err = document.getElementById('ba-search-err');
     if (!from || !to) {
-      alert('現住所と引越し先を入力してください。');
+      if (_err) { _err.textContent = !from ? '現住所を入力してください。' : '引越し先を入力してください。'; _err.style.display = ''; }
       return;
     }
+    if (_err) _err.style.display = 'none';
     // Populate confirmation summary on the contact screen
     document.getElementById('ba-confirm-service').textContent = _baSelectedService.name || '—';
     document.getElementById('ba-confirm-from').textContent    = document.getElementById('ba-val-from').textContent;
