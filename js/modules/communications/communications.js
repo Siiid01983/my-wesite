@@ -64,8 +64,18 @@
     }
   }
 
+  /* ── Coerce booking_id: live DB column is bigint, migration changes it to text.
+     Until ALTER TABLE is applied: pass null for string IDs to avoid type errors.
+     After migration: remove the null branch and return String(id) directly. */
+  function _safeBookingId(id) {
+    if (!id) return null;
+    if (/^\d+$/.test(String(id))) return Number(id);  /* numeric → bigint safe */
+    return null;                                        /* string ID → null until migration */
+  }
+
   /* ── Supabase insert ─────────────────────────────────── */
   async function _insert(payload) {
+    payload = { ...payload, booking_id: _safeBookingId(payload.booking_id) };
     const _sb = window.SupabaseClient;
 
     /* ── Step 0: verify client ── */
@@ -131,12 +141,13 @@
   /* ── Supabase fetch — by booking ─────────────────────── */
   async function _fetchForBooking(bookingId) {
     const _sb = window.SupabaseClient;
-    if (!_sb || !bookingId) return [];
+    const safeId = _safeBookingId(bookingId);
+    if (!_sb || !safeId) return [];
 
     const { data, error } = await _sb
       .from('communications')
       .select('*')
-      .eq('booking_id', bookingId)
+      .eq('booking_id', safeId)
       .order('created_at', { ascending: false });
 
     if (error) {
