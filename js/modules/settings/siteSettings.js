@@ -133,7 +133,7 @@ function _renderSettingsTab(s) {
           <div>
             <div class="seo-section-head">連絡先</div>
             ${f('sPhone', '電話番号', 'tel', s.contact.phone, { placeholder:'03-xxxx-xxxx' })}
-            ${f('sEmail', 'メールアドレス', 'email', s.contact.email, { placeholder:'info@hello-moving.com' })}
+            ${f('sEmail', 'メールアドレス', 'email', s.contact.email, { placeholder:'contact@hello-moving.com' })}
           </div>
           <div>
             <div class="seo-section-head">住所</div>

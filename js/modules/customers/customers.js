@@ -312,7 +312,7 @@ ${bookings.length ? `
   </div>
   <div style="text-align:right;font-size:11px;color:#6b7280;line-height:1.7">
     <div style="font-weight:600;color:#0b0f17">Hello Moving</div>
-    <div>info@hello-moving.com</div>
+    <div>contact@hello-moving.com</div>
   </div>
 </div>
 

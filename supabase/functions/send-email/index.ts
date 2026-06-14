@@ -46,15 +46,15 @@ interface Account {
 const ACCOUNTS: Record<string, Account> = {
   booking: {
     displayEmail: "booking@hello-moving.com",
-    displayName:  "Hello Moving 予約担当",
+    displayName:  "Hello Moving 予約センター",
   },
   support: {
     displayEmail: "support@hello-moving.com",
-    displayName:  "Hello Moving サポート",
+    displayName:  "Hello Moving アフターサービス",
   },
   contact: {
     displayEmail: "contact@hello-moving.com",
-    displayName:  "Hello Moving",
+    displayName:  "Hello Moving カスタマーサポート",
   },
 };
 

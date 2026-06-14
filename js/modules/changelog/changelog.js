@@ -561,7 +561,7 @@ ${section('不用品管理')}
 </div>
 <div style="display:flex;justify-content:space-between;align-items:flex-end;padding-top:14px;border-top:1px solid #e5e7eb;margin-top:24px">
   <div style="font-size:10px;color:#9ca3af;line-height:1.7"><div>Hello Moving — 管理システム</div><div>このドキュメントは管理システムから自動生成されました</div></div>
-  <div style="text-align:right;font-size:11px;color:#6b7280;line-height:1.7"><div style="font-weight:600;color:#0b0f17">Hello Moving</div><div>info@hello-moving.com</div></div>
+  <div style="text-align:right;font-size:11px;color:#6b7280;line-height:1.7"><div style="font-weight:600;color:#0b0f17">Hello Moving</div><div>contact@hello-moving.com</div></div>
 </div>
 <script>window.onload=function(){setTimeout(function(){window.print();},350);window.onafterprint=function(){window.close();};}<\/script>
 </body></html>`;
