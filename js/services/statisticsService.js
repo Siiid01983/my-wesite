@@ -58,7 +58,7 @@
     _rawBkInflight = (async () => {
       const { data, error } = await _sb
         .from('bookings')
-        .select('reference_id,move_date,service_type,status,email,customer_name,created_at')
+        .select('reference_id,booking_date,service_type,status,customer_email,customer_name,created_at')
         .order('created_at', { ascending: false });
       _rawBkInflight = null;
       if (error || !data) return [];
@@ -134,9 +134,9 @@
   /* ════════════════════════════════════════════════════════
      1. ORIGINAL DASHBOARD STATS (preserved + extended)
      ════════════════════════════════════════════════════════ */
-  async function getTodayBookings()  { return _count('bookings', [['eq', 'move_date', _todayISO()]]); }
-  async function getWeeklyBookings() { return _count('bookings', [['gte', 'move_date', _weekStartISO()]]); }
-  async function getMonthlyBookings(){ return _count('bookings', [['gte', 'move_date', _monthStartISO()]]); }
+  async function getTodayBookings()  { return _count('bookings', [['eq', 'booking_date', _todayISO()]]); }
+  async function getWeeklyBookings() { return _count('bookings', [['gte', 'booking_date', _weekStartISO()]]); }
+  async function getMonthlyBookings(){ return _count('bookings', [['gte', 'booking_date', _monthStartISO()]]); }
 
   async function getOccupancyRate() {
     const bookedDays = await _count('calendar_availability', [
@@ -164,22 +164,22 @@
     const monthStart = _monthStartISO();
     const last30From = _nDaysAgoISO(30);
 
-    // replaces: getTodayBookings()  → COUNT bookings WHERE move_date = today
-    const todayCount     = data.filter(r => r.move_date === today).length;
-    // replaces: getWeeklyBookings() → COUNT bookings WHERE move_date >= weekStart
-    const weeklyCount    = data.filter(r => r.move_date >= weekStart).length;
-    // replaces: getMonthlyBookings()→ COUNT bookings WHERE move_date >= monthStart
-    const monthlyCount   = data.filter(r => r.move_date >= monthStart).length;
-    // replaces: COUNT bookings WHERE status = 'pending'
-    const pendingCount   = data.filter(r => r.status === 'pending').length;
+    // replaces: getTodayBookings()  → COUNT bookings WHERE booking_date = today
+    const todayCount     = data.filter(r => r.booking_date === today).length;
+    // replaces: getWeeklyBookings() → COUNT bookings WHERE booking_date >= weekStart
+    const weeklyCount    = data.filter(r => r.booking_date >= weekStart).length;
+    // replaces: getMonthlyBookings()→ COUNT bookings WHERE booking_date >= monthStart
+    const monthlyCount   = data.filter(r => r.booking_date >= monthStart).length;
+    // 'pending' = 新規, 'checking' = 確認中 — both count as "保留中"
+    const pendingCount   = data.filter(r => r.status === 'pending' || r.status === 'checking').length;
     // replaces: COUNT bookings WHERE status = 'confirmed'
     const confirmedCount = data.filter(r => r.status === 'confirmed').length;
     // replaces: COUNT bookings WHERE status = 'cancelled'
     const cancelledCount = data.filter(r => r.status === 'cancelled').length;
-    // replaces: COUNT bookings WHERE move_date >= 30 days ago
-    const last30Count    = data.filter(r => r.move_date >= last30From).length;
-    // replaces: _countDistinctCustomers() → COUNT DISTINCT email
-    const totalCustomers = new Set(data.map(r => r.email).filter(Boolean)).size;
+    // replaces: COUNT bookings WHERE booking_date >= 30 days ago
+    const last30Count    = data.filter(r => r.booking_date >= last30From).length;
+    // replaces: _countDistinctCustomers() → COUNT DISTINCT customer_email
+    const totalCustomers = new Set(data.map(r => r.customer_email).filter(Boolean)).size;
 
     const avgDaily = Math.round((last30Count / 30) * 10) / 10;
     return {
@@ -207,18 +207,18 @@
     const monthStart    = _monthStartISO();
     const lastMonthStart= _lastMonthStartISO();
 
-    // replaces: COUNT bookings WHERE move_date = today
-    const todayN     = data.filter(r => r.move_date === today).length;
-    // replaces: COUNT bookings WHERE move_date = yesterday
-    const yestN      = data.filter(r => r.move_date === yesterday).length;
-    // replaces: COUNT bookings WHERE move_date >= weekStart
-    const weekN      = data.filter(r => r.move_date >= weekStart).length;
-    // replaces: COUNT bookings WHERE move_date >= lastWeekStart AND move_date < weekStart
-    const lastWeekN  = data.filter(r => r.move_date >= lastWeekStart && r.move_date < weekStart).length;
-    // replaces: COUNT bookings WHERE move_date >= monthStart
-    const monthN     = data.filter(r => r.move_date >= monthStart).length;
-    // replaces: COUNT bookings WHERE move_date >= lastMonthStart AND move_date < monthStart
-    const lastMonthN = data.filter(r => r.move_date >= lastMonthStart && r.move_date < monthStart).length;
+    // replaces: COUNT bookings WHERE booking_date = today
+    const todayN     = data.filter(r => r.booking_date === today).length;
+    // replaces: COUNT bookings WHERE booking_date = yesterday
+    const yestN      = data.filter(r => r.booking_date === yesterday).length;
+    // replaces: COUNT bookings WHERE booking_date >= weekStart
+    const weekN      = data.filter(r => r.booking_date >= weekStart).length;
+    // replaces: COUNT bookings WHERE booking_date >= lastWeekStart AND booking_date < weekStart
+    const lastWeekN  = data.filter(r => r.booking_date >= lastWeekStart && r.booking_date < weekStart).length;
+    // replaces: COUNT bookings WHERE booking_date >= monthStart
+    const monthN     = data.filter(r => r.booking_date >= monthStart).length;
+    // replaces: COUNT bookings WHERE booking_date >= lastMonthStart AND booking_date < monthStart
+    const lastMonthN = data.filter(r => r.booking_date >= lastMonthStart && r.booking_date < monthStart).length;
 
     const result = {
       today: { val: todayN, prev: yestN,     pct: _pct(todayN, yestN),     label: '昨日比' },
@@ -255,9 +255,9 @@
 
     const active = data.filter(r => r.status !== 'cancelled');
 
-    const todayRev   = active.filter(r => r.move_date === today).reduce((s, r) => s + priceFor(r.service_type), 0);
-    const weeklyRev  = active.filter(r => r.move_date >= weekStart).reduce((s, r) => s + priceFor(r.service_type), 0);
-    const monthlyRev = active.filter(r => r.move_date >= monthStart).reduce((s, r) => s + priceFor(r.service_type), 0);
+    const todayRev   = active.filter(r => r.booking_date === today).reduce((s, r) => s + priceFor(r.service_type), 0);
+    const weeklyRev  = active.filter(r => r.booking_date >= weekStart).reduce((s, r) => s + priceFor(r.service_type), 0);
+    const monthlyRev = active.filter(r => r.booking_date >= monthStart).reduce((s, r) => s + priceFor(r.service_type), 0);
     const totalRev   = active.reduce((s, r) => s + priceFor(r.service_type), 0);
     const avgBkValue = active.length > 0 ? Math.round(totalRev / active.length) : 0;
     const projected  = dayOfMonth > 0 ? Math.round((monthlyRev / dayOfMonth) * dIM) : 0;
@@ -287,13 +287,13 @@
     const data = await _getBookingsRaw();
 
     // Filter to window in JS — no extra Supabase round-trip
-    const inWindow = data.filter(r => r.move_date >= from);
+    const inWindow = data.filter(r => r.booking_date >= from);
 
     const trend = [];
     for (let i = days - 1; i >= 0; i--) {
       const d   = new Date(); d.setDate(d.getDate() - i);
       const iso = _iso(d);
-      trend.push({ date: iso, count: inWindow.filter(r => r.move_date === iso).length });
+      trend.push({ date: iso, count: inWindow.filter(r => r.booking_date === iso).length });
     }
 
     const total  = trend.reduce((s, r) => s + r.count, 0);
@@ -322,7 +322,7 @@
 
     const counts = {};
     data
-      .filter(r => r.move_date >= f && r.move_date <= t && r.status !== 'cancelled')
+      .filter(r => r.booking_date >= f && r.booking_date <= t && r.status !== 'cancelled')
       .forEach(r => {
         const s = r.service_type || 'その他';
         counts[s] = (counts[s] || 0) + 1;
@@ -357,8 +357,8 @@
 
     const byEmail = {};
     data.forEach(b => {
-      const key = (b.email || '').trim().toLowerCase() || ('__' + (b.customer_name || ''));
-      if (!byEmail[key]) byEmail[key] = { email: b.email, name: b.customer_name, bookings: 0, firstAt: b.created_at };
+      const key = (b.customer_email || '').trim().toLowerCase() || ('__' + (b.customer_name || ''));
+      if (!byEmail[key]) byEmail[key] = { email: b.customer_email, name: b.customer_name, bookings: 0, firstAt: b.created_at };
       byEmail[key].bookings++;
       if ((b.created_at || '') < (byEmail[key].firstAt || '')) byEmail[key].firstAt = b.created_at;
     });
@@ -405,7 +405,7 @@
       _count('calendar_availability', [['gte','date',monthStart],['lte','date',monthEnd],['eq','status','available']]),
       _count('calendar_availability', [['gte','date',monthStart],['lte','date',monthEnd],['eq','status','limited']]),
       _count('calendar_availability', [['gte','date',monthStart],['lte','date',monthEnd],['eq','status','full']]),
-      _count('bookings', [['gte','move_date',monthStart],['lte','move_date',monthEnd]]),
+      _count('bookings', [['gte','booking_date',monthStart],['lte','booking_date',monthEnd]]),
     ]);
 
     const utilisationRate = dIM > 0 ? Math.round((booked / dIM) * 100) : 0;
@@ -466,18 +466,18 @@
   /* ════════════════════════════════════════════════════════
      9. ANALYTICS DATA  (existing, preserved)
      ════════════════════════════════════════════════════════ */
-  const _STATUS_LOCAL = { pending:'新規', confirmed:'確定', completed:'完了', cancelled:'キャンセル' };
+  const _STATUS_LOCAL = { pending:'新規', checking:'確認中', confirmed:'確定', completed:'完了', cancelled:'キャンセル' };
 
   async function getAnalyticsData(from, to) {
     if (!_sb) return null;
     const { data, error } = await _sb
       .from('bookings')
-      .select('move_date,service_type,status')
-      .gte('move_date', from)
-      .lte('move_date', to);
+      .select('booking_date,service_type,status')
+      .gte('booking_date', from)
+      .lte('booking_date', to);
     if (error) { console.warn('[StatisticsService] getAnalyticsData error:', error.message); return null; }
     return (data || []).map(r => ({
-      date:    r.move_date    || '',
+      date:    r.booking_date || '',
       service: r.service_type || '',
       status:  _STATUS_LOCAL[r.status] || r.status || '新規',
     }));
