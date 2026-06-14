@@ -68,6 +68,14 @@ function _renderCustomersUI() {
     const bkBadge = c.bkCount > 0
       ? `<span class="badge badge-confirmed">${c.bkCount}件</span>`
       : `<span class="badge badge-done">なし</span>`;
+    const lastContact = window.CommModule ? CommModule.getLastContact(c.email) : null;
+    const commCount   = window.CommModule ? CommModule.getCount(c.email) : 0;
+    const lastContactCell = lastContact
+      ? `<span class="td-mono" style="font-size:11px">${fmtDT(lastContact)}</span>`
+      : `<span style="font-size:11px;color:var(--gray-2)">—</span>`;
+    const commCountCell = commCount > 0
+      ? `<span class="badge badge-confirmed">${commCount}件</span>`
+      : `<span style="font-size:11px;color:var(--gray-2)">0</span>`;
     return `<tr>
       <td class="td-mono" style="font-size:11px">${esc(c.id)}</td>
       <td>
@@ -79,11 +87,16 @@ function _renderCustomersUI() {
       <td class="td-sm">${esc(c.phone||'—')}</td>
       <td class="td-sm">${esc(c.email||'—')}</td>
       <td>${bkBadge}</td>
+      <td>${commCountCell}</td>
+      <td>${lastContactCell}</td>
       <td class="td-mono" style="font-size:11px">${fmtDT(c.registeredAt)}</td>
       <td>
         <div style="display:flex;gap:4px">
           <button class="btn btn-ghost btn-sm btn-icon" title="プロフィール" onclick="openCustModal('${esc(c.id)}')">
             <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          </button>
+          <button class="btn btn-primary btn-sm btn-icon" title="返信" onclick="if(window.CommModule)CommModule.openQuickReply('${esc(c.email)}','${esc(c.name)}')">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
           </button>
           <button class="btn btn-danger btn-sm btn-icon" title="削除" onclick="deleteCust('${esc(c.id)}')">
             <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
@@ -96,13 +109,22 @@ function _renderCustomersUI() {
   document.getElementById('customersWrap').innerHTML = `
     <table>
       <thead><tr>
-        <th>顧客ID</th><th>お客様名</th><th>電話番号</th><th>メール</th><th>予約数</th><th>登録日時</th><th>操作</th>
+        <th>顧客ID</th><th>お客様名</th><th>電話番号</th><th>メール</th><th>予約数</th><th>連絡数</th><th>最終連絡日</th><th>登録日時</th><th>操作</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
 }
 
-function renderCustomers() { _renderCustomersUI(); }
+function renderCustomers() {
+  _renderCustomersUI();
+  if (window.CommModule) {
+    CommModule.prefetchStats().then(() => {
+      if (document.getElementById('view-customers')?.classList.contains('active')) {
+        _renderCustomersUI();
+      }
+    });
+  }
+}
 
 function _syncCustomersFromSupabase() {
   if (!Adapter.supabaseReady) return;
@@ -176,6 +198,18 @@ function openCustModal(id) {
   document.getElementById('custModalPdfBtn').onclick   = () => downloadPDFCustomer(id);
   document.getElementById('custModalPrintBtn').onclick = () => printCustomer(id);
   document.getElementById('custModalDelBtn').onclick   = () => { closeCustModal(); deleteCust(id); };
+
+  const replyBtn = document.getElementById('custModalReplyBtn');
+  if (replyBtn) {
+    replyBtn.onclick = () => {
+      if (window.CommModule) CommModule.openQuickReply(c.email, c.name, c.name);
+    };
+    replyBtn.style.display = c.email ? '' : 'none';
+  }
+
+  if (window.CommModule) {
+    CommModule.renderCustomerTimeline(c.email, 'custCommHistory');
+  }
 
   document.getElementById('custModal').classList.add('open');
 }

@@ -2157,6 +2157,7 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
       <button class="btn btn-ghost btn-sm" onclick="closeDetail()">閉じる</button>
     </div>
     <div id="detailBody"></div>
+    <div id="detailCommHistory"></div>
     <div class="m-actions" style="margin-top:14px">
       <button class="btn btn-ghost btn-sm" id="detailPdfBtn">
         <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PDF
@@ -2170,11 +2171,50 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
       <button class="btn btn-ghost btn-sm" id="detailCrmBtn">
         <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>顧客プロフィール
       </button>
-      <button class="btn btn-ghost btn-sm" id="detailReplyBtn">
-        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>返信
+      <button class="btn btn-primary btn-sm" id="detailReplyBtn">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>返信
       </button>
       <button class="btn btn-ghost btn-sm" id="detailEditBtn">編集</button>
       <button class="btn btn-danger btn-sm" id="detailDelBtn">削除</button>
+    </div>
+  </div>
+</div>
+
+<!-- Communications Reply Modal (Phase 29) -->
+<div class="overlay" id="replyModal">
+  <div class="modal" style="max-width:500px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="modal-title" style="margin-bottom:0" id="replyModalTitle">メッセージを送信</div>
+      <button class="btn btn-ghost btn-sm" onclick="CommModule.closeReply()">閉じる</button>
+    </div>
+    <div class="m-field">
+      <label class="m-label">宛先</label>
+      <input class="m-input" id="replyTo" type="email" readonly style="background:var(--bg-2,#f8f9fa);color:var(--gray-1)" />
+    </div>
+    <div class="m-field">
+      <label class="m-label">送信元アカウント</label>
+      <select class="m-input sel" id="replyFrom" style="color:var(--gray-1)">
+        <option value="booking@hello-moving.com">booking@hello-moving.com（予約担当）</option>
+        <option value="support@hello-moving.com">support@hello-moving.com（サポート）</option>
+        <option value="contact@hello-moving.com">contact@hello-moving.com（お問い合わせ）</option>
+      </select>
+    </div>
+    <div class="m-field">
+      <label class="m-label">件名</label>
+      <input class="m-input" id="replySubject" type="text" placeholder="[Hello Moving] ご予約について" />
+    </div>
+    <div class="m-field">
+      <label class="m-label">メッセージ *</label>
+      <textarea class="m-ta" id="replyMessage" rows="7" placeholder="メッセージを入力してください..."></textarea>
+    </div>
+    <div style="margin:0 0 12px;padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:11px;color:#92400e;line-height:1.5">
+      現在は記録のみモードです。メッセージはコミュニケーション履歴に保存されます。実際の送信にはSMTP設定が必要です。
+    </div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="CommModule.closeReply()">キャンセル</button>
+      <button class="btn btn-primary" id="replySendBtn" onclick="CommModule.send()">
+        <svg viewBox="0 0 24 24" width="13" height="13" style="vertical-align:middle;margin-right:4px"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>送信
+      </button>
     </div>
   </div>
 </div>
@@ -2357,8 +2397,12 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
     </div>
     <div class="cust-detail-grid" id="custModalBody"></div>
     <div id="custModalHistory"></div>
+    <div id="custCommHistory"></div>
     <div class="m-actions">
       <button class="btn btn-ghost" onclick="closeCustModal()">閉じる</button>
+      <button class="btn btn-primary" id="custModalReplyBtn">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>返信
+      </button>
       <button class="btn btn-ghost" id="custModalPdfBtn">
         <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PDF
       </button>
@@ -2611,6 +2655,9 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 
 <!-- ── Overlay bookings view ── -->
 <script src="js/modules/overlay-bookings/overlayBookings.js"></script>
+
+<!-- ── Communications (Phase 29 — internal messaging, replaces mailto) ── -->
+<script src="js/modules/communications/communications.js"></script>
 
 <!-- ── Service registry (populated after all services/core/utils are loaded) ── -->
 <script src="js/services/serviceRegistry.js"></script>

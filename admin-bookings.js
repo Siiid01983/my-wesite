@@ -518,12 +518,9 @@ function openDetail(id) {
   document.getElementById('detailPrintBtn').onclick = () => printBooking(id);
   document.getElementById('detailInvBtn').onclick   = () => InvoiceManager.openModal(id);
   document.getElementById('detailReplyBtn').onclick = () => {
-    if (!b.email) { alert('このお客様のメールアドレスが登録されていません'); return; }
-    const subject = encodeURIComponent(`[Hello Moving] ご予約について — ${b.id}`);
-    const body = encodeURIComponent(
-      `${b.name || 'お客様'}様\n\nHello Movingです。\nこの度はお問い合わせいただきありがとうございます。\n\n予約番号：${b.id}\nサービス：${b.service || '—'}\n引越し日：${b.date || '—'}\n\n`
-    );
-    window.open(`mailto:${b.email}?subject=${subject}&body=${body}`);
+    if (window.CommModule) {
+      CommModule.openReply(b.id, b.email, b.name, b.id, b.service, b.date);
+    }
   };
   document.getElementById('detailEditBtn').onclick  = () => openEdit(id);
   document.getElementById('detailCrmBtn').onclick   = () => {
@@ -542,6 +539,7 @@ function openDetail(id) {
   };
   document.getElementById('detailDelBtn').onclick   = () => { if(confirm('削除しますか？')){ const _bk=BookingService.getBookings().find(b=>b.id===id); Adapter.deleteBooking(id); BookingService.releaseBooking(_bk); closeDetail(); renderBookings(); renderDash(); toast('削除しました'); }};
   document.getElementById('detailModal').classList.add('open');
+  if (window.CommModule) CommModule.renderTimeline(b.id, 'detailCommHistory');
 }
 function closeDetail() { document.getElementById('detailModal').classList.remove('open'); }
 
