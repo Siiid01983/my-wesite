@@ -270,7 +270,7 @@
           return;
         }
         const el = form.querySelector(`[name="${k}"]`);
-        if (el) el.value = v;
+        if (el && el.type !== 'file') el.value = v;
       });
     }
     showStep(1);
