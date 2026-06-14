@@ -607,10 +607,7 @@
     diagnose,
   };
 
-  /* ── EmailService — Phase 6 abstraction ──────────────────
-     Current:  save to Supabase only (no actual delivery).
-     Future:   uncomment _deliver() and wire SMTP / cPanel / Resend.
-     ─────────────────────────────────────────────────────── */
+  /* ── EmailService — delivery via Resend Edge Function ─── */
   window.EmailService = {
     FROM_EMAIL,
 
@@ -627,7 +624,7 @@
       });
     },
 
-    /* Sends email via Supabase Edge Function → cPanel SMTP */
+    /* Sends email via Resend API through Supabase Edge Function */
     async _deliver(record) {
       const url = (window.SUPABASE_URL || '').replace(/\/$/, '') + '/functions/v1/send-email';
       const key = window.SUPABASE_ANON_KEY || '';
