@@ -65,11 +65,22 @@ function _applyRoleToSidebar() {
    captures every Supabase attempt. If DataProvider confirms Supabase
    is reachable, delegates to Adapter for domain mapping + storage.
    ════════════════════════════════════════════════════════ */
+/* Per-table in-flight guard: prevents two concurrent _dpSync calls for the same
+   table from both firing Supabase fetches that could write different snapshots
+   of local storage in an unpredictable order. */
+const _dpSyncInFlight = {};
+
 async function _dpSync(table, filters, adapterFn, viewId, rerenderFn) {
-  const { source } = await window.DataProvider.read(table, filters || undefined);
-  if (source !== 'supabase') return;
-  const ok = await adapterFn();
-  if (ok && document.getElementById(viewId)?.classList.contains('active')) rerenderFn();
+  if (_dpSyncInFlight[table]) return;
+  _dpSyncInFlight[table] = true;
+  try {
+    const { source } = await window.DataProvider.read(table, filters || undefined);
+    if (source !== 'supabase') return;
+    const ok = await adapterFn();
+    if (ok && document.getElementById(viewId)?.classList.contains('active')) rerenderFn();
+  } finally {
+    _dpSyncInFlight[table] = false;
+  }
 }
 
 function go(view) {

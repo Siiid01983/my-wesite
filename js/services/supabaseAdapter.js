@@ -749,16 +749,18 @@
             })
           .on('postgres_changes',
             { event: 'DELETE', schema: 'public', table: 'bookings' },
-            async (payload) => {
+            (payload) => {
               console.log('[Realtime] Booking deleted', payload.old);
               const dbId = payload.old?.id;
               if (dbId) {
                 _set(K.bk, this.getBookings().filter(b => b._dbId !== dbId));
               } else {
-                // REPLICA IDENTITY not FULL — re-fetch to stay in sync
-                const { data } = await _sb.from('bookings').select('*')
-                  .order('created_at', { ascending: false });
-                if (data) _set(K.bk, data.map(sbToBooking));
+                // REPLICA IDENTITY not FULL — payload.old has no id.
+                // Do NOT re-fetch here: an eager fetch can race with other in-flight
+                // requests and return [] transiently, wiping all local bookings.
+                // Instead, mark the DataProvider cache as stale so the next navigation
+                // to the bookings view fetches a verified fresh copy via _dpSync.
+                if (window.DataProvider) DataProvider.invalidate('bookings');
               }
               document.dispatchEvent(new CustomEvent('booking:updated', {
                 detail: { bookingId: dbId }

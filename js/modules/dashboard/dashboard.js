@@ -92,7 +92,14 @@ function renderStatGrid(sbStats, growthStats) {
 /* ── BI trend period state ── */
 var _biTrendPeriod = 30;
 
+/* Monotonically-increasing render generation counter.
+   Each async BI callback captures the generation at launch time and
+   bails out if a newer renderDash() has since started, preventing a
+   stale callback from overwriting fresher data. */
+var _dashGen = 0;
+
 function renderDash() {
+  const gen = ++_dashGen;
   const bk = Adapter.getBookings();
 
   /* Render immediately with local data so the UI is never blank */
@@ -101,21 +108,22 @@ function renderDash() {
   /* Kick off all async BI fetches in parallel */
   if (window.StatisticsService && StatisticsService.supabaseReady) {
     const isActive = () => document.getElementById('view-dashboard').classList.contains('active');
+    const isCurrent = () => gen === _dashGen;  // guard against stale callbacks
 
     Promise.all([
       StatisticsService.getDashboardStats(),
       StatisticsService.getGrowthStats(),
     ]).then(([stats, growth]) => {
-      if (!isActive()) return;
+      if (!isActive() || !isCurrent()) return;
       renderStatGrid(stats || null, growth || null);
     });
 
-    StatisticsService.getRevenueStats().then(rev  => { if (isActive()) _renderBIRevenue(rev); });
-    StatisticsService.getTrendData(_biTrendPeriod).then(td => { if (isActive()) _renderBITrendData(td); });
-    StatisticsService.getServicePopularity().then(sp => { if (isActive()) _renderBIService(sp); });
-    StatisticsService.getCustomerStats().then(cs  => { if (isActive()) _renderBICustomer(cs); });
-    StatisticsService.getOperationalStats().then(op => { if (isActive()) _renderBIOperational(op); });
-    StatisticsService.getRecentActivity(10).then(act=> { if (isActive()) _renderBIActivity(act); });
+    StatisticsService.getRevenueStats().then(rev  => { if (isActive() && isCurrent()) _renderBIRevenue(rev); });
+    StatisticsService.getTrendData(_biTrendPeriod).then(td => { if (isActive() && isCurrent()) _renderBITrendData(td); });
+    StatisticsService.getServicePopularity().then(sp => { if (isActive() && isCurrent()) _renderBIService(sp); });
+    StatisticsService.getCustomerStats().then(cs  => { if (isActive() && isCurrent()) _renderBICustomer(cs); });
+    StatisticsService.getOperationalStats().then(op => { if (isActive() && isCurrent()) _renderBIOperational(op); });
+    StatisticsService.getRecentActivity(10).then(act=> { if (isActive() && isCurrent()) _renderBIActivity(act); });
   }
 
   /* Render BI skeletons immediately so layout doesn't jump */
