@@ -135,15 +135,23 @@ my-website/
 │
 ├── wmcDashboard.html  # Phase 28 — WMC: HTML + CSS only (no inline JS beyond lean navigation/auth/startup)
 │
-├── js/modules/website/     # Phase 28 — WMC modules
+├── js/modules/website/     # Phase 28 — WMC feature modules
 │   ├── wmcCore.js          # window.WMCPermissions — 3-tier RBAC (admin/staff/readonly); _padZ, _wmcFmtRelative shared utils
 │   ├── wmcPermissions.js   # Section 10: permission matrix, role simulation, WMC user management
-│   ├── wmcOverview.js      # Dashboard overview, SEO score, health cards, refresh, adapter timestamp patch
+│   ├── wmcOverview.js      # Dashboard overview, SEO score, health cards, write-test diag, adapter timestamp patch
 │   ├── wmcPages.js         # Pages view with permission-aware delete/publish controls
 │   ├── wmcBlog.js          # Blog post create/edit/delete with role checks
 │   ├── wmcSeo.js           # SEO settings view
 │   ├── wmcTheme.js         # Section 8: theme customizer, live preview, CSS generation, apply to site
-│   └── wmcDeploy.js        # Section 9: deployment info cards, export/import/backup, version tracking, deploy log
+│   ├── wmcDeploy.js        # Section 9: deployment info cards, export/import/backup, version tracking, deploy log
+│   ├── wmcServices.js      # WMC Services image management — reads/writes hm_service_images via hm_data
+│   ├── wmcAnalytics.js     # Section 11: WMC analytics dashboard — booking DOW heatmap, revenue chart, SEO score
+│   └── wmcBootstrap.js     # Startup dependency audit — warns on missing globals, calls wmcInit() entry point
+│
+├── js/modules/wmc/         # Phase 28 — WMC page/block editor modules (loaded by wmcDashboard.html)
+│   ├── pageManager.js      # window.WMCPageManager — page CRUD, _wmcCloseModal (required by blockEditor + wmcMedia)
+│   ├── wmcMedia.js         # window.WMCMedia — media library picker for WMC (depends on WMCPageManager)
+│   └── blockEditor.js      # window.WMCBlockEditor — block-based page editor (depends on WMCPageManager + WMCMedia)
 │
 ├── mobile.css              # Phase 27A — mobile-first enhancements (bottom-nav, drawer, 44px targets, camera modal, offline banner)
 │
@@ -550,7 +558,7 @@ Tables used by `Adapter`:
 
 | Table | Key columns | Used for |
 |---|---|---|
-| `bookings` | `reference_id`, `customer_name`, `email`, `move_date`, `status` | Booking management |
+| `bookings` | `id`, `customer_name`, `customer_email`, `customer_phone`, `booking_date`, `service_type`, `status`, `notes`, `created_at` | Booking management. Local objects use `date`/`email`/`service` — the Adapter's `bookingToSb`/`sbToBooking` mappers translate. |
 | `calendar_availability` | `date`, `status` | Calendar overrides |
 | `reviews` | `reference_id`, `customer_name`, `rating`, `approved` | Review management |
 | `services` | `reference_id`, `title`, `display_order`, `active` | Service listings |
@@ -696,17 +704,19 @@ applies on every grid render including Realtime-triggered updates.
 
 | Phase | Commit | What was built |
 |---|---|---|
-| 28 | `—` | Website Management Center (WMC): `wmcDashboard.html` + 8 modules in `js/modules/website/`. Sections 8 (Theme Customizer — live preview, CSS override for index.html), 9 (Deployment Center — export/import/backup, version tracking, deploy log), 10 (Permissions — 3-tier RBAC: admin/staff/readonly, permission matrix, WMC user management, role simulation, view-level access gates). `WMCPermissions` global, `_padZ`/`_wmcFmtRelative` shared utils. Navigation integration: WMC link added to admin.html sidebar. localStorage schema: `hm_wmc_users`, `hm_dc_log`, `hm_dc_backups`, `hm_theme_config`, `hm_custom_theme_css`. |
+| Audit | `403da78` | System audit refactor (Plans A–D): (A) WMC module consolidation — `wmcDashboard.html` now loads canonical `js/modules/website/wmcOverview.js`; deleted stale split fragments `js/management/content.js` and `js/admin/dashboard.js`. (B) Deleted `admin-ui.js` (5,543-line pre-Phase 14 orphan, not loaded anywhere). (C) `supabaseAdapter.js` `wt()` now calls `DataProvider.invalidate('hm_data')` on every hm_data write. (D) `statisticsService.js` — all six raw-fetch BI functions now return `null`/`[]` on Supabase error instead of zero-filled objects. |
+| Audit | `09aceb4` | Bug fixes: `statisticsService._getBookingsRaw()` was selecting non-existent column `reference_id` → fixed to `id` (root cause of all dashboard stat cards showing 0). Added error guard to `getDashboardStats()` (returns null on fetch failure so dashboard keeps showing prior values). Fixed `getRecentActivity()` to use `b.id`. |
+| 28 | `—` | Website Management Center (WMC): `wmcDashboard.html` + 11 modules across `js/modules/website/` and `js/modules/wmc/`. Sections 8 (Theme Customizer), 9 (Deployment Center), 10 (Permissions — 3-tier RBAC), 11 (Analytics). Block-based page editor (`WMCPageManager`, `WMCMedia`, `WMCBlockEditor`). `WMCPermissions` global, `_padZ`/`_wmcFmtRelative` shared utils. localStorage schema: `hm_wmc_users`, `hm_dc_log`, `hm_dc_backups`, `hm_theme_config`, `hm_custom_theme_css`. |
 | 23 | `—` | Advanced Analytics & BI: AnalyticsEngine (regression/forecasting), RevenueForecast (3-month projection), ServicePerformance (composite score), CustomerInsights (CLV/churn), ConversionAnalytics (funnel), AnalyticsWidgets (demand chart/DOW heatmap/insight cards), AnalyticsUI (orchestrator wrapper) |
 | 22 | `e9505ac` | Invoice generator (InvoiceManager, hm_invoices, 請求書 button in booking detail); global search (GlobalSearch, Ctrl+K, searches all local data); audit log (AuditLog, hm_audit_log ring buffer, Adapter auto-patches, 監査ログ view) |
 | 21 | `e33a779` | Dashboard customisation suite (A–E): layout storage, widget visibility modal, HTML5 DnD reordering, KPI card manager, Owner/Operations/Marketing profiles |
-| 1 | `14af5d5` | Infrastructure: appConfig, fallbackLogger, dataProvider, serviceRegistry |
-| 2 | `675da50` | Connected admin page syncs to DataProvider via `_dpSync` |
-| 3 | `57b4748` | Auth hardening: salted hash, constant-time compare, session rotation, exponential lockout |
-| 4 | `7a96f1c` | DataProvider TTL cache with per-table config and cache invalidation on writes |
-| 5 | `0f644c8` | Admin dashboard observability panel with live metrics |
-| 6 | `84ecfdf` | DataProvider retry with exponential backoff and jitter |
-| 7 | `0a9c11d` | 20-case DataProvider unit test suite |
-| 8 | `—` | CLAUDE.md (this file) |
+| 14 | `0b73573` | Modular architecture: split admin-ui.js into 30 domain files across js/core/, js/utils/, js/modules/ (admin-ui.js subsequently deleted in Audit commit 403da78) |
 | 12 | `8c3eac9` | PDF direct download for all 11 print functions |
-| 14 | `0b73573` | Modular architecture: split admin-ui.js (5543 lines) into 30 domain files across js/core/, js/utils/, js/modules/ |
+| 8 | `—` | CLAUDE.md (this file) |
+| 7 | `0a9c11d` | 20-case DataProvider unit test suite |
+| 6 | `84ecfdf` | DataProvider retry with exponential backoff and jitter |
+| 5 | `0f644c8` | Admin dashboard observability panel with live metrics |
+| 4 | `7a96f1c` | DataProvider TTL cache with per-table config and cache invalidation on writes |
+| 3 | `57b4748` | Auth hardening: salted hash, constant-time compare, session rotation, exponential lockout |
+| 2 | `675da50` | Connected admin page syncs to DataProvider via `_dpSync` |
+| 1 | `14af5d5` | Infrastructure: appConfig, fallbackLogger, dataProvider, serviceRegistry |
