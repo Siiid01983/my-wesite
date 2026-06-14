@@ -71,7 +71,7 @@ function _bookingToRow(b) {
     customer_email: b.email     || null,
     customer_phone: b.phone     || null,
     booking_date:   b.date      || null,
-    service_id:     b.service   || null,
+    service_id:     null,
     status:         _BK_TO_SB[b.status] || 'pending',
     notes:          _packNotes(b),
     created_at:     b.createdAt || new Date().toISOString(),
@@ -159,14 +159,10 @@ const BookingService = (() => {
     };
 
     const sb = _sb();
-    console.log('[SUPABASE] SupabaseClient available:', !!sb);
     if (sb) {
-      const _row = _bookingToRow(booking);
-      console.log('[SUPABASE] inserting row:', JSON.stringify(_row));
-      const { data: _insData, error } = await sb.from('bookings').insert(_row).select();
-      console.log('[SUPABASE] insert response — data:', JSON.stringify(_insData), '| error:', error ? JSON.stringify({ message: error.message, code: error.code, details: error.details, hint: error.hint }) : null);
+      const { error } = await sb.from('bookings').insert(_bookingToRow(booking));
       if (error) {
-        console.error('[SUPABASE] insert FAILED — message:', error.message, '| code:', error.code, '| details:', error.details, '| hint:', error.hint);
+        console.error('[BookingService] createBooking:', error.message);
         throw new Error(error.message);
       }
     }

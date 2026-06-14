@@ -191,7 +191,7 @@
       customer_email: b.email     || null,
       customer_phone: b.phone     || null,
       booking_date:   b.date      || null,
-      service_id:     b.service   || null,
+      service_id:     null,
       status:         BK_TO_SB[b.status] || 'pending',
       notes:          _packBookingNotes(b),
       created_at:     b.createdAt || new Date().toISOString(),
