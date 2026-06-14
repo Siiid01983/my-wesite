@@ -450,6 +450,55 @@ function openEdit(id) {
 
 function closeEdit() { document.getElementById('editModal').classList.remove('open'); }
 
+/* ── Customer email via Resend Edge Function ─────────────── */
+async function _sendBookingEmail(b, trigger) {
+  if (!b.email) return;   /* no recipient — skip silently */
+
+  const url = (window.SUPABASE_URL || '').replace(/\/$/, '') + '/functions/v1/send-email';
+  const key = window.SUPABASE_ANON_KEY || '';
+
+  const messages = {
+    newBooking: `${b.name || 'お客様'}様\n\nこの度はHello Movingにご連絡いただき、誠にありがとうございます。\n以下の内容でご予約を受け付けました。\n\nサービス：${b.service || '—'}\n引越し日：${b.date || '未定'}\n\n担当者より改めてご連絡差し上げます。\nご不明な点がございましたら、お気軽にご連絡ください。\n\nHello Moving 予約担当`,
+    statusConfirmed: `${b.name || 'お客様'}様\n\nご予約が正式に確定いたしました。\n\nサービス：${b.service || '—'}\n引越し日：${b.date || '—'}\n受付番号：${b.id}\n\n当日はどうぞよろしくお願いいたします。\n\nHello Moving 予約担当`,
+    statusComplete:  `${b.name || 'お客様'}様\n\nこの度は Hello Moving をご利用いただき、誠にありがとうございました。\n\nサービス：${b.service || '—'}\n受付番号：${b.id}\n\nご不明な点やご意見がございましたら、お気軽にお申し付けください。\nまたのご利用を心よりお待ちしております。\n\nHello Moving`,
+  };
+
+  const subjects = {
+    newBooking:      `[Hello Moving] ご予約を受け付けました — ${b.id}`,
+    statusConfirmed: `[Hello Moving] ご予約確定のお知らせ — ${b.id}`,
+    statusComplete:  `[Hello Moving] ご利用ありがとうございました — ${b.id}`,
+  };
+
+  const from_account = trigger === 'statusComplete' ? 'support' : 'booking';
+
+  try {
+    const res = await fetch(url, {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${key}`,
+        'apikey':        key,
+      },
+      body: JSON.stringify({
+        from_account,
+        to:         b.email,
+        subject:    subjects[trigger],
+        message:    messages[trigger],
+        booking_id: b.id,
+      }),
+    });
+    const result = await res.json().catch(() => ({ ok: false, error: `HTTP ${res.status}` }));
+    if (result.ok) {
+      console.log(`[send-email] ${trigger} → ${b.email} OK`, result.messageId);
+    } else {
+      console.error(`[send-email] ${trigger} → ${b.email} FAILED`, result.error);
+      toast(`メール送信エラー: ${result.error}`);
+    }
+  } catch (err) {
+    console.error(`[send-email] ${trigger} fetch error`, err.message);
+  }
+}
+
 function saveBooking() {
   const name = document.getElementById('mName').value.trim();
   if (!name) { alert('お客様名を入力してください'); return; }
@@ -475,10 +524,12 @@ function saveBooking() {
       if (b.status === '確定') {
         sendLineNotif(`✅ 予約確定\n${b.name}様 (${b.id})\nサービス: ${b.service}\n日程: ${b.date}`,'statusConfirmed');
         sendEmailNotif({ subject:`[Hello Moving] 予約確定 - ${b.name}様`, trigger_type:'予約確定', ...bkEmailParams(b) },'statusConfirmed');
+        _sendBookingEmail(b, 'statusConfirmed');
       }
       if (b.status === '完了') {
         sendLineNotif(`🎉 引越し完了\n${b.name}様 (${b.id})\nサービス: ${b.service}`,'statusComplete');
         sendEmailNotif({ subject:`[Hello Moving] 引越し完了 - ${b.name}様`, trigger_type:'引越し完了', ...bkEmailParams(b) },'statusComplete');
+        _sendBookingEmail(b, 'statusComplete');
       }
     }
   } else {
@@ -487,6 +538,7 @@ function saveBooking() {
     toast('予約を追加しました');
     sendLineNotif(`📅 新規予約\n${b.name}様\nサービス: ${b.service}\n日程: ${b.date || '未定'}\nID: ${b.id}`,'newBooking');
     sendEmailNotif({ subject:`[Hello Moving] 新規予約 - ${b.name}様`, trigger_type:'新規予約', ...bkEmailParams(b) },'newBooking');
+    _sendBookingEmail(b, 'newBooking');
   }
   closeEdit(); renderBookings(); renderDash();
 }
