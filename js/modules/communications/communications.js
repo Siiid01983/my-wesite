@@ -64,13 +64,10 @@
     }
   }
 
-  /* ── Coerce booking_id: live DB column is bigint, migration changes it to text.
-     Until ALTER TABLE is applied: pass null for string IDs to avoid type errors.
-     After migration: remove the null branch and return String(id) directly. */
+  /* ── booking_id column is text (after phase29b migration). Pass string directly. */
   function _safeBookingId(id) {
     if (!id) return null;
-    if (/^\d+$/.test(String(id))) return Number(id);  /* numeric → bigint safe */
-    return null;                                        /* string ID → null until migration */
+    return String(id);
   }
 
   /* ── Supabase insert ─────────────────────────────────── */
