@@ -204,7 +204,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   try {
     const { data, error } = await resend.emails.send({
-      from:     "Hello Moving <onboarding@resend.dev>",  /* TODO: revert after hello-moving.com verified in Resend */
+      from:     `${account.displayName} <${account.displayEmail}>`,
       to:       [to.toLowerCase().trim()],
       reply_to: account.displayEmail,
       subject:  emailSubject,
