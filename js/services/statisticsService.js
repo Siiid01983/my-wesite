@@ -58,7 +58,7 @@
     _rawBkInflight = (async () => {
       const { data, error } = await _sb
         .from('bookings')
-        .select('reference_id,booking_date,service_type,status,customer_email,customer_name,created_at')
+        .select('id,booking_date,service_type,status,customer_email,customer_name,created_at')
         .order('created_at', { ascending: false });
       _rawBkInflight = null;
       if (error || !data) return [];
@@ -159,6 +159,9 @@
       _count('reviews', [['eq', 'approved', true]]),
     ]);
 
+    // If the fetch failed (error path returns [] without caching), don't broadcast zeros
+    if (!data.length && !_cGet('raw_bk')) return null;
+
     const today      = _todayISO();
     const weekStart  = _weekStartISO();
     const monthStart = _monthStartISO();
@@ -199,6 +202,7 @@
 
     // Single shared fetch — covers all six period counts below
     const data = await _getBookingsRaw();
+    if (!data.length && !_cGet('raw_bk')) return null; // error during fetch
 
     const today         = _todayISO();
     const yesterday     = _yesterdayISO();
@@ -285,6 +289,7 @@
 
     const from = _nDaysAgoISO(days - 1);
     const data = await _getBookingsRaw();
+    if (!data.length && !_cGet('raw_bk')) return null; // error during fetch
 
     // Filter to window in JS — no extra Supabase round-trip
     const inWindow = data.filter(r => r.booking_date >= from);
@@ -319,6 +324,7 @@
     if (!_sb) return [];
 
     const data = await _getBookingsRaw();
+    if (!data.length && !_cGet('raw_bk')) return []; // error during fetch
 
     const counts = {};
     data
@@ -354,6 +360,7 @@
 
     // Raw cache is already ordered by created_at DESC
     const data = await _getBookingsRaw();
+    if (!data.length && !_cGet('raw_bk')) return null; // error during fetch
 
     const byEmail = {};
     data.forEach(b => {
@@ -439,7 +446,7 @@
 
     rawBk.slice(0, n).forEach(b => items.push({
       type:   'booking',
-      id:     b.reference_id,
+      id:     b.id,
       name:   b.customer_name || '—',
       action: '予約追加',
       detail: b.service_type || '',

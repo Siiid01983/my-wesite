@@ -92,7 +92,12 @@
   }
 
   /* Write-through: localStorage first, then Supabase hm_data */
-  function wt(key, value) { if (!_checkCanWrite()) return; _set(key, value); _kv(key, value); }
+  function wt(key, value) {
+    if (!_checkCanWrite()) return;
+    _set(key, value);
+    _kv(key, value);
+    if (window.DataProvider) DataProvider.invalidate('hm_data');
+  }
 
   /* ── Key map ──────────────────────────────────────────── */
   const K = {
