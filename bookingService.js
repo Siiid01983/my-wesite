@@ -159,10 +159,14 @@ const BookingService = (() => {
     };
 
     const sb = _sb();
+    console.log('[SUPABASE] SupabaseClient available:', !!sb);
     if (sb) {
-      const { error } = await sb.from('bookings').insert(_bookingToRow(booking));
+      const _row = _bookingToRow(booking);
+      console.log('[SUPABASE] inserting row:', JSON.stringify(_row));
+      const { data: _insData, error } = await sb.from('bookings').insert(_row).select();
+      console.log('[SUPABASE] insert response — data:', JSON.stringify(_insData), '| error:', error ? JSON.stringify({ message: error.message, code: error.code, details: error.details, hint: error.hint }) : null);
       if (error) {
-        console.error('[BookingService] createBooking:', error.message);
+        console.error('[SUPABASE] insert FAILED — message:', error.message, '| code:', error.code, '| details:', error.details, '| hint:', error.hint);
         throw new Error(error.message);
       }
     }

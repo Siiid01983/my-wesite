@@ -128,31 +128,40 @@
       btn.disabled = true;
       btn.textContent = '送信中...';
       try {
+        console.log('[QUOTE_DEBUG] Step 1: before Formspree POST', { url: 'https://formspree.io/f/xdajqzlo' });
         const resp = await fetch('https://formspree.io/f/xdajqzlo', {
           method: 'POST',
           body: new FormData(form),
           headers: { 'Accept': 'application/json' }
         });
+        console.log('[FORMSPREE] response ok:', resp.ok, '| status:', resp.status, '| statusText:', resp.statusText);
+        if (!resp.ok) {
+          resp.json().then(function(body){ console.error('[FORMSPREE] error body:', JSON.stringify(body)); }).catch(function(){});
+        }
         if (resp.ok) {
           let bookingRef = null;
           try {
+            const _bookingPayload = {
+              name:     form.querySelector('[name="name"]').value.trim()    || '',
+              email:    form.querySelector('[name="email"]').value.trim()   || '',
+              phone:    (form.querySelector('[name="tel"]') || {value:''}).value.trim() || '',
+              service:  (form.querySelector('[name="service"]:checked') || {}).value || '',
+              date:     form.querySelector('[name="date"]').value            || '',
+              time:     (form.querySelector('[name="time"]') || {value:''}).value || '',
+              fromAddr: form.querySelector('[name="currentAddress"]').value.trim() || '',
+              toAddr:   form.querySelector('[name="newAddress"]').value.trim()     || '',
+              notes:    (form.querySelector('[name="message"]') || {value:''}).value || '',
+              status:   '新規',
+            };
+            console.log('[QUOTE_DEBUG] Step 2: BookingService available:', typeof BookingService !== 'undefined');
             if (typeof BookingService !== 'undefined') {
-              const _bk = await BookingService.createBooking({
-                name:     form.querySelector('[name="name"]').value.trim()    || '',
-                email:    form.querySelector('[name="email"]').value.trim()   || '',
-                phone:    (form.querySelector('[name="tel"]') || {value:''}).value.trim() || '',
-                service:  (form.querySelector('[name="service"]:checked') || {}).value || '',
-                date:     form.querySelector('[name="date"]').value            || '',
-                time:     (form.querySelector('[name="time"]') || {value:''}).value || '',
-                fromAddr: form.querySelector('[name="currentAddress"]').value.trim() || '',
-                toAddr:   form.querySelector('[name="newAddress"]').value.trim()     || '',
-                notes:    (form.querySelector('[name="message"]') || {value:''}).value || '',
-                status:   '新規',
-              });
+              console.log('[BOOKING] payload:', JSON.stringify(_bookingPayload));
+              const _bk = await BookingService.createBooking(_bookingPayload);
+              console.log('[BOOKING] createBooking result:', JSON.stringify(_bk));
               bookingRef = _bk && _bk.id;
             }
           } catch(sbErr) {
-            console.error('[QuoteForm] Supabase write failed:', sbErr.message);
+            console.error('[BOOKING] catch block — message:', sbErr.message, '| full error:', sbErr);
           }
           if (!bookingRef) {
             const _d = new Date(), _p = n => String(n).padStart(2, '0');
@@ -230,14 +239,14 @@
             }
           }
         } else {
-          console.error('[QuoteForm] Formspree error status:', resp.status);
+          console.error('[FORMSPREE] FAILED — status:', resp.status, '| statusText:', resp.statusText);
           _hmTrack('quote_error', { reason: 'formspree', status: resp.status });
           btn.disabled = false;
           btn.textContent = _btnText;
           showError('submitError');
         }
       } catch(submitErr) {
-        console.error('[QuoteForm] submit error:', submitErr);
+        console.error('[QUOTE_DEBUG] outer catch — message:', submitErr.message, '| type:', submitErr.name, '| full:', submitErr);
         _hmTrack('quote_error', { reason: 'network' });
         btn.disabled = false;
         btn.textContent = _btnText;
