@@ -71,7 +71,7 @@ function _bookingToRow(b) {
     customer_email: b.email     || null,
     customer_phone: b.phone     || null,
     booking_date:   b.date      || null,
-    service_type:   b.service   || null,
+    service_id:     b.service   || null,
     status:         _BK_TO_SB[b.status] || 'pending',
     notes:          _packNotes(b),
     created_at:     b.createdAt || new Date().toISOString(),
@@ -91,7 +91,7 @@ function _rowToBooking(r) {
     date:      r.booking_date   || '',
     fromAddr:  extra.from    || '',
     toAddr:    extra.to      || '',
-    service:   r.service_type || extra.service || '',
+    service:   r.service_id   || extra.service || '',
     status:    _BK_TO_LOCAL[r.status] || '新規',
     notes:     cleanNotes,
     items:     (Array.isArray(r.items) && r.items.length ? r.items : null)

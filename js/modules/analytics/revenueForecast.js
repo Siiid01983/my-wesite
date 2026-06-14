@@ -44,7 +44,7 @@
       const eIso = e.toISOString().slice(0, 10);
       const rev  = bookings
         .filter(b => { const d = b.date || b.move_date || ''; return d >= sIso && d <= eIso && b.status !== 'キャンセル' && b.status !== 'cancelled'; })
-        .reduce((sum, b) => sum + _priceFor(b.service || b.service_type || ''), 0);
+        .reduce((sum, b) => sum + _priceFor(b.service || ''), 0);
       out.push(rev);
     }
     return out;
@@ -59,7 +59,7 @@
       const ym  = d.toISOString().slice(0, 7);
       const rev = bookings
         .filter(b => { const dt = b.date || b.move_date || ''; return dt.startsWith(ym) && b.status !== 'キャンセル' && b.status !== 'cancelled'; })
-        .reduce((sum, b) => sum + _priceFor(b.service || b.service_type || ''), 0);
+        .reduce((sum, b) => sum + _priceFor(b.service || ''), 0);
       out.push({ ym, revenue: rev });
     }
     return out;

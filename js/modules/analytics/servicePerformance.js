@@ -65,7 +65,7 @@
 
     /* Accumulate booking metrics */
     bk.forEach(b => {
-      const svc = b.service || b.service_type || '';
+      const svc = b.service || '';
       const key = _resolveKey(svc);
       if (!key) return;
       const m  = map[key];

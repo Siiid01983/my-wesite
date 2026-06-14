@@ -64,7 +64,7 @@
     /* ── Revenue per customer ── */
     const revenueOf = c => c.bookings.reduce((s, b) => {
       if (b.status === 'キャンセル' || b.status === 'cancelled') return s;
-      return s + _priceFor(b.service || b.service_type || '');
+      return s + _priceFor(b.service || '');
     }, 0);
 
     const clvList      = customers.map(revenueOf);

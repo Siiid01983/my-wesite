@@ -71,7 +71,7 @@ window.CRMInsights = (function () {
     /* Preferred service */
     var svcCnt = {};
     bk.forEach(function (b) {
-      var s = b.service || b.service_type || '—';
+      var s = b.service || '—';
       svcCnt[s] = (svcCnt[s] || 0) + 1;
     });
     var preferred = Object.keys(svcCnt).sort(function (a, b) { return svcCnt[b] - svcCnt[a]; })[0] || null;

@@ -58,7 +58,7 @@
     _rawBkInflight = (async () => {
       const { data, error } = await _sb
         .from('bookings')
-        .select('id,booking_date,service_type,status,customer_email,customer_name,created_at')
+        .select('id,booking_date,service_id,status,customer_email,customer_name,created_at')
         .order('created_at', { ascending: false });
       _rawBkInflight = null;
       if (error || !data) return [];
@@ -259,10 +259,10 @@
 
     const active = data.filter(r => r.status !== 'cancelled');
 
-    const todayRev   = active.filter(r => r.booking_date === today).reduce((s, r) => s + priceFor(r.service_type), 0);
-    const weeklyRev  = active.filter(r => r.booking_date >= weekStart).reduce((s, r) => s + priceFor(r.service_type), 0);
-    const monthlyRev = active.filter(r => r.booking_date >= monthStart).reduce((s, r) => s + priceFor(r.service_type), 0);
-    const totalRev   = active.reduce((s, r) => s + priceFor(r.service_type), 0);
+    const todayRev   = active.filter(r => r.booking_date === today).reduce((s, r) => s + priceFor(r.service_id), 0);
+    const weeklyRev  = active.filter(r => r.booking_date >= weekStart).reduce((s, r) => s + priceFor(r.service_id), 0);
+    const monthlyRev = active.filter(r => r.booking_date >= monthStart).reduce((s, r) => s + priceFor(r.service_id), 0);
+    const totalRev   = active.reduce((s, r) => s + priceFor(r.service_id), 0);
     const avgBkValue = active.length > 0 ? Math.round(totalRev / active.length) : 0;
     const projected  = dayOfMonth > 0 ? Math.round((monthlyRev / dayOfMonth) * dIM) : 0;
 
@@ -330,7 +330,7 @@
     data
       .filter(r => r.booking_date >= f && r.booking_date <= t && r.status !== 'cancelled')
       .forEach(r => {
-        const s = r.service_type || 'その他';
+        const s = r.service_id || 'その他';
         counts[s] = (counts[s] || 0) + 1;
       });
     const total = Object.values(counts).reduce((s, n) => s + n, 0);
@@ -449,7 +449,7 @@
       id:     b.id,
       name:   b.customer_name || '—',
       action: '予約追加',
-      detail: b.service_type || '',
+      detail: b.service_id || '',
       status: b.status,
       ts:     b.created_at,
     }));
@@ -479,13 +479,13 @@
     if (!_sb) return null;
     const { data, error } = await _sb
       .from('bookings')
-      .select('booking_date,service_type,status')
+      .select('booking_date,service_id,status')
       .gte('booking_date', from)
       .lte('booking_date', to);
     if (error) { console.warn('[StatisticsService] getAnalyticsData error:', error.message); return null; }
     return (data || []).map(r => ({
       date:    r.booking_date || '',
-      service: r.service_type || '',
+      service: r.service_id || '',
       status:  _STATUS_LOCAL[r.status] || r.status || '新規',
     }));
   }

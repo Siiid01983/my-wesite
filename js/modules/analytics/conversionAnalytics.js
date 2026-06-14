@@ -60,7 +60,7 @@
     /* Per-service confirmation / cancellation rates */
     const byService = {};
     bk.forEach(b => {
-      const svc = (b.service || b.service_type || 'その他');
+      const svc = (b.service || 'その他');
       if (!byService[svc]) byService[svc] = { total: 0, confirmed: 0, cancelled: 0 };
       byService[svc].total++;
       if (_CONFIRMED.has(b.status)) byService[svc].confirmed++;

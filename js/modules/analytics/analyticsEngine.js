@@ -77,7 +77,7 @@
       const ym = dateStr.slice(0, 7);
       if (!map[ym]) map[ym] = { ym, count: 0, revenue: 0 };
       map[ym].count++;
-      const svc = b.service || b.service_type || '';
+      const svc = b.service || '';
       const isActive = b.status !== 'キャンセル' && b.status !== 'cancelled';
       if (isActive) map[ym].revenue += (priceFor ? priceFor(svc) : 0);
     });

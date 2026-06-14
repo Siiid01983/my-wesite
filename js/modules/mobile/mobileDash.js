@@ -37,7 +37,7 @@ window.MobileDash = (function () {
     bk.filter(function (b) {
       return (b.date === today || b.move_date === today) && b.status !== 'キャンセル';
     }).forEach(function (b) {
-      var p = prices[b.service] || prices[b.service_type] || 0;
+      var p = prices[b.service] || 0;
       revToday += typeof p === 'number' ? p : ((p && p.base) || 0);
     });
 

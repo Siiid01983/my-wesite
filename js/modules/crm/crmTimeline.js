@@ -42,7 +42,7 @@ window.CRMTimeline = (function () {
         icon:      '📦',
         date:      b.move_date || b.date || b.created_at || b.createdAt || '',
         typeLabel: BOOKING_TYPE[st] || '引越し予約',
-        label:     b.service || b.service_type || '',
+        label:     b.service || '',
         detail:    st && !BOOKING_TYPE[st] ? st : '',
         ref:       b.reference_id || b.id || '',
       });
@@ -54,7 +54,7 @@ window.CRMTimeline = (function () {
         icon:      '💬',
         date:      q.created_at || q.createdAt || '',
         typeLabel: '見積もり作成',
-        label:     q.service || q.service_type || '',
+        label:     q.service || '',
         detail:    q.move_date ? ('希望引越し日: ' + q.move_date) : '',
         ref:       q.reference_id || q.id || '',
       });
