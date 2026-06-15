@@ -32,7 +32,7 @@ function importCSV(e) {
     });
     e.target.value = '';
     toast(`${count}件をインポートしました`);
-    renderDash();
+    if (typeof renderDash === 'function') renderDash();
   };
   reader.readAsText(file, 'UTF-8');
 }
@@ -40,7 +40,7 @@ function importCSV(e) {
 function generateReport() {
   const bk = Adapter.getBookings();
   const prices = Adapter.getPrices();
-  const s = calcStats();
+  const s = (typeof calcStats === 'function') ? calcStats() : {todayBk:0,weekBk:0,monthBk:0,fullyBooked:0,revenue:0};
 
   const byStatus = {新規:0,確認中:0,確定:0,完了:0,キャンセル:0};
   const bySvc = {};
@@ -86,7 +86,7 @@ function generateReport() {
 function printReport() {
   const bk     = Adapter.getBookings();
   const prices = Adapter.getPrices();
-  const s      = calcStats();
+  const s      = (typeof calcStats === 'function') ? calcStats() : {todayBk:0,weekBk:0,monthBk:0,fullyBooked:0,revenue:0};
   const e      = v => String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
   const byStatus = {新規:0,確認中:0,確定:0,完了:0,キャンセル:0};
@@ -188,5 +188,5 @@ function clearAllData() {
   if (!confirm('全予約データ・空き状況データを完全に消去しますか？\nこの操作は取り消せません。')) return;
   ['hm_admin_bookings','hm_admin_avail','hm_booked','hm_counts'].forEach(k => localStorage.removeItem(k));
   toast('全データを消去しました');
-  renderDash();
+  if (typeof renderDash === 'function') renderDash();
 }

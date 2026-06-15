@@ -123,13 +123,13 @@ function _syncReviewsFromSupabase() {
 function approveRev(id) {
   Adapter.updateReview(id, { status:'approved', published:false });
   toast('承認しました');
-  renderReviews(); renderDash();
+  renderReviews(); if (typeof renderDash === 'function') renderDash();
 }
 
 function rejectRev(id) {
   Adapter.updateReview(id, { status:'rejected', published:false });
   toast('却下しました');
-  renderReviews(); renderDash();
+  renderReviews(); if (typeof renderDash === 'function') renderDash();
 }
 
 function publishRev(id, pub) {
@@ -208,14 +208,14 @@ function saveReview() {
   else { Adapter.addReview(r); toast('レビューを追加しました（承認済み）'); }
   closeRevModal();
   _revTab = 'approved';
-  renderReviews(); renderDash();
+  renderReviews(); if (typeof renderDash === 'function') renderDash();
 }
 
 function delRev(id) {
   if (!confirm('このレビューを削除しますか？')) return;
   Adapter.deleteReview(id);
   toast('削除しました');
-  renderReviews(); renderDash();
+  renderReviews(); if (typeof renderDash === 'function') renderDash();
 }
 
 function printReview(id) {

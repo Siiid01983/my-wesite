@@ -64,7 +64,7 @@ function exportCustomersCSV() {
 }
 
 async function exportStatisticsJSON() {
-  const local  = calcStats();
+  const local  = (typeof calcStats === 'function') ? calcStats() : {todayBk:0,weekBk:0,monthBk:0,fullyBooked:0,revenue:0};
   const bk     = Adapter.getBookings();
   const prices = Adapter.getPrices();
 
@@ -135,7 +135,7 @@ function _doImportBookings(data, inputId) {
     return _setImportMsg(inputId, 'err', 'エラー: id・name フィールドが必要です');
   localStorage.setItem('hm_admin_bookings', JSON.stringify(data));
   _setImportMsg(inputId, 'ok', `✓ ${data.length}件をインポートしました`);
-  toast('予約データをインポートしました'); renderDash();
+  toast('予約データをインポートしました'); if (typeof renderDash === 'function') renderDash();
 }
 
 function _doImportReviews(data, inputId) {
@@ -160,7 +160,7 @@ function _doImportBackup(data, inputId) {
   });
   if (!count) return _setImportMsg(inputId, 'err', 'エラー: 復元できるデータがありません');
   _setImportMsg(inputId, 'ok', `✓ ${count}種類のデータを復元しました`);
-  toast('バックアップを復元しました'); renderDash();
+  toast('バックアップを復元しました'); if (typeof renderDash === 'function') renderDash();
 }
 
 function renderBackup() {

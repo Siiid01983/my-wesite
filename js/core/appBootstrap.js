@@ -179,15 +179,31 @@ document.getElementById('loginEmail').addEventListener('keydown', e => {
   if (e.key==='Enter') document.getElementById('loginPass').focus();
 });
 
-document.getElementById('editModal').addEventListener('click', e => { if(e.target===e.currentTarget)closeEdit(); });
-document.getElementById('detailModal').addEventListener('click', e => { if(e.target===e.currentTarget)closeDetail(); });
-document.getElementById('reportModal').addEventListener('click', e => { if(e.target===e.currentTarget)document.getElementById('reportModal').classList.remove('open'); });
-document.getElementById('revModal').addEventListener('click', e => { if(e.target===e.currentTarget)closeRevModal(); });
-document.getElementById('svcModal').addEventListener('click', e => { if(e.target===e.currentTarget)closeSvcModal(); });
-document.getElementById('custModal').addEventListener('click', e => { if(e.target===e.currentTarget)closeCustModal(); });
+/* Modal backdrop-close wiring — defensive: revModal/svcModal were migrated to
+   the Website CMS in Phase 4 and no longer exist here, so guard every lookup. */
+[
+  ['editModal',   () => closeEdit()],
+  ['detailModal', () => closeDetail()],
+  ['reportModal', () => document.getElementById('reportModal').classList.remove('open')],
+  ['revModal',    () => { if (typeof closeRevModal === 'function') closeRevModal(); }],
+  ['svcModal',    () => { if (typeof closeSvcModal === 'function') closeSvcModal(); }],
+  ['custModal',   () => closeCustModal()],
+].forEach(([id, close]) => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', e => { if (e.target === e.currentTarget) close(); });
+});
 
 document.addEventListener('keydown', e => {
-  if (e.key==='Escape') { closeEdit(); closeDetail(); closeRevModal(); closeSvcModal(); closeCustModal(); closeMediaPreview(); document.getElementById('reportModal').classList.remove('open'); if (window.AutomationUI) AutomationUI.closeModal(); }
+  if (e.key==='Escape') {
+    if (typeof closeEdit === 'function') closeEdit();
+    if (typeof closeDetail === 'function') closeDetail();
+    if (typeof closeRevModal === 'function') closeRevModal();
+    if (typeof closeSvcModal === 'function') closeSvcModal();
+    if (typeof closeCustModal === 'function') closeCustModal();
+    if (typeof closeMediaPreview === 'function') closeMediaPreview();
+    const _rm = document.getElementById('reportModal'); if (_rm) _rm.classList.remove('open');
+    if (window.AutomationUI) AutomationUI.closeModal();
+  }
   Auth.touch();
 });
 document.addEventListener('click', () => Auth.touch());

@@ -17,3 +17,6 @@ lib/
 types/
 *.zip
 %TEMP%*
+
+# Supabase CLI scratch
+supabase/.temp/
