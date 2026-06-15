@@ -359,6 +359,131 @@
     padding: 36px 0;
   }
 
+  /* ---------- Documents Center ---------- */
+  .doc-list { display: flex; flex-direction: column; gap: 10px; }
+  .doc-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 13px 16px;
+    background: var(--bg-soft);
+  }
+  .doc-ico {
+    width: 38px; height: 38px;
+    border-radius: 9px;
+    background: var(--line-3);
+    color: var(--navy);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .doc-ico svg { width: 19px; height: 19px; }
+  .doc-info { flex: 1; min-width: 0; }
+  .doc-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .doc-meta { font-size: 11.5px; color: var(--gray-3); margin-top: 2px; }
+  .doc-dl {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--navy);
+    background: var(--bg);
+    transition: all .2s var(--easing);
+    white-space: nowrap;
+  }
+  .doc-dl:hover { border-color: var(--navy); background: var(--navy); color: #fff; }
+  .doc-dl svg { width: 15px; height: 15px; }
+  .doc-dl[disabled] { opacity: .5; cursor: progress; }
+  .doc-empty { font-size: 13px; color: var(--gray-3); padding: 14px 2px; }
+
+  @media (max-width: 480px) {
+    .doc-item { gap: 10px; padding: 12px 13px; }
+    .doc-dl { padding: 8px 12px; }
+    .doc-dl span { display: none; }
+  }
+
+  /* ---------- Photo Upload (Phase 5E) ---------- */
+  .photo-hint { font-size: 12px; color: var(--gray-3); margin: -4px 0 12px; }
+  .ph-up {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    border-radius: 999px;
+    border: 1px dashed var(--gray-4);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--navy);
+    background: var(--bg-soft);
+    cursor: pointer;
+    transition: all .2s var(--easing);
+  }
+  .ph-up:hover { border-color: var(--navy); background: var(--navy); color: #fff; }
+  .ph-up svg { width: 16px; height: 16px; }
+  .ph-up.busy { opacity: .55; cursor: progress; pointer-events: none; }
+  .ph-up input[type=file] { display: none; }
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .photo-tile {
+    position: relative;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--line-3);
+    aspect-ratio: 1 / 1;
+  }
+  .photo-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-tile .ph-broken {
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; font-size: 11.5px; color: var(--gray-3); text-align: center; padding: 8px;
+  }
+  .photo-del {
+    position: absolute;
+    top: 7px; right: 7px;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(11,15,23,.62);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: background .2s var(--easing);
+  }
+  .photo-del:hover { background: #c0392b; }
+  .photo-del svg { width: 15px; height: 15px; }
+  .photo-del[disabled] { opacity: .5; cursor: progress; }
+  .photo-cap {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    padding: 5px 8px;
+    font-size: 10.5px;
+    color: #fff;
+    background: linear-gradient(transparent, rgba(11,15,23,.7));
+    font-family: var(--font-en);
+  }
+  .photo-empty { font-size: 13px; color: var(--gray-3); padding: 12px 2px; }
+
+  @media (max-width: 480px) {
+    .photo-grid { grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 9px; }
+  }
+
   /* ---------- Responsive ---------- */
   @media (max-width: 880px) {
     :root { --sidebar-w: 230px; }
@@ -415,6 +540,14 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       <span>メッセージ</span>
     </button>
+    <button class="p-nav-item" data-view="documents">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+      <span>ドキュメント</span>
+    </button>
+    <button class="p-nav-item" data-view="photos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      <span>写真</span>
+    </button>
     <button class="p-nav-item" data-view="support">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.7 2.34a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.74-1.74a2 2 0 0 1 2.11-.45c.74.34 1.53.57 2.34.7A2 2 0 0 1 22 16.92z"/></svg>
       <span>お問い合わせ</span>
@@ -436,6 +569,8 @@
   <script src="bookingService.js"></script>
   <script src="js/portal/portalAuth.js"></script>
   <script src="js/portal/portalComms.js"></script>
+  <script src="js/portal/portalDocs.js"></script>
+  <script src="js/portal/portalPhotos.js"></script>
 
   <script>
   (function () {
@@ -635,7 +770,209 @@
             <div id="commList"><div class="comm-empty">読み込み中…</div></div>
           </div>`;
       },
+      documents(b) {
+        // Container only — populated asynchronously by loadDocuments().
+        return `
+          <div class="p-page-head">
+            <div class="p-page-title">ドキュメント</div>
+            <div class="p-page-sub">ご予約番号 ${esc(b.id)} に関する書類をご確認・ダウンロードいただけます。</div>
+          </div>
+          <div id="docSections"><div class="skeleton">読み込み中…</div></div>`;
+      },
+      photos(b) {
+        // Container only — populated asynchronously by loadPhotos().
+        return `
+          <div class="p-page-head">
+            <div class="p-page-title">写真</div>
+            <div class="p-page-sub">お引越しのお写真をアップロードしてください。ご予約番号 ${esc(b.id)} に紐づいて保存されます。</div>
+          </div>
+          <div id="photoSections"><div class="skeleton">読み込み中…</div></div>`;
+      },
     };
+
+    // Doc section metadata (labels + icons). Mirrors PortalDocs.SECTIONS order,
+    // with the Download Center appended as an aggregate of everything.
+    const DOC_META = {
+      estimates:   { label: '見積書（Estimate PDF）' },
+      contracts:   { label: '契約書（Contracts）' },
+      attachments: { label: '添付ファイル（Attachments）' },
+    };
+    const DOC_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+    const DL_ICON  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+
+    function fmtSize(bytes) {
+      if (bytes == null) return '';
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(0) + ' KB';
+      return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+    function docItem(f) {
+      const meta = [f.uploadedAt ? 'アップロード日：' + fmtDateTime(f.uploadedAt) : 'アップロード日：—',
+                    fmtSize(f.size)].filter(Boolean).join(' ・ ');
+      return `
+        <div class="doc-item">
+          <div class="doc-ico">${DOC_ICON}</div>
+          <div class="doc-info">
+            <div class="doc-name">${esc(f.name)}</div>
+            <div class="doc-meta">${esc(meta)}</div>
+          </div>
+          <button class="doc-dl" data-path="${esc(f.path)}">${DL_ICON}<span>ダウンロード</span></button>
+        </div>`;
+    }
+    function docSection(title, files) {
+      const body = files.length
+        ? `<div class="doc-list">${files.map(docItem).join('')}</div>`
+        : '<div class="doc-empty">書類はまだありません。</div>';
+      return `<div class="panel"><div class="panel-title">${esc(title)} <span style="font-weight:400;color:var(--gray-3);font-size:12px">${files.length ? files.length + '件' : ''}</span></div>${body}</div>`;
+    }
+
+    async function loadDocuments() {
+      const host = $('docSections');
+      if (!host || !_booking) return;
+      let docs = { sections: {}, all: [] };
+      try {
+        docs = await PortalDocs.list([_booking.id, _booking._dbId]);
+      } catch (err) {
+        console.error('[Portal] documents load failed:', err);
+        host.innerHTML = '<div class="panel"><div class="doc-empty">書類を読み込めませんでした。</div></div>';
+        return;
+      }
+      let html = '';
+      PortalDocs.SECTIONS.forEach(s => {
+        html += docSection((DOC_META[s.id] || {}).label || s.label, docs.sections[s.id] || []);
+      });
+      // Download Center — every downloadable file in one place.
+      html += docSection('ダウンロードセンター（Download Center）', docs.all);
+      host.innerHTML = html;
+    }
+
+    // Delegated download handler — resolves a scoped signed URL on demand.
+    async function handleDocDownload(btn) {
+      const path = btn.getAttribute('data-path');
+      if (!path) return;
+      btn.disabled = true;
+      try {
+        const url = await PortalDocs.getDownloadUrl([_booking.id, _booking._dbId], path);
+        if (!url) { alert('このファイルにアクセスできません。'); return; }
+        window.open(url, '_blank', 'noopener');
+      } catch (err) {
+        console.error('[Portal] download failed:', err);
+        alert('ダウンロードに失敗しました。');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+    document.addEventListener('click', e => {
+      const btn = e.target.closest && e.target.closest('.doc-dl');
+      if (btn) handleDocDownload(btn);
+    });
+
+    // ---------- Photo Upload (Phase 5E) ----------
+    const PH_UP_ICON  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+    const PH_DEL_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+
+    // Booking id new uploads are filed under (the HM-reference shown to the customer).
+    function _uploadId() { return _booking && (_booking.id || _booking._dbId); }
+    // Both identifiers naming this one booking — used for scoped list/delete.
+    function _scopeIds() { return _booking ? [_booking.id, _booking._dbId] : []; }
+
+    function photoTile(p) {
+      const cap = p.uploadedAt ? fmtDateTime(p.uploadedAt) : '';
+      const img = p.url
+        ? `<img src="${esc(p.url)}" alt="${esc(p.name)}" loading="lazy"
+                onerror="this.parentNode.innerHTML='&lt;div class=ph-broken&gt;プレビューを読み込めません&lt;/div&gt;'">`
+        : '<div class="ph-broken">プレビューを読み込めません</div>';
+      return `
+        <div class="photo-tile">
+          ${img}
+          ${cap ? `<div class="photo-cap">${esc(cap)}</div>` : ''}
+          <button class="photo-del" data-path="${esc(p.path)}" title="削除">${PH_DEL_ICON}</button>
+        </div>`;
+    }
+    function photoSection(cat, photos) {
+      const grid = photos.length
+        ? `<div class="photo-grid">${photos.map(photoTile).join('')}</div>`
+        : '<div class="photo-empty">まだ写真はありません。</div>';
+      const count = photos.length ? `<span style="font-weight:400;color:var(--gray-3);font-size:12px">${photos.length}件</span>` : '';
+      return `
+        <div class="panel">
+          <div class="panel-title">${esc(cat.label)} ${count}</div>
+          <div class="photo-hint">JPEG・PNG など画像ファイル（最大 ${Math.round(PortalPhotos.MAX_BYTES / 1048576)}MB）</div>
+          <label class="ph-up" data-cat="${esc(cat.id)}">
+            ${PH_UP_ICON}<span>写真をアップロード</span>
+            <input type="file" accept="image/*" data-cat="${esc(cat.id)}">
+          </label>
+          <div class="ph-cat-grid" data-cat="${esc(cat.id)}">${grid}</div>
+        </div>`;
+    }
+
+    async function loadPhotos() {
+      const host = $('photoSections');
+      if (!host || !_booking) return;
+      let data = {};
+      try {
+        data = await PortalPhotos.list(_scopeIds());
+      } catch (err) {
+        console.error('[Portal] photos load failed:', err);
+        host.innerHTML = '<div class="panel"><div class="photo-empty">写真を読み込めませんでした。</div></div>';
+        return;
+      }
+      host.innerHTML = PortalPhotos.CATEGORIES.map(c => photoSection(c, data[c.id] || [])).join('');
+    }
+
+    // Upload handler — change on a category's hidden file input.
+    async function handlePhotoUpload(input) {
+      const file = input.files && input.files[0];
+      const cat  = input.getAttribute('data-cat');
+      if (!file || !cat) return;
+      const label = input.closest('.ph-up');
+      if (label) label.classList.add('busy');
+      try {
+        const res = await PortalPhotos.upload(_uploadId(), cat, file);
+        if (!res.ok) {
+          const msg = ({
+            'too-large': 'ファイルサイズが大きすぎます。',
+            'not-an-image': '画像ファイルを選択してください。',
+            'no-booking': '予約情報を確認できませんでした。',
+            'storage-unavailable': 'ストレージに接続できませんでした。',
+          })[res.error] || 'アップロードに失敗しました。';
+          alert(msg);
+          return;
+        }
+        await loadPhotos();
+      } catch (err) {
+        console.error('[Portal] upload failed:', err);
+        alert('アップロードに失敗しました。');
+      } finally {
+        if (label) label.classList.remove('busy');
+        input.value = '';
+      }
+    }
+    document.addEventListener('change', e => {
+      const input = e.target.closest && e.target.closest('.ph-up input[type=file]');
+      if (input) handlePhotoUpload(input);
+    });
+
+    // Delete handler — only the customer's own in-scope photos (module-guarded too).
+    async function handlePhotoDelete(btn) {
+      const path = btn.getAttribute('data-path');
+      if (!path) return;
+      if (!confirm('この写真を削除しますか？')) return;
+      btn.disabled = true;
+      try {
+        const res = await PortalPhotos.remove(_scopeIds(), path);
+        if (!res.ok) { alert('削除できませんでした。'); btn.disabled = false; return; }
+        await loadPhotos();
+      } catch (err) {
+        console.error('[Portal] delete failed:', err);
+        alert('削除に失敗しました。');
+        btn.disabled = false;
+      }
+    }
+    document.addEventListener('click', e => {
+      const btn = e.target.closest && e.target.closest('.photo-del');
+      if (btn) handlePhotoDelete(btn);
+    });
 
     // Render one communication row (read-only). Direction maps to the role:
     //  outbound = 会社からのメッセージ (company → customer)
@@ -685,7 +1022,9 @@
       const content = $('content');
       if (!_booking) { content.innerHTML = '<div class="skeleton">予約情報を読み込めませんでした。</div>'; return; }
       content.innerHTML = (VIEWS[view] || VIEWS.overview)(_booking);
-      if (view === 'messages') loadMessages();
+      if (view === 'messages')  loadMessages();
+      if (view === 'documents') loadDocuments();
+      if (view === 'photos')    loadPhotos();
     }
 
     // ---- Sidebar navigation ----
