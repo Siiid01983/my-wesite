@@ -50,9 +50,9 @@ check('canApprove false for null booking', ca.none === false);
 // ---- End-to-end approve against a controlled fake Supabase (no real mutation) ----
 const flow = await page.evaluate(async () => {
   const realSb = window.SupabaseClient;
-  // Audit log starts empty so we can detect the new entry.
-  localStorage.setItem('hm_audit_log', JSON.stringify({ version: 1, entries: [] }));
-
+  // Audit now goes to the Supabase-backed AuditService (Phase 5F Audit Migration),
+  // not localStorage — capture the inserted audit row instead.
+  const auditRows = [];
   const calls = { update: null, eqId: null, table: null };
   window.__fakeRow = {
     id: 555,
@@ -66,6 +66,9 @@ const flow = await page.evaluate(async () => {
   };
   window.SupabaseClient = {
     from(table) {
+      if (table === 'audit_log') {
+        return { insert(row) { auditRows.push(row); return Promise.resolve({ error: null }); } };
+      }
       let mode = 'select';
       const api = {
         select() { return api; },
@@ -87,8 +90,7 @@ const flow = await page.evaluate(async () => {
   window.__fakeRow.status = 'confirmed';
   const guard = await BookingService.approveEstimate('HM-TEST-1');
 
-  const auditRaw = localStorage.getItem('hm_audit_log');
-  const audit = JSON.parse(auditRaw).entries[0] || null;
+  const audit = auditRows[auditRows.length - 1] || null;
 
   window.SupabaseClient = realSb; // restore
   return {
@@ -111,12 +113,12 @@ check('update targets the bookings table by DB id', flow.table === 'bookings' &&
 check('admin-visible: status persisted to bookings (Supabase update issued)',
   flow.updatePayload.status === 'confirmed');
 check('already-approved booking is refused (idempotent guard)', flow.guardOk === true);
-check('audit entry created', !!flow.audit);
+check('audit entry created (Supabase audit_log insert)', !!flow.audit);
 check('audit entry is a quote update by the customer',
-  flow.audit && flow.audit.entity === 'quote' && flow.audit.action === 'update' &&
+  flow.audit && flow.audit.target_type === 'quote' && flow.audit.action === 'update' &&
   /^customer/.test(flow.audit.actor || ''));
-check('audit detail records the transition to 確定',
-  flow.audit && /確定/.test(flow.audit.detail || ''));
+check('audit details record the transition to 確定',
+  flow.audit && /確定/.test(flow.audit.details || ''));
 
 // ---- UI invariant: button presence matches the booking's approvability ----
 await page.click('.p-nav-item[data-view="overview"]');

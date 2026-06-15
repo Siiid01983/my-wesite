@@ -16,7 +16,12 @@ window.AuditLog = (function () {
   var STORAGE_KEY = 'hm_audit_log';
   var MAX_ENTRIES = 500;
 
-  /* ── Storage ── */
+  /* In-memory cache of audit entries (UI shape). Filled from Supabase via
+     AuditService on every render; the canonical store is Supabase, not
+     localStorage. */
+  var _cache = [];
+
+  /* ── Storage (legacy localStorage — kept only for backward compatibility) ── */
 
   function _load() {
     try {
@@ -30,6 +35,16 @@ window.AuditLog = (function () {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch (_) {}
   }
 
+  /* Pull the latest entries from the Supabase-backed AuditService into _cache.
+     Falls back to legacy localStorage only when AuditService is unavailable. */
+  function _refresh() {
+    if (!window.AuditService) { _cache = _load().entries; return Promise.resolve(_cache); }
+    return AuditService.query({ limit: MAX_ENTRIES }).then(function (entries) {
+      _cache = entries || [];
+      return _cache;
+    });
+  }
+
   /* ── Public record API ── */
 
   /* action : 'add'|'update'|'delete'|'save'|'login'|'logout'|'export'|'other'
@@ -37,7 +52,6 @@ window.AuditLog = (function () {
      entityId: string identifier (booking ref, service name, etc.)
      detail  : human-readable description                                       */
   function record(action, entity, entityId, detail) {
-    var store = _load();
     var actor = 'admin';
     if (window.Auth && typeof Auth.getCurrentUser === 'function') {
       actor = Auth.getCurrentUser() || actor;
@@ -45,7 +59,7 @@ window.AuditLog = (function () {
       actor = Auth.getRole() || actor;
     }
 
-    store.entries.unshift({
+    var entry = {
       id:       (window.genId ? genId() : Date.now().toString(36)),
       ts:       Date.now(),
       actor:    actor,
@@ -53,19 +67,39 @@ window.AuditLog = (function () {
       entity:   entity  || '—',
       entityId: entityId || '—',
       detail:   detail  || '',
-    });
+    };
 
-    /* Ring-buffer trim */
-    if (store.entries.length > MAX_ENTRIES) {
-      store.entries = store.entries.slice(0, MAX_ENTRIES);
+    /* Optimistic in-memory update so the live 監査ログ view reflects the action
+       immediately; the canonical row is persisted to Supabase below. */
+    _cache.unshift(entry);
+    if (_cache.length > MAX_ENTRIES) _cache = _cache.slice(0, MAX_ENTRIES);
+
+    if (window.AuditService) {
+      AuditService.record({
+        actor:      actor,
+        action:     entry.action,
+        targetType: entry.entity,
+        targetId:   entry.entityId,
+        details:    entry.detail,
+      });
+    } else {
+      /* Legacy fallback (AuditService not loaded) — preserve old behavior. */
+      var store = _load();
+      store.entries.unshift(entry);
+      if (store.entries.length > MAX_ENTRIES) store.entries = store.entries.slice(0, MAX_ENTRIES);
+      _persist(store);
     }
-
-    _persist(store);
   }
 
-  function getAll() { return _load().entries; }
+  function getAll() { return window.AuditService ? _cache : _load().entries; }
 
-  function clear() { _persist({ version: 1, entries: [] }); }
+  /* The Supabase audit_log is append-only (immutable). "Clear" drops only the
+     legacy localStorage entries + the in-memory cache; Supabase rows survive
+     and reappear on the next refresh. */
+  function clear() {
+    _persist({ version: 1, entries: [] });
+    _cache = [];
+  }
 
   /* ── CSV export ── */
 
@@ -156,7 +190,8 @@ window.AuditLog = (function () {
         '</div>' +
       '</div>';
 
-    _renderTable();
+    _renderTable();                 /* immediate paint from cache (may be empty) */
+    _refresh().then(_renderTable);  /* then pull the latest from Supabase */
   }
 
   function _renderTable() {
@@ -216,10 +251,10 @@ window.AuditLog = (function () {
   }
 
   function _confirmClear() {
-    if (confirm('監査ログをすべて削除しますか？この操作は取り消せません。')) {
+    if (confirm('ローカルの旧監査ログを削除します。Supabaseの監査記録（正本）は保持されます。よろしいですか？')) {
       clear();
       renderAuditLog();
-      if (typeof toast === 'function') toast('監査ログをクリアしました');
+      if (typeof toast === 'function') toast('ローカル監査ログをクリアしました');
     }
   }
 
