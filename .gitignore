@@ -20,3 +20,6 @@ types/
 
 # Supabase CLI scratch
 supabase/.temp/
+
+# Local deploy-verification helper (hits the live site, writes verify_live.png)
+verify_deploy.mjs
