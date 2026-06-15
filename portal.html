@@ -484,6 +484,48 @@
     .photo-grid { grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 9px; }
   }
 
+  /* ---------- Estimate Approval (Phase 5F) ---------- */
+  .approve-bar {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-top: 22px;
+    padding: 20px 24px;
+    border: 1px solid #bae6fd;
+    border-radius: var(--radius);
+    background: linear-gradient(180deg, #f0f9ff, #ffffff);
+  }
+  .approve-info { flex: 1; min-width: 0; }
+  .approve-title { font-size: 15px; font-weight: 600; color: var(--navy); }
+  .approve-sub { font-size: 12.5px; color: var(--gray-2); margin-top: 4px; line-height: 1.7; }
+  .approve-btn {
+    flex-shrink: 0;
+    padding: 12px 26px;
+    border: none;
+    border-radius: 999px;
+    background: var(--navy);
+    color: #fff;
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: var(--font-jp);
+    cursor: pointer;
+    transition: all .2s var(--easing);
+    white-space: nowrap;
+  }
+  .approve-btn:hover { background: var(--navy-2); transform: translateY(-1px); }
+  .approve-btn[disabled] { opacity: .55; cursor: progress; transform: none; }
+  .approve-done {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 22px; padding: 16px 22px;
+    border: 1px solid #bfe3cd; border-radius: var(--radius);
+    background: #e7f4ec; color: var(--ok);
+    font-size: 13.5px; font-weight: 600;
+  }
+  @media (max-width: 560px) {
+    .approve-bar { flex-direction: column; align-items: stretch; gap: 14px; }
+    .approve-btn { width: 100%; }
+  }
+
   /* ---------- Responsive ---------- */
   @media (max-width: 880px) {
     :root { --sidebar-w: 230px; }
@@ -571,6 +613,7 @@
   <script src="js/portal/portalComms.js"></script>
   <script src="js/portal/portalDocs.js"></script>
   <script src="js/portal/portalPhotos.js"></script>
+  <script src="js/portal/portalApproval.js"></script>
 
   <script>
   (function () {
@@ -708,7 +751,15 @@
                   </div>`).join('')}
               </div>
             </div>
-          </div>`;
+          </div>
+          ${(window.PortalApproval && PortalApproval.canApprove(b)) ? `
+          <div class="approve-bar" id="approveBar">
+            <div class="approve-info">
+              <div class="approve-title">お見積もりの承認（Approve Estimate）</div>
+              <div class="approve-sub">内容をご確認のうえ、お見積もりを承認してください。承認すると予約が確定します。</div>
+            </div>
+            <button class="approve-btn" id="approveEstimateBtn">お見積もりを承認</button>
+          </div>` : ''}`;
       },
       booking(b) {
         const items = (b.items && b.items.length) ? b.items.map(esc).join('、') : '—';
@@ -972,6 +1023,46 @@
     document.addEventListener('click', e => {
       const btn = e.target.closest && e.target.closest('.photo-del');
       if (btn) handlePhotoDelete(btn);
+    });
+
+    // ---------- Estimate Approval (Phase 5F) ----------
+    async function handleApprove(btn) {
+      if (!_booking || !window.PortalApproval) return;
+      if (!confirm('お見積もりを承認しますか？承認すると予約が確定します。')) return;
+      btn.disabled = true;
+      btn.textContent = '送信中…';
+      try {
+        const res = await PortalApproval.approve(_booking.id);
+        if (!res.ok) {
+          alert(res.error === 'not-approvable'
+            ? 'このお見積もりは承認できる状態ではありません。'
+            : '承認に失敗しました。時間をおいて再度お試しください。');
+          btn.disabled = false;
+          btn.textContent = 'お見積もりを承認';
+          return;
+        }
+        // Reflect the new state locally, then re-render the dashboard. The
+        // approve bar disappears and the quote card shows 確定済み.
+        _booking.status = res.to || '確定';
+        render('overview');
+        const host = $('content');
+        const head = host && host.querySelector('.dash-cards');
+        if (head) {
+          const note = document.createElement('div');
+          note.className = 'approve-done';
+          note.textContent = '✓ お見積もりを承認しました。ありがとうございます。';
+          head.parentNode.insertBefore(note, head.nextSibling);
+        }
+      } catch (err) {
+        console.error('[Portal] approve failed:', err);
+        alert('承認に失敗しました。');
+        btn.disabled = false;
+        btn.textContent = 'お見積もりを承認';
+      }
+    }
+    document.addEventListener('click', e => {
+      const btn = e.target.closest && e.target.closest('#approveEstimateBtn');
+      if (btn) handleApprove(btn);
     });
 
     // Render one communication row (read-only). Direction maps to the role:

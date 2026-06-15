@@ -250,6 +250,40 @@ const BookingService = (() => {
     return cancelled;
   }
 
+  // Customer-facing estimate approval (Phase 5F). Transitions a booking that is
+  // awaiting approval (新規 / 確認中 — "Quote Sent") to 確定 ("Quote Approved").
+  // Targeted single-column update — mirrors cancelBooking — so the row schema and
+  // every other field are preserved (no new status value, no CRM disruption).
+  // Returns { ok, from, to, booking } or { ok:false, reason }.
+  const _APPROVABLE = new Set(['新規', '確認中']);
+  async function approveEstimate(id) {
+    const current = await getBookingById(id);
+    if (!current) return { ok: false, reason: 'not-found' };
+    if (!_APPROVABLE.has(current.status)) {
+      return { ok: false, reason: 'not-approvable', from: current.status };
+    }
+
+    const updatedAt = new Date().toISOString();
+    const sb = _sb();
+    if (sb) {
+      const { error } = await sb
+        .from('bookings')
+        .update({ status: 'confirmed', updated_at: updatedAt })
+        .eq('id', current._dbId);
+      if (error) {
+        console.error('[BookingService] approveEstimate:', error.message);
+        throw new Error(error.message);
+      }
+    }
+
+    const approved = { ...current, status: '確定', updatedAt };
+    document.dispatchEvent(new CustomEvent('booking:approved', {
+      detail: { bookingId: id, move_date: approved.date, status: '確定', from: current.status },
+    }));
+
+    return { ok: true, from: current.status, to: '確定', booking: approved };
+  }
+
   // Realtime subscription — returns an unsubscribe function.
   function subscribe(callback) {
     const sb = _sb();
@@ -269,5 +303,5 @@ const BookingService = (() => {
   // No-op: adapter pattern replaced by direct Supabase calls.
   function setAdapter() {}
 
-  return { getBookings, saveBookings, createBooking, getBookingById, updateBooking, cancelBooking, subscribe, setAdapter };
+  return { getBookings, saveBookings, createBooking, getBookingById, updateBooking, cancelBooking, approveEstimate, subscribe, setAdapter };
 })();
