@@ -526,6 +526,66 @@
     .approve-btn { width: 100%; }
   }
 
+  /* ---------- Customer Reviews (Phase 5G) ---------- */
+  .rev-locked {
+    display: flex; align-items: center; gap: 14px;
+    padding: 8px 4px; color: var(--gray-2); font-size: 13.5px; line-height: 1.7;
+  }
+  .rev-locked-ico { font-size: 26px; }
+  .rev-locked-sub { font-size: 12px; color: var(--gray-3); }
+  .rev-stars { display: inline-flex; gap: 4px; }
+  .rev-star {
+    font-size: 30px; line-height: 1; color: var(--gray-4); cursor: pointer;
+    transition: color .12s var(--easing), transform .12s var(--easing);
+    user-select: none;
+  }
+  .rev-star:hover { transform: scale(1.12); }
+  .rev-star.on { color: #f5a623; }
+  .rev-stars.static .rev-star { font-size: 20px; cursor: default; }
+  .rev-stars.static .rev-star:hover { transform: none; }
+  .rev-field { margin-top: 18px; }
+  .rev-label { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
+  .rev-textarea {
+    width: 100%; min-height: 120px; resize: vertical;
+    padding: 12px 14px; font-size: 14px; font-family: var(--font-jp);
+    color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    background: var(--bg); line-height: 1.8;
+  }
+  .rev-textarea:focus { outline: none; border-color: var(--navy); }
+  .rev-submit {
+    margin-top: 20px; padding: 12px 28px; border: none; border-radius: 999px;
+    background: var(--navy); color: #fff; font-size: 13.5px; font-weight: 600;
+    font-family: var(--font-jp); cursor: pointer; transition: all .2s var(--easing);
+  }
+  .rev-submit:hover { background: var(--navy-2); transform: translateY(-1px); }
+  .rev-submit[disabled] { opacity: .55; cursor: progress; transform: none; }
+  .rev-err { margin-top: 12px; font-size: 12.5px; color: #c0392b; display: none; }
+  .rev-done {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+    padding: 12px 16px; border: 1px solid #bfe3cd; border-radius: var(--radius-sm);
+    background: #e7f4ec; color: var(--ok); font-size: 13px; font-weight: 600;
+  }
+  .rev-meta { font-size: 12px; color: var(--gray-3); margin-top: 6px; }
+  .rev-body { font-size: 14px; color: var(--gray-1); line-height: 1.9; margin-top: 10px; white-space: pre-wrap; }
+  .rev-photos {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px; margin-top: 14px;
+  }
+  .rev-photo {
+    position: relative; aspect-ratio: 1/1; border: 1px solid var(--line);
+    border-radius: var(--radius-sm); overflow: hidden; background: var(--line-3);
+  }
+  .rev-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .rev-add {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 6px;
+    padding: 9px 16px; border-radius: 999px; border: 1px dashed var(--gray-4);
+    font-size: 12.5px; font-weight: 500; color: var(--navy); background: var(--bg-soft);
+    cursor: pointer; transition: all .2s var(--easing);
+  }
+  .rev-add:hover { border-color: var(--navy); background: var(--navy); color: #fff; }
+  .rev-add.busy { opacity: .55; cursor: progress; pointer-events: none; }
+  .rev-add input[type=file] { display: none; }
+
   /* ---------- Responsive ---------- */
   @media (max-width: 880px) {
     :root { --sidebar-w: 230px; }
@@ -590,6 +650,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
       <span>写真</span>
     </button>
+    <button class="p-nav-item" data-view="reviews">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <span>レビュー</span>
+    </button>
     <button class="p-nav-item" data-view="support">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.7 2.34a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.74-1.74a2 2 0 0 1 2.11-.45c.74.34 1.53.57 2.34.7A2 2 0 0 1 22 16.92z"/></svg>
       <span>お問い合わせ</span>
@@ -615,6 +679,7 @@
   <script src="js/portal/portalDocs.js"></script>
   <script src="js/portal/portalPhotos.js"></script>
   <script src="js/portal/portalApproval.js"></script>
+  <script src="js/portal/portalReviews.js"></script>
 
   <script>
   (function () {
@@ -839,6 +904,15 @@
             <div class="p-page-sub">お引越しのお写真をアップロードしてください。ご予約番号 ${esc(b.id)} に紐づいて保存されます。</div>
           </div>
           <div id="photoSections"><div class="skeleton">読み込み中…</div></div>`;
+      },
+      reviews(b) {
+        // Container only — populated asynchronously by loadReviews().
+        return `
+          <div class="p-page-head">
+            <div class="p-page-title">レビュー</div>
+            <div class="p-page-sub">サービスのご感想をお聞かせください。いただいたレビューは確認後に公開されます。</div>
+          </div>
+          <div id="reviewSection"><div class="skeleton">読み込み中…</div></div>`;
       },
     };
 
@@ -1066,6 +1140,162 @@
       if (btn) handleApprove(btn);
     });
 
+    // ---------- Customer Reviews (Phase 5G) ----------
+    let _revRating = 0;        // current star selection in the form
+    const REV_ADD_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+
+    function starsInput() {
+      let h = '<div class="rev-stars" id="revStars">';
+      for (let i = 1; i <= 5; i++) h += `<span class="rev-star" data-v="${i}">★</span>`;
+      return h + '</div>';
+    }
+    function starsStatic(n) {
+      let h = '<div class="rev-stars static">';
+      for (let i = 1; i <= 5; i++) h += `<span class="rev-star${i <= (n || 0) ? ' on' : ''}">★</span>`;
+      return h + '</div>';
+    }
+
+    function renderReviewForm() {
+      return `
+        <div class="panel">
+          <div class="panel-title">レビューを投稿</div>
+          <div class="rev-field">
+            <div class="rev-label">サービスの評価（Rate Service）</div>
+            ${starsInput()}
+          </div>
+          <div class="rev-field">
+            <div class="rev-label">ご感想（Leave Review）</div>
+            <textarea class="rev-textarea" id="revText" placeholder="サービスのご感想をお聞かせください。" maxlength="2000"></textarea>
+          </div>
+          <div class="rev-field">
+            <div class="rev-label">写真（任意・Upload Photos）</div>
+            <div class="rev-photos" id="revPhotoGrid"></div>
+            <label class="rev-add" id="revPhotoAdd">
+              ${REV_ADD_ICON}<span>写真を追加</span>
+              <input type="file" accept="image/*" id="revPhotoInput">
+            </label>
+          </div>
+          <div class="rev-err" id="revErr"></div>
+          <button class="rev-submit" id="revSubmitBtn">レビューを送信</button>
+        </div>`;
+    }
+
+    function renderExistingReview(r) {
+      const status = r.approved ? '公開審査済み（承認済み）' : '確認中（公開前）';
+      return `
+        <div class="panel">
+          <div class="rev-done">✓ レビューをご投稿いただきありがとうございました。</div>
+          ${starsStatic(r.rating)}
+          <div class="rev-meta">ステータス：${esc(status)} ・ ${fmtDateTime(r.created_at)}</div>
+          <div class="rev-body">${esc(r.review_text || '')}</div>
+          <div class="rev-photos" id="revPhotoGrid"></div>
+        </div>`;
+    }
+
+    async function loadReviewPhotos() {
+      const grid = $('revPhotoGrid');
+      if (!grid || !_booking) return;
+      let photos = [];
+      try { photos = await PortalReviews.listPhotos([_booking.id, _booking._dbId]); } catch (_) {}
+      grid.innerHTML = photos.map(p => p.url
+        ? `<div class="rev-photo"><img src="${esc(p.url)}" alt="${esc(p.name)}" loading="lazy"></div>`
+        : '').join('');
+    }
+
+    async function loadReviews() {
+      const host = $('reviewSection');
+      if (!host || !_booking) return;
+      // Availability: only after booking completion.
+      if (!PortalReviews.canReview(_booking)) {
+        host.innerHTML = `
+          <div class="panel"><div class="rev-locked">
+            <div class="rev-locked-ico">🔒</div>
+            <div>レビューはお引越しの完了後にご利用いただけます。
+              <br><span class="rev-locked-sub">現在のステータス：${esc(_booking.status || '新規')}</span></div>
+          </div></div>`;
+        return;
+      }
+      // Duplicate prevention: an existing review is shown read-only (no second form).
+      let existing = null;
+      try { existing = await PortalReviews.existingReview([_booking.id, _booking._dbId]); } catch (_) {}
+      if (existing) {
+        host.innerHTML = renderExistingReview(existing);
+        loadReviewPhotos();
+        return;
+      }
+      _revRating = 0;
+      host.innerHTML = renderReviewForm();
+    }
+
+    // Star selection
+    document.addEventListener('click', e => {
+      const star = e.target.closest && e.target.closest('#revStars .rev-star');
+      if (!star) return;
+      _revRating = parseInt(star.getAttribute('data-v'), 10) || 0;
+      const stars = star.parentNode.querySelectorAll('.rev-star');
+      stars.forEach((s, i) => s.classList.toggle('on', i < _revRating));
+    });
+
+    // Review photo upload (uploads immediately to the booking's review folder)
+    async function handleReviewPhoto(input) {
+      const file = input.files && input.files[0];
+      if (!file || !_booking) return;
+      const label = input.closest('.rev-add');
+      if (label) label.classList.add('busy');
+      try {
+        const res = await PortalReviews.uploadPhoto(_booking.id || _booking._dbId, file);
+        if (!res.ok) {
+          alert(res.error === 'too-large' ? 'ファイルサイズが大きすぎます。'
+              : res.error === 'not-an-image' ? '画像ファイルを選択してください。'
+              : 'アップロードに失敗しました。');
+          return;
+        }
+        loadReviewPhotos();
+      } catch (err) {
+        console.error('[Portal] review photo failed:', err);
+        alert('アップロードに失敗しました。');
+      } finally {
+        if (label) label.classList.remove('busy');
+        input.value = '';
+      }
+    }
+    document.addEventListener('change', e => {
+      const input = e.target.closest && e.target.closest('#revPhotoInput');
+      if (input) handleReviewPhoto(input);
+    });
+
+    // Submit review
+    async function handleReviewSubmit(btn) {
+      if (!_booking) return;
+      const errEl = $('revErr');
+      const text = ($('revText') && $('revText').value || '').trim();
+      if (errEl) errEl.style.display = 'none';
+      if (!_revRating) { if (errEl) { errEl.textContent = '評価（星）を選択してください。'; errEl.style.display = 'block'; } return; }
+      if (!text)       { if (errEl) { errEl.textContent = 'ご感想をご入力ください。'; errEl.style.display = 'block'; } return; }
+      btn.disabled = true; btn.textContent = '送信中…';
+      try {
+        const res = await PortalReviews.submit(_booking, { rating: _revRating, text: text });
+        if (!res.ok) {
+          const msg = res.error === 'duplicate' ? 'このご予約のレビューはすでに投稿済みです。'
+                    : res.error === 'not-completed' ? 'レビューはお引越しの完了後にご利用いただけます。'
+                    : 'レビューの送信に失敗しました。';
+          if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+          if (res.error === 'duplicate') { loadReviews(); return; }
+          btn.disabled = false; btn.textContent = 'レビューを送信';
+          return;
+        }
+        loadReviews();   // re-render → shows the submitted review (read-only)
+      } catch (err) {
+        console.error('[Portal] review submit failed:', err);
+        if (errEl) { errEl.textContent = 'レビューの送信に失敗しました。'; errEl.style.display = 'block'; }
+        btn.disabled = false; btn.textContent = 'レビューを送信';
+      }
+    }
+    document.addEventListener('click', e => {
+      const btn = e.target.closest && e.target.closest('#revSubmitBtn');
+      if (btn) handleReviewSubmit(btn);
+    });
+
     // Render one communication row (read-only). Direction maps to the role:
     //  outbound = 会社からのメッセージ (company → customer)
     //  inbound  = お客様からの返信     (customer → company)
@@ -1117,6 +1347,7 @@
       if (view === 'messages')  loadMessages();
       if (view === 'documents') loadDocuments();
       if (view === 'photos')    loadPhotos();
+      if (view === 'reviews')   loadReviews();
     }
 
     // ---- Sidebar navigation ----
