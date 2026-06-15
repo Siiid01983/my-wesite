@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a1f44" />
+<meta name="robots" content="noindex, nofollow" />
+<title>マイページ — Hello Moving</title>
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230a1f44'/><text x='16' y='22' text-anchor='middle' fill='white' font-family='sans-serif' font-size='20' font-weight='700'>H</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Noto+Serif+JP:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --navy: #0a1f44;
+    --navy-2: #112a55;
+    --ink: #0b0f17;
+    --gray-1: #3a4150;
+    --gray-2: #6b7280;
+    --gray-3: #9aa1ad;
+    --gray-4: #c4c8d0;
+    --line: #e6e8ec;
+    --line-2: #eef0f3;
+    --line-3: #f3f5f8;
+    --bg: #ffffff;
+    --bg-soft: #f7f8fa;
+    --ok: #1e7e46;
+    --radius: 14px;
+    --radius-sm: 10px;
+    --sidebar-w: 250px;
+    --header-h: 66px;
+    --font-jp: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    --font-serif: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif;
+    --font-en: "Inter", "Helvetica Neue", Arial, sans-serif;
+    --easing: cubic-bezier(.2,.7,.2,1);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  * { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-jp);
+    color: var(--ink);
+    background: var(--bg-soft);
+    line-height: 1.8;
+    letter-spacing: .03em;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; cursor: pointer; background: none; border: 0; color: inherit; }
+
+  /* ---------- Header ---------- */
+  .p-header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: var(--header-h);
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 22px;
+    z-index: 50;
+  }
+  .p-burger {
+    display: none;
+    width: 38px; height: 38px;
+    border-radius: 9px;
+    align-items: center; justify-content: center;
+    color: var(--gray-1);
+  }
+  .p-burger:hover { background: var(--line-3); }
+  .p-burger svg { width: 20px; height: 20px; }
+  .p-brand {
+    display: flex; align-items: center; gap: 11px;
+  }
+  .p-brand-logo {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--navy);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-en);
+    font-weight: 700;
+    font-size: 18px;
+  }
+  .p-brand-name {
+    font-family: var(--font-en);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--navy);
+  }
+  .p-header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .p-user {
+    text-align: right;
+    line-height: 1.4;
+  }
+  .p-user .p-user-name { font-size: 13.5px; font-weight: 500; }
+  .p-user .p-user-ref  { font-size: 11px; color: var(--gray-3); font-family: var(--font-en); }
+  .p-logout {
+    font-size: 12.5px;
+    color: var(--gray-1);
+    padding: 8px 15px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    transition: all .2s var(--easing);
+  }
+  .p-logout:hover { border-color: var(--navy); color: var(--navy); }
+
+  /* ---------- Sidebar ---------- */
+  .p-sidebar {
+    position: fixed;
+    top: var(--header-h); bottom: 0; left: 0;
+    width: var(--sidebar-w);
+    background: var(--bg);
+    border-right: 1px solid var(--line);
+    padding: 22px 14px;
+    overflow-y: auto;
+    z-index: 40;
+    transition: transform .3s var(--easing);
+  }
+  .p-nav-label {
+    font-size: 10.5px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--gray-3);
+    font-family: var(--font-en);
+    padding: 0 12px;
+    margin: 6px 0 12px;
+  }
+  .p-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    text-align: left;
+    padding: 11px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    color: var(--gray-1);
+    margin-bottom: 3px;
+    transition: background .2s var(--easing), color .2s var(--easing);
+  }
+  .p-nav-item svg { width: 18px; height: 18px; flex-shrink: 0; opacity: .8; }
+  .p-nav-item:hover { background: var(--line-3); color: var(--ink); }
+  .p-nav-item.active { background: var(--navy); color: #fff; }
+  .p-nav-item.active svg { opacity: 1; }
+
+  /* ---------- Main ---------- */
+  .p-main {
+    margin-left: var(--sidebar-w);
+    padding: calc(var(--header-h) + 30px) 32px 60px;
+    min-height: 100vh;
+  }
+  .p-main-inner { max-width: 920px; margin: 0 auto; }
+
+  .p-page-head { margin-bottom: 28px; }
+  .p-page-title {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 24px;
+    letter-spacing: .05em;
+  }
+  .p-page-sub { font-size: 13.5px; color: var(--gray-2); margin-top: 4px; }
+
+  .panel {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 26px 28px;
+    margin-bottom: 22px;
+  }
+  .panel-title {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line-2);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px 28px;
+  }
+  .info-cell .k {
+    font-size: 11.5px;
+    letter-spacing: .08em;
+    color: var(--gray-3);
+    margin-bottom: 4px;
+  }
+  .info-cell .v { font-size: 15px; color: var(--ink); }
+  .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--line-3);
+    color: var(--gray-1);
+    border: 1px solid var(--line);
+  }
+  .badge.confirmed { background: #e7f4ec; color: var(--ok); border-color: #bfe3cd; }
+
+  .skeleton {
+    color: var(--gray-3);
+    font-size: 14px;
+    padding: 40px 0;
+    text-align: center;
+  }
+
+  .p-overlay {
+    display: none;
+    position: fixed;
+    inset: var(--header-h) 0 0 0;
+    background: rgba(11,15,23,.35);
+    z-index: 35;
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 880px) {
+    :root { --sidebar-w: 230px; }
+    .p-burger { display: flex; }
+    .p-sidebar { transform: translateX(-100%); box-shadow: 0 20px 50px rgba(11,15,23,.12); }
+    .p-sidebar.open { transform: translateX(0); }
+    .p-overlay.show { display: block; }
+    .p-main { margin-left: 0; padding: calc(var(--header-h) + 22px) 18px 50px; }
+    .info-grid { grid-template-columns: 1fr; }
+    .p-user .p-user-name { display: none; }
+  }
+  @media (max-width: 480px) {
+    .p-header { padding: 0 14px; gap: 10px; }
+    .panel { padding: 20px 18px; }
+  }
+</style>
+</head>
+<body>
+  <!-- ===================== HEADER ===================== -->
+  <header class="p-header">
+    <button class="p-burger" id="burger" aria-label="メニュー">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="p-brand">
+      <div class="p-brand-logo">H</div>
+      <div class="p-brand-name">Hello Moving</div>
+    </div>
+    <div class="p-header-right">
+      <div class="p-user">
+        <div class="p-user-name" id="userName">—</div>
+        <div class="p-user-ref" id="userRef">—</div>
+      </div>
+      <button class="p-logout" id="logoutBtn">ログアウト</button>
+    </div>
+  </header>
+
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="p-sidebar" id="sidebar">
+    <div class="p-nav-label">マイページ</div>
+    <button class="p-nav-item active" data-view="overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span>概要</span>
+    </button>
+    <button class="p-nav-item" data-view="booking">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>予約内容</span>
+    </button>
+    <button class="p-nav-item" data-view="support">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>お問い合わせ</span>
+    </button>
+  </aside>
+  <div class="p-overlay" id="overlay"></div>
+
+  <!-- ===================== MAIN ===================== -->
+  <main class="p-main">
+    <div class="p-main-inner" id="content">
+      <div class="skeleton" id="loading">読み込み中…</div>
+    </div>
+  </main>
+
+  <!-- Supabase infrastructure (reused, unmodified) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="js/config/env.js"></script>
+  <script src="js/services/supabaseClient.js"></script>
+  <script src="bookingService.js"></script>
+  <script src="js/portal/portalAuth.js"></script>
+
+  <script>
+  (function () {
+    'use strict';
+
+    // ---- Route guard: no valid session → bounce to login ----
+    const sess = PortalAuth.requireSession('login.html');
+    if (!sess) return;
+
+    const $ = id => document.getElementById(id);
+
+    // Header identity (from session — instant, no fetch needed)
+    $('userName').textContent = sess.name || 'お客様';
+    $('userRef').textContent  = sess.ref || '';
+
+    // ---- Mobile drawer ----
+    const sidebar = $('sidebar'), overlay = $('overlay');
+    function closeDrawer() { sidebar.classList.remove('open'); overlay.classList.remove('show'); }
+    $('burger').addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('show');
+    });
+    overlay.addEventListener('click', closeDrawer);
+
+    // ---- Logout ----
+    $('logoutBtn').addEventListener('click', () => {
+      PortalAuth.logout();
+      location.replace('login.html');
+    });
+
+    // ---- Helpers ----
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+        ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    }
+    function fmtDate(ds) {
+      if (!ds) return '—';
+      const d = new Date(ds + 'T00:00:00');
+      if (isNaN(d)) return esc(ds);
+      const dow = ['日','月','火','水','木','金','土'][d.getDay()];
+      return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${dow}）`;
+    }
+    function statusBadge(st) {
+      const cls = st === '確定' || st === '完了' ? ' confirmed' : '';
+      return `<span class="badge${cls}">${esc(st || '新規')}</span>`;
+    }
+
+    // ---- Render views from a single booking record ----
+    const VIEWS = {
+      overview(b) {
+        return `
+          <div class="p-page-head">
+            <div class="p-page-title">こんにちは、${esc(b.name || 'お客様')} 様</div>
+            <div class="p-page-sub">ご予約の概要をご確認いただけます。</div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">ご予約ステータス</div>
+            <div class="info-grid">
+              <div class="info-cell"><div class="k">予約番号</div><div class="v">${esc(b.id)}</div></div>
+              <div class="info-cell"><div class="k">ステータス</div><div class="v">${statusBadge(b.status)}</div></div>
+              <div class="info-cell"><div class="k">引越し希望日</div><div class="v">${fmtDate(b.date)}</div></div>
+              <div class="info-cell"><div class="k">サービス</div><div class="v">${esc(b.service || '—')}</div></div>
+            </div>
+          </div>`;
+      },
+      booking(b) {
+        const items = (b.items && b.items.length) ? b.items.map(esc).join('、') : '—';
+        return `
+          <div class="p-page-head">
+            <div class="p-page-title">予約内容</div>
+            <div class="p-page-sub">ご予約番号 ${esc(b.id)}</div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">お客様情報</div>
+            <div class="info-grid">
+              <div class="info-cell"><div class="k">お名前</div><div class="v">${esc(b.name || '—')}</div></div>
+              <div class="info-cell"><div class="k">メールアドレス</div><div class="v">${esc(b.email || '—')}</div></div>
+              <div class="info-cell"><div class="k">電話番号</div><div class="v">${esc(b.phone || '—')}</div></div>
+              <div class="info-cell"><div class="k">ステータス</div><div class="v">${statusBadge(b.status)}</div></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">引越し詳細</div>
+            <div class="info-grid">
+              <div class="info-cell"><div class="k">希望日</div><div class="v">${fmtDate(b.date)}</div></div>
+              <div class="info-cell"><div class="k">希望時間</div><div class="v">${esc(b.time || '—')}</div></div>
+              <div class="info-cell"><div class="k">出発地</div><div class="v">${esc(b.fromAddr || '—')}</div></div>
+              <div class="info-cell"><div class="k">到着地</div><div class="v">${esc(b.toAddr || '—')}</div></div>
+              <div class="info-cell"><div class="k">荷物</div><div class="v">${items}</div></div>
+              <div class="info-cell"><div class="k">サービス</div><div class="v">${esc(b.service || '—')}</div></div>
+            </div>
+          </div>
+          ${b.notes ? `<div class="panel"><div class="panel-title">備考</div><div class="v">${esc(b.notes)}</div></div>` : ''}`;
+      },
+      support(b) {
+        return `
+          <div class="p-page-head">
+            <div class="p-page-title">お問い合わせ</div>
+            <div class="p-page-sub">ご予約に関するご質問はお気軽にご連絡ください。</div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">サポート窓口</div>
+            <div class="info-grid">
+              <div class="info-cell"><div class="k">電話</div><div class="v">090-2489-3402</div></div>
+              <div class="info-cell"><div class="k">受付時間</div><div class="v">8:00 – 20:00（年中無休）</div></div>
+              <div class="info-cell"><div class="k">予約番号</div><div class="v">${esc(b.id)}</div></div>
+            </div>
+            <p style="margin-top:18px;font-size:13px;color:var(--gray-2)">
+              お問い合わせの際は、上記の予約番号をお伝えください。
+            </p>
+          </div>`;
+      },
+    };
+
+    let _booking = null;
+    function render(view) {
+      const content = $('content');
+      if (!_booking) { content.innerHTML = '<div class="skeleton">予約情報を読み込めませんでした。</div>'; return; }
+      content.innerHTML = (VIEWS[view] || VIEWS.overview)(_booking);
+    }
+
+    // ---- Sidebar navigation ----
+    document.querySelectorAll('.p-nav-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.p-nav-item').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        render(btn.dataset.view);
+        closeDrawer();
+      });
+    });
+
+    // ---- Load the authorised booking, then render ----
+    (async function init() {
+      try {
+        _booking = await PortalAuth.getCurrentBooking();
+      } catch (err) {
+        console.error('[Portal] load failed:', err);
+      }
+      if (!_booking) {
+        // Session valid but booking no longer accessible (revoked / deleted / mismatch)
+        $('content').innerHTML =
+          '<div class="skeleton">予約情報を取得できませんでした。再度ログインしてください。</div>';
+        return;
+      }
+      // Show the reference the customer logged in with (handles legacy numeric ids)
+      _booking.id = sess.ref || _booking.id;
+      // Refresh header with the freshest record
+      $('userName').textContent = _booking.name || 'お客様';
+      $('userRef').textContent  = _booking.id || '';
+      render('overview');
+    })();
+  })();
+  </script>
+</body>
+</html>

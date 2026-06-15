@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a1f44" />
+<meta name="robots" content="noindex, nofollow" />
+<title>マイページ ログイン — Hello Moving</title>
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230a1f44'/><text x='16' y='22' text-anchor='middle' fill='white' font-family='sans-serif' font-size='20' font-weight='700'>H</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Noto+Serif+JP:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --navy: #0a1f44;
+    --navy-2: #112a55;
+    --ink: #0b0f17;
+    --gray-1: #3a4150;
+    --gray-2: #6b7280;
+    --gray-3: #9aa1ad;
+    --line: #e6e8ec;
+    --line-2: #eef0f3;
+    --bg: #ffffff;
+    --bg-soft: #f7f8fa;
+    --danger: #c0392b;
+    --radius: 14px;
+    --radius-sm: 10px;
+    --font-jp: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    --font-serif: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif;
+    --font-en: "Inter", "Helvetica Neue", Arial, sans-serif;
+    --easing: cubic-bezier(.2,.7,.2,1);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  * { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-jp);
+    color: var(--ink);
+    background: var(--bg-soft);
+    line-height: 1.8;
+    letter-spacing: .03em;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; cursor: pointer; background: none; border: 0; color: inherit; }
+
+  .auth-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+  .auth-card {
+    width: 100%;
+    max-width: 440px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: 0 24px 60px rgba(11,15,23,.08);
+    padding: 44px 38px 38px;
+  }
+  .brand {
+    text-align: center;
+    margin-bottom: 34px;
+  }
+  .brand-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    background: var(--navy);
+    color: #fff;
+    font-family: var(--font-en);
+    font-weight: 700;
+    font-size: 26px;
+    margin-bottom: 18px;
+  }
+  .brand-name {
+    font-family: var(--font-en);
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--navy);
+  }
+  .auth-title {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 21px;
+    letter-spacing: .06em;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+  .auth-sub {
+    text-align: center;
+    font-size: 13px;
+    color: var(--gray-2);
+    margin-bottom: 30px;
+    line-height: 1.9;
+  }
+  .field { margin-bottom: 20px; }
+  .field label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: .06em;
+    color: var(--gray-1);
+    margin-bottom: 8px;
+  }
+  .field input {
+    width: 100%;
+    padding: 13px 15px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-jp);
+    font-size: 15px;
+    color: var(--ink);
+    background: var(--bg);
+    transition: border-color .2s var(--easing), box-shadow .2s var(--easing);
+  }
+  .field input::placeholder { color: var(--gray-3); }
+  .field input:focus {
+    outline: none;
+    border-color: var(--navy);
+    box-shadow: 0 0 0 3px rgba(10,31,68,.08);
+  }
+  .field .hint {
+    font-size: 11.5px;
+    color: var(--gray-3);
+    margin-top: 6px;
+  }
+  .btn-login {
+    width: 100%;
+    padding: 15px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: #fff;
+    font-weight: 500;
+    font-size: 15px;
+    letter-spacing: .08em;
+    transition: background .25s var(--easing), transform .25s var(--easing), box-shadow .25s var(--easing);
+    margin-top: 6px;
+  }
+  .btn-login:hover:not(:disabled) {
+    background: var(--navy);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px rgba(11,15,23,.18);
+  }
+  .btn-login:disabled { opacity: .6; cursor: not-allowed; }
+
+  .alert {
+    display: none;
+    align-items: flex-start;
+    gap: 8px;
+    background: #fdecea;
+    border: 1px solid #f3c6c0;
+    color: var(--danger);
+    border-radius: var(--radius-sm);
+    padding: 11px 14px;
+    font-size: 12.5px;
+    line-height: 1.7;
+    margin-bottom: 22px;
+  }
+  .alert.show { display: flex; }
+
+  .auth-foot {
+    text-align: center;
+    margin-top: 26px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line-2);
+    font-size: 12px;
+    color: var(--gray-3);
+    line-height: 2;
+  }
+  .auth-foot a { color: var(--gray-1); border-bottom: 1px solid var(--line); }
+  .auth-foot a:hover { color: var(--navy); }
+
+  .page-foot {
+    text-align: center;
+    padding: 20px;
+    font-size: 11px;
+    color: var(--gray-3);
+    font-family: var(--font-en);
+    letter-spacing: .12em;
+  }
+
+  @media (max-width: 480px) {
+    .auth-card { padding: 36px 24px 30px; border-radius: 12px; }
+    .auth-wrap { padding: 24px 14px; }
+  }
+</style>
+</head>
+<body>
+  <main class="auth-wrap">
+    <div class="auth-card">
+      <div class="brand">
+        <div class="brand-logo">H</div>
+        <div class="brand-name">Hello Moving</div>
+      </div>
+
+      <h1 class="auth-title">マイページ ログイン</h1>
+      <p class="auth-sub">ご予約時のメールアドレスと予約番号を<br />入力してください。</p>
+
+      <div class="alert" id="authAlert" role="alert" aria-live="assertive">
+        <span id="authAlertMsg"></span>
+      </div>
+
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="email">メールアドレス</label>
+          <input type="email" id="email" name="email" autocomplete="email"
+                 placeholder="you@example.com" required />
+        </div>
+        <div class="field">
+          <label for="ref">予約番号</label>
+          <input type="text" id="ref" name="ref" autocomplete="off"
+                 placeholder="HM-20260615-XXXX" required />
+          <div class="hint">予約確認メールに記載されている番号です。</div>
+        </div>
+        <button type="submit" class="btn-login" id="loginBtn">ログイン</button>
+      </form>
+
+      <div class="auth-foot">
+        予約番号がわからない場合は<br />
+        <a href="index.html#contact">お問い合わせ</a> ください。
+      </div>
+    </div>
+  </main>
+
+  <footer class="page-foot">© Hello Moving — Customer Portal</footer>
+
+  <!-- Supabase infrastructure (reused, unmodified) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="js/config/env.js"></script>
+  <script src="js/services/supabaseClient.js"></script>
+  <script src="bookingService.js"></script>
+  <!-- Portal session helper -->
+  <script src="js/portal/portalAuth.js"></script>
+
+  <script>
+  (function () {
+    'use strict';
+    const form  = document.getElementById('loginForm');
+    const btn   = document.getElementById('loginBtn');
+    const alert = document.getElementById('authAlert');
+    const alertMsg = document.getElementById('authAlertMsg');
+
+    // Already logged in → go straight to the portal.
+    if (window.PortalAuth && PortalAuth.getSession()) {
+      location.replace('portal.html');
+      return;
+    }
+
+    function showError(msg) {
+      alertMsg.textContent = msg;
+      alert.classList.add('show');
+    }
+    function clearError() { alert.classList.remove('show'); }
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      clearError();
+
+      const email = document.getElementById('email').value.trim();
+      const ref   = document.getElementById('ref').value.trim();
+
+      if (!email || !ref) { showError('メールアドレスと予約番号を入力してください。'); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError('正しいメールアドレスを入力してください。'); return; }
+
+      btn.disabled = true;
+      btn.textContent = '確認中…';
+
+      try {
+        const result = await PortalAuth.login(email, ref);
+        if (!result.ok) {
+          showError(result.message || '予約が見つかりませんでした。入力内容をご確認ください。');
+          btn.disabled = false;
+          btn.textContent = 'ログイン';
+          return;
+        }
+        location.replace('portal.html');
+      } catch (err) {
+        console.error('[Portal login]', err);
+        showError('接続エラーが発生しました。しばらくしてから再度お試しください。');
+        btn.disabled = false;
+        btn.textContent = 'ログイン';
+      }
+    });
+  })();
+  </script>
+</body>
+</html>
