@@ -838,18 +838,12 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
         <div><div class="sb-name">Hello Moving</div><div class="sb-sub">Admin Panel</div></div>
       </div>
       <nav class="sb-nav">
-        <div class="sb-section">管理</div>
+        <div class="sb-section">運営</div>
         <button class="sb-link active" data-view="dashboard" onclick="go('dashboard')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>ダッシュボード
         </button>
         <button class="sb-link" data-view="bookings" onclick="go('bookings')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>予約管理
-        </button>
-        <button class="sb-link" data-view="customers" onclick="go('customers')">
-          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>顧客管理
-        </button>
-        <button class="sb-link" data-view="crm" onclick="go('crm')">
-          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 2.75c1.24 0 2.25 1.01 2.25 2.25S13.24 11.25 12 11.25 9.75 10.24 9.75 9 10.76 6.75 12 6.75zM17 17H7v-.75c0-1.66 3.33-2.5 5-2.5s5 .84 5 2.5V17z"/></svg>CRM
         </button>
         <button class="sb-link" data-view="overlay-bookings" onclick="go('overlay-bookings')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM7 17v-2h10v2H7zm0-4v-2h6v2H7z"/></svg>フォーム予約
@@ -857,27 +851,20 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
         <button class="sb-link" data-view="quotes" onclick="go('quotes')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>見積り管理
         </button>
-        <button class="sb-link" data-view="reviews" onclick="go('reviews')">
-          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>レビュー管理
-        </button>
-        <button class="sb-link" data-view="services" onclick="go('services')">
-          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>サービス管理
-        </button>
-        <button class="sb-link" data-view="faq" onclick="go('faq')">
-          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>FAQ編集
-        </button>
-        <button class="sb-link" data-view="company" onclick="go('company')">
-          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>会社情報編集
-        </button>
-        <button class="sb-link" data-view="footer" onclick="go('footer')">
-          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M20 20H4v-4h16v4zm0-6H4V4h16v10zm-2-8H6v6h12V6zm0 8H6v2h12v-2z"/></svg>フッター編集
-        </button>
-        <button class="sb-link" data-view="hero" onclick="go('hero')">
-          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M3 5h2V3c-1.1 0-2 .9-2 2zm0 8h2v-2H3v2zm4 8h2v-2H7v2zm-4-4h2v-2H3v2zm0-8h2V7H3v2zm4-8H7v2h2V1zm8 0h-2v2h2V1zm-4 0H9v2h2V1zM5 21v-2H3c0 1.1.9 2 2 2zm-2-4h2v-2H3v2zM21 3h-2v2h2V3zm0 4h-2v2h2V7zm0 14c1.1 0 2-.9 2-2h-2v2zm0-8h-2v2h2v-2zm-4 8h2v-2h-2v2zm0-16h2V1h-2v2zm-4 16h2v-2h-2v2zm-4 0h2v-2H9v2z"/></svg>ヒーロー編集
+        <button class="sb-link" data-view="inbox" onclick="go('inbox')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5v-3h3.56c.69 1.19 1.97 2 3.45 2s2.75-.81 3.45-2H19v3zm0-5h-4c0 1.1-.9 2-2 2s-2-.9-2-2H5V5h14v9z"/></svg>受信トレイ
         </button>
         <button class="sb-link" data-view="calendar" onclick="go('calendar')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M20 3h-1V1h-2v2H7V1H5v2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H4V8h16v13z"/></svg>カレンダー管理
         </button>
+        <div class="sb-section" style="margin-top:6px">顧客・CRM</div>
+        <button class="sb-link" data-view="customers" onclick="go('customers')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>顧客管理
+        </button>
+        <button class="sb-link" data-view="crm" onclick="go('crm')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 2.75c1.24 0 2.25 1.01 2.25 2.25S13.24 11.25 12 11.25 9.75 10.24 9.75 9 10.76 6.75 12 6.75zM17 17H7v-.75c0-1.66 3.33-2.5 5-2.5s5 .84 5 2.5V17z"/></svg>CRM
+        </button>
+        <div class="sb-section" style="margin-top:6px">分析・自動化</div>
         <button class="sb-link" data-view="analytics" onclick="go('analytics')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg>分析
         </button>
@@ -887,31 +874,13 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
         <button class="sb-link" data-view="automation" onclick="go('automation')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>自動化エンジン
         </button>
-        <button class="sb-link" data-view="media" onclick="go('media')">
-          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>メディアライブラリ
+        <button class="sb-link" data-view="audit-log" onclick="go('audit-log')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zm-2 9H7v-2h4v2zm4-4H7v-2h8v2zm0-4H7V8h8v2z"/></svg>監査ログ
         </button>
-        <button class="sb-link" data-view="camera" onclick="go('camera')">
-          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>カメラ・写真
-        </button>
-        <button class="sb-link" data-view="mobile-notifications" onclick="go('mobile-notifications')">
-          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>プッシュ通知設定
-        </button>
-        <div class="sb-section" style="margin-top:6px">コンテンツ</div>
-        <button class="sb-link" data-view="seo" onclick="go('seo')">
-          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>SEO センター
-        </button>
-        <button class="sb-link" data-view="blog" onclick="go('blog')">
-          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>ブログ管理
-        </button>
-        <button class="sb-link" data-view="site-settings" onclick="go('site-settings')">
-          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>ウェブサイト設定
-        </button>
-        <a class="sb-link" href="wmcDashboard.html" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:8px">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-          WMC
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="9" height="9" style="margin-left:auto;opacity:.45"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
-        </a>
         <div class="sb-section" style="margin-top:6px">設定</div>
+        <button class="sb-link" data-view="staff" onclick="go('staff')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>スタッフ管理
+        </button>
         <button class="sb-link" data-view="capacity" onclick="go('capacity')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>容量設定
         </button>
@@ -924,17 +893,17 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
         <button class="sb-link" data-view="actions" onclick="go('actions')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>クイック操作
         </button>
-        <button class="sb-link" data-view="backup" onclick="go('backup')">
-          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>バックアップ
-        </button>
         <button class="sb-link" data-view="line" onclick="go('line')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.076 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>LINE通知設定
         </button>
         <button class="sb-link" data-view="email" onclick="go('email')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>メール通知設定
         </button>
-        <button class="sb-link" data-view="inbox" onclick="go('inbox')">
-          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5v-3h3.56c.69 1.19 1.97 2 3.45 2s2.75-.81 3.45-2H19v3zm0-5h-4c0 1.1-.9 2-2 2s-2-.9-2-2H5V5h14v9z"/></svg>受信トレイ
+        <button class="sb-link" data-view="camera" onclick="go('camera')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>カメラ・写真
+        </button>
+        <button class="sb-link" data-view="mobile-notifications" onclick="go('mobile-notifications')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>プッシュ通知設定
         </button>
         <button class="sb-link" data-view="changelog" onclick="go('changelog')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M13 2.05v2.02c3.95.49 7 3.85 7 7.93 0 3.21-1.81 6-4.72 7.72L13 17v5h5l-1.22-1.22C19.91 19.07 22 15.76 22 12c0-5.18-3.95-9.45-9-9.95zM11 2.05C5.95 2.55 2 6.82 2 12c0 3.76 2.09 7.07 5.22 8.78L6 22h5V2.05zM11 17H9.5L11 15.5V17zm2 0v-1.5L14.5 17H13z"/></svg>変更履歴
@@ -945,12 +914,12 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
         <button class="sb-link" data-view="health" onclick="go('health')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>システム健全性
         </button>
-        <button class="sb-link" data-view="staff" onclick="go('staff')">
-          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>スタッフ管理
-        </button>
-        <button class="sb-link" data-view="audit-log" onclick="go('audit-log')">
-          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zm-2 9H7v-2h4v2zm4-4H7v-2h8v2zm0-4H7V8h8v2z"/></svg>監査ログ
-        </button>
+        <div class="sb-section" style="margin-top:6px">ウェブサイト</div>
+        <a class="sb-link" href="websiteManagement.html" style="text-decoration:none;display:flex;align-items:center;gap:8px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          ウェブサイト管理
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="9" height="9" style="margin-left:auto;opacity:.45"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+        </a>
         <div class="sb-section" style="margin-top:6px">その他</div>
         <button class="sb-link" onclick="toggleDark()">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>ダークモード
@@ -1298,629 +1267,6 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
           </div>
         </div>
 
-        <!-- SERVICES -->
-        <div id="view-services" class="view">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-            <button class="btn btn-primary" onclick="saveServicesAll()">
-              <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
-              変更を保存
-            </button>
-            <span class="svc-save-ind" id="svcSaveInd">サイトに保存しました ✓</span>
-          </div>
-          <div class="hero-layout">
-
-            <!-- Left: panels -->
-            <div style="display:flex;flex-direction:column;gap:16px">
-
-              <!-- Section Header -->
-              <div class="panel">
-                <div class="panel-head"><span class="panel-title">セクションヘッダー</span></div>
-                <div class="panel-body">
-                  <div class="m-field">
-                    <label class="m-label">Eyebrow</label>
-                    <input class="m-input" id="svcMetaEyebrow" oninput="liveSvcPreview()" />
-                  </div>
-                  <div class="m-field">
-                    <label class="m-label">タイトル</label>
-                    <input class="m-input" id="svcMetaTitle" oninput="liveSvcPreview()" />
-                  </div>
-                  <div class="m-field" style="margin-bottom:0">
-                    <label class="m-label">リードテキスト</label>
-                    <input class="m-input" id="svcMetaLead" oninput="liveSvcPreview()" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Services List -->
-              <div class="panel">
-                <div class="panel-head">
-                  <span class="panel-title">サービス一覧</span>
-                  <button class="btn btn-primary btn-sm" onclick="openSvcModal()">
-                    <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>サービスを追加
-                  </button>
-                </div>
-                <div class="table-wrap" id="servicesWrap"></div>
-              </div>
-
-              <!-- Version History -->
-              <div class="panel">
-                <div class="panel-head"><span class="panel-title">バージョン履歴</span></div>
-                <div class="panel-body" id="svcHistoryList">
-                  <div class="empty" style="padding:16px 0"><p>まだバージョンがありません</p></div>
-                </div>
-              </div>
-
-            </div><!-- /left -->
-
-            <!-- Right: live preview -->
-            <div>
-              <div style="font-size:10px;font-weight:600;color:var(--gray-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">ライブプレビュー</div>
-              <div class="svc-prev-wrap" id="svcPrevWrap">
-                <div id="svcPrevEyebrow" class="svc-prev-eyebrow"></div>
-                <div id="svcPrevTitle" class="svc-prev-title"></div>
-                <div id="svcPrevLead" class="svc-prev-lead"></div>
-                <div id="svcPrevCards"></div>
-              </div>
-              <div style="font-size:11px;color:var(--gray-2);margin-top:8px;line-height:1.5">
-                「変更を保存」でサイトに反映されます。
-              </div>
-            </div><!-- /right -->
-
-          </div>
-        </div>
-
-        <!-- FOOTER EDITOR -->
-        <div id="view-footer" class="view">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-            <button class="btn btn-primary" onclick="saveFooterAll()">
-              <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
-              変更を保存
-            </button>
-            <span class="footer-save-ind" id="footerSaveInd">サイトに保存しました ✓</span>
-          </div>
-          <div class="hero-layout">
-
-            <!-- Left -->
-            <div style="display:flex;flex-direction:column;gap:16px">
-
-              <!-- Brand Description -->
-              <div class="panel">
-                <div class="panel-head"><span class="panel-title">ブランド説明文</span></div>
-                <div class="panel-body">
-                  <textarea class="m-ta" id="footerBrandDesc" rows="2" placeholder="東京を拠点に..." oninput="liveFooterPreview()"></textarea>
-                </div>
-              </div>
-
-              <!-- Columns -->
-              <div class="panel">
-                <div class="panel-head"><span class="panel-title">リンク列</span></div>
-                <div class="panel-body" id="footerColsWrap" style="padding:0"></div>
-              </div>
-
-              <!-- Bottom Bar -->
-              <div class="panel">
-                <div class="panel-head"><span class="panel-title">フッター下部テキスト</span></div>
-                <div class="panel-body">
-                  <div class="m-field">
-                    <label class="m-label">著作権テキスト</label>
-                    <input class="m-input" id="footerCopyright" oninput="liveFooterPreview()" />
-                  </div>
-                  <div class="m-field" style="margin-bottom:0">
-                    <label class="m-label">ライセンステキスト</label>
-                    <input class="m-input" id="footerLicense" oninput="liveFooterPreview()" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Version History -->
-              <div class="panel">
-                <div class="panel-head"><span class="panel-title">バージョン履歴</span></div>
-                <div class="panel-body" id="footerHistoryList">
-                  <div class="empty" style="padding:16px 0"><p>まだバージョンがありません</p></div>
-                </div>
-              </div>
-
-            </div><!-- /left -->
-
-            <!-- Right: live preview -->
-            <div>
-              <div style="font-size:10px;font-weight:600;color:var(--gray-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">ライブプレビュー</div>
-              <div class="footer-prev-wrap">
-                <div style="font-weight:700;font-size:12px;color:#fff;letter-spacing:.03em;margin-bottom:2px">Hello Moving</div>
-                <div id="fpPrevBrandDesc" class="footer-prev-brand-desc"></div>
-                <div id="fpPrevCols" class="footer-prev-cols"></div>
-                <div id="fpPrevBottom" class="footer-prev-bottom"></div>
-              </div>
-              <div style="font-size:11px;color:var(--gray-2);margin-top:8px;line-height:1.5">
-                「変更を保存」でサイトに反映されます。
-              </div>
-            </div><!-- /right -->
-
-          </div>
-        </div>
-
-        <!-- COMPANY INFO EDITOR -->
-        <div id="view-company" class="view">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-            <button class="btn btn-primary" onclick="saveCompanyAll()">
-              <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
-              変更を保存
-            </button>
-            <span class="company-save-ind" id="companySaveInd">サイトに保存しました ✓</span>
-          </div>
-          <div class="hero-layout">
-
-            <!-- Left -->
-            <div style="display:flex;flex-direction:column;gap:16px">
-
-              <!-- Section Header -->
-              <div class="panel">
-                <div class="panel-head"><span class="panel-title">セクションヘッダー</span></div>
-                <div class="panel-body">
-                  <div class="m-row" style="margin-bottom:0">
-                    <div class="m-field" style="margin-bottom:0">
-                      <label class="m-label">Eyebrow</label>
-                      <input class="m-input" id="compMetaEyebrow" oninput="liveCompanyPreview()" />
-                    </div>
-                    <div class="m-field" style="margin-bottom:0">
-                      <label class="m-label">タイトル</label>
-                      <input class="m-input" id="compMetaTitle" oninput="liveCompanyPreview()" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Rows Table -->
-              <div class="panel">
-                <div class="panel-head">
-                  <span class="panel-title">会社情報テーブル</span>
-                  <button class="btn btn-primary btn-sm" onclick="openCompanyModal()">
-                    <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>行を追加
-                  </button>
-                </div>
-                <div class="table-wrap" id="companyRowsWrap"></div>
-              </div>
-
-              <!-- Version History -->
-              <div class="panel">
-                <div class="panel-head"><span class="panel-title">バージョン履歴</span></div>
-                <div class="panel-body" id="companyHistoryList">
-                  <div class="empty" style="padding:16px 0"><p>まだバージョンがありません</p></div>
-                </div>
-              </div>
-
-            </div><!-- /left -->
-
-            <!-- Right: live preview -->
-            <div>
-              <div style="font-size:10px;font-weight:600;color:var(--gray-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">ライブプレビュー</div>
-              <div class="comp-prev-wrap">
-                <div id="compPrevEyebrow" class="svc-prev-eyebrow"></div>
-                <div id="compPrevTitle" class="svc-prev-title" style="margin-bottom:12px"></div>
-                <div id="compPrevRows"></div>
-              </div>
-              <div style="font-size:11px;color:var(--gray-2);margin-top:8px;line-height:1.5">
-                「変更を保存」でサイトに反映されます。
-              </div>
-            </div><!-- /right -->
-
-          </div>
-        </div>
-
-        <!-- FAQ EDITOR -->
-        <div id="view-faq" class="view">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-            <button class="btn btn-primary" onclick="saveFaqAll()">
-              <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
-              変更を保存
-            </button>
-            <span class="faq-save-ind" id="faqSaveInd">サイトに保存しました ✓</span>
-          </div>
-          <div class="hero-layout">
-
-            <!-- Left: panels -->
-            <div style="display:flex;flex-direction:column;gap:16px">
-
-              <!-- Section Header -->
-              <div class="panel">
-                <div class="panel-head"><span class="panel-title">セクションヘッダー</span></div>
-                <div class="panel-body">
-                  <div class="m-row" style="margin-bottom:12px">
-                    <div class="m-field">
-                      <label class="m-label">Eyebrow</label>
-                      <input class="m-input" id="faqMetaEyebrow" oninput="liveFaqPreview()" />
-                    </div>
-                    <div class="m-field">
-                      <label class="m-label">タイトル</label>
-                      <input class="m-input" id="faqMetaTitle" oninput="liveFaqPreview()" />
-                    </div>
-                  </div>
-                  <div class="m-field" style="margin-bottom:0">
-                    <label class="m-label">リードテキスト</label>
-                    <input class="m-input" id="faqMetaLead" oninput="liveFaqPreview()" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- FAQ Items List -->
-              <div class="panel">
-                <div class="panel-head">
-                  <span class="panel-title">FAQ一覧</span>
-                  <button class="btn btn-primary btn-sm" onclick="openFaqModal()">
-                    <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>FAQを追加
-                  </button>
-                </div>
-                <div class="table-wrap" id="faqListWrap"></div>
-              </div>
-
-              <!-- Version History -->
-              <div class="panel">
-                <div class="panel-head"><span class="panel-title">バージョン履歴</span></div>
-                <div class="panel-body" id="faqHistoryList">
-                  <div class="empty" style="padding:16px 0"><p>まだバージョンがありません</p></div>
-                </div>
-              </div>
-
-            </div><!-- /left -->
-
-            <!-- Right: live preview -->
-            <div>
-              <div style="font-size:10px;font-weight:600;color:var(--gray-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">ライブプレビュー</div>
-              <div class="faq-prev-wrap">
-                <div id="faqPrevEyebrow" class="svc-prev-eyebrow"></div>
-                <div id="faqPrevTitle" class="svc-prev-title"></div>
-                <div id="faqPrevLead" class="svc-prev-lead"></div>
-                <div id="faqPrevItems"></div>
-              </div>
-              <div style="font-size:11px;color:var(--gray-2);margin-top:8px;line-height:1.5">
-                「変更を保存」でサイトに反映されます。
-              </div>
-            </div><!-- /right -->
-
-          </div>
-        </div>
-
-        <!-- HERO CONTENT MANAGER -->
-        <div id="view-hero" class="view">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-            <button class="btn btn-primary" onclick="saveHero()">
-              <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
-              変更を保存
-            </button>
-            <span class="hero-save-ind" id="heroSaveInd">サイトに保存しました ✓</span>
-          </div>
-          <div class="hero-layout">
-
-            <!-- Left: edit panels -->
-            <div style="display:flex;flex-direction:column;gap:16px">
-
-              <!-- Headline -->
-              <div class="panel">
-                <div class="panel-head"><span class="panel-title">見出し</span></div>
-                <div class="panel-body">
-                  <div class="m-field">
-                    <label class="m-label">日本語</label>
-                    <input class="m-input" id="heroHdJa" oninput="liveHeroPreview()" />
-                  </div>
-                  <div class="m-field" style="margin-bottom:0">
-                    <label class="m-label">English</label>
-                    <input class="m-input" id="heroHdEn" oninput="liveHeroPreview()" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Sub-headline -->
-              <div class="panel">
-                <div class="panel-head"><span class="panel-title">サブ見出し</span></div>
-                <div class="panel-body">
-                  <div class="m-field">
-                    <label class="m-label">プライマリ</label>
-                    <input class="m-input" id="heroSubP" oninput="liveHeroPreview()" />
-                  </div>
-                  <div class="m-field" style="margin-bottom:0">
-                    <label class="m-label">セカンダリ</label>
-                    <input class="m-input" id="heroSubS" oninput="liveHeroPreview()" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- CTA Buttons -->
-              <div class="panel">
-                <div class="panel-head"><span class="panel-title">CTAボタン</span></div>
-                <div class="panel-body">
-                  <div style="font-size:11px;font-weight:700;color:var(--gray-1);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">予約ボタン（メイン）</div>
-                  <div class="m-row" style="margin-bottom:14px">
-                    <div class="m-field">
-                      <label class="m-label">上段テキスト</label>
-                      <input class="m-input" id="heroCtaBookSup" oninput="liveHeroPreview()" />
-                    </div>
-                    <div class="m-field">
-                      <label class="m-label">メインテキスト</label>
-                      <input class="m-input" id="heroCtaBookLbl" oninput="liveHeroPreview()" />
-                    </div>
-                  </div>
-                  <div style="font-size:11px;font-weight:700;color:var(--gray-1);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">見積りボタン（サブ）</div>
-                  <div class="m-row" style="margin-bottom:14px">
-                    <div class="m-field">
-                      <label class="m-label">上段テキスト</label>
-                      <input class="m-input" id="heroCtaQuoteSup" oninput="liveHeroPreview()" />
-                    </div>
-                    <div class="m-field">
-                      <label class="m-label">メインテキスト</label>
-                      <input class="m-input" id="heroCtaQuoteLbl" oninput="liveHeroPreview()" />
-                    </div>
-                  </div>
-                  <div style="font-size:11px;font-weight:700;color:var(--gray-1);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">LINEボタン</div>
-                  <div class="m-field" style="margin-bottom:0">
-                    <label class="m-label">テキスト</label>
-                    <input class="m-input" id="heroCtaLineInp" oninput="liveHeroPreview()" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Trust Badges -->
-              <div class="panel">
-                <div class="panel-head">
-                  <span class="panel-title">トラストバッジ</span>
-                  <button class="btn btn-ghost btn-sm" onclick="addHeroBadge()">
-                    <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>追加
-                  </button>
-                </div>
-                <div class="panel-body">
-                  <div style="font-size:11px;color:var(--gray-2);margin-bottom:10px">ヒーロー上部の小さなバッジテキストを編集します。</div>
-                  <div id="heroBadgeList"></div>
-                </div>
-              </div>
-
-              <!-- Background Image -->
-              <div class="panel">
-                <div class="panel-head"><span class="panel-title">背景画像</span></div>
-                <div class="panel-body">
-                  <div class="m-field">
-                    <label class="m-label">画像URL</label>
-                    <input class="m-input" id="heroBgUrl" placeholder="https://..." oninput="liveHeroPreview()" />
-                  </div>
-                  <div style="display:flex;gap:8px;margin-top:8px">
-                    <button class="btn btn-ghost btn-sm" onclick="openHeroMediaPick()">
-                      <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-                      メディアから選択
-                    </button>
-                    <button class="btn btn-ghost btn-sm" onclick="clearHeroBg()">クリア</button>
-                  </div>
-                  <div id="heroBgThumb" style="margin-top:10px;display:none">
-                    <img id="heroBgImg" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;border:1px solid var(--line)" alt="" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Version History -->
-              <div class="panel">
-                <div class="panel-head"><span class="panel-title">バージョン履歴</span></div>
-                <div class="panel-body" id="heroHistoryList">
-                  <div class="empty" style="padding:16px 0"><p>まだバージョンがありません</p></div>
-                </div>
-              </div>
-
-            </div><!-- /left -->
-
-            <!-- Right: live preview -->
-            <div>
-              <div style="font-size:10px;font-weight:600;color:var(--gray-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">ライブプレビュー</div>
-              <div class="hero-prev-card" id="heroPrevCard">
-                <div id="prevBadges" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px"></div>
-                <div style="margin-bottom:6px">
-                  <div id="prevHdJa" style="font-size:16px;font-weight:700;color:#fff;line-height:1.35;margin-bottom:2px;word-break:break-word"></div>
-                  <div id="prevHdEn" style="font-size:11px;color:rgba(255,255,255,.65);line-height:1.4;word-break:break-word"></div>
-                </div>
-                <div style="margin-bottom:12px">
-                  <div id="prevSubP" style="font-size:12px;font-weight:600;color:#fff;margin-bottom:1px"></div>
-                  <div id="prevSubS" style="font-size:10px;color:rgba(255,255,255,.65)"></div>
-                </div>
-                <div class="hero-prev-btns">
-                  <div class="hero-prev-btn hero-prev-btn-p" style="display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2">
-                    <span id="prevBookSup" style="font-size:8px;opacity:.8;font-weight:500"></span>
-                    <span id="prevBookLbl" style="font-size:11px;font-weight:700"></span>
-                  </div>
-                  <div class="hero-prev-btn hero-prev-btn-s" style="display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2">
-                    <span id="prevQuoteSup" style="font-size:8px;opacity:.8;font-weight:500"></span>
-                    <span id="prevQuoteLbl" style="font-size:11px;font-weight:700"></span>
-                  </div>
-                  <div class="hero-prev-btn" style="background:rgba(6,199,85,.15);color:#4ade80;border:1px solid rgba(6,199,85,.3)">
-                    <span id="prevLineText" style="font-size:11px;font-weight:600"></span>
-                  </div>
-                </div>
-              </div>
-              <div style="font-size:11px;color:var(--gray-2);margin-top:8px;line-height:1.5">
-                「変更を保存」でサイトに反映されます。
-              </div>
-            </div><!-- /right -->
-
-          </div>
-        </div>
-
-        <!-- REVIEWS -->
-        <div id="view-reviews" class="view">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-            <button class="btn btn-primary" onclick="saveReviewsAll()">
-              <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
-              変更を保存
-            </button>
-            <span class="rev-save-ind" id="revSaveInd">サイトに保存しました ✓</span>
-          </div>
-          <div class="hero-layout">
-
-            <!-- Left: panels -->
-            <div style="display:flex;flex-direction:column;gap:16px">
-
-              <!-- Section Header -->
-              <div class="panel">
-                <div class="panel-head"><span class="panel-title">セクションヘッダー</span></div>
-                <div class="panel-body">
-                  <div class="m-row" style="margin-bottom:12px">
-                    <div class="m-field">
-                      <label class="m-label">Eyebrow</label>
-                      <input class="m-input" id="revMetaEyebrow" oninput="liveRevPreview()" />
-                    </div>
-                    <div class="m-field">
-                      <label class="m-label">タイトル</label>
-                      <input class="m-input" id="revMetaTitle" oninput="liveRevPreview()" />
-                    </div>
-                  </div>
-                  <div class="m-field">
-                    <label class="m-label">リードテキスト</label>
-                    <input class="m-input" id="revMetaLead" oninput="liveRevPreview()" />
-                  </div>
-                  <div style="font-size:11px;font-weight:700;color:var(--gray-1);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 8px">Google 口コミバッジ</div>
-                  <div class="m-row" style="margin-bottom:0">
-                    <div class="m-field" style="margin-bottom:0">
-                      <label class="m-label">スコア（例: 4.9）</label>
-                      <input class="m-input" id="revMetaGmbScore" oninput="liveRevPreview()" />
-                    </div>
-                    <div class="m-field" style="margin-bottom:0">
-                      <label class="m-label">件数テキスト</label>
-                      <input class="m-input" id="revMetaGmbCount" placeholder="38件の口コミ" oninput="liveRevPreview()" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Review List -->
-              <div class="panel">
-                <div class="panel-head">
-                  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-                    <span class="panel-title">レビュー管理</span>
-                    <div class="media-tabs" style="margin-bottom:0;border-bottom:none">
-                      <button class="media-tab active" id="revTabPending"  onclick="switchRevTab('pending')">保留中 <span id="revCntPending"  class="rev-tab-cnt"></span></button>
-                      <button class="media-tab"        id="revTabApproved" onclick="switchRevTab('approved')">承認済み <span id="revCntApproved" class="rev-tab-cnt"></span></button>
-                      <button class="media-tab"        id="revTabRejected" onclick="switchRevTab('rejected')">却下 <span id="revCntRejected" class="rev-tab-cnt"></span></button>
-                    </div>
-                  </div>
-                  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-                    <button class="btn btn-ghost btn-sm" onclick="copyRevFormLink()" title="顧客投稿リンクをコピー">
-                      <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>投稿リンク
-                    </button>
-                    <button class="btn btn-primary btn-sm" onclick="openRevModal()">
-                      <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>レビューを追加
-                    </button>
-                  </div>
-                </div>
-                <div class="rev-stats-bar" id="revStatsBar"></div>
-                <div class="table-wrap" id="reviewsWrap"></div>
-              </div>
-
-              <!-- Version History -->
-              <div class="panel">
-                <div class="panel-head"><span class="panel-title">バージョン履歴</span></div>
-                <div class="panel-body" id="revHistoryList">
-                  <div class="empty" style="padding:16px 0"><p>まだバージョンがありません</p></div>
-                </div>
-              </div>
-
-            </div><!-- /left -->
-
-            <!-- Right: live preview -->
-            <div>
-              <div style="font-size:10px;font-weight:600;color:var(--gray-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">ライブプレビュー</div>
-              <div class="rev-prev-wrap" id="revPrevWrap">
-                <div id="revPrevEyebrow" class="svc-prev-eyebrow"></div>
-                <div id="revPrevTitle" class="svc-prev-title"></div>
-                <div id="revPrevLead" class="svc-prev-lead"></div>
-                <div class="rev-prev-gmb" id="revPrevGmb">
-                  <div class="rev-prev-gmb-g">G</div>
-                  <div>
-                    <div class="rev-prev-gmb-stars">★★★★★</div>
-                    <div style="display:flex;align-items:baseline;gap:4px">
-                      <span id="revPrevGmbScore" class="rev-prev-gmb-score"></span>
-                      <span style="font-size:10px;color:var(--gray-2)">/ 5</span>
-                    </div>
-                    <div id="revPrevGmbCount" class="rev-prev-gmb-meta"></div>
-                  </div>
-                </div>
-                <div id="revPrevCards"></div>
-              </div>
-              <div style="font-size:11px;color:var(--gray-2);margin-top:8px;line-height:1.5">
-                公開中のレビューが表示されます。「変更を保存」でサイトに反映。
-              </div>
-            </div><!-- /right -->
-
-          </div>
-        </div>
-
-        <!-- BACKUP CENTER -->
-        <div id="view-backup" class="view">
-          <div class="settings-grid">
-            <div class="panel">
-              <div class="panel-head">
-                <span class="panel-title">エクスポート</span>
-                <button class="btn btn-ghost btn-sm" onclick="downloadPDFBackup()">
-                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PDF
-                </button>
-                <button class="btn btn-ghost btn-sm" onclick="printBackup()">
-                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>状況を印刷
-                </button>
-              </div>
-              <div class="panel-body" style="display:flex;flex-direction:column;gap:10px">
-                <button class="btn btn-ghost" style="justify-content:flex-start" onclick="exportBookingsJSON()">
-                  <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>予約データ (JSON)
-                </button>
-                <button class="btn btn-ghost" style="justify-content:flex-start" onclick="exportQuotesJSON()">
-                  <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>見積りデータ (JSON)
-                </button>
-                <button class="btn btn-ghost" style="justify-content:flex-start" onclick="exportReviewsJSON()">
-                  <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>レビューデータ (JSON)
-                </button>
-                <button class="btn btn-primary" style="justify-content:flex-start" onclick="exportFullBackup()">
-                  <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>フルバックアップ
-                </button>
-              </div>
-            </div>
-            <div class="panel">
-              <div class="panel-head"><span class="panel-title">インポート・復元</span></div>
-              <div class="panel-body">
-                <div class="settings-row">
-                  <div>
-                    <div class="settings-label">予約データ</div>
-                    <div class="settings-sub">bookings.json 形式</div>
-                  </div>
-                  <div>
-                    <label class="btn btn-ghost btn-sm" for="impBookings" style="cursor:pointer;display:inline-flex">
-                      <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>選択
-                    </label>
-                    <input type="file" id="impBookings" accept=".json" style="display:none" onchange="handleImport('impBookings','bookings')" />
-                    <div class="import-msg" id="impBookingsMsg"></div>
-                  </div>
-                </div>
-                <div class="settings-row">
-                  <div>
-                    <div class="settings-label">レビューデータ</div>
-                    <div class="settings-sub">reviews.json 形式</div>
-                  </div>
-                  <div>
-                    <label class="btn btn-ghost btn-sm" for="impReviews" style="cursor:pointer;display:inline-flex">
-                      <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>選択
-                    </label>
-                    <input type="file" id="impReviews" accept=".json" style="display:none" onchange="handleImport('impReviews','reviews')" />
-                    <div class="import-msg" id="impReviewsMsg"></div>
-                  </div>
-                </div>
-                <div class="settings-row">
-                  <div>
-                    <div class="settings-label">フルバックアップ</div>
-                    <div class="settings-sub">backup.json 形式</div>
-                  </div>
-                  <div>
-                    <label class="btn btn-primary btn-sm" for="impBackup" style="cursor:pointer;display:inline-flex">
-                      <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>選択
-                    </label>
-                    <input type="file" id="impBackup" accept=".json" style="display:none" onchange="handleImport('impBackup','backup')" />
-                    <div class="import-msg" id="impBackupMsg"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- EMAIL NOTIFY -->
         <div id="view-email" class="view">
           <div id="emailContent"></div>
@@ -1947,71 +1293,6 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
         <!-- SECURITY -->
         <div id="view-security" class="view">
           <div id="securityContent"></div>
-        </div>
-
-        <!-- MEDIA LIBRARY -->
-        <div id="view-media" class="view">
-          <div class="panel">
-            <div class="panel-head">
-              <span class="panel-title" id="mediaTabTitle">画像</span>
-              <div class="media-tabs" style="margin-bottom:0;border-bottom:none">
-                <button class="media-tab active" id="tabImages" onclick="switchMediaTab('images')">
-                  <svg viewBox="0 0 24 24" width="13" height="13" style="margin-right:5px;vertical-align:middle"><path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>画像
-                </button>
-                <button class="media-tab" id="tabVideos" onclick="switchMediaTab('videos')">
-                  <svg viewBox="0 0 24 24" width="13" height="13" style="margin-right:5px;vertical-align:middle"><path fill="currentColor" d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>動画
-                </button>
-              </div>
-            </div>
-            <div class="panel-body">
-
-              <!-- Images pane -->
-              <div id="media-pane-images">
-                <!-- Toolbar: search + compression toggles (rendered by JS) -->
-                <div class="media-toolbar" id="imgToolbar"></div>
-                <!-- Folder filter pills (rendered by JS) -->
-                <div class="media-folder-row" id="imgFolderRow"></div>
-                <!-- Drop zone -->
-                <div class="media-upload-zone" id="imgDropZone"
-                  onclick="document.getElementById('imgUpload').click()"
-                  ondragover="mediaDragOver(event,'imgDropZone')"
-                  ondragleave="mediaDragLeave('imgDropZone')"
-                  ondrop="mediaDropFiles(event,'images')">
-                  <svg viewBox="0 0 24 24" width="30" height="30" style="color:var(--blue)"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
-                  <p>クリックまたはドラッグ&ドロップで画像をアップロード</p>
-                  <span>PNG・JPG・GIF・WebP・SVG（最大10MB）</span>
-                </div>
-                <input type="file" id="imgUpload" accept="image/*" multiple style="display:none" onchange="handleMediaUpload(event,'images')" />
-                <!-- Stats bar (rendered by JS) -->
-                <div class="media-stats-bar" id="imgStatsBar"></div>
-                <div class="media-grid" id="imgGrid"></div>
-                <div class="empty" id="imgEmpty">
-                  <svg viewBox="0 0 24 24" width="40" height="40"><path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-                  <p>画像がまだアップロードされていません</p>
-                </div>
-              </div>
-
-              <!-- Videos pane -->
-              <div id="media-pane-videos" style="display:none">
-                <div class="media-upload-zone" id="vidDropZone"
-                  onclick="document.getElementById('vidUpload').click()"
-                  ondragover="mediaDragOver(event,'vidDropZone')"
-                  ondragleave="mediaDragLeave('vidDropZone')"
-                  ondrop="mediaDropFiles(event,'videos')">
-                  <svg viewBox="0 0 24 24" width="30" height="30" style="color:var(--blue)"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
-                  <p>クリックまたはドラッグ&ドロップで動画をアップロード</p>
-                  <span>MP4・WebM・MOV（最大50MB）</span>
-                </div>
-                <input type="file" id="vidUpload" accept="video/*" multiple style="display:none" onchange="handleMediaUpload(event,'videos')" />
-                <div class="media-grid" id="vidGrid"></div>
-                <div class="empty" id="vidEmpty">
-                  <svg viewBox="0 0 24 24" width="40" height="40"><path fill="currentColor" d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
-                  <p>動画がまだアップロードされていません</p>
-                </div>
-              </div>
-
-            </div>
-          </div>
         </div>
 
         <!-- SYSTEM HEALTH -->
@@ -2048,39 +1329,6 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 
         <!-- AUTOMATION ENGINE -->
         <div id="view-automation" class="view"></div>
-
-        <!-- SEO CENTER -->
-        <div id="view-seo" class="view">
-          <div id="seoContent"></div>
-        </div>
-
-        <!-- BLOG MANAGER -->
-        <div id="view-blog" class="view">
-          <div id="blogContent"></div>
-        </div>
-
-        <!-- WEBSITE SETTINGS -->
-        <div id="view-site-settings" class="view">
-          <div id="siteSettingsContent"></div>
-        </div>
-
-      </div><!-- /content -->
-    </main>
-  </div><!-- /layout -->
-</div><!-- /adminApp -->
-
-<!-- Hero BG Media Picker -->
-<div class="hmpick" id="heroMediaPick" onclick="if(event.target===this)closeHeroMediaPick()">
-  <div class="hmpick-box">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:15px;font-weight:700;color:var(--ink)">背景画像を選択</div>
-      <button class="btn btn-ghost btn-sm" onclick="closeHeroMediaPick()">✕ 閉じる</button>
-    </div>
-    <div style="font-size:12px;color:var(--gray-2);margin-bottom:4px">メディアライブラリから背景に使用する画像をクリックして選択</div>
-    <div class="hmpick-grid" id="heroMediaPickGrid"></div>
-    <div class="empty" id="heroMediaPickEmpty" style="display:none;padding:20px 0"><p>メディアライブラリに画像がありません</p></div>
-  </div>
-</div>
 
 <!-- Booking Edit Modal -->
 <div class="overlay" id="editModal">
@@ -2235,161 +1483,6 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
   </div>
 </div>
 
-<!-- Company Row Add/Edit Modal -->
-<div class="overlay" id="companyModal">
-  <div class="modal" style="max-width:480px">
-    <div class="modal-title" id="companyModalTitle">行を追加</div>
-    <div class="m-row">
-      <div class="m-field">
-        <label class="m-label">項目名 *</label>
-        <input class="m-input" id="compRowLabel" placeholder="会社名" oninput="updateCompanyModalPrev()" />
-      </div>
-    </div>
-    <div class="m-field">
-      <label class="m-label">内容 *</label>
-      <textarea class="m-ta" id="compRowValue" rows="3" placeholder="Hello Moving" oninput="updateCompanyModalPrev()"></textarea>
-    </div>
-    <div class="rev-preview" style="margin-top:14px">
-      <div class="rev-preview-lbl">プレビュー</div>
-      <div class="comp-prev-row" style="padding:8px 0">
-        <div id="compPrevModalLabel" class="comp-prev-dt">（項目名）</div>
-        <div id="compPrevModalValue" class="comp-prev-dd"></div>
-      </div>
-    </div>
-    <div class="m-actions">
-      <button class="btn btn-ghost" onclick="closeCompanyModal()">キャンセル</button>
-      <button class="btn btn-primary" onclick="saveCompanyRow()">保存</button>
-    </div>
-  </div>
-</div>
-
-<!-- FAQ Add/Edit Modal -->
-<div class="overlay" id="faqModal">
-  <div class="modal" style="max-width:540px">
-    <div class="modal-title" id="faqModalTitle">FAQ を追加</div>
-    <div class="m-field">
-      <label class="m-label">質問 *</label>
-      <input class="m-input" id="faqQ" placeholder="お見積りは無料ですか?" oninput="updateFaqModalPrev()" />
-    </div>
-    <div class="m-field">
-      <label class="m-label">回答 *</label>
-      <textarea class="m-ta" id="faqA" rows="4" placeholder="はい、..." oninput="updateFaqModalPrev()"></textarea>
-    </div>
-    <div class="rev-preview" style="margin-top:14px">
-      <div class="rev-preview-lbl">プレビュー</div>
-      <div class="faq-prev-item" style="margin-bottom:0">
-        <div id="faqPrevModalQ" class="faq-prev-q">（質問）</div>
-        <div id="faqPrevModalA" class="faq-prev-a"></div>
-      </div>
-    </div>
-    <div class="m-actions">
-      <button class="btn btn-ghost" onclick="closeFaqModal()">キャンセル</button>
-      <button class="btn btn-primary" onclick="saveFaqItem()">保存</button>
-    </div>
-  </div>
-</div>
-
-<!-- Service Add/Edit Modal -->
-<div class="overlay" id="svcModal">
-  <div class="modal" style="max-width:540px">
-    <div class="modal-title" id="svcModalTitle">サービスを追加</div>
-    <div class="m-field">
-      <label class="m-label">サービス名 *</label>
-      <input class="m-input" id="svcTitle" placeholder="単身引越し" oninput="updateSvcModalPrev()" />
-    </div>
-    <div class="m-field">
-      <label class="m-label">説明</label>
-      <textarea class="m-ta" id="svcDesc" rows="3" placeholder="サービスの説明文..." oninput="updateSvcModalPrev()"></textarea>
-    </div>
-    <div class="m-row">
-      <div class="m-field">
-        <label class="m-label">バッジテキスト <span style="font-weight:400;color:var(--gray-2)">（任意）</span></label>
-        <input class="m-input" id="svcBadge" placeholder="人気サービス / 緊急対応" oninput="updateSvcModalPrev()" />
-      </div>
-      <div class="m-field">
-        <label class="m-label">CTAテキスト</label>
-        <input class="m-input" id="svcCtaText" placeholder="無料お見積り →" oninput="updateSvcModalPrev()" />
-      </div>
-    </div>
-    <div class="rev-preview">
-      <div class="rev-preview-lbl">プレビュー</div>
-      <div class="svc-prev-card" id="svcModalPrevCard" style="margin-bottom:0">
-        <div id="svcPrevModalBadge" class="svc-prev-card-badge" style="display:none"></div>
-        <div id="svcPrevModalTitle" class="svc-prev-card-title"></div>
-        <div id="svcPrevModalDesc" class="svc-prev-card-desc"></div>
-        <div id="svcPrevModalCta" class="svc-prev-card-cta"></div>
-      </div>
-    </div>
-    <div class="m-actions">
-      <button class="btn btn-ghost" onclick="closeSvcModal()">キャンセル</button>
-      <button class="btn btn-primary" onclick="saveSvc()">保存</button>
-    </div>
-  </div>
-</div>
-
-<!-- Review Add/Edit Modal -->
-<div class="overlay" id="revModal">
-  <div class="modal" style="max-width:560px">
-    <div class="modal-title" id="revModalTitle">レビューを追加</div>
-    <div class="m-row">
-      <div class="m-field">
-        <label class="m-label">お客様名 *</label>
-        <input class="m-input" id="rName" placeholder="山田 太郎" oninput="updateRevPreview()" />
-      </div>
-      <div class="m-field">
-        <label class="m-label">予約ID <span style="font-weight:400;color:var(--gray-2)">(任意)</span></label>
-        <input class="m-input" id="rBookingId" placeholder="HM-20260604-XXXX" />
-      </div>
-    </div>
-    <div class="m-field">
-      <label class="m-label">評価 *</label>
-      <div class="star-row" id="revModalStars">
-        <button type="button" class="star-btn on" onclick="setRevStars(1)">★</button>
-        <button type="button" class="star-btn on" onclick="setRevStars(2)">★</button>
-        <button type="button" class="star-btn on" onclick="setRevStars(3)">★</button>
-        <button type="button" class="star-btn on" onclick="setRevStars(4)">★</button>
-        <button type="button" class="star-btn on" onclick="setRevStars(5)">★</button>
-      </div>
-    </div>
-    <div class="m-field">
-      <label class="m-label">見出し <span style="font-weight:400;color:var(--gray-2)">（任意 — 省略時はレビュー本文から自動生成）</span></label>
-      <input class="m-input" id="rHeadline" placeholder="とても丁寧で、安心しておまかせできました" oninput="updateRevPreview()" />
-    </div>
-    <div class="m-field">
-      <label class="m-label">レビュー内容 *</label>
-      <textarea class="m-ta" id="rText" rows="3" placeholder="サービスについてのご感想..." oninput="updateRevPreview()"></textarea>
-    </div>
-    <div class="m-row">
-      <div class="m-field">
-        <label class="m-label">サービス種別</label>
-        <input class="m-input" id="rService" placeholder="単身引越し" oninput="updateRevPreview()" />
-      </div>
-      <div class="m-field">
-        <label class="m-label">ご利用日</label>
-        <input class="m-input" id="rDateLabel" placeholder="2026年5月" oninput="updateRevPreview()" />
-      </div>
-    </div>
-    <div class="m-field">
-      <label class="m-label">お住まい / 詳細 <span style="font-weight:400;color:var(--gray-2)">（任意）</span></label>
-      <input class="m-input" id="rLocation" placeholder="東京都・単身引越し" oninput="updateRevPreview()" />
-    </div>
-    <div class="rev-preview">
-      <div class="rev-preview-lbl">プレビュー</div>
-      <div class="rev-prev-rcard" style="margin-bottom:0">
-        <div class="rev-prev-stars" id="previewStars">★★★★★</div>
-        <div id="revModalMetaLine" style="font-size:9px;color:var(--gray-2);margin-bottom:5px"></div>
-        <div class="rev-prev-headline" id="previewHeadline"></div>
-        <div class="rev-prev-text" id="previewText"></div>
-        <div class="rev-prev-footer" id="previewName"></div>
-      </div>
-    </div>
-    <div class="m-actions">
-      <button class="btn btn-ghost" onclick="closeRevModal()">キャンセル</button>
-      <button class="btn btn-primary" onclick="saveReview()">保存（承認済みとして追加）</button>
-    </div>
-  </div>
-</div>
-
 <!-- Customer Profile Modal -->
 <div class="overlay" id="custModal">
   <div class="modal" style="max-width:540px">
@@ -2454,35 +1547,6 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
     </div>
   </div>
 </div>
-
-<!-- Media Preview Overlay -->
-<div class="media-preview-overlay" id="mediaPreviewOverlay" onclick="if(event.target===this)closeMediaPreview()">
-  <button class="media-preview-close" onclick="closeMediaPreview()">✕</button>
-  <div style="display:flex;flex-direction:column;align-items:center">
-    <img id="mediaPreviewImg" class="media-preview-img" src="" alt="" style="display:none" />
-    <video id="mediaPreviewVid" class="media-preview-vid" controls style="display:none"></video>
-    <div class="media-preview-name" id="mediaPreviewName"></div>
-    <div class="media-preview-meta" id="mediaPreviewMeta"></div>
-  </div>
-</div>
-
-<!-- Folder Create / Rename Modal -->
-<div class="overlay" id="mediaFolderModal" onclick="if(event.target===this)closeFolderModal()">
-  <div class="modal" style="max-width:360px">
-    <div class="modal-title" id="folderModalTitle">新しいフォルダ</div>
-    <div style="margin-bottom:16px">
-      <label style="font-size:12.5px;color:var(--gray-1);display:block;margin-bottom:4px">フォルダ名</label>
-      <input type="text" id="folderNameInput" class="media-folder-input" placeholder="例：ホームページ用" maxlength="30"
-        onkeydown="if(event.key==='Enter')saveFolderModal()" />
-    </div>
-    <div style="display:flex;justify-content:flex-end;gap:8px">
-      <button class="btn btn-ghost btn-sm" onclick="closeFolderModal()">キャンセル</button>
-      <button class="btn btn-primary btn-sm" onclick="saveFolderModal()">保存</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast"></div>
 
 <!-- Staff Add/Edit Modal -->
 <div class="overlay" id="staffModal" onclick="if(event.target===this)closeStaffModal()">
@@ -2599,12 +1663,6 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 <script src="js/modules/pricing/pricing.js"></script>
 <script src="js/modules/disposal/disposal.js"></script>
 <script src="js/modules/quotes/quotes.js"></script>
-<script src="js/modules/services/servicesEditor.js"></script>
-<script src="js/modules/hero/hero.js"></script>
-<script src="js/modules/reviews/reviewsEditor.js"></script>
-<script src="js/modules/footer/footer.js"></script>
-<script src="js/modules/company/company.js"></script>
-<script src="js/modules/faq/faq.js"></script>
 <script src="js/modules/backup/backup.js"></script>
 <script src="js/modules/backup/csvReport.js"></script>
 <script src="js/modules/notifications/email.js"></script>
@@ -2612,7 +1670,6 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 <script src="js/modules/notifications/followUp.js"></script>
 <script src="js/modules/changelog/changelog.js"></script>
 <script src="js/modules/customers/customers.js"></script>
-<script src="js/modules/media/media.js"></script>
 <script src="js/modules/security/security.js"></script>
 <script src="js/modules/security/staff.js"></script>
 <script src="js/modules/invoices/invoices.js"></script>
@@ -2654,9 +1711,6 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 <script src="js/modules/camera/cameraCapture.js"></script>
 
 <!-- ── Content modules (SEO · Blog · Settings) ── -->
-<script src="js/modules/seo/seoCenter.js"></script>
-<script src="js/modules/blog/blogManager.js"></script>
-<script src="js/modules/settings/siteSettings.js"></script>
 
 <!-- ── Overlay bookings view ── -->
 <script src="js/modules/overlay-bookings/overlayBookings.js"></script>
