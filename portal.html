@@ -225,6 +225,84 @@
     z-index: 35;
   }
 
+  /* ---------- Dashboard cards ---------- */
+  .dash-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(232px, 1fr));
+    gap: 18px;
+    margin-bottom: 22px;
+  }
+  .dcard {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px 22px 20px;
+    display: flex;
+    flex-direction: column;
+    min-height: 132px;
+    transition: box-shadow .2s var(--easing), transform .2s var(--easing);
+  }
+  .dcard:hover { box-shadow: 0 10px 30px rgba(11,15,23,.07); transform: translateY(-2px); }
+  .dcard-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--gray-2);
+    margin-bottom: 14px;
+  }
+  .dcard-ico {
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    background: var(--line-3);
+    color: var(--navy);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .dcard-ico svg { width: 18px; height: 18px; }
+  .dcard-label {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: .06em;
+  }
+  .dcard-value {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    line-height: 1.35;
+    color: var(--ink);
+    margin-top: auto;
+  }
+  .dcard-value.sm { font-size: 16px; font-weight: 500; }
+  .dcard-meta {
+    font-size: 12px;
+    color: var(--gray-2);
+    margin-top: 6px;
+  }
+  /* Latest-updates card spans full width with a timeline */
+  .dcard.wide { grid-column: 1 / -1; min-height: 0; }
+  .timeline { margin-top: 4px; }
+  .tl-item {
+    position: relative;
+    padding: 0 0 16px 22px;
+    border-left: 2px solid var(--line);
+  }
+  .tl-item:last-child { padding-bottom: 0; border-left-color: transparent; }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -6px; top: 3px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--gray-4);
+    border: 2px solid var(--bg);
+  }
+  .tl-item.cur::before { background: var(--navy); }
+  .tl-text { font-size: 13.5px; color: var(--ink); }
+  .tl-date { font-size: 11.5px; color: var(--gray-3); font-family: var(--font-en); margin-top: 2px; }
+
+  .badge.warn   { background: #fbf3e3; color: #9a6b12; border-color: #ecd9ad; }
+  .badge.cancel { background: #fdecea; color: #c0392b; border-color: #f3c6c0; }
+
   /* ---------- Responsive ---------- */
   @media (max-width: 880px) {
     :root { --sidebar-w: 230px; }
@@ -236,9 +314,14 @@
     .info-grid { grid-template-columns: 1fr; }
     .p-user .p-user-name { display: none; }
   }
+  @media (max-width: 560px) {
+    .dash-cards { grid-template-columns: 1fr; gap: 14px; }
+    .dcard { min-height: 0; }
+  }
   @media (max-width: 480px) {
     .p-header { padding: 0 14px; gap: 10px; }
     .panel { padding: 20px 18px; }
+    .dcard-value { font-size: 18px; }
   }
 </style>
 </head>
@@ -266,7 +349,7 @@
     <div class="p-nav-label">マイページ</div>
     <button class="p-nav-item active" data-view="overview">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-      <span>概要</span>
+      <span>ダッシュボード</span>
     </button>
     <button class="p-nav-item" data-view="booking">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -338,22 +421,96 @@
       const cls = st === '確定' || st === '完了' ? ' confirmed' : '';
       return `<span class="badge${cls}">${esc(st || '新規')}</span>`;
     }
+    function fmtDateTime(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      if (isNaN(d)) return esc(iso);
+      const p = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    }
+    // Quote status derived from the booking status (no separate quote table touched).
+    function quoteStatus(st) {
+      if (st === 'キャンセル') return { label: 'キャンセル', cls: 'cancel' };
+      if (st === '確定' || st === '完了') return { label: '確定済み', cls: 'confirmed' };
+      return { label: '確認中', cls: 'warn' };
+    }
+    // Assigned staff derived from the workers field on the booking record.
+    function staffDisplay(b) {
+      if (b.workers) {
+        const n = String(b.workers).replace(/[^0-9]/g, '');
+        return n ? `${n}名 体制` : esc(b.workers);
+      }
+      return '割り当て準備中';
+    }
+    // Build a small status timeline from the record's known data only.
+    function buildTimeline(b) {
+      const items = [];
+      items.push({ text: 'ご予約を受け付けました', date: fmtDateTime(b.createdAt), cur: false });
+      const st = b.status || '新規';
+      if (st === '確認中') items.push({ text: '内容を確認しています', date: '', cur: true });
+      if (st === '確定')   items.push({ text: 'ご予約が確定しました', date: '', cur: true });
+      if (st === '完了') {
+        items.push({ text: 'ご予約が確定しました', date: '', cur: false });
+        items.push({ text: 'お引越しが完了しました', date: '', cur: true });
+      }
+      if (st === 'キャンセル') items.push({ text: 'ご予約はキャンセルされました', date: '', cur: true });
+      if (st === '新規') items.push({ text: '担当者からのご連絡をお待ちください', date: '', cur: true });
+      // newest first
+      return items.reverse();
+    }
+    const ICONS = {
+      status:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+      date:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+      staff:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+      quote:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>',
+      updates: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    };
 
     // ---- Render views from a single booking record ----
     const VIEWS = {
       overview(b) {
+        const qs = quoteStatus(b.status);
+        const tl = buildTimeline(b);
         return `
           <div class="p-page-head">
             <div class="p-page-title">こんにちは、${esc(b.name || 'お客様')} 様</div>
-            <div class="p-page-sub">ご予約の概要をご確認いただけます。</div>
+            <div class="p-page-sub">ご予約番号 ${esc(b.id)} のダッシュボードです。</div>
           </div>
-          <div class="panel">
-            <div class="panel-title">ご予約ステータス</div>
-            <div class="info-grid">
-              <div class="info-cell"><div class="k">予約番号</div><div class="v">${esc(b.id)}</div></div>
-              <div class="info-cell"><div class="k">ステータス</div><div class="v">${statusBadge(b.status)}</div></div>
-              <div class="info-cell"><div class="k">引越し希望日</div><div class="v">${fmtDate(b.date)}</div></div>
-              <div class="info-cell"><div class="k">サービス</div><div class="v">${esc(b.service || '—')}</div></div>
+          <div class="dash-cards">
+            <!-- Card 1: Booking Status -->
+            <div class="dcard">
+              <div class="dcard-head"><span class="dcard-ico">${ICONS.status}</span><span class="dcard-label">予約ステータス</span></div>
+              <div class="dcard-value">${statusBadge(b.status)}</div>
+              <div class="dcard-meta">予約番号 ${esc(b.id)}</div>
+            </div>
+            <!-- Card 2: Move Date -->
+            <div class="dcard">
+              <div class="dcard-head"><span class="dcard-ico">${ICONS.date}</span><span class="dcard-label">引越し日</span></div>
+              <div class="dcard-value sm">${fmtDate(b.date)}</div>
+              <div class="dcard-meta">${b.time ? '時間帯：' + esc(b.time) : '時間帯：未定'}</div>
+            </div>
+            <!-- Card 3: Assigned Staff -->
+            <div class="dcard">
+              <div class="dcard-head"><span class="dcard-ico">${ICONS.staff}</span><span class="dcard-label">担当スタッフ</span></div>
+              <div class="dcard-value sm">${esc(staffDisplay(b))}</div>
+              <div class="dcard-meta">${esc(b.service || 'サービス未定')}</div>
+            </div>
+            <!-- Card 4: Quote Status -->
+            <div class="dcard">
+              <div class="dcard-head"><span class="dcard-ico">${ICONS.quote}</span><span class="dcard-label">見積もりステータス</span></div>
+              <div class="dcard-value"><span class="badge ${qs.cls}">${esc(qs.label)}</span></div>
+              <div class="dcard-meta">出発：${esc(b.fromAddr || '—')}</div>
+            </div>
+            <!-- Card 5: Latest Updates -->
+            <div class="dcard wide">
+              <div class="dcard-head"><span class="dcard-ico">${ICONS.updates}</span><span class="dcard-label">最新の更新</span></div>
+              <div class="timeline">
+                ${tl.map((it, i) => `
+                  <div class="tl-item${it.cur && i === 0 ? ' cur' : ''}">
+                    <div class="tl-text">${esc(it.text)}</div>
+                    ${it.date ? `<div class="tl-date">${esc(it.date)}</div>` : ''}
+                  </div>`).join('')}
+              </div>
             </div>
           </div>`;
       },
