@@ -303,6 +303,62 @@
   .badge.warn   { background: #fbf3e3; color: #9a6b12; border-color: #ecd9ad; }
   .badge.cancel { background: #fdecea; color: #c0392b; border-color: #f3c6c0; }
 
+  /* ---------- Communication Center ---------- */
+  .comm-list { display: flex; flex-direction: column; gap: 14px; }
+  .comm-item {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 16px 18px;
+    background: var(--bg-soft);
+  }
+  /* Company → customer (outbound) */
+  .comm-item.in  { background: #f5f8ff; border-color: #d9e4f7; }
+  /* Customer → company reply (inbound) */
+  .comm-item.out { background: #f4faf6; border-color: #cfe8d8; }
+  .comm-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .comm-dir {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+  .comm-dir.in  { color: #2456b8; background: #e8f0fc; border: 1px solid #c6d8f5; }
+  .comm-dir.out { color: #1e7e46; background: #e7f4ec; border: 1px solid #bfe3cd; }
+  .comm-subject {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+    flex: 1;
+    min-width: 0;
+  }
+  .comm-date {
+    font-size: 11.5px;
+    color: var(--gray-3);
+    font-family: var(--font-en);
+    flex-shrink: 0;
+  }
+  .comm-route { font-size: 11.5px; color: var(--gray-2); margin-bottom: 8px; }
+  .comm-body {
+    font-size: 13.5px;
+    color: var(--ink);
+    white-space: pre-wrap;
+    line-height: 1.7;
+    padding-top: 8px;
+    border-top: 1px solid var(--line-2);
+  }
+  .comm-empty {
+    text-align: center;
+    color: var(--gray-3);
+    font-size: 13.5px;
+    padding: 36px 0;
+  }
+
   /* ---------- Responsive ---------- */
   @media (max-width: 880px) {
     :root { --sidebar-w: 230px; }
@@ -355,8 +411,12 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       <span>予約内容</span>
     </button>
-    <button class="p-nav-item" data-view="support">
+    <button class="p-nav-item" data-view="messages">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>メッセージ</span>
+    </button>
+    <button class="p-nav-item" data-view="support">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.7 2.34a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.74-1.74a2 2 0 0 1 2.11-.45c.74.34 1.53.57 2.34.7A2 2 0 0 1 22 16.92z"/></svg>
       <span>お問い合わせ</span>
     </button>
   </aside>
@@ -375,6 +435,7 @@
   <script src="js/services/supabaseClient.js"></script>
   <script src="bookingService.js"></script>
   <script src="js/portal/portalAuth.js"></script>
+  <script src="js/portal/portalComms.js"></script>
 
   <script>
   (function () {
@@ -561,13 +622,70 @@
             </p>
           </div>`;
       },
+      messages(b) {
+        // Container only — populated asynchronously by loadMessages() because
+        // communications are fetched live and scoped to this booking.
+        return `
+          <div class="p-page-head">
+            <div class="p-page-title">メッセージ</div>
+            <div class="p-page-sub">ご予約番号 ${esc(b.id)} に関するやり取りの履歴です。</div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">コミュニケーション履歴 <span id="commCount" style="font-weight:400;color:var(--gray-3);font-size:12px"></span></div>
+            <div id="commList"><div class="comm-empty">読み込み中…</div></div>
+          </div>`;
+      },
     };
+
+    // Render one communication row (read-only). Direction maps to the role:
+    //  outbound = 会社からのメッセージ (company → customer)
+    //  inbound  = お客様からの返信     (customer → company)
+    function renderComm(c) {
+      const isOutbound = c.direction !== 'inbound';
+      const cls   = isOutbound ? 'in' : 'out';
+      const label = isOutbound ? '会社からのメッセージ' : 'お客様からの返信';
+      const route = isOutbound
+        ? `${esc(c.sender_email)} → ${esc(c.customer_email)}`
+        : `${esc(c.customer_email)} → ${esc(c.sender_email)}`;
+      return `
+        <div class="comm-item ${cls}">
+          <div class="comm-head">
+            <span class="comm-dir ${cls}">${label}</span>
+            <span class="comm-subject">${esc(c.subject || '（件名なし）')}</span>
+            <span class="comm-date">${fmtDateTime(c.created_at)}</span>
+          </div>
+          <div class="comm-route">${route}</div>
+          <div class="comm-body">${esc(c.message)}</div>
+        </div>`;
+    }
+
+    // Fetch + render the booking-scoped communication history.
+    async function loadMessages() {
+      const list = $('commList');
+      if (!list || !_booking) return;
+      let rows = [];
+      try {
+        // Pass both identifiers of this one booking (HM-reference + numeric DB id),
+        // since existing messages may be filed under either. Still single-booking scope.
+        rows = await PortalComms.fetchForBooking([_booking.id, _booking._dbId], sess.email);
+      } catch (err) {
+        console.error('[Portal] messages load failed:', err);
+        list.innerHTML = '<div class="comm-empty">メッセージを読み込めませんでした。</div>';
+        return;
+      }
+      const countEl = $('commCount');
+      if (countEl) countEl.textContent = rows.length ? `${rows.length}件` : '';
+      list.innerHTML = rows.length
+        ? `<div class="comm-list">${rows.map(renderComm).join('')}</div>`
+        : '<div class="comm-empty">まだメッセージはありません。</div>';
+    }
 
     let _booking = null;
     function render(view) {
       const content = $('content');
       if (!_booking) { content.innerHTML = '<div class="skeleton">予約情報を読み込めませんでした。</div>'; return; }
       content.innerHTML = (VIEWS[view] || VIEWS.overview)(_booking);
+      if (view === 'messages') loadMessages();
     }
 
     // ---- Sidebar navigation ----
