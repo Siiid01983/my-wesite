@@ -15,7 +15,7 @@
    Bump CACHE_VERSION to force cache replacement on next deploy.
    ════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v7';
 const STATIC_CACHE  = 'hm-static-' + CACHE_VERSION;
 const FONT_CACHE    = 'hm-fonts-'  + CACHE_VERSION;
 const ALL_CACHES    = [STATIC_CACHE, FONT_CACHE];
@@ -224,6 +224,17 @@ self.addEventListener('fetch', event => {
 
   /* Same-origin HTML navigation — network-first so pages are never stale */
   if (url.origin === self.location.origin && event.request.mode === 'navigate') {
+    event.respondWith(_networkFirst(event.request, STATIC_CACHE));
+    return;
+  }
+
+  /* Bootstrap-critical scripts (config / services / core) — network-first with
+     cache fallback. These drive startup; a stale cached copy must never be able
+     to stall or break the boot sequence. Cache is still updated for offline use. */
+  if (url.origin === self.location.origin &&
+      (url.pathname.startsWith('/js/config/')  ||
+       url.pathname.startsWith('/js/services/') ||
+       url.pathname.startsWith('/js/core/'))) {
     event.respondWith(_networkFirst(event.request, STATIC_CACHE));
     return;
   }

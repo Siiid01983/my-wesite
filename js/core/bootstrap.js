@@ -19,7 +19,7 @@
   window.__BOOTSTRAP__ = { stage: 'init', ready: false, error: null };
 
   /* ── Per-script load timeout ─────────────────────────── */
-  var LOAD_TIMEOUT_MS = 15000;
+  var LOAD_TIMEOUT_MS = 30000;
 
   /* ── XSS-safe string helper ───────────────────────────── */
   function _esc(s) {
@@ -95,6 +95,18 @@
     });
   }
 
+  /* ── Load with one retry after a fixed gap (boot-critical scripts) ──── */
+  /* First attempt → on failure wait gapMs → retry once → then fail. */
+  function _loadWithRetry(src, retries, gapMs) {
+    return _load(src).catch(function (err) {
+      if (retries <= 0) throw err;
+      console.warn('[Bootstrap] ' + src + ' failed (' + err.message +
+        ') — retrying once in ' + gapMs + 'ms');
+      return new Promise(function (r) { setTimeout(r, gapMs); })
+        .then(function () { return _loadWithRetry(src, retries - 1, gapMs); });
+    });
+  }
+
   /* ── Bootstrap sequence ──────────────────────────────── */
   function _boot() {
     var iife = (async function () {
@@ -107,9 +119,9 @@
           throw new Error('supabase.js loaded but window.supabase is undefined');
         }
 
-        /* Stage 2 — App config */
+        /* Stage 2 — App config (one retry: attempt → 1s → retry → fail) */
         window.__BOOTSTRAP__.stage = 'app-config';
-        await _load('js/config/appConfig.js');
+        await _loadWithRetry('js/config/appConfig.js', 1, 1000);
 
         /* Stage 3 — Credentials: try env.js (local dev), fall back to env.public.js (deployed) */
         window.__BOOTSTRAP__.stage = 'env';

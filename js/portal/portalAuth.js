@@ -1,21 +1,33 @@
 // js/portal/portalAuth.js → window.PortalAuth
-// Customer Portal authentication & session management (Phase 5A).
+// Customer Portal authentication & session management.
 //
-// Identity model: a customer proves ownership of a booking by supplying the
-// email address on record PLUS the booking reference (HM-xxx). Both must match
-// the same booking row — neither alone grants access.
+// Phase 6A (Authentication Hardening) reworks this module around Supabase Auth
+// (Magic Link) while preserving the original Phase 5A logic for safe migration:
 //
-// Session is held in sessionStorage so it survives page refresh within the tab
-// but is cleared when the browser tab closes. A short idle TTL is also enforced.
+//   PRIMARY  (hardened) — the session comes from a real Supabase Auth JWT. The
+//     customer proved ownership of their email via a one-time link. Authorization
+//     resolves the booking(s) whose customer_email equals that verified email.
 //
-// Reuses the existing infrastructure only (BookingService / SupabaseClient).
-// Does NOT touch admin, CRM, WMC, or the database schema.
+//   LEGACY   (fallback) — the original "email + booking reference → sessionStorage
+//     token" path. KEPT, unmodified in behaviour, so any session opened before
+//     the cut-over keeps working and the lookup logic is retained until the new
+//     flow is verified in production. New logins no longer use it (login.html now
+//     sends a Magic Link), but PortalAuth.login() remains callable.
+//
+// Reuses existing infrastructure only (PortalSupabaseAuth / BookingService /
+// SupabaseClient). Does NOT touch admin, CRM, WMC, or the database schema.
 
 (function () {
   'use strict';
 
   const SESSION_KEY = 'hm_portal_sess';
-  const TTL_MS      = 60 * 60 * 1000; // 60-minute idle window
+  const TTL_MS      = 60 * 60 * 1000; // 60-minute idle window (legacy path)
+
+  // The resolved session for this page load. Set by resolveSession(). For an
+  // authenticated (Supabase) session there is no sessionStorage token — the JWT
+  // lives in the Supabase client — so we cache the derived shape here so the
+  // sync getSession() callers (e.g. audit actor labelling) keep working.
+  let _active = null;
 
   function _now() { return Date.now(); }
 
@@ -41,20 +53,70 @@
     try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(sess)); } catch (_) {}
   }
 
-  // Returns the live session object, or null if absent/expired.
+  // ── Legacy sessionStorage session (Phase 5A) ────────────────────────────────
+  // Returns the live legacy session object, or null if absent/expired.
   // Sliding expiry: each valid access pushes the expiry forward.
-  function getSession() {
+  function _legacyGetSession() {
     const s = _read();
     if (!s || !s.token || !s.ref) return null;
-    if (!s.exp || s.exp < _now()) { logout(); return null; }
+    if (!s.exp || s.exp < _now()) { _clearLegacy(); return null; }
     s.exp = _now() + TTL_MS;
     _write(s);
     return s;
   }
 
-  // Verify email + reference against a real booking. Resolves the booking row
-  // through the existing BookingService (which looks the reference up in the
-  // bookings table). Only an exact, case-insensitive email match is accepted.
+  function _clearLegacy() {
+    try { sessionStorage.removeItem(SESSION_KEY); } catch (_) {}
+  }
+
+  // Synchronous accessor used across the portal (header render, audit actor, …).
+  // Prefers the resolved (possibly authenticated) session, then the legacy one.
+  function getSession() {
+    if (_active) return _active;
+    return _legacyGetSession();
+  }
+
+  // ── Hardened resolution (Phase 6A) ──────────────────────────────────────────
+  // Resolve the active session for a protected page. Order:
+  //   1. Supabase Auth session (verified email)        → authenticated
+  //   2. Legacy sessionStorage session                 → migration fallback
+  //   3. neither                                        → redirect to login
+  // Returns the session object (and caches it in _active), or null after redirect.
+  async function resolveSession(redirect) {
+    // 1. Supabase Auth (primary)
+    if (window.PortalSupabaseAuth && PortalSupabaseAuth.isConfigured()) {
+      let sbSession = null;
+      try { sbSession = await PortalSupabaseAuth.waitForSession(); } catch (_) {}
+      // Consume + tidy the magic-link callback artefacts from the URL.
+      try { PortalSupabaseAuth.cleanUrl(); } catch (_) {}
+      if (sbSession && sbSession.user && sbSession.user.email) {
+        const email = String(sbSession.user.email).toLowerCase().trim();
+        const meta  = sbSession.user.user_metadata || {};
+        _active = {
+          authed: true,
+          token:  sbSession.access_token || _randToken(),
+          email:  email,
+          name:   meta.name || meta.full_name || '',
+          ref:    '',                         // filled once the booking resolves
+          iat:    _now(),
+          exp:    sbSession.expires_at ? sbSession.expires_at * 1000 : 0,
+        };
+        return _active;
+      }
+    }
+
+    // 2. Legacy fallback (pre-migration sessions keep working)
+    const legacy = _legacyGetSession();
+    if (legacy) { _active = legacy; return _active; }
+
+    // 3. No session
+    if (redirect) location.replace(redirect);
+    return null;
+  }
+
+  // ── Legacy login (retained until migration verified — NOT used by login.html
+  //    anymore, which now sends a Magic Link). Verifies email + reference against
+  //    a real booking and mints a legacy sessionStorage token. ───────────────────
   async function login(email, ref) {
     email = (email || '').trim().toLowerCase();
     ref   = (ref   || '').trim();
@@ -84,13 +146,10 @@
       return { ok: false, message: '予約が見つかりませんでした。入力内容をご確認ください。' };
     }
 
-    // Prefer the human-facing HM-reference. When the resolved booking id is a
-    // bare numeric DB id, keep the reference the customer actually typed so the
-    // portal shows a number they recognise (and getBookingById can still resolve
-    // either form on re-fetch).
     const displayRef = (booking.id && !/^\d+$/.test(String(booking.id))) ? booking.id : ref;
 
     const session = {
+      authed: false,
       token: _randToken(),
       ref:   displayRef,
       email: onFile,
@@ -99,21 +158,48 @@
       exp:   _now() + TTL_MS,
     };
     _write(session);
+    _active = session;
     return { ok: true, session: session, booking: booking };
   }
 
-  function logout() {
-    try { sessionStorage.removeItem(SESSION_KEY); } catch (_) {}
+  // Secure logout — ends both the Supabase Auth session and any legacy token.
+  async function logout() {
+    _active = null;
+    _clearLegacy();
+    if (window.PortalSupabaseAuth && PortalSupabaseAuth.isConfigured()) {
+      try { await PortalSupabaseAuth.signOut(); } catch (_) {}
+    }
   }
 
-  // Re-fetch the booking that the current session is authorised for.
-  // Re-verifies the email match on every fetch so a tampered session can't
-  // read another customer's booking.
+  // Re-fetch the booking the current session is authorised for.
+  //   • Authenticated session — resolves bookings by the VERIFIED email and
+  //     returns the most recent. (Multi-booking selection is future work.)
+  //   • Legacy session        — re-fetches by reference, re-verifying the email
+  //     match so a tampered token can't read another customer's booking.
   async function getCurrentBooking() {
     const s = getSession();
     if (!s) return null;
     if (typeof BookingService === 'undefined' || !window.SupabaseClient) return null;
 
+    // Authenticated path: email is cryptographically trustworthy.
+    if (s.authed) {
+      let list = [];
+      try {
+        list = await BookingService.getBookingsByEmail(s.email);
+      } catch (err) {
+        console.error('[PortalAuth] getBookingsByEmail failed:', err);
+        return null;
+      }
+      if (!list || !list.length) return null;
+      const booking = list[0]; // newest
+      // Defence-in-depth: the row's email must equal the authenticated email.
+      if ((booking.email || '').trim().toLowerCase() !== s.email) return null;
+      // Bind the session to the resolved booking reference.
+      if (_active) _active.ref = booking.id || _active.ref;
+      return booking;
+    }
+
+    // Legacy path: reference lookup + email re-verification.
     let booking = null;
     try {
       booking = await BookingService.getBookingById(s.ref);
@@ -123,14 +209,14 @@
     }
     if (!booking) return null;
     if ((booking.email || '').trim().toLowerCase() !== s.email) {
-      // Session no longer matches the record — revoke it.
       logout();
       return null;
     }
     return booking;
   }
 
-  // Guard for protected pages. Redirects to login.html when no valid session.
+  // Synchronous guard (legacy callers). Prefer the async resolveSession() on
+  // protected pages so the Supabase Auth session is honoured.
   function requireSession(redirect) {
     const s = getSession();
     if (!s) {
@@ -144,6 +230,7 @@
     login,
     logout,
     getSession,
+    resolveSession,
     getCurrentBooking,
     requireSession,
     SESSION_KEY,

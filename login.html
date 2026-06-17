@@ -205,30 +205,38 @@
       </div>
 
       <h1 class="auth-title">マイページ ログイン</h1>
-      <p class="auth-sub">ご予約時のメールアドレスと予約番号を<br />入力してください。</p>
+      <p class="auth-sub">ご予約時のメールアドレスを入力してください。<br />ログイン用のリンクをメールでお送りします。</p>
 
       <div class="alert" id="authAlert" role="alert" aria-live="assertive">
         <span id="authAlertMsg"></span>
       </div>
 
+      <!-- Magic Link request form -->
       <form id="loginForm" novalidate>
         <div class="field">
           <label for="email">メールアドレス</label>
           <input type="email" id="email" name="email" autocomplete="email"
                  placeholder="you@example.com" required />
+          <div class="hint">ご予約時に登録されたメールアドレスをご入力ください。</div>
         </div>
-        <div class="field">
-          <label for="ref">予約番号</label>
-          <input type="text" id="ref" name="ref" autocomplete="off"
-                 placeholder="HM-20260615-XXXX" required />
-          <div class="hint">予約確認メールに記載されている番号です。</div>
-        </div>
-        <button type="submit" class="btn-login" id="loginBtn">ログイン</button>
+        <button type="submit" class="btn-login" id="loginBtn">ログインリンクを送信</button>
       </form>
 
+      <!-- Confirmation shown after the link is sent -->
+      <div id="sentBox" style="display:none;text-align:center">
+        <div style="font-size:40px;line-height:1;margin-bottom:14px">✉️</div>
+        <div class="auth-title" style="font-size:18px;margin-bottom:8px">メールを送信しました</div>
+        <p class="auth-sub" style="margin-bottom:18px">
+          <strong id="sentEmail"></strong> 宛にログイン用のリンクをお送りしました。<br />
+          メール内のリンクをクリックしてログインしてください。
+        </p>
+        <button class="btn-login" id="resendBtn" type="button"
+                style="background:var(--bg);color:var(--navy);border:1px solid var(--line)">別のメールアドレスで再送</button>
+      </div>
+
       <div class="auth-foot">
-        予約番号がわからない場合は<br />
-        <a href="index.html#contact">お問い合わせ</a> ください。
+        メールが届かない場合は迷惑メールフォルダをご確認ください。<br />
+        ご不明な点は <a href="index.html#contact">お問い合わせ</a> ください。
       </div>
     </div>
   </main>
@@ -240,57 +248,84 @@
   <script src="js/config/env.js"></script>
   <script src="js/services/supabaseClient.js"></script>
   <script src="bookingService.js"></script>
-  <!-- Portal session helper -->
+  <!-- Portal auth (Supabase Auth Magic Link + session helper) -->
+  <script src="js/portal/portalSupabaseAuth.js"></script>
   <script src="js/portal/portalAuth.js"></script>
 
   <script>
   (function () {
     'use strict';
-    const form  = document.getElementById('loginForm');
-    const btn   = document.getElementById('loginBtn');
-    const alert = document.getElementById('authAlert');
+    const form     = document.getElementById('loginForm');
+    const btn      = document.getElementById('loginBtn');
+    const alertEl  = document.getElementById('authAlert');
     const alertMsg = document.getElementById('authAlertMsg');
+    const sentBox  = document.getElementById('sentBox');
+    const sentEmail= document.getElementById('sentEmail');
 
-    // Already logged in → go straight to the portal.
-    if (window.PortalAuth && PortalAuth.getSession()) {
-      location.replace('portal.html');
-      return;
-    }
+    function showError(msg) { alertMsg.textContent = msg; alertEl.classList.add('show'); }
+    function clearError()   { alertEl.classList.remove('show'); }
 
-    function showError(msg) {
-      alertMsg.textContent = msg;
-      alert.classList.add('show');
-    }
-    function clearError() { alert.classList.remove('show'); }
+    // Already authenticated (persisted Supabase session) → go to the portal.
+    (async function () {
+      try {
+        if (window.PortalSupabaseAuth && PortalSupabaseAuth.isConfigured()) {
+          const s = await PortalSupabaseAuth.waitForSession(0);
+          if (s) { location.replace('portal.html'); return; }
+        }
+        // Honour any legacy session that may still be open.
+        if (window.PortalAuth && PortalAuth.getSession()) { location.replace('portal.html'); }
+      } catch (_) {}
+    })();
 
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
       clearError();
 
       const email = document.getElementById('email').value.trim();
-      const ref   = document.getElementById('ref').value.trim();
-
-      if (!email || !ref) { showError('メールアドレスと予約番号を入力してください。'); return; }
+      if (!email) { showError('メールアドレスを入力してください。'); return; }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError('正しいメールアドレスを入力してください。'); return; }
 
+      if (!window.PortalSupabaseAuth || !PortalSupabaseAuth.isConfigured()) {
+        showError('現在ログインできません。しばらくしてから再度お試しください。');
+        return;
+      }
+
       btn.disabled = true;
-      btn.textContent = '確認中…';
+      btn.textContent = '送信中…';
 
       try {
-        const result = await PortalAuth.login(email, ref);
-        if (!result.ok) {
-          showError(result.message || '予約が見つかりませんでした。入力内容をご確認ください。');
+        const res = await PortalSupabaseAuth.sendMagicLink(email);
+        if (!res.ok) {
+          const msg = res.error === 'bad-email'
+            ? '正しいメールアドレスを入力してください。'
+            : 'リンクを送信できませんでした。しばらくしてから再度お試しください。';
+          showError(msg);
           btn.disabled = false;
-          btn.textContent = 'ログイン';
+          btn.textContent = 'ログインリンクを送信';
           return;
         }
-        location.replace('portal.html');
+        // Success — show the "check your inbox" confirmation.
+        sentEmail.textContent = email;
+        form.style.display = 'none';
+        sentBox.style.display = 'block';
       } catch (err) {
         console.error('[Portal login]', err);
         showError('接続エラーが発生しました。しばらくしてから再度お試しください。');
         btn.disabled = false;
-        btn.textContent = 'ログイン';
+        btn.textContent = 'ログインリンクを送信';
       }
+    });
+
+    // "Send to a different address" — reset back to the form.
+    const resendBtn = document.getElementById('resendBtn');
+    if (resendBtn) resendBtn.addEventListener('click', function () {
+      sentBox.style.display = 'none';
+      form.style.display = '';
+      btn.disabled = false;
+      btn.textContent = 'ログインリンクを送信';
+      clearError();
+      const inp = document.getElementById('email');
+      if (inp) { inp.value = ''; inp.focus(); }
     });
   })();
   </script>

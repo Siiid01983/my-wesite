@@ -193,6 +193,23 @@ const BookingService = (() => {
     return data ? _rowToBooking(data) : null;
   }
 
+  // Bookings belonging to one customer email, newest-first. Used by the Phase 6A
+  // authenticated portal: a customer's accessible bookings are resolved from the
+  // email Supabase Auth verified, NOT from a typed reference. Scoped server-side
+  // (.eq) so the client never pulls unrelated rows. Returns [] on error/no input.
+  async function getBookingsByEmail(email) {
+    const sb = _sb();
+    const norm = (email || '').trim().toLowerCase();
+    if (!sb || !norm) return [];
+    const { data, error } = await sb
+      .from('bookings')
+      .select('*')
+      .ilike('customer_email', norm)
+      .order('created_at', { ascending: false });
+    if (error) { console.error('[BookingService] getBookingsByEmail:', error.message); return []; }
+    return (data || []).map(_rowToBooking);
+  }
+
   // Returns the updated booking, or null if not found.
   async function updateBooking(id, patch) {
     const safePatch = Object.fromEntries(
@@ -303,5 +320,5 @@ const BookingService = (() => {
   // No-op: adapter pattern replaced by direct Supabase calls.
   function setAdapter() {}
 
-  return { getBookings, saveBookings, createBooking, getBookingById, updateBooking, cancelBooking, approveEstimate, subscribe, setAdapter };
+  return { getBookings, saveBookings, createBooking, getBookingById, getBookingsByEmail, updateBooking, cancelBooking, approveEstimate, subscribe, setAdapter };
 })();

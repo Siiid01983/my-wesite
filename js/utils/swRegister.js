@@ -27,8 +27,13 @@
     })
     .catch(err => console.warn('[SW] Registration failed:', err));
 
-  /* Reload page after new SW takes control */
+  /* Reload page after a new SW takes control — but only ONCE.
+     Without this guard, an activating worker that calls clients.claim() can
+     fire controllerchange repeatedly and put the page into a reload loop. */
+  let _refreshing = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (_refreshing) return;
+    _refreshing = true;
     window.location.reload();
   });
 

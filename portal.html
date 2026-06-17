@@ -586,6 +586,75 @@
   .rev-add.busy { opacity: .55; cursor: progress; pointer-events: none; }
   .rev-add input[type=file] { display: none; }
 
+  /* ---------- Self-Service (Phase 6C) ---------- */
+  .ss-form { display: flex; flex-direction: column; gap: 14px; }
+  .ss-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 18px; }
+  .ss-field { display: flex; flex-direction: column; gap: 6px; }
+  .ss-label { font-size: 12px; font-weight: 600; color: var(--gray-1); letter-spacing: .04em; }
+  .ss-input {
+    width: 100%; padding: 11px 13px; font-size: 14px; font-family: var(--font-jp);
+    color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    background: var(--bg); line-height: 1.6;
+  }
+  .ss-input:focus { outline: none; border-color: var(--navy); }
+  textarea.ss-input { min-height: 84px; resize: vertical; }
+  .ss-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .ss-btn {
+    padding: 11px 24px; border: none; border-radius: 999px; background: var(--navy);
+    color: #fff; font-size: 13.5px; font-weight: 600; font-family: var(--font-jp);
+    cursor: pointer; transition: all .2s var(--easing); white-space: nowrap;
+  }
+  .ss-btn:hover { background: var(--navy-2); transform: translateY(-1px); }
+  .ss-btn[disabled] { opacity: .55; cursor: progress; transform: none; }
+  .ss-btn.danger { background: #fff; color: #c0392b; border: 1px solid #f3c6c0; }
+  .ss-btn.danger:hover { background: #c0392b; color: #fff; border-color: #c0392b; }
+  .ss-err { font-size: 12.5px; color: #c0392b; display: none; }
+  .ss-hint { font-size: 12px; color: var(--gray-3); }
+  .ss-note {
+    display: flex; align-items: center; gap: 10px; padding: 14px 18px;
+    border: 1px solid #ecd9ad; border-radius: var(--radius-sm);
+    background: #fbf3e3; color: #9a6b12; font-size: 13px; font-weight: 600;
+  }
+  .ss-locked { font-size: 13px; color: var(--gray-3); padding: 6px 2px; }
+
+  /* Progress stepper */
+  .step-track { display: flex; align-items: flex-start; margin: 6px 0 4px; }
+  .step {
+    flex: 1; position: relative; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 9px;
+  }
+  .step::before {
+    content: ''; position: absolute; top: 15px; left: -50%; width: 100%;
+    height: 2px; background: var(--line); z-index: 0;
+  }
+  .step:first-child::before { display: none; }
+  .step.done::before, .step.current::before { background: var(--navy); }
+  .step-dot {
+    position: relative; z-index: 1; width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg); border: 2px solid var(--line); color: var(--gray-3);
+    font-family: var(--font-en); font-size: 13px; font-weight: 600;
+  }
+  .step.done .step-dot { background: var(--navy); border-color: var(--navy); color: #fff; }
+  .step.current .step-dot { border-color: var(--navy); color: var(--navy); box-shadow: 0 0 0 4px rgba(10,31,68,.1); }
+  .step-name { font-size: 12px; color: var(--gray-2); }
+  .step.current .step-name, .step.done .step-name { color: var(--ink); font-weight: 500; }
+  .step-cancel {
+    display: flex; align-items: center; gap: 8px; padding: 14px 18px;
+    border: 1px solid #f3c6c0; border-radius: var(--radius-sm);
+    background: #fdecea; color: #c0392b; font-size: 13.5px; font-weight: 600;
+  }
+
+  /* Inline toast */
+  .ss-toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(12px);
+    background: var(--navy); color: #fff; padding: 12px 22px; border-radius: 999px;
+    font-size: 13px; font-weight: 500; box-shadow: 0 12px 34px rgba(11,15,23,.22);
+    opacity: 0; pointer-events: none; transition: opacity .25s var(--easing), transform .25s var(--easing);
+    z-index: 80; max-width: 90vw;
+  }
+  .ss-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
   /* ---------- Responsive ---------- */
   @media (max-width: 880px) {
     :root { --sidebar-w: 230px; }
@@ -638,6 +707,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       <span>予約内容</span>
     </button>
+    <button class="p-nav-item" data-view="progress">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <span>進捗</span>
+    </button>
     <button class="p-nav-item" data-view="messages">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       <span>メッセージ</span>
@@ -674,24 +747,29 @@
   <script src="js/services/supabaseClient.js"></script>
   <script src="js/services/auditService.js"></script>
   <script src="bookingService.js"></script>
+  <script src="js/portal/portalSupabaseAuth.js"></script>
   <script src="js/portal/portalAuth.js"></script>
   <script src="js/portal/portalComms.js"></script>
   <script src="js/portal/portalDocs.js"></script>
   <script src="js/portal/portalPhotos.js"></script>
   <script src="js/portal/portalApproval.js"></script>
   <script src="js/portal/portalReviews.js"></script>
+  <script src="js/portal/portalSelfService.js"></script>
 
   <script>
-  (function () {
+  (async function () {
     'use strict';
-
-    // ---- Route guard: no valid session → bounce to login ----
-    const sess = PortalAuth.requireSession('login.html');
-    if (!sess) return;
 
     const $ = id => document.getElementById(id);
 
-    // Header identity (from session — instant, no fetch needed)
+    // ---- Route guard (Phase 6A): require a valid authenticated session ----
+    // Resolves a Supabase Auth (Magic Link) session first, then any legacy
+    // session, then bounces unauthenticated visitors to login.html. Expired
+    // Supabase sessions that cannot be refreshed resolve to null → redirect.
+    const sess = await PortalAuth.resolveSession('login.html');
+    if (!sess) return; // redirected to login
+
+    // Header identity (from session — instant; ref is filled once booking loads)
     $('userName').textContent = sess.name || 'お客様';
     $('userRef').textContent  = sess.ref || '';
 
@@ -704,9 +782,9 @@
     });
     overlay.addEventListener('click', closeDrawer);
 
-    // ---- Logout ----
-    $('logoutBtn').addEventListener('click', () => {
-      PortalAuth.logout();
+    // ---- Logout (secure: ends the Supabase Auth session + any legacy token) ----
+    $('logoutBtn').addEventListener('click', async () => {
+      try { await PortalAuth.logout(); } catch (_) {}
       location.replace('login.html');
     });
 
@@ -770,6 +848,108 @@
       quote:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>',
       updates: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
     };
+
+    // ---- Lightweight toast (success feedback) ----
+    let _toastTimer = null;
+    function ssToast(msg) {
+      let t = document.getElementById('ssToast');
+      if (!t) {
+        t = document.createElement('div');
+        t.id = 'ssToast';
+        t.className = 'ss-toast';
+        document.body.appendChild(t);
+      }
+      t.textContent = msg;
+      requestAnimationFrame(() => t.classList.add('show'));
+      clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    // ---- Self-service management panels (Phase 6C) ----
+    // Rendered inside the 予約内容 view. Each panel is gated by the booking
+    // status so customers only see actions valid for their current state.
+    function managePanels(b) {
+      const SS = window.PortalSelfService;
+      if (!SS) return '';
+      const today = (() => { const d = new Date(); const p = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; })();
+
+      const reschedule = SS.canReschedule(b) ? `
+        <div class="panel">
+          <div class="panel-title">予約の変更（Reschedule）</div>
+          <div class="ss-form">
+            <div class="ss-row">
+              <div class="ss-field">
+                <label class="ss-label" for="ssDate">引越し希望日</label>
+                <input class="ss-input" type="date" id="ssDate" value="${esc(b.date || '')}" min="${today}">
+              </div>
+              <div class="ss-field">
+                <label class="ss-label" for="ssTime">希望時間帯</label>
+                <input class="ss-input" type="text" id="ssTime" value="${esc(b.time || '')}" placeholder="例：午前中 / 13:00〜">
+              </div>
+            </div>
+            <div class="ss-err" id="ssReschedErr"></div>
+            <div class="ss-actions">
+              <button class="ss-btn" id="ssReschedBtn">変更を保存</button>
+              <span class="ss-hint">変更内容は担当者が確認します。</span>
+            </div>
+          </div>
+        </div>` : '';
+
+      const contact = SS.canEditContact(b) ? `
+        <div class="panel">
+          <div class="panel-title">連絡先の更新（Update Contact）</div>
+          <div class="ss-form">
+            <div class="ss-row">
+              <div class="ss-field">
+                <label class="ss-label" for="ssName">お名前</label>
+                <input class="ss-input" type="text" id="ssName" value="${esc(b.name || '')}" maxlength="80">
+              </div>
+              <div class="ss-field">
+                <label class="ss-label" for="ssPhone">電話番号</label>
+                <input class="ss-input" type="tel" id="ssPhone" value="${esc(b.phone || '')}" placeholder="090-0000-0000">
+              </div>
+            </div>
+            <div class="ss-field">
+              <label class="ss-label">メールアドレス</label>
+              <input class="ss-input" type="email" value="${esc(b.email || '')}" disabled
+                     title="メールアドレスはログインに使用するため変更できません">
+              <span class="ss-hint">メールアドレスはログインに使用するため変更できません。</span>
+            </div>
+            <div class="ss-err" id="ssContactErr"></div>
+            <div class="ss-actions"><button class="ss-btn" id="ssContactBtn">連絡先を更新</button></div>
+          </div>
+        </div>` : '';
+
+      let cancel = '';
+      if (SS.hasCancellationRequest(b)) {
+        cancel = `
+        <div class="panel">
+          <div class="panel-title">キャンセルのご依頼（Cancellation）</div>
+          <div class="ss-note">キャンセルのご依頼を受付けました。担当者がご連絡いたします。</div>
+        </div>`;
+      } else if (SS.canCancel(b)) {
+        cancel = `
+        <div class="panel">
+          <div class="panel-title">キャンセルのご依頼（Request Cancellation）</div>
+          <div class="ss-form">
+            <div class="ss-field">
+              <label class="ss-label" for="ssCancelReason">キャンセル理由（任意）</label>
+              <textarea class="ss-input" id="ssCancelReason" maxlength="500" placeholder="差し支えなければ理由をお聞かせください。"></textarea>
+            </div>
+            <div class="ss-err" id="ssCancelErr"></div>
+            <div class="ss-actions">
+              <button class="ss-btn danger" id="ssCancelBtn">キャンセルを依頼する</button>
+              <span class="ss-hint">ご依頼後、担当者が確認のうえ手続きいたします。</span>
+            </div>
+          </div>
+        </div>`;
+      }
+
+      const inner = reschedule + contact + cancel;
+      if (!inner) return '';
+      return `<div class="p-page-head" style="margin-top:8px"><div class="p-page-title" style="font-size:18px">予約の管理</div></div>${inner}`;
+    }
 
     // ---- Render views from a single booking record ----
     const VIEWS = {
@@ -854,7 +1034,39 @@
               <div class="info-cell"><div class="k">サービス</div><div class="v">${esc(b.service || '—')}</div></div>
             </div>
           </div>
-          ${b.notes ? `<div class="panel"><div class="panel-title">備考</div><div class="v">${esc(b.notes)}</div></div>` : ''}`;
+          ${b.notes ? `<div class="panel"><div class="panel-title">備考</div><div class="v">${esc(b.notes)}</div></div>` : ''}
+          ${managePanels(b)}`;
+      },
+      progress(b) {
+        const pr = (window.PortalSelfService && PortalSelfService.progressSteps(b)) || { cancelled: false, steps: [] };
+        const tl = buildTimeline(b);
+        const stepper = pr.cancelled
+          ? `<div class="step-cancel">✕ ご予約はキャンセルされました。</div>`
+          : `<div class="step-track">${pr.steps.map((s, i) => `
+              <div class="step ${s.done ? 'done' : ''} ${s.current ? 'current' : ''}">
+                <div class="step-dot">${s.done ? '✓' : (i + 1)}</div>
+                <div class="step-name">${esc(s.label)}</div>
+              </div>`).join('')}</div>`;
+        return `
+          <div class="p-page-head">
+            <div class="p-page-title">進捗</div>
+            <div class="p-page-sub">ご予約番号 ${esc(b.id)} の進行状況です。</div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">現在のステータス ${statusBadge(b.status)}</div>
+            ${stepper}
+          </div>
+          ${PortalSelfService.hasCancellationRequest(b) ? `<div class="ss-note">キャンセルのご依頼を受付けました。担当者がご連絡いたします。</div>` : ''}
+          <div class="panel">
+            <div class="panel-title">最新の更新</div>
+            <div class="timeline">
+              ${tl.map((it, i) => `
+                <div class="tl-item${it.cur && i === 0 ? ' cur' : ''}">
+                  <div class="tl-text">${esc(it.text)}</div>
+                  ${it.date ? `<div class="tl-date">${esc(it.date)}</div>` : ''}
+                </div>`).join('')}
+            </div>
+          </div>`;
       },
       support(b) {
         return `
@@ -893,6 +1105,14 @@
           <div class="p-page-head">
             <div class="p-page-title">ドキュメント</div>
             <div class="p-page-sub">ご予約番号 ${esc(b.id)} に関する書類をご確認・ダウンロードいただけます。</div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">書類をアップロード（Upload Document）</div>
+            <div class="photo-hint">PDF・画像・文書ファイル（最大 ${Math.round((window.PortalDocs && PortalDocs.ATTACH_MAX_BYTES || 15728640) / 1048576)}MB）。添付ファイルとして保存されます。</div>
+            <label class="ph-up" id="docUpLabel">
+              ${PH_UP_ICON}<span>ファイルを選択</span>
+              <input type="file" id="docUpInput">
+            </label>
           </div>
           <div id="docSections"><div class="skeleton">読み込み中…</div></div>`;
       },
@@ -1138,6 +1358,128 @@
     document.addEventListener('click', e => {
       const btn = e.target.closest && e.target.closest('#approveEstimateBtn');
       if (btn) handleApprove(btn);
+    });
+
+    // ---------- Self-Service: reschedule / contact / cancel (Phase 6C) ----------
+    // After a successful write, refresh the local record and re-render so the
+    // forms (and the progress view) reflect the new state. The display id is
+    // kept as the customer-facing reference, mirroring init().
+    function _applyUpdated(updated) {
+      if (!updated) return;
+      _booking = updated;
+      _booking.id = (sess && sess.ref) || _booking.id;
+      $('userRef').textContent = _booking.id || '';
+    }
+    function _showErr(id, msg) {
+      const el = $(id);
+      if (el) { el.textContent = msg; el.style.display = 'block'; }
+    }
+    const _SS_ERR = {
+      'bad-date':         '正しい日付を選択してください。',
+      'past-date':        '過去の日付は選択できません。',
+      'not-reschedulable':'この予約は変更できない状態です。',
+      'bad-phone':        '電話番号を正しくご入力ください。',
+      'bad-name':         'お名前をご入力ください。',
+      'no-change':        '変更内容がありません。',
+      'locked':           'この予約は編集できない状態です。',
+      'not-cancellable':  'この予約はキャンセルできない状態です。',
+      'already-requested':'すでにキャンセルを申請済みです。',
+      'not-found':        '予約情報を確認できませんでした。',
+    };
+    function _ssMsg(err) { return _SS_ERR[err] || '処理に失敗しました。時間をおいて再度お試しください。'; }
+
+    async function handleReschedule(btn) {
+      if (!_booking || !window.PortalSelfService) return;
+      const errId = 'ssReschedErr';
+      const el = $(errId); if (el) el.style.display = 'none';
+      const date = ($('ssDate') && $('ssDate').value || '').trim();
+      const time = ($('ssTime') && $('ssTime').value || '').trim();
+      btn.disabled = true; btn.textContent = '保存中…';
+      try {
+        const res = await PortalSelfService.reschedule(_booking, { date, time });
+        if (!res.ok) { _showErr(errId, _ssMsg(res.error)); btn.disabled = false; btn.textContent = '変更を保存'; return; }
+        _applyUpdated(res.booking);
+        render('booking');
+        ssToast('予約日時を変更しました。');
+      } catch (err) {
+        console.error('[Portal] reschedule failed:', err);
+        _showErr(errId, _ssMsg()); btn.disabled = false; btn.textContent = '変更を保存';
+      }
+    }
+
+    async function handleContact(btn) {
+      if (!_booking || !window.PortalSelfService) return;
+      const errId = 'ssContactErr';
+      const el = $(errId); if (el) el.style.display = 'none';
+      const name  = ($('ssName')  && $('ssName').value  || '').trim();
+      const phone = ($('ssPhone') && $('ssPhone').value || '').trim();
+      btn.disabled = true; btn.textContent = '更新中…';
+      try {
+        const res = await PortalSelfService.updateContact(_booking, { name, phone });
+        if (!res.ok) { _showErr(errId, _ssMsg(res.error)); btn.disabled = false; btn.textContent = '連絡先を更新'; return; }
+        _applyUpdated(res.booking);
+        $('userName').textContent = _booking.name || 'お客様';
+        render('booking');
+        ssToast('連絡先を更新しました。');
+      } catch (err) {
+        console.error('[Portal] contact update failed:', err);
+        _showErr(errId, _ssMsg()); btn.disabled = false; btn.textContent = '連絡先を更新';
+      }
+    }
+
+    async function handleCancelRequest(btn) {
+      if (!_booking || !window.PortalSelfService) return;
+      const errId = 'ssCancelErr';
+      const el = $(errId); if (el) el.style.display = 'none';
+      if (!confirm('キャンセルを依頼しますか？担当者が確認のうえ手続きいたします。')) return;
+      const reason = ($('ssCancelReason') && $('ssCancelReason').value || '').trim();
+      btn.disabled = true; btn.textContent = '送信中…';
+      try {
+        const res = await PortalSelfService.requestCancellation(_booking, { reason });
+        if (!res.ok) { _showErr(errId, _ssMsg(res.error)); btn.disabled = false; btn.textContent = 'キャンセルを依頼する'; return; }
+        _applyUpdated(res.booking);
+        render('booking');
+        ssToast('キャンセルのご依頼を受付けました。');
+      } catch (err) {
+        console.error('[Portal] cancel request failed:', err);
+        _showErr(errId, _ssMsg()); btn.disabled = false; btn.textContent = 'キャンセルを依頼する';
+      }
+    }
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest) return;
+      if (e.target.closest('#ssReschedBtn')) return handleReschedule(e.target.closest('#ssReschedBtn'));
+      if (e.target.closest('#ssContactBtn')) return handleContact(e.target.closest('#ssContactBtn'));
+      if (e.target.closest('#ssCancelBtn'))  return handleCancelRequest(e.target.closest('#ssCancelBtn'));
+    });
+
+    // ---------- Self-Service: document upload (Phase 6C) ----------
+    async function handleDocUpload(input) {
+      const file = input.files && input.files[0];
+      if (!file || !_booking || !window.PortalDocs || !PortalDocs.uploadAttachment) return;
+      const label = input.closest('.ph-up');
+      if (label) label.classList.add('busy');
+      try {
+        const res = await PortalDocs.uploadAttachment(_uploadId(), file);
+        if (!res.ok) {
+          alert(res.error === 'too-large' ? 'ファイルサイズが大きすぎます。'
+              : res.error === 'storage-unavailable' ? 'ストレージに接続できませんでした。'
+              : 'アップロードに失敗しました。');
+          return;
+        }
+        await loadDocuments();
+        ssToast('書類をアップロードしました。');
+      } catch (err) {
+        console.error('[Portal] document upload failed:', err);
+        alert('アップロードに失敗しました。');
+      } finally {
+        if (label) label.classList.remove('busy');
+        input.value = '';
+      }
+    }
+    document.addEventListener('change', e => {
+      const input = e.target.closest && e.target.closest('#docUpInput');
+      if (input) handleDocUpload(input);
     });
 
     // ---------- Customer Reviews (Phase 5G) ----------
