@@ -205,13 +205,13 @@
       </div>
 
       <h1 class="auth-title">マイページ ログイン</h1>
-      <p class="auth-sub">ご予約時のメールアドレスを入力してください。<br />ログイン用のリンクをメールでお送りします。</p>
+      <p class="auth-sub">ご予約時のメールアドレスと予約番号（確認番号）を入力してください。</p>
 
       <div class="alert" id="authAlert" role="alert" aria-live="assertive">
         <span id="authAlertMsg"></span>
       </div>
 
-      <!-- Magic Link request form -->
+      <!-- Email + Confirmation Number login form -->
       <form id="loginForm" novalidate>
         <div class="field">
           <label for="email">メールアドレス</label>
@@ -219,23 +219,17 @@
                  placeholder="you@example.com" required />
           <div class="hint">ご予約時に登録されたメールアドレスをご入力ください。</div>
         </div>
-        <button type="submit" class="btn-login" id="loginBtn">ログインリンクを送信</button>
+        <div class="field">
+          <label for="reference">予約番号（確認番号）</label>
+          <input type="text" id="reference" name="reference" autocomplete="off"
+                 inputmode="text" placeholder="HM-00000000-XXXX" required />
+          <div class="hint">ご予約確認メールに記載の予約番号をご入力ください。</div>
+        </div>
+        <button type="submit" class="btn-login" id="loginBtn">ログイン</button>
       </form>
 
-      <!-- Confirmation shown after the link is sent -->
-      <div id="sentBox" style="display:none;text-align:center">
-        <div style="font-size:40px;line-height:1;margin-bottom:14px">✉️</div>
-        <div class="auth-title" style="font-size:18px;margin-bottom:8px">メールを送信しました</div>
-        <p class="auth-sub" style="margin-bottom:18px">
-          <strong id="sentEmail"></strong> 宛にログイン用のリンクをお送りしました。<br />
-          メール内のリンクをクリックしてログインしてください。
-        </p>
-        <button class="btn-login" id="resendBtn" type="button"
-                style="background:var(--bg);color:var(--navy);border:1px solid var(--line)">別のメールアドレスで再送</button>
-      </div>
-
       <div class="auth-foot">
-        メールが届かない場合は迷惑メールフォルダをご確認ください。<br />
+        予約番号がご不明な場合は、ご予約確認メールをご確認ください。<br />
         ご不明な点は <a href="index.html#contact">お問い合わせ</a> ください。
       </div>
     </div>
@@ -259,8 +253,6 @@
     const btn      = document.getElementById('loginBtn');
     const alertEl  = document.getElementById('authAlert');
     const alertMsg = document.getElementById('authAlertMsg');
-    const sentBox  = document.getElementById('sentBox');
-    const sentEmail= document.getElementById('sentEmail');
 
     function showError(msg) { alertMsg.textContent = msg; alertEl.classList.add('show'); }
     function clearError()   { alertEl.classList.remove('show'); }
@@ -282,7 +274,8 @@
       clearError();
 
       const email = document.getElementById('email').value.trim();
-      if (!email) { showError('メールアドレスを入力してください。'); return; }
+      const ref   = document.getElementById('reference').value.trim();
+      if (!email || !ref) { showError('メールアドレスと予約番号を入力してください。'); return; }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError('正しいメールアドレスを入力してください。'); return; }
 
       if (!window.PortalSupabaseAuth || !PortalSupabaseAuth.isConfigured()) {
@@ -291,41 +284,33 @@
       }
 
       btn.disabled = true;
-      btn.textContent = '送信中…';
+      btn.textContent = 'ログイン中…';
 
       try {
-        const res = await PortalSupabaseAuth.sendMagicLink(email);
+        // Validates email + reference server-side and installs a REAL Supabase
+        // session (no email sent) so Phase 6B RLS stays enforced in the portal.
+        const res = await PortalSupabaseAuth.loginWithReference(email, ref);
         if (!res.ok) {
-          const msg = res.error === 'bad-email'
-            ? '正しいメールアドレスを入力してください。'
-            : 'リンクを送信できませんでした。しばらくしてから再度お試しください。';
+          // Generic message for invalid pairs (anti-enumeration); specific copy
+          // only for client-side input / availability problems.
+          let msg;
+          if (res.error === 'bad-email') msg = '正しいメールアドレスを入力してください。';
+          else if (res.error === 'rate-limited') msg = '試行回数が上限に達しました。しばらくしてから再度お試しください。';
+          else if (res.error === 'unavailable' || res.error === 'server-misconfigured') msg = '現在ログインできません。しばらくしてから再度お試しください。';
+          else msg = 'メールアドレスまたは予約番号が正しくありません。';
           showError(msg);
           btn.disabled = false;
-          btn.textContent = 'ログインリンクを送信';
+          btn.textContent = 'ログイン';
           return;
         }
-        // Success — show the "check your inbox" confirmation.
-        sentEmail.textContent = email;
-        form.style.display = 'none';
-        sentBox.style.display = 'block';
+        // Success — a real Supabase session is now set. Enter the portal.
+        location.replace('portal.html');
       } catch (err) {
         console.error('[Portal login]', err);
         showError('接続エラーが発生しました。しばらくしてから再度お試しください。');
         btn.disabled = false;
-        btn.textContent = 'ログインリンクを送信';
+        btn.textContent = 'ログイン';
       }
-    });
-
-    // "Send to a different address" — reset back to the form.
-    const resendBtn = document.getElementById('resendBtn');
-    if (resendBtn) resendBtn.addEventListener('click', function () {
-      sentBox.style.display = 'none';
-      form.style.display = '';
-      btn.disabled = false;
-      btn.textContent = 'ログインリンクを送信';
-      clearError();
-      const inp = document.getElementById('email');
-      if (inp) { inp.value = ''; inp.focus(); }
     });
   })();
   </script>

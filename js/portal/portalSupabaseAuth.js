@@ -88,6 +88,60 @@
     }
   }
 
+  // Authenticate with Email + Confirmation Number (booking reference) and END UP
+  // WITH A REAL SUPABASE SESSION — so Phase 6B RLS (auth.email()) stays enforced.
+  // No email is sent: the `portal-auth` Edge Function validates the pair against
+  // bookings (service_role), mints a session, and returns its tokens, which we
+  // install via setSession(). Returns { ok } or { ok:false, error }.
+  async function loginWithReference(email, ref) {
+    const sb = _sb();
+    email = (email || '').trim().toLowerCase();
+    ref   = (ref || '').trim();
+    if (!sb || !sb.auth) return { ok: false, error: 'unavailable' };
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: 'bad-email' };
+    if (!ref) return { ok: false, error: 'bad-ref' };
+
+    const base    = String(window.SUPABASE_URL || '').replace(/\/+$/, '');
+    const anonKey = window.SUPABASE_ANON_KEY || '';
+    if (!base || !anonKey) return { ok: false, error: 'unavailable' };
+
+    let body = null;
+    try {
+      const res = await fetch(base + '/functions/v1/portal-auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'apikey':        anonKey,
+          'Authorization': 'Bearer ' + anonKey,
+        },
+        body: JSON.stringify({ email, reference: ref }),
+      });
+      body = await res.json().catch(function () { return null; });
+      if (!res.ok || !body || !body.ok) {
+        return { ok: false, error: (body && body.error) || 'invalid-credentials', status: res.status };
+      }
+    } catch (err) {
+      console.error('[PortalSupabaseAuth] loginWithReference threw:', err);
+      return { ok: false, error: (err && err.message) || 'network' };
+    }
+
+    if (!body.access_token || !body.refresh_token) return { ok: false, error: 'no-session' };
+    try {
+      const { error } = await sb.auth.setSession({
+        access_token:  body.access_token,
+        refresh_token: body.refresh_token,
+      });
+      if (error) {
+        console.error('[PortalSupabaseAuth] setSession failed:', error.message);
+        return { ok: false, error: error.message };
+      }
+    } catch (err) {
+      console.error('[PortalSupabaseAuth] setSession threw:', err);
+      return { ok: false, error: (err && err.message) || 'set-session-failed' };
+    }
+    return { ok: true };
+  }
+
   // Resolve the active Supabase Auth session, accounting for a magic-link landing
   // whose token the client is still consuming asynchronously. Resolution rules:
   //   • a session already exists                → return it immediately
@@ -147,6 +201,7 @@
   window.PortalSupabaseAuth = {
     isConfigured,
     sendMagicLink,
+    loginWithReference,
     waitForSession,
     getAuthedEmail,
     signOut,
