@@ -8,27 +8,28 @@
  * Flow:
  *   1. Receive { email, reference } from login.html (anon-invokable).
  *   2. Rate-limit (per IP + per email).
- *   3. Validate the pair against `bookings` using the SERVICE_ROLE key
+ *   3. Validate the pair against `bookings` using the service_role key
  *      (bypasses RLS for this lookup only). Generic 401 on any mismatch.
- *   4. Ensure a confirmed auth user exists for the email (sends NO email).
+ *   4. Ensure a confirmed auth user exists for the email (reused if present;
+ *      sends NO email).
  *   5. Mint a session WITHOUT emailing: generateLink (computes a token,
  *      delivers nothing) → verifyOtp(token_hash) → { access_token, refresh_token }.
- *   6. Return the tokens; the browser calls auth.setSession(...).
+ *   6. Append an audit_log row (success or failure), then return.
  *
- * ── Required Supabase secrets ──────────────────────────────────────────
- *   SB_URL              https://<project-ref>.supabase.co
- *   SB_SERVICE_ROLE_KEY service_role key   (NEVER ships to the browser)
- *   SB_ANON_KEY         anon public key    (used only for the verifyOtp exchange)
+ * ── Secret resolution (prefers the platform-standard names) ─────────────
+ *   URL          : SUPABASE_URL              ?? SB_URL
+ *   service_role : SUPABASE_SERVICE_ROLE_KEY ?? SB_SERVICE_ROLE_KEY
+ *   anon         : SUPABASE_ANON_KEY         ?? SB_ANON_KEY
  *
- *   Note: secret names are NOT prefixed "SUPABASE_" because that prefix is
- *   reserved by the platform and cannot be set via `supabase secrets set`.
+ *   SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY are injected
+ *   into every Edge Function automatically — no `secrets set` needed. The SB_*
+ *   names remain supported as a fallback for environments that set them manually.
  *
  * ── Deploy ─────────────────────────────────────────────────────────────
- *   supabase secrets set SB_URL=... SB_SERVICE_ROLE_KEY=... SB_ANON_KEY=...
  *   supabase functions deploy portal-auth --no-verify-jwt
  */
 
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 
 /* ── CORS ──────────────────────────────────────────────────────
  * Locked to the production origin(s). CORS can only return a single
@@ -63,6 +64,27 @@ function json(body: unknown, status: number, cors: Record<string, string>): Resp
 // email or a reference exists (anti-enumeration).
 function denied(cors: Record<string, string>): Response {
   return json({ ok: false, error: "invalid-credentials" }, 401, cors);
+}
+
+/* ── Audit trail ──────────────────────────────────────────────
+ * Append a login success/failure row to public.audit_log via the service_role
+ * client (bypasses RLS; append-only table). NEVER throws into the request path —
+ * a failed audit insert must not block or break a login. */
+async function audit(
+  admin: SupabaseClient,
+  fields: { actor: string; targetId?: string; details: string },
+): Promise<void> {
+  try {
+    await admin.from("audit_log").insert({
+      actor:       fields.actor,
+      action:      "login",
+      target_type: "portal",
+      target_id:   fields.targetId ?? "",
+      details:     fields.details,
+    });
+  } catch (e) {
+    console.error("[portal-auth] audit insert threw:", e);
+  }
 }
 
 /* ── Rate limiting ────────────────────────────────────────────
@@ -104,13 +126,18 @@ Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: cors });
   if (req.method !== "POST")    return json({ ok: false, error: "method-not-allowed" }, 405, cors);
 
-  const SB_URL   = Deno.env.get("SB_URL");
-  const SVC_KEY  = Deno.env.get("SB_SERVICE_ROLE_KEY");
-  const ANON_KEY = Deno.env.get("SB_ANON_KEY");
+  /* ── Resolve secrets (prefer SUPABASE_*, fall back to SB_*) ──*/
+  const SB_URL   = Deno.env.get("SUPABASE_URL")              ?? Deno.env.get("SB_URL");
+  const SVC_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SB_SERVICE_ROLE_KEY");
+  const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")         ?? Deno.env.get("SB_ANON_KEY");
   if (!SB_URL || !SVC_KEY || !ANON_KEY) {
-    console.error("[portal-auth] Missing SB_URL / SB_SERVICE_ROLE_KEY / SB_ANON_KEY secret");
+    console.error("[portal-auth] Missing SUPABASE_URL/ANON/SERVICE_ROLE (or SB_* fallback) secret");
     return json({ ok: false, error: "server-misconfigured" }, 500, cors);
   }
+
+  // service_role client — used ONLY server-side (lookup, user provisioning,
+  // session mint, audit). Its key is never placed in any response.
+  const admin = createClient(SB_URL, SVC_KEY, { auth: { persistSession: false } });
 
   /* ── Parse + validate payload ──────────────────────────────*/
   let payload: { email?: string; reference?: string };
@@ -124,17 +151,19 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const reference = String(payload.reference ?? "").trim();
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !reference) {
-    return denied(cors);
+    return denied(cors); // malformed input — not a credentialed login attempt
   }
 
   /* ── Rate limit (per IP + per email) ───────────────────────*/
   const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "unknown";
   if (rateLimited("ip:" + ip) || rateLimited("email:" + email)) {
     console.warn("[portal-auth] rate-limited", { ip });
+    await audit(admin, {
+      actor:   "customer:" + email,
+      details: "Portal login failed: rate limited (ip:" + ip + ")",
+    });
     return json({ ok: false, error: "rate-limited" }, 429, cors);
   }
-
-  const admin = createClient(SB_URL, SVC_KEY, { auth: { persistSession: false } });
 
   /* ── 1. Validate email + reference against bookings (service_role) ──*/
   let rows: Array<{ id: unknown; customer_email: unknown; notes: unknown }> = [];
@@ -156,22 +185,38 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const matched = rows.some((r) => referenceMatches(r, reference));
   if (!matched) {
     console.warn("[portal-auth] no booking match", { ip });
+    await audit(admin, {
+      actor:   "customer:" + email,
+      details: "Portal login failed: invalid credentials (email/reference mismatch)",
+    });
     return denied(cors);
   }
 
-  /* ── 2. Ensure a confirmed auth user (sends NO email) ──────*/
+  /* ── 2. Ensure a confirmed auth user — reuse if it already exists ──
+   * createUser returns an "already registered" error for returning customers;
+   * we treat that as success (the existing account is reused for generateLink).
+   * No second user is ever created (GoTrue enforces email uniqueness). */
   try {
     const { error: createErr } = await admin.auth.admin.createUser({
       email,
       email_confirm: true,
     });
-    // "already registered" is the expected path for returning customers — ignore.
     if (createErr && !/already|registered|exists/i.test(createErr.message)) {
       console.error("[portal-auth] createUser failed:", createErr.message);
+      await audit(admin, {
+        actor:   "customer:" + email,
+        targetId: reference,
+        details: "Portal login failed: user provisioning error",
+      });
       return json({ ok: false, error: "user-provision-failed" }, 502, cors);
     }
   } catch (err) {
     console.error("[portal-auth] createUser threw:", err);
+    await audit(admin, {
+      actor:   "customer:" + email,
+      targetId: reference,
+      details: "Portal login failed: user provisioning exception",
+    });
     return json({ ok: false, error: "user-provision-failed" }, 502, cors);
   }
 
@@ -184,11 +229,21 @@ Deno.serve(async (req: Request): Promise<Response> => {
     });
     if (error || !data?.properties?.hashed_token) {
       console.error("[portal-auth] generateLink failed:", error?.message);
+      await audit(admin, {
+        actor:   "customer:" + email,
+        targetId: reference,
+        details: "Portal login failed: session mint error (generateLink)",
+      });
       return json({ ok: false, error: "session-mint-failed" }, 502, cors);
     }
     tokenHash = data.properties.hashed_token;
   } catch (err) {
     console.error("[portal-auth] generateLink threw:", err);
+    await audit(admin, {
+      actor:   "customer:" + email,
+      targetId: reference,
+      details: "Portal login failed: session mint exception (generateLink)",
+    });
     return json({ ok: false, error: "session-mint-failed" }, 502, cors);
   }
 
@@ -202,10 +257,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const session = data?.session;
     if (error || !session?.access_token || !session?.refresh_token) {
       console.error("[portal-auth] verifyOtp failed:", error?.message);
+      await audit(admin, {
+        actor:   "customer:" + email,
+        targetId: reference,
+        details: "Portal login failed: session mint error (verifyOtp)",
+      });
       return json({ ok: false, error: "session-mint-failed" }, 502, cors);
     }
 
     console.log("[portal-auth] LOGIN_SUCCESS", { email });
+    await audit(admin, {
+      actor:   "customer:" + email,
+      targetId: reference,
+      details: "Portal login success",
+    });
     return json({
       ok: true,
       access_token:  session.access_token,
@@ -213,6 +278,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }, 200, cors);
   } catch (err) {
     console.error("[portal-auth] verifyOtp threw:", err);
+    await audit(admin, {
+      actor:   "customer:" + email,
+      targetId: reference,
+      details: "Portal login failed: session mint exception (verifyOtp)",
+    });
     return json({ ok: false, error: "session-mint-failed" }, 502, cors);
   }
 });
