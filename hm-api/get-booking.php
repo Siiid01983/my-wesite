@@ -13,6 +13,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_db.php';
 hm_cors();
+hm_require_api_key();
 
 function decode_booking(?array $row): ?array {
   if (!$row) return null;

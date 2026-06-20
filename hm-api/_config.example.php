@@ -27,6 +27,13 @@ return [
   //   Multiple allowed   : comma-separate, e.g. 'https://a.com,http://localhost:5050'
   'allowed_origin' => '*',
 
+  // ── API key gate ──────────────────────────────────────────────────────────
+  //   When non-empty, guarded endpoints require header  X-API-KEY: <this>.
+  //   The browser sends it via window.API_KEY, so the API_KEY GitHub secret /
+  //   js/config/env.js must match EXACTLY. Set to '' to disable. (A client-side
+  //   key is a bot/abuse deterrent alongside CORS, not user authentication.)
+  'api_key' => '',
+
   // ── Storage (file uploads: portal photos/documents, media library) ────────
   //   Absolute path to a writable directory OUTSIDE web root is safest.
   //   Default keeps uploads under this folder; protected by .htaccess.

@@ -23,6 +23,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_db.php';
 hm_cors();
+hm_require_api_key();
 
 // ── Table allowlist: columns + type hints + pk strategy + unique keys ─────────
 $SCHEMA = [

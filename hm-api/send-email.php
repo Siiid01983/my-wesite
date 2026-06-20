@@ -11,6 +11,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_lib.php';
 hm_cors();
+hm_require_api_key();
 
 $cfg = hm_config();
 $p   = hm_body();

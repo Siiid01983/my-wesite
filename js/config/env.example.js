@@ -6,6 +6,11 @@
 // hm-api/ folder. Self-hosted; no third-party backend.
 window.API_BASE = 'https://hello-moving.com/hm-api'; // ← your hm-api URL
 
+// API key — must EXACTLY match 'api_key' in hm-api/_config.php when the gate is
+// enabled (leave '' to disable). NOT secret (it ships to the browser); it deters
+// casual/cross-origin abuse alongside CORS, it is not user authentication.
+window.API_KEY = '';
+
 // For local development against a PHP server on your machine, e.g.:
 //   window.API_BASE = 'http://localhost/hm-api';
 

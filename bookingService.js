@@ -163,7 +163,7 @@ const BookingService = (() => {
     if (base) {
       const res = await fetch(base + '/create-booking.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-API-KEY': window.API_KEY || '' },
         body: JSON.stringify(_bookingToRow(booking)),
       });
       const out = await res.json().catch(() => ({ ok: false, error: `HTTP ${res.status}` }));
@@ -187,7 +187,7 @@ const BookingService = (() => {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(String(id));
     const qs = isUuid ? ('id=' + encodeURIComponent(id)) : ('ref=' + encodeURIComponent(id));
     try {
-      const res = await fetch(base + '/get-booking.php?' + qs);
+      const res = await fetch(base + '/get-booking.php?' + qs, { headers: { 'X-API-KEY': window.API_KEY || '' } });
       const out = await res.json();
       if (!out.ok) { console.error('[BookingService] getBookingById:', out.error); return null; }
       return out.data ? _rowToBooking(out.data) : null;
@@ -206,7 +206,7 @@ const BookingService = (() => {
     const norm = (email || '').trim().toLowerCase();
     if (!base || !norm) return [];
     try {
-      const res = await fetch(base + '/get-booking.php?email=' + encodeURIComponent(norm));
+      const res = await fetch(base + '/get-booking.php?email=' + encodeURIComponent(norm), { headers: { 'X-API-KEY': window.API_KEY || '' } });
       const out = await res.json();
       if (!out.ok) { console.error('[BookingService] getBookingsByEmail:', out.error); return []; }
       return (out.data || []).map(_rowToBooking);

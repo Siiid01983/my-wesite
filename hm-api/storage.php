@@ -44,6 +44,7 @@ if ($action === 'get') {
 }
 
 hm_cors();
+hm_require_api_key();
 
 function sanitize_seg(string $s): string { return preg_replace('/[^A-Za-z0-9._-]/', '', $s); }
 function sanitize_path(string $s): string {

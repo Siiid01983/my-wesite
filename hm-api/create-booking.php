@@ -10,6 +10,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_db.php';
 hm_cors();
+hm_require_api_key();
 
 $p = hm_body();
 $ALLOWED = ['customer_name','customer_email','customer_phone','booking_date','service_id','status','notes','items','created_at'];

@@ -31,13 +31,27 @@ function hm_cors(): void {
   } elseif (!empty($allowed)) {
     header('Access-Control-Allow-Origin: ' . $allowed[0]);
   }
-  header('Access-Control-Allow-Headers: authorization, x-client-info, apikey, content-type');
+  header('Access-Control-Allow-Headers: authorization, x-client-info, apikey, x-api-key, content-type');
   header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
   header('Access-Control-Max-Age: 86400');
 
   if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     http_response_code(204);
     exit;
+  }
+}
+
+// API-key gate. Enforced ONLY when 'api_key' is set in _config.php (empty = off).
+// The browser must send the matching key as the X-API-KEY header (window.API_KEY).
+// NOTE: a client-shipped key is not secret — it deters casual/cross-origin abuse
+// alongside CORS, it is NOT user authentication. Call AFTER hm_cors() so the
+// OPTIONS preflight is answered before the key is checked.
+function hm_require_api_key(): void {
+  $expected = (string)(hm_config()['api_key'] ?? '');
+  if ($expected === '') return;                       // gate disabled
+  $sent = $_SERVER['HTTP_X_API_KEY'] ?? '';
+  if (!is_string($sent) || $sent === '' || !hash_equals($expected, $sent)) {
+    hm_json(['data' => null, 'error' => ['message' => 'Unauthorized', 'code' => 'api_key']], 401);
   }
 }
 

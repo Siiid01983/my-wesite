@@ -136,7 +136,7 @@
     try {
       const res = await fetch(base + '/auth.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-API-KEY': window.API_KEY || '' },
         body: JSON.stringify({ email, reference: ref }),
       });
       out = await res.json().catch(() => null);

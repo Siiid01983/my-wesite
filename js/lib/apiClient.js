@@ -14,6 +14,15 @@
 
   function _base(url) { return String(url || '').replace(/\/+$/, ''); }
 
+  // Attach the API key (window.API_KEY) when configured. A no-op when unset, so
+  // the gate can be enabled/disabled from config alone without code changes.
+  function _hdrs(base) {
+    const h = base || {};
+    const k = window.API_KEY;
+    if (k) h['X-API-KEY'] = k;
+    return h;
+  }
+
   // ── REST query builder (thenable) ──────────────────────────────────────────
   function QueryBuilder(restUrl, table) {
     this._url = restUrl;
@@ -64,7 +73,7 @@
     const spec = this._spec;
     return fetch(this._url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: _hdrs({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(spec),
     })
       .then((res) => res.json().then(
@@ -105,7 +114,7 @@
   };
   RealtimeChannel.prototype._fetch = function (table) {
     return fetch(this._url, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: _hdrs({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ table: table, action: 'select', columns: '*' }),
     }).then((r) => r.json()).then((j) => (j && j.data) || []).catch(() => null);
   };
@@ -147,24 +156,24 @@
   StorageBucket.prototype.upload = function (path, file, opts) {
     const fd = new FormData();
     fd.append('bucket', this._bucket); fd.append('path', path); fd.append('file', file);
-    return fetch(this._url + '?action=upload', { method: 'POST', body: fd })
+    return fetch(this._url + '?action=upload', { method: 'POST', headers: _hdrs(), body: fd })
       .then((r) => r.json())
       .catch((e) => ({ data: null, error: { message: (e && e.message) || 'upload failed' } }));
   };
   StorageBucket.prototype.remove = function (paths) {
     return fetch(this._url + '?action=remove', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: _hdrs({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ bucket: this._bucket, paths: Array.isArray(paths) ? paths : [paths] }),
     }).then((r) => r.json()).catch((e) => ({ data: null, error: { message: (e && e.message) || 'remove failed' } }));
   };
   StorageBucket.prototype.list = function (folder, _opts) {
     const q = '?action=list&bucket=' + encodeURIComponent(this._bucket) + '&prefix=' + encodeURIComponent(folder || '');
-    return fetch(this._url + q).then((r) => r.json())
+    return fetch(this._url + q, { headers: _hdrs() }).then((r) => r.json())
       .catch((e) => ({ data: null, error: { message: (e && e.message) || 'list failed' } }));
   };
   StorageBucket.prototype.createSignedUrl = function (path, ttl) {
     const q = '?action=sign&bucket=' + encodeURIComponent(this._bucket) + '&path=' + encodeURIComponent(path) + '&ttl=' + (ttl || 300);
-    return fetch(this._url + q).then((r) => r.json())
+    return fetch(this._url + q, { headers: _hdrs() }).then((r) => r.json())
       .catch((e) => ({ data: null, error: { message: (e && e.message) || 'sign failed' } }));
   };
   StorageBucket.prototype.getPublicUrl = function (path) {

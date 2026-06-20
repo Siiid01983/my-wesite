@@ -1,8 +1,26 @@
 <?php
-// Health check: GET <API_BASE>/  → { ok, db, time }
+// ════════════════════════════════════════════════════════════════════════════
+//  Health check — GET <API_BASE>/index.php
+//    config missing → { error: "API not configured ..." }   (from hm_config)
+//    DB unreachable → { "ok": false, "db": false, "error": "..." }   HTTP 500
+//    all good       → { "ok": true,  "db": true,  "time": "..." }
+//
+//  Builds its own PDO (not hm_db()) so a connection failure is reported as the
+//  { ok:false, db:false, error } shape instead of hm_db()'s generic envelope.
+// ════════════════════════════════════════════════════════════════════════════
 declare(strict_types=1);
-require_once __DIR__ . '/_db.php';
-hm_cors();
-$dbOk = false;
-try { hm_db()->query('SELECT 1'); $dbOk = true; } catch (Throwable $e) {}
-hm_json(['ok' => true, 'db' => $dbOk, 'time' => date('c')]);
+require_once __DIR__ . '/_lib.php';
+hm_cors();   // also exits early with "API not configured" if _config.php is absent
+
+try {
+  $c   = hm_config();
+  $dsn = sprintf('mysql:host=%s;dbname=%s;charset=%s',
+    $c['db_host'], $c['db_name'], $c['db_charset'] ?? 'utf8mb4');
+  $pdo = new PDO($dsn, $c['db_user'], $c['db_pass'], [
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+  ]);
+  $pdo->query('SELECT 1');
+  hm_json(['ok' => true, 'db' => true, 'time' => date('c')]);
+} catch (Throwable $e) {
+  hm_json(['ok' => false, 'db' => false, 'error' => $e->getMessage()], 500);
+}
