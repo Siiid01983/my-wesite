@@ -593,6 +593,21 @@
       console.log('Verify error:', verRes.error);
       if (verRes.data) console.log('✅ Row is visible in Supabase — write path works.');
       else console.error('❌ Row not returned in SELECT — RLS SELECT policy missing.');
+
+      /* 4. Clean up — remove the probe row so it does not persist */
+      console.log('\n--- Cleanup probe row ---');
+      const delRes = await _sb
+        .from('communications')
+        .delete()
+        .eq('id', insRes.data.id);
+      console.log('DELETE error :', delRes.error);
+      console.log('DELETE status:', delRes.status);
+      if (delRes.error) {
+        console.error('❌ Probe row NOT deleted — remove id', insRes.data.id, 'manually.');
+        if (delRes.error.code === '42501') console.error('→ RLS is blocking DELETE. No anon DELETE policy.');
+      } else {
+        console.log('🧹 Probe row deleted — id', insRes.data.id);
+      }
     }
 
     console.groupEnd();
