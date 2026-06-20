@@ -68,6 +68,13 @@ beforeEach(async () => {
     window.HM_CONFIG.FORCE_FALLBACK = false;
     window.HM_CONFIG.CACHE_TTL      = {};
     window.HM_CONFIG.RETRY          = { maxAttempts: 3, baseDelayMs: 500, maxDelayMs: 10000, factor: 2 };
+
+    // Install a deterministic default API mock so unwrapped reads resolve as a
+    // successful empty-result "api" read instead of hitting the live backend
+    // over the network (which makes the suite flaky/offline-dependent). Tests
+    // that need specific responses still override this via window.__withFakeApi,
+    // which saves and restores window.api around the call.
+    window.api = window.__mkFakeApi([{ data: [], error: null }]);
   });
 });
 
