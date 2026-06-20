@@ -13,7 +13,7 @@
     $env:FTP_PASSWORD="your-password"
     $env:FTP_PORT="21"                       # optional, default 21
     $env:FTP_REMOTE="public_html"            # optional, relative to FTP login dir
-    $env:API_BASE="https://www.dzsecurity.com/hm-api"
+    $env:API_BASE="https://hello-moving.com/hm-api"
     node deploy.js
 
   Usage (bash):
@@ -45,7 +45,7 @@ if (!HOST || !USER || !PASS) {
   process.exit(1);
 }
 if (!API_BASE) {
-  console.error('Missing API_BASE. Set API_BASE to your hm-api URL (e.g. https://www.dzsecurity.com/hm-api).');
+  console.error('Missing API_BASE. Set API_BASE to your hm-api URL (e.g. https://hello-moving.com/hm-api).');
   process.exit(1);
 }
 

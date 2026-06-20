@@ -46,18 +46,18 @@ node tools/migrate-from-supabase.mjs --url https://<ref>.supabase.co --key <anon
 ارفع مجلد `hm-api/` كاملاً إلى استضافتك (داخل `public_html/hm-api` مثلاً)، ثم:
 1. انسخ `_config.example.php` → `_config.php`.
 2. عبّئ بيانات القاعدة (host/name/user/pass) و`allowed_origin` (مثل
-   `https://www.dzsecurity.com`) و`storage_secret` (نص عشوائي طويل).
+   `https://hello-moving.com`) و`storage_secret` (نص عشوائي طويل).
 3. تأكد أن مجلد `_uploads/` قابل للكتابة (Permissions 755 أو 775).
 
 ### 5) ربط الواجهة بالـ API
 في `js/config/env.public.js` (والمحلي `js/config/env.js` إن وُجد) اضبط:
 ```js
-window.API_BASE = 'https://www.dzsecurity.com/hm-api'; // مسار مجلد hm-api
+window.API_BASE = 'https://hello-moving.com/hm-api'; // مسار مجلد hm-api
 ```
 وفي GitHub أضف السرّ `API_BASE` بنفس القيمة (خط النشر يقرأه).
 
 ### 6) اختبار سريع
-- افتح `https://www.dzsecurity.com/hm-api/` → يجب أن ترى `{"ok":true,"db":true,...}`.
+- افتح `https://hello-moving.com/hm-api/` → يجب أن ترى `{"ok":true,"db":true,...}`.
 - افتح الموقع العام: يجب أن تظهر الخدمات/المراجعات.
 - جرّب حجزاً من نموذج الحجز → تحقق من ظهوره في لوحة الإدارة.
 - لوحة الإدارة → ダッシュボード: لوحة "システム監視" يجب أن تكون online.

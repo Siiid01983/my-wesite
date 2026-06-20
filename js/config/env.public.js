@@ -3,7 +3,7 @@
    folder uploaded to cPanel. Self-hosted; no third-party backend.
 
    ⚠ Set API_BASE to the public URL where you uploaded hm-api/. */
-window.API_BASE = 'https://www.dzsecurity.com/hm-api';
+window.API_BASE = 'https://hello-moving.com/hm-api';
 
 window.ENV = {
   API_BASE: window.API_BASE,

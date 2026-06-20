@@ -4,7 +4,7 @@
 //
 // Self-hosted PHP + MySQL backend: API_BASE is the public URL of the uploaded
 // hm-api/ folder. Self-hosted; no third-party backend.
-window.API_BASE = 'https://www.dzsecurity.com/hm-api'; // ← your hm-api URL
+window.API_BASE = 'https://hello-moving.com/hm-api'; // ← your hm-api URL
 
 // For local development against a PHP server on your machine, e.g.:
 //   window.API_BASE = 'http://localhost/hm-api';

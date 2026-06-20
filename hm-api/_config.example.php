@@ -22,7 +22,7 @@ return [
   'db_charset' => 'utf8mb4',
 
   // ── CORS: the browser origin allowed to call this API ─────────────────────
-  //   Production example: 'https://www.dzsecurity.com'
+  //   Production example: 'https://hello-moving.com'
   //   Local dev          : 'http://localhost:5050'
   //   Multiple allowed   : comma-separate, e.g. 'https://a.com,http://localhost:5050'
   'allowed_origin' => '*',

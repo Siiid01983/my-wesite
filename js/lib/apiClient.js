@@ -7,7 +7,7 @@
    surface so the existing app modules keep working unchanged.
 
    Exposes:  window.ApiClient = { createClient(apiBase) }
-   `apiBase` is window.API_BASE, e.g. 'https://www.dzsecurity.com/hm-api'.
+   `apiBase` is window.API_BASE, e.g. 'https://hello-moving.com/hm-api'.
    ════════════════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
