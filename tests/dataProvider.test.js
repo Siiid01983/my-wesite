@@ -2,7 +2,7 @@
 /**
  * DataProvider unit tests — Phase 7
  *
- * Runs against the real admin.html served on localhost:8787.
+ * Runs against the real admin.html served on localhost:5050.
  * Supabase is mocked via window.__withFakeSb for assertion-critical paths
  * so tests are deterministic and do not depend on network connectivity.
  *
@@ -20,7 +20,7 @@ before(async () => {
   browser = await chromium.launch({ headless: true });
   page    = await browser.newPage();
 
-  await page.goto('http://localhost:8787/admin.html', {
+  await page.goto('http://localhost:5050/admin.html', {
     waitUntil: 'networkidle',
     timeout: 20000,
   });

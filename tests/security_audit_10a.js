@@ -5,7 +5,7 @@ const { chromium } = require('playwright');
 
 (async () => {
   const b = await chromium.launch({ headless: true });
-  const ADMIN_URL = 'http://localhost:8787/admin.html';
+  const ADMIN_URL = 'http://localhost:5050/admin.html';
   const results   = [];
 
   function report(id, label, pass, finding) {

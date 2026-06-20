@@ -6,7 +6,7 @@
  * no JS errors occur. Also verifies all infrastructure globals are
  * correctly wired and DataProvider is functioning.
  *
- * Requires the dev server running on localhost:8787 (node serve.js).
+ * Requires the dev server running on localhost:5050 (node serve.js).
  * Run: npm run test:smoke
  */
 
@@ -37,7 +37,7 @@ before(async () => {
     if (m.type() === 'error') jsErrors.push({ phase: 'load', msg: m.text() });
   });
 
-  await page.goto('http://localhost:8787/admin.html', {
+  await page.goto('http://localhost:5050/admin.html', {
     waitUntil: 'networkidle',
     timeout:   20000,
   });
