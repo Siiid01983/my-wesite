@@ -22,6 +22,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 declare(strict_types=1);
 require_once __DIR__ . '/_db.php';
+require_once __DIR__ . '/_cache.php';
 hm_cors();
 hm_require_api_key();
 
@@ -201,6 +202,7 @@ try {
       elseif (isset($data['id'])) $generated[] = ['col' => 'id', 'val' => $data['id']];
     }
 
+    hm_cache_invalidate_table($table);
     if (empty($req['returning'])) hm_ok([]);
     return finish_returning($db, $table, $S, $generated, $qid, $req);
   }
@@ -217,6 +219,7 @@ try {
     $st = $db->prepare('UPDATE ' . $qid($table) . ' SET ' . implode(',', $set) . $where);
     $st->execute(array_merge($setParams, $whereParams));
 
+    hm_cache_invalidate_table($table);
     if (empty($req['returning'])) hm_ok([]);
     $st2 = $db->prepare('SELECT * FROM ' . $qid($table) . $where);
     $st2->execute($whereParams);
@@ -236,12 +239,14 @@ try {
     }
     $st = $db->prepare('DELETE FROM ' . $qid($table) . $where);
     $st->execute($params);
+    hm_cache_invalidate_table($table);
     return finish_rows($returned, $req);
   }
 
   hm_err('Unknown action: ' . $action, 400, 'bad_action');
 
 } catch (Throwable $e) {
+  hm_log_error('rest query failed', ['table' => $table, 'action' => $action, 'err' => $e->getMessage()]);
   hm_err('Query failed: ' . $e->getMessage(), 500, 'query');
 }
 

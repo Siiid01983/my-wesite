@@ -1,7 +1,12 @@
 # Hello Moving API — Apache config (cPanel)
 
-# Protect secrets and internal files
-<FilesMatch "^(_config\.php|_db\.php|_lib\.php|_config\.example\.php|schema\.mysql\.sql)$">
+# Protect secrets and internal files (prefixed with _ are include-only, never called directly)
+<FilesMatch "^(_config\.php|_db\.php|_lib\.php|_log\.php|_cache\.php|_ratelimit\.php|_config\.example\.php|schema\.mysql\.sql)$">
+  Require all denied
+</FilesMatch>
+
+# Never serve raw log files (they carry client IPs / User-Agents)
+<FilesMatch "\.log(\.[0-9]+)?$">
   Require all denied
 </FilesMatch>
 

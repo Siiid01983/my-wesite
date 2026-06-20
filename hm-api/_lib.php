@@ -2,6 +2,8 @@
 // Shared helpers for all Hello Moving API endpoints.
 declare(strict_types=1);
 
+require_once __DIR__ . '/_log.php';   // structured logging (defines hm_log_* + hm_client_ip)
+
 function hm_config(): array {
   static $cfg = null;
   if ($cfg === null) {
@@ -39,6 +41,9 @@ function hm_cors(): void {
     http_response_code(204);
     exit;
   }
+
+  // Access log — runs once per real (non-preflight) request, for every endpoint.
+  hm_log_access();
 }
 
 // API-key gate. Enforced ONLY when 'api_key' is set in _config.php (empty = off).
@@ -51,6 +56,7 @@ function hm_require_api_key(): void {
   if ($expected === '') return;                       // gate disabled
   $sent = $_SERVER['HTTP_X_API_KEY'] ?? '';
   if (!is_string($sent) || $sent === '' || !hash_equals($expected, $sent)) {
+    hm_log_auth_fail('bad_api_key');
     hm_json(['data' => null, 'error' => ['message' => 'Unauthorized', 'code' => 'api_key']], 401);
   }
 }

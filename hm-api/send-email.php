@@ -10,8 +10,10 @@
 // ════════════════════════════════════════════════════════════════════════════
 declare(strict_types=1);
 require_once __DIR__ . '/_lib.php';
+require_once __DIR__ . '/_ratelimit.php';
 hm_cors();
 hm_require_api_key();
+hm_rate_limit('email', 20, 60);   // max 20 sends / IP / minute
 
 $cfg = hm_config();
 $p   = hm_body();

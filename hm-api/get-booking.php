@@ -12,8 +12,10 @@
 // ════════════════════════════════════════════════════════════════════════════
 declare(strict_types=1);
 require_once __DIR__ . '/_db.php';
+require_once __DIR__ . '/_ratelimit.php';
 hm_cors();
 hm_require_api_key();
+hm_rate_limit('general', 20, 60);   // general public API: max 20 / IP / minute
 
 function decode_booking(?array $row): ?array {
   if (!$row) return null;
