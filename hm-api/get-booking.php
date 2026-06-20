@@ -35,19 +35,20 @@ try {
   if ($id !== '') {
     $st = $db->prepare('SELECT * FROM bookings WHERE id = ? LIMIT 1');
     $st->execute([$id]);
-    hm_json(['ok' => true, 'data' => decode_booking($st->fetch() ?: null)]);
+    hm_json(['ok' => true, 'data' => decode_booking($st->fetch() ?: null), 'error' => null]);
   }
   if ($ref !== '') {
     $st = $db->prepare('SELECT * FROM bookings WHERE notes LIKE ? ORDER BY created_at DESC LIMIT 1');
     $st->execute(['%ref:' . $ref . '%']);
-    hm_json(['ok' => true, 'data' => decode_booking($st->fetch() ?: null)]);
+    hm_json(['ok' => true, 'data' => decode_booking($st->fetch() ?: null), 'error' => null]);
   }
   if ($email !== '') {
     $st = $db->prepare('SELECT * FROM bookings WHERE LOWER(customer_email) = ? ORDER BY created_at DESC');
     $st->execute([strtolower($email)]);
-    hm_json(['ok' => true, 'data' => array_map('decode_booking', $st->fetchAll())]);
+    hm_json(['ok' => true, 'data' => array_map('decode_booking', $st->fetchAll()), 'error' => null]);
   }
-  hm_json(['ok' => false, 'error' => 'id, ref or email required'], 400);
+  hm_json(['ok' => false, 'data' => null, 'error' => 'id, ref or email required'], 400);
 } catch (Throwable $e) {
-  hm_json(['ok' => false, 'error' => $e->getMessage()], 500);
+  hm_log_error('get-booking failed', ['err' => $e->getMessage()]);
+  hm_json(['ok' => false, 'data' => null, 'error' => $e->getMessage()], 500);
 }

@@ -58,7 +58,7 @@ function hm_rate_limit(string $bucket = 'global', ?int $max = null, ?int $window
     hm_log_write('error.log', ['type' => 'rate_block', 'bucket' => $bucket,
       'fp' => (string)($state['fp'] ?? ''), 'until' => date('c', (int)$state['blocked_until'])]);
     header('Retry-After: ' . max(1, (int)$state['blocked_until'] - $now));
-    hm_json(['data' => null, 'error' => ['message' => 'Too many requests', 'code' => 'rate_limited']], 429);
+    hm_json(['ok' => false, 'data' => null, 'error' => ['message' => 'Too many requests', 'code' => 'rate_limited']], 429);
   }
 
   // Prune to the sliding window, then record this hit.
@@ -78,7 +78,7 @@ function hm_rate_limit(string $bucket = 'global', ?int $max = null, ?int $window
       'blocked' => (int)$state['blocked_until'] > $now]);
     $retry = (int)$state['blocked_until'] > $now ? ((int)$state['blocked_until'] - $now) : $window;
     header('Retry-After: ' . max(1, $retry));
-    hm_json(['data' => null, 'error' => ['message' => 'Too many requests', 'code' => 'rate_limited']], 429);
+    hm_json(['ok' => false, 'data' => null, 'error' => ['message' => 'Too many requests', 'code' => 'rate_limited']], 429);
   }
 
   rewind($fh); ftruncate($fh, 0); fwrite($fh, json_encode($state)); @flock($fh, LOCK_UN); @fclose($fh);

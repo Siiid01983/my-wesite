@@ -19,6 +19,21 @@ function hm_config(): array {
   return $cfg;
 }
 
+// Non-fatal config probe. Returns true only when _config.php exists, returns an
+// array, and carries the minimum DB credentials + an api_key. Lets index.php
+// answer a health check (and _db.php fail gracefully) instead of hard-exiting
+// when the server is not configured yet.
+function hm_has_config(): bool {
+  $path = __DIR__ . '/_config.php';
+  if (!is_file($path)) return false;
+  $cfg = @require $path;
+  if (!is_array($cfg)) return false;
+  foreach (['db_host', 'db_name', 'db_user'] as $k) {
+    if (!array_key_exists($k, $cfg) || $cfg[$k] === '') return false;
+  }
+  return array_key_exists('api_key', $cfg);   // present (may be '' to disable the gate)
+}
+
 // Emit CORS headers + handle OPTIONS preflight. Call at the top of every endpoint.
 function hm_cors(): void {
   $cfg = hm_config();
@@ -57,7 +72,7 @@ function hm_require_api_key(): void {
   $sent = $_SERVER['HTTP_X_API_KEY'] ?? '';
   if (!is_string($sent) || $sent === '' || !hash_equals($expected, $sent)) {
     hm_log_auth_fail('bad_api_key');
-    hm_json(['data' => null, 'error' => ['message' => 'Unauthorized', 'code' => 'api_key']], 401);
+    hm_json(['ok' => false, 'data' => null, 'error' => ['message' => 'Unauthorized', 'code' => 'api_key']], 401);
   }
 }
 
@@ -68,10 +83,13 @@ function hm_json($data, int $status = 200): void {
   exit;
 }
 
-// { data, error } envelope: { data, error }
-function hm_ok($data): void { hm_json(['data' => $data, 'error' => null], 200); }
+// Standard envelope: { ok, data, error }. `ok` is additive — the frontend
+// apiClient reads `data`/`error` and ignores `ok`, so this stays backward
+// compatible. `error` is kept as an object {message, code} (apiClient reads
+// error.message); a bare 401/429 below uses the same shape.
+function hm_ok($data): void { hm_json(['ok' => true, 'data' => $data, 'error' => null], 200); }
 function hm_err(string $message, int $status = 400, ?string $code = null): void {
-  hm_json(['data' => null, 'error' => ['message' => $message, 'code' => $code]], $status);
+  hm_json(['ok' => false, 'data' => null, 'error' => ['message' => $message, 'code' => $code]], $status);
 }
 
 function hm_body(): array {

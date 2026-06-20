@@ -45,6 +45,8 @@ if ($action === 'get') {
 
 hm_cors();
 hm_require_api_key();
+require_once __DIR__ . '/_ratelimit.php';
+hm_rate_limit('storage', 60, 60);   // upload/list/sign/remove; binary `get` returned above is unthrottled
 
 function sanitize_seg(string $s): string { return preg_replace('/[^A-Za-z0-9._-]/', '', $s); }
 function sanitize_path(string $s): string {

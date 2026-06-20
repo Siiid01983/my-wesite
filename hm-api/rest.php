@@ -23,8 +23,14 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_db.php';
 require_once __DIR__ . '/_cache.php';
+require_once __DIR__ . '/_ratelimit.php';
 hm_cors();
 hm_require_api_key();
+// Authenticated data API: the admin/portal SPA legitimately bursts many reads on
+// load (initial sync + 12s realtime poll across several tables), so this is set
+// well above the 20/min "general" tier to throttle abuse without breaking the
+// app. Tune via _config.php rate_limit_* if needed.
+hm_rate_limit('data', 300, 60);
 
 // ── Table allowlist: columns + type hints + pk strategy + unique keys ─────────
 $SCHEMA = [
@@ -161,13 +167,13 @@ try {
       $cs = $db->prepare('SELECT COUNT(*) AS c FROM ' . $qid($table) . $where);
       $cs->execute($params);
       $count = (int)($cs->fetch()['c'] ?? 0);
-      if (!empty($req['head'])) hm_json(['data' => null, 'count' => $count, 'error' => null], 200);
+      if (!empty($req['head'])) hm_json(['ok' => true, 'data' => null, 'count' => $count, 'error' => null], 200);
     }
 
     $st = $db->prepare("SELECT $cols FROM " . $qid($table) . "$where$order$limit");
     $st->execute($params);
     $rows = array_map(fn($r) => cast_row($r, $S), $st->fetchAll());
-    if ($count !== null) hm_json(['data' => array_values($rows), 'count' => $count, 'error' => null], 200);
+    if ($count !== null) hm_json(['ok' => true, 'data' => array_values($rows), 'count' => $count, 'error' => null], 200);
     return finish_rows($rows, $req);
   }
 

@@ -20,8 +20,11 @@ $p     = hm_body();
 $email = strtolower(trim((string)($p['email'] ?? '')));
 $ref   = trim((string)($p['reference'] ?? ''));
 
-if ($email === '' || strpos($email, '@') === false || $ref === '') {
-  hm_json(['ok' => false, 'error' => 'invalid'], 400);
+// Strict input validation (required fields + RFC-ish email format).
+if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || $ref === '') {
+  hm_log_write('error.log', ['type' => 'invalid_request', 'endpoint' => 'auth',
+    'reason' => 'bad_email_or_ref', 'fp' => hm_client_fingerprint()]);
+  hm_json(['ok' => false, 'data' => null, 'error' => 'invalid'], 400);
 }
 
 try {
@@ -31,15 +34,16 @@ try {
 
   if (!$row || strtolower(trim((string)($row['customer_email'] ?? ''))) !== $email) {
     hm_log_auth_fail('portal_login');
-    hm_json(['ok' => false, 'error' => 'invalid']);
+    hm_json(['ok' => false, 'data' => null, 'error' => 'invalid']);
   }
 
   if (isset($row['items']) && is_string($row['items'])) {
     $d = json_decode($row['items'], true);
     if ($d !== null || $row['items'] === 'null') $row['items'] = $d;
   }
-  hm_json(['ok' => true, 'booking' => $row]);
+  // `booking` kept top-level for portalAuth.js; data/error added for the standard envelope.
+  hm_json(['ok' => true, 'booking' => $row, 'data' => ['booking' => $row], 'error' => null]);
 } catch (Throwable $e) {
   hm_log_error('auth failed', ['err' => $e->getMessage()]);
-  hm_json(['ok' => false, 'error' => 'server'], 500);
+  hm_json(['ok' => false, 'data' => null, 'error' => 'server'], 500);
 }

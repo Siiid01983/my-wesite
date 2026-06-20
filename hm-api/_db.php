@@ -6,6 +6,13 @@ require_once __DIR__ . '/_lib.php';
 function hm_db(): PDO {
   static $pdo = null;
   if ($pdo === null) {
+    // Bootstrap safety: never fatal on a missing/incomplete config — answer with
+    // the health-style {ok:false, db:false, error} shape so callers degrade
+    // gracefully instead of throwing a 500 with a stack trace.
+    if (!hm_has_config()) {
+      hm_log_error('DB not configured');
+      hm_json(['ok' => false, 'db' => false, 'error' => 'DB not configured'], 503);
+    }
     $c = hm_config();
     $dsn = sprintf('mysql:host=%s;dbname=%s;charset=%s',
       $c['db_host'], $c['db_name'], $c['db_charset'] ?? 'utf8mb4');
@@ -16,7 +23,8 @@ function hm_db(): PDO {
         PDO::ATTR_EMULATE_PREPARES   => false,
       ]);
     } catch (Throwable $e) {
-      hm_err('Database connection failed', 500, 'db_connect');
+      hm_log_error('DB connection failed', ['err' => $e->getMessage()]);
+      hm_json(['ok' => false, 'db' => false, 'error' => 'DB connection failed'], 503);
     }
   }
   return $pdo;
