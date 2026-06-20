@@ -4,7 +4,7 @@
 (function () {
   var required = [
     ['Auth',           'js/core/auth.js'],
-    ['Adapter',        'js/services/supabaseAdapter.js'],
+    ['Adapter',        'js/services/apiAdapter.js'],
     ['DataProvider',   'js/services/dataProvider.js'],
     ['HealthCheck',    'js/services/healthCheck.js'],
     ['AuditLog',       'js/modules/audit/auditLog.js'],
@@ -187,8 +187,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 async function _wmcInit() {
   _wmcPatchAdapterForTimestamp();
-  if (typeof Adapter !== 'undefined' && Adapter.supabaseReady) {
-    try { await Adapter.syncFromSupabase(); } catch (_) {}
+  if (typeof Adapter !== 'undefined' && Adapter.apiReady) {
+    try { await Adapter.syncFromApi(); } catch (_) {}
   }
   if (typeof AuditLog !== 'undefined' && AuditLog.init) AuditLog.init();
   await wmcRefreshOverview();

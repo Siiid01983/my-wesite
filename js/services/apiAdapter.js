@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════
-   SUPABASE ADAPTER
+   API ADAPTER
    ════════════════════════════════════════════════════════
    Wired tables (proper schema):
      bookings              ← admin bookings
@@ -12,24 +12,24 @@
 
    Strategy: reads return from localStorage (sync). Every write
    goes to localStorage first (instant), then fires an async
-   upsert/delete to Supabase. syncFromSupabase() pulls the full
+   upsert/delete to API. syncFromApi() pulls the full
    dataset on login so all devices stay in sync.
 
    Load order (plain <script> tags, in order):
-     1. Supabase UMD       → window.supabase
-     2. js/config/env.js   → window.SUPABASE_URL / ANON_KEY
-     3. supabaseClient.js  → window.SupabaseClient (shared singleton)
+     1. apiClient.js       → window.ApiClient (self-hosted PHP + MySQL client)
+     2. js/config/env.js   → window.API_BASE
+     3. dataClient.js  → window.api (shared client handle)
      4. this file          → window.Adapter
    ════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
 
-  /* ── Shared Supabase client (single instance for the whole app) ─── */
-  const _sb = window.SupabaseClient || null;
-  if (!_sb) {
-    console.error('[Adapter] CRITICAL: SupabaseClient is null at Adapter init — ALL writes will be silently dropped. Check env.js (window.ENV.ready must be true) and supabaseClient.js.');
+  /* ── Shared API client (single instance for the whole app) ─── */
+  const _api = window.api || null;
+  if (!_api) {
+    console.error('[Adapter] CRITICAL: ApiClient is null at Adapter init — ALL writes will be silently dropped. Check env.js (window.ENV.ready must be true) and dataClient.js.');
   } else {
-    console.log('[Adapter] SupabaseClient captured OK —', _sb.supabaseUrl || 'client ready');
+    console.log('[Adapter] ApiClient captured OK —', _api.apiBase || 'client ready');
   }
 
   /* ── localStorage helpers ─────────────────────────────── */
@@ -50,48 +50,48 @@
     return true;
   }
 
-  /* ── Supabase write helpers ───────────────────────────── */
+  /* ── API write helpers ───────────────────────────── */
   function _upsert(table, data, matchCol) {
     if (window.Auth && typeof Auth.getRole === 'function' && Auth.getRole() === 'read-only') return;
-    if (!_sb) {
-      console.warn(`[Adapter] _upsert: SupabaseClient is null — write to "${table}" dropped`);
+    if (!_api) {
+      console.warn(`[Adapter] _upsert: ApiClient is null — write to "${table}" dropped`);
       return;
     }
     console.log('[SAVE]', table, 'upsert', matchCol, data);
-    _sb.from(table)
+    _api.from(table)
       .upsert(data, { onConflict: matchCol })
       .then(({ error }) => {
-        if (error) console.error(`[SUPABASE ERROR] ${table} upsert failed:`, error.message, error);
-        else        console.log(`[SUPABASE RESPONSE] ${table} upsert ok`);
+        if (error) console.error(`[API ERROR] ${table} upsert failed:`, error.message, error);
+        else        console.log(`[API RESPONSE] ${table} upsert ok`);
       });
   }
 
   function _del(table, col, val) {
     if (window.Auth && typeof Auth.getRole === 'function' && Auth.getRole() === 'read-only') return;
-    if (!_sb) {
-      console.warn(`[Adapter] _del: SupabaseClient is null — delete from "${table}" dropped`);
+    if (!_api) {
+      console.warn(`[Adapter] _del: ApiClient is null — delete from "${table}" dropped`);
       return;
     }
-    _sb.from(table).delete().eq(col, val)
-      .then(({ error }) => { if (error) console.error(`[SUPABASE ERROR] ${table} delete failed:`, error.message); });
+    _api.from(table).delete().eq(col, val)
+      .then(({ error }) => { if (error) console.error(`[API ERROR] ${table} delete failed:`, error.message); });
   }
 
   /* hm_data key-value writes */
   function _kv(key, value) {
-    if (!_sb) {
-      console.warn(`[Adapter] _kv: SupabaseClient is null — hm_data write dropped. key: "${key}"`);
+    if (!_api) {
+      console.warn(`[Adapter] _kv: ApiClient is null — hm_data write dropped. key: "${key}"`);
       return;
     }
     console.log('[SAVE] hm_data upsert key:', key);
-    _sb.from('hm_data')
+    _api.from('hm_data')
       .upsert({ key, value, updated_at: new Date().toISOString() })
       .then(({ error }) => {
-        if (error) console.error(`[SUPABASE ERROR] hm_data upsert failed. key: "${key}"`, error.message, error);
-        else        console.log(`[SUPABASE RESPONSE] hm_data upsert ok. key: "${key}"`);
+        if (error) console.error(`[API ERROR] hm_data upsert failed. key: "${key}"`, error.message, error);
+        else        console.log(`[API RESPONSE] hm_data upsert ok. key: "${key}"`);
       });
   }
 
-  /* Write-through: localStorage first, then Supabase hm_data */
+  /* Write-through: localStorage first, then API hm_data */
   function wt(key, value) {
     if (!_checkCanWrite()) return;
     _set(key, value);
@@ -120,16 +120,16 @@
   };
 
   /* ── Status maps ──────────────────────────────────────── */
-  // Admin panel uses Japanese; Supabase schema uses English.
-  const BK_TO_SB = {
+  // Admin panel uses Japanese; API schema uses English.
+  const BK_TO_DB = {
     '新規': 'pending', '確認中': 'checking',
     '確定': 'confirmed', '完了': 'completed', 'キャンセル': 'cancelled',
   };
   const BK_TO_LOCAL = {
     pending: '新規', checking: '確認中', confirmed: '確定', completed: '完了', cancelled: 'キャンセル',
   };
-  // Calendar: admin uses 'booked'; Supabase schema uses 'full'.
-  const CAL_TO_SB    = { booked: 'full' };
+  // Calendar: admin uses 'booked'; API schema uses 'full'.
+  const CAL_TO_DB    = { booked: 'full' };
   const CAL_TO_LOCAL = { full: 'booked' };
 
   /* ── Notes encoding — fields not in DB schema are packed into notes ─── */
@@ -185,20 +185,20 @@
   }
 
   /* ── Data mappers ─────────────────────────────────────── */
-  function bookingToSb(b) {
+  function bookingToRow(b) {
     return {
       customer_name:  b.name      || '',
       customer_email: b.email     || null,
       customer_phone: b.phone     || null,
       booking_date:   b.date      || null,
       service_id:     null,
-      status:         BK_TO_SB[b.status] || 'pending',
+      status:         BK_TO_DB[b.status] || 'pending',
       notes:          _packBookingNotes(b),
       created_at:     b.createdAt || new Date().toISOString(),
     };
   }
 
-  function sbToBooking(r) {
+  function rowToBooking(r) {
     const { userNotes, extra } = _unpackBookingNotes(r.notes);
     // Items: prefer dedicated `items` DB column (if added), then packed extras, then notes parsing
     const extraItems = extra.items ? extra.items.split('|').filter(Boolean) : null;
@@ -224,7 +224,7 @@
     };
   }
 
-  function reviewToSb(r) {
+  function reviewToRow(r) {
     return {
       reference_id:      r.id,
       customer_name:     r.name       || '',
@@ -242,7 +242,7 @@
     };
   }
 
-  function sbToReview(r) {
+  function rowToReview(r) {
     return {
       id:         r.reference_id || r.id,
       name:       r.customer_name || '',
@@ -260,7 +260,7 @@
     };
   }
 
-  function serviceToSb(s, order) {
+  function serviceToRow(s, order) {
     return {
       reference_id:  s.id,
       title:         s.title       || '',
@@ -272,7 +272,7 @@
     };
   }
 
-  function sbToService(r) {
+  function rowToService(r) {
     return {
       id:            r.reference_id || r.id,
       title:         r.title        || '',
@@ -287,20 +287,20 @@
   /* ── Adapter ──────────────────────────────────────────── */
   window.Adapter = {
 
-    supabaseReady: !!_sb,
+    apiReady: !!_api,
 
     /* Pull all remote data into localStorage — called once at login.
        Order: hm_data first (config baseline), then proper tables
        (these overwrite the same keys so transactional data wins). */
-    async syncFromSupabase() {
-      if (!_sb) return;
+    async syncFromApi() {
+      if (!_api) return;
 
       const [bkRes, calRes, revRes, svcRes, kvRes] = await Promise.all([
-        _sb.from('bookings').select('*').order('created_at', { ascending: false }),
-        _sb.from('calendar_availability').select('*'),
-        _sb.from('reviews').select('*').order('created_at', { ascending: false }),
-        _sb.from('services').select('*').order('display_order'),
-        _sb.from('hm_data').select('key, value'),
+        _api.from('bookings').select('*').order('created_at', { ascending: false }),
+        _api.from('calendar_availability').select('*'),
+        _api.from('reviews').select('*').order('created_at', { ascending: false }),
+        _api.from('services').select('*').order('display_order'),
+        _api.from('hm_data').select('key, value'),
       ]);
 
       // Config baseline
@@ -308,7 +308,7 @@
 
       // Bookings
       if (bkRes.data) {
-        _set(K.bk, bkRes.data.map(sbToBooking));
+        _set(K.bk, bkRes.data.map(rowToBooking));
         if (window.DataProvider) DataProvider.seed('bookings', bkRes.data);
       } else if (bkRes.error) console.warn('[Adapter] bookings sync:', bkRes.error.message);
 
@@ -325,13 +325,13 @@
 
       // Reviews
       if (revRes.data) {
-        _set('hm_reviews', revRes.data.map(sbToReview));
+        _set('hm_reviews', revRes.data.map(rowToReview));
         if (window.DataProvider) DataProvider.seed('reviews', revRes.data);
       } else if (revRes.error) console.warn('[Adapter] reviews sync:', revRes.error.message);
 
       // Services (only overwrite if the table has rows)
       if (svcRes.data && svcRes.data.length) {
-        _set('hm_services', svcRes.data.map(sbToService));
+        _set('hm_services', svcRes.data.map(rowToService));
         if (window.DataProvider) DataProvider.seed('services', svcRes.data);
       } else if (svcRes.error) console.warn('[Adapter] services sync:', svcRes.error.message);
     },
@@ -343,11 +343,11 @@
       if (!_checkCanWrite()) return;
       const a = this.getBookings(); a.unshift(b); _set(K.bk, a);
       if (window.DataProvider) DataProvider.invalidate('bookings');
-      if (!_sb) { console.warn('[Adapter] addBooking: SupabaseClient null'); return; }
-      _sb.from('bookings').insert(bookingToSb(b))
+      if (!_api) { console.warn('[Adapter] addBooking: ApiClient null'); return; }
+      _api.from('bookings').insert(bookingToRow(b))
         .then(({ error }) => {
-          if (error) console.error('[SUPABASE ERROR] bookings insert failed:', error.message);
-          else        console.log('[SUPABASE RESPONSE] bookings insert ok');
+          if (error) console.error('[API ERROR] bookings insert failed:', error.message);
+          else        console.log('[API RESPONSE] bookings insert ok');
         });
     },
 
@@ -357,11 +357,11 @@
       _set(K.bk, list);
       if (window.DataProvider) DataProvider.invalidate('bookings');
       const updated = list.find(b => b.id === id);
-      if (updated && updated._dbId && _sb) {
-        const { created_at, ...fields } = bookingToSb(updated);
+      if (updated && updated._dbId && _api) {
+        const { created_at, ...fields } = bookingToRow(updated);
         const row = { ...fields, updated_at: new Date().toISOString() };
-        _sb.from('bookings').update(row).eq('id', updated._dbId)
-          .then(({ error }) => { if (error) console.error('[SUPABASE ERROR] bookings update failed:', error.message); });
+        _api.from('bookings').update(row).eq('id', updated._dbId)
+          .then(({ error }) => { if (error) console.error('[API ERROR] bookings update failed:', error.message); });
       }
     },
 
@@ -387,13 +387,13 @@
       booked = booked.filter(d => d !== date);
       if (status === 'booked') booked.push(date);
       _set(K.booked, booked);
-      // Supabase
-      const sbStatus = CAL_TO_SB[status] || status;
+      // API
+      const dbStatus = CAL_TO_DB[status] || status;
       if (status === 'available') {
         _del('calendar_availability', 'date', date);
       } else {
         _upsert('calendar_availability',
-          { date, status: sbStatus, updated_at: new Date().toISOString() }, 'date');
+          { date, status: dbStatus, updated_at: new Date().toISOString() }, 'date');
       }
     },
 
@@ -403,8 +403,8 @@
       localStorage.removeItem(K.booked);
       localStorage.removeItem(K.counts);
       if (window.DataProvider) DataProvider.invalidate('calendar_availability');
-      if (_sb) {
-        _sb.from('calendar_availability').delete().not('date', 'is', null)
+      if (_api) {
+        _api.from('calendar_availability').delete().not('date', 'is', null)
           .then(({ error }) => { if (error) console.warn('[Adapter] clearAvail error:', error.message); });
       }
     },
@@ -453,7 +453,7 @@
       if (!_checkCanWrite()) return;
       const a = this.getServices(); a.push(s); _set('hm_services', a);
       if (window.DataProvider) DataProvider.invalidate('services');
-      _upsert('services', serviceToSb(s, a.length - 1), 'reference_id');
+      _upsert('services', serviceToRow(s, a.length - 1), 'reference_id');
     },
 
     updateService(id, p) {
@@ -462,7 +462,7 @@
       _set('hm_services', svcs);
       if (window.DataProvider) DataProvider.invalidate('services');
       const updated = svcs.find(s => s.id === id);
-      if (updated) _upsert('services', serviceToSb(updated, svcs.indexOf(updated)), 'reference_id');
+      if (updated) _upsert('services', serviceToRow(updated, svcs.indexOf(updated)), 'reference_id');
     },
 
     deleteService(id) {
@@ -476,9 +476,9 @@
       if (!_checkCanWrite()) return;
       _set('hm_services', svcs);
       if (window.DataProvider) DataProvider.invalidate('services');
-      if (!_sb || !svcs.length) return;
-      _sb.from('services')
-        .upsert(svcs.map((s, i) => serviceToSb(s, i)), { onConflict: 'reference_id' })
+      if (!_api || !svcs.length) return;
+      _api.from('services')
+        .upsert(svcs.map((s, i) => serviceToRow(s, i)), { onConflict: 'reference_id' })
         .then(({ error }) => { if (error) console.warn('[Adapter] saveServices error:', error.message); });
     },
 
@@ -530,7 +530,7 @@
       if (!_checkCanWrite()) return;
       const a = this.getReviews(); a.unshift(r); _set('hm_reviews', a);
       if (window.DataProvider) DataProvider.invalidate('reviews');
-      _upsert('reviews', reviewToSb(r), 'reference_id');
+      _upsert('reviews', reviewToRow(r), 'reference_id');
     },
 
     updateReview(id, p) {
@@ -539,7 +539,7 @@
       _set('hm_reviews', list);
       if (window.DataProvider) DataProvider.invalidate('reviews');
       const updated = list.find(r => r.id === id);
-      if (updated) _upsert('reviews', reviewToSb(updated), 'reference_id');
+      if (updated) _upsert('reviews', reviewToRow(updated), 'reference_id');
     },
 
     deleteReview(id) {
@@ -719,20 +719,20 @@
     _bookingsChannel:     null,
     _availabilityChannel: null,
 
-    /* Subscribe to Supabase Realtime for bookings and calendar_availability.
+    /* Subscribe to API Realtime for bookings and calendar_availability.
        Idempotent — safe to call multiple times; duplicate channels are skipped. */
     initializeRealtime() {
-      if (!_sb) return;
+      if (!_api) return;
 
       // ── Reservation Management: bookings table ───────────
       if (!this._bookingsChannel) {
-        this._bookingsChannel = _sb
+        this._bookingsChannel = _api
           .channel('admin-bookings-realtime')
           .on('postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'bookings' },
             (payload) => {
               console.log('[Realtime] Booking inserted', payload.new);
-              const bk   = sbToBooking(payload.new);
+              const bk   = rowToBooking(payload.new);
               const list = this.getBookings();
               if (!list.find(b => b.id === bk.id)) {
                 list.unshift(bk);
@@ -746,7 +746,7 @@
             { event: 'UPDATE', schema: 'public', table: 'bookings' },
             (payload) => {
               console.log('[Realtime] Booking updated', payload.new);
-              const bk   = sbToBooking(payload.new);
+              const bk   = rowToBooking(payload.new);
               const list = this.getBookings().map(b => b.id === bk.id ? bk : b);
               _set(K.bk, list);
               document.dispatchEvent(new CustomEvent('booking:updated', {
@@ -777,7 +777,7 @@
 
       // ── Calendar Management: calendar_availability table ─
       if (!this._availabilityChannel) {
-        this._availabilityChannel = _sb
+        this._availabilityChannel = _api
           .channel('admin-availability-realtime')
           .on('postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'calendar_availability' },
@@ -823,24 +823,24 @@
       }
     },
 
-    /* Pull only the bookings table from Supabase and refresh localStorage.
-       Lighter than syncFromSupabase() — use when bookings view is opened. */
+    /* Pull only the bookings table from API and refresh localStorage.
+       Lighter than syncFromApi() — use when bookings view is opened. */
     async syncBookings() {
-      if (!_sb) return false;
-      const { data, error } = await _sb
+      if (!_api) return false;
+      const { data, error } = await _api
         .from('bookings')
         .select('*')
         .order('created_at', { ascending: false });
       if (error) { console.warn('[Adapter] syncBookings error:', error.message); return false; }
-      if (data) _set(K.bk, data.map(sbToBooking));
+      if (data) _set(K.bk, data.map(rowToBooking));
       return true;
     },
 
     /* Pull hm_quotes from the hm_data KV table and refresh localStorage.
-       Lighter than syncFromSupabase() — use when quotes view is opened. */
+       Lighter than syncFromApi() — use when quotes view is opened. */
     async syncQuotes() {
-      if (!_sb) return false;
-      const { data, error } = await _sb
+      if (!_api) return false;
+      const { data, error } = await _api
         .from('hm_data')
         .select('value')
         .eq('key', 'hm_quotes')
@@ -850,21 +850,21 @@
       return true;
     },
 
-    /* Pull only the services table from Supabase and refresh localStorage.
-       Lighter than syncFromSupabase() — use when services view is opened. */
+    /* Pull only the services table from API and refresh localStorage.
+       Lighter than syncFromApi() — use when services view is opened. */
     async syncServices() {
-      if (!_sb) return false;
-      const { data, error } = await _sb.from('services').select('*').order('display_order');
+      if (!_api) return false;
+      const { data, error } = await _api.from('services').select('*').order('display_order');
       if (error) { console.warn('[Adapter] syncServices error:', error.message); return false; }
-      if (data && data.length) _set('hm_services', data.map(sbToService));
+      if (data && data.length) _set('hm_services', data.map(rowToService));
       return true;
     },
 
     /* Pull hm_customers from the hm_data KV table and refresh localStorage.
-       Lighter than syncFromSupabase() — use when customers view is opened. */
+       Lighter than syncFromApi() — use when customers view is opened. */
     async syncCustomers() {
-      if (!_sb) return false;
-      const { data, error } = await _sb
+      if (!_api) return false;
+      const { data, error } = await _api
         .from('hm_data')
         .select('value')
         .eq('key', 'hm_customers')
@@ -875,10 +875,10 @@
     },
 
     /* Pull hm_faq and hm_faq_section from hm_data KV and refresh localStorage.
-       Lighter than syncFromSupabase() — use when FAQ view is opened. */
+       Lighter than syncFromApi() — use when FAQ view is opened. */
     async syncFaq() {
-      if (!_sb) return false;
-      const { data, error } = await _sb
+      if (!_api) return false;
+      const { data, error } = await _api
         .from('hm_data')
         .select('key,value')
         .in('key', ['hm_faq', 'hm_faq_section']);
@@ -888,10 +888,10 @@
     },
 
     /* Pull hm_hero from hm_data KV and refresh localStorage.
-       Lighter than syncFromSupabase() — use when hero view is opened. */
+       Lighter than syncFromApi() — use when hero view is opened. */
     async syncHero() {
-      if (!_sb) return false;
-      const { data, error } = await _sb
+      if (!_api) return false;
+      const { data, error } = await _api
         .from('hm_data')
         .select('value')
         .eq('key', 'hm_hero')
@@ -902,10 +902,10 @@
     },
 
     /* Pull hm_company_rows and hm_company_section from hm_data KV.
-       Lighter than syncFromSupabase() — use when company view is opened. */
+       Lighter than syncFromApi() — use when company view is opened. */
     async syncCompany() {
-      if (!_sb) return false;
-      const { data, error } = await _sb
+      if (!_api) return false;
+      const { data, error } = await _api
         .from('hm_data')
         .select('key,value')
         .in('key', ['hm_company_rows', 'hm_company_section']);
@@ -915,10 +915,10 @@
     },
 
     /* Pull hm_footer from hm_data KV and refresh localStorage.
-       Lighter than syncFromSupabase() — use when footer view is opened. */
+       Lighter than syncFromApi() — use when footer view is opened. */
     async syncFooter() {
-      if (!_sb) return false;
-      const { data, error } = await _sb
+      if (!_api) return false;
+      const { data, error } = await _api
         .from('hm_data')
         .select('value')
         .eq('key', 'hm_footer')
@@ -929,10 +929,10 @@
     },
 
     /* Pull hm_prices from hm_data KV and refresh localStorage.
-       Lighter than syncFromSupabase() — use when pricing view is opened. */
+       Lighter than syncFromApi() — use when pricing view is opened. */
     async syncPrices() {
-      if (!_sb) return false;
-      const { data, error } = await _sb
+      if (!_api) return false;
+      const { data, error } = await _api
         .from('hm_data')
         .select('value')
         .eq('key', 'hm_prices')
@@ -943,10 +943,10 @@
     },
 
     /* Pull hm_disposal from hm_data KV and refresh localStorage.
-       Lighter than syncFromSupabase() — use when disposal view is opened. */
+       Lighter than syncFromApi() — use when disposal view is opened. */
     async syncDisposal() {
-      if (!_sb) return false;
-      const { data, error } = await _sb
+      if (!_api) return false;
+      const { data, error } = await _api
         .from('hm_data')
         .select('value')
         .eq('key', 'hm_disposal')
@@ -957,10 +957,10 @@
     },
 
     /* Pull hm_capacity from hm_data KV and refresh localStorage.
-       Lighter than syncFromSupabase() — use when capacity view is opened. */
+       Lighter than syncFromApi() — use when capacity view is opened. */
     async syncCapacity() {
-      if (!_sb) return false;
-      const { data, error } = await _sb
+      if (!_api) return false;
+      const { data, error } = await _api
         .from('hm_data')
         .select('value')
         .eq('key', 'hm_capacity')
@@ -970,24 +970,24 @@
       return true;
     },
 
-    /* Pull only the reviews table from Supabase and refresh localStorage.
-       Lighter than syncFromSupabase() — use when reviews view is opened. */
+    /* Pull only the reviews table from API and refresh localStorage.
+       Lighter than syncFromApi() — use when reviews view is opened. */
     async syncReviews() {
-      if (!_sb) return false;
-      const { data, error } = await _sb
+      if (!_api) return false;
+      const { data, error } = await _api
         .from('reviews')
         .select('*')
         .order('created_at', { ascending: false });
       if (error) { console.warn('[Adapter] syncReviews error:', error.message); return false; }
-      if (data) _set('hm_reviews', data.map(sbToReview));
+      if (data) _set('hm_reviews', data.map(rowToReview));
       return true;
     },
 
-    /* Pull only calendar_availability from Supabase and refresh localStorage.
-       Lighter than syncFromSupabase() — use when calendar view is opened. */
+    /* Pull only calendar_availability from API and refresh localStorage.
+       Lighter than syncFromApi() — use when calendar view is opened. */
     async syncAvailability() {
-      if (!_sb) return false;
-      const { data, error } = await _sb.from('calendar_availability').select('*');
+      if (!_api) return false;
+      const { data, error } = await _api.from('calendar_availability').select('*');
       if (error) { console.warn('[Adapter] syncAvailability error:', error.message); return false; }
       if (data) {
         const avail = {};
@@ -1002,13 +1002,13 @@
 
     /* Remove all active Realtime channels. Call on logout. */
     destroyRealtime() {
-      if (!_sb) return;
+      if (!_api) return;
       if (this._bookingsChannel) {
-        _sb.removeChannel(this._bookingsChannel);
+        _api.removeChannel(this._bookingsChannel);
         this._bookingsChannel = null;
       }
       if (this._availabilityChannel) {
-        _sb.removeChannel(this._availabilityChannel);
+        _api.removeChannel(this._availabilityChannel);
         this._availabilityChannel = null;
       }
     },

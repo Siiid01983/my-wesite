@@ -1,5 +1,5 @@
 // ── Storage adapter ────────────────────────────────────────────────────────────
-// Swap _store for a SupabaseAdapter that implements the same interface.
+// Swap _store for a APIAdapter that implements the same interface.
 // Promote all methods to async when migrating.
 //
 // Storage keys (shared with admin.html Adapter):
@@ -111,7 +111,7 @@ const CalendarService = (() => {
     }));
   }
 
-  // Swap the storage adapter at runtime (e.g., for Supabase).
+  // Swap the storage adapter at runtime (e.g., for API).
   function setAdapter(adapter) {
     _store = adapter;
   }

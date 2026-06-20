@@ -6,7 +6,7 @@
    ════════════════════════════════════════════════════════ */
 /* ════════════════════════════════════════════════════════
    CALENDAR AVAILABILITY SERVICE  (data-only — no DOM calls)
-   Swap Adapter.* calls for async Supabase calls here.
+   Swap Adapter.* calls for async API calls here.
    ════════════════════════════════════════════════════════ */
 const CalendarService = {
   getAvailability() {
@@ -53,8 +53,8 @@ const CalendarService = {
   },
 
   saveAvailability() {
-    /* Supabase hook point:
-       await supabase.from('availability').upsert(this.getAvailability()) */
+    /* API hook point:
+       persist availability through Adapter.setDate() */
   }
 };
 
@@ -124,7 +124,7 @@ const BookingService = {
   getBookings() { return Adapter.getBookings(); },
 
   // id + patch object — replaces the old (prev, next) signature.
-  // Supabase hook point: await adapter.update(id, patch) here.
+  // API hook point: await adapter.update(id, patch) here.
   updateBooking(id, patch) {
     const prev = Adapter.getBookings().find(b => b.id === id);
     if (!prev) return null;
@@ -149,7 +149,7 @@ const BookingService = {
   },
 
   // Sets status to キャンセル, releases the calendar slot, dispatches booking:cancelled.
-  // Supabase hook point: await adapter.update(id, { status: 'キャンセル' }) here.
+  // API hook point: await adapter.update(id, { status: 'キャンセル' }) here.
   cancelBooking(id) {
     const bk = Adapter.getBookings().find(b => b.id === id);
     if (!bk) return null;
@@ -175,7 +175,7 @@ const BookingService = {
   },
 
   /* Rebuild hm_counts from hm_admin_bookings on first load.
-     Supabase hook point: replace with a server-side count query. */
+     API hook point: replace with a server-side count query. */
   bootstrap() {
     const existing = this.getCounts();
     if (Object.keys(existing).length > 0) return; // already populated
@@ -230,7 +230,7 @@ function _renderBookingsUI() {
 
 function renderBookings() {
   _renderBookingsUI();
-  if (Adapter.supabaseReady) {
+  if (Adapter.apiReady) {
     _dpSync('bookings', null, () => Adapter.syncBookings(), 'view-bookings', _renderBookingsUI);
   }
 }
@@ -448,12 +448,11 @@ function openEdit(id) {
 
 function closeEdit() { document.getElementById('editModal').classList.remove('open'); }
 
-/* ── Customer email via Resend Edge Function ─────────────── */
+/* ── Customer email via PHP API (hm-api/send-email.php) ──── */
 async function _sendBookingEmail(b, trigger) {
   if (!b.email) return;   /* no recipient — skip silently */
 
-  const url = (window.SUPABASE_URL || '').replace(/\/$/, '') + '/functions/v1/send-email';
-  const key = window.SUPABASE_ANON_KEY || '';
+  const url = (window.API_BASE || '').replace(/\/$/, '') + '/send-email.php';
 
   const messages = {
     newBooking: `${b.name || 'お客様'}様\n\nこの度はHello Movingにご連絡いただき、誠にありがとうございます。\n以下の内容でご予約を受け付けました。\n\nサービス：${b.service || '—'}\n引越し日：${b.date || '未定'}\n\n担当者より改めてご連絡差し上げます。\nご不明な点がございましたら、お気軽にご連絡ください。\n\nHello Moving 予約担当`,
@@ -472,11 +471,7 @@ async function _sendBookingEmail(b, trigger) {
   try {
     const res = await fetch(url, {
       method:  'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'Authorization': `Bearer ${key}`,
-        'apikey':        key,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         from_account,
         to:         b.email,

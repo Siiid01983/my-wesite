@@ -86,12 +86,12 @@ const CHANGELOG = [
   {
     version: 'v3.4', date: '2026-06-06',
     entries: [
-      { type:'improve', text:'getDashboardStats(): 7件の bookings COUNT クエリを Array.filter() に置き換え。renderDash() の Supabase リクエスト数を22→9に削減' },
+      { type:'improve', text:'getDashboardStats(): 7件の bookings COUNT クエリを Array.filter() に置き換え。renderDash() の API リクエスト数を22→9に削減' },
       { type:'improve', text:'getGrowthStats(): 6件の bookings COUNT クエリを Array.filter() に置き換え。追加リクエスト0件で動作' },
       { type:'fix',     text:'_invalidateKPI() のサービス人気度キャッシュキー不一致バグを修正：monthStart ではなく nDaysAgoISO(30) を使用するよう統一' },
       { type:'fix',     text:'booking:cancelled リスナーの欠落を修正：キャンセル操作後にKPI・アクティビティキャッシュが即時無効化されない問題を解消' },
       { type:'fix',     text:'StatisticsService の bookings Realtime チャンネル重複を削除：二重購読により1件の INSERT で最大31クエリ・二重再描画が発火していた問題を修正' },
-      { type:'improve', text:'SupabaseAdapter を window.SupabaseClient シングルトンに統合：アプリ全体でクライアントインスタンスを1つに統一' },
+      { type:'improve', text:'APIAdapter を window.api シングルトンに統合：アプリ全体でクライアントインスタンスを1つに統一' },
     ]
   },
   {
@@ -99,7 +99,7 @@ const CHANGELOG = [
     entries: [
       { type:'feat', text:'強制パスワード変更ゲート（Phase 10A）：デフォルトパスワードのまま利用不可、初回ログイン時に新パスワード設定を義務化' },
       { type:'feat', text:'ログイン画面事前確認バナー（Phase 10B）：env.js 認証情報をページ読み込み時に検証、設定不備をアンバーバナーで即時通知' },
-      { type:'feat', text:'本番グレード HealthCheck システム（Phase 10C）：Supabase 接続・DataProvider・サービスレジストリ・ストレージ・認証を起動時に並列チェック' },
+      { type:'feat', text:'本番グレード HealthCheck システム（Phase 10C）：API 接続・DataProvider・サービスレジストリ・ストレージ・認証を起動時に並列チェック' },
       { type:'feat', text:'設定 → システム健全性ページ：サービス別ステータス・最終チェック日時・詳細メッセージ一覧、再チェック & ログクリアボタン' },
       { type:'feat', text:'インアプリ健全性バナー：ログイン後に正常（緑）/ 警告（黄）/ エラー（赤）バナーを表示、health:* カスタムイベント送出' },
       { type:'feat', text:'ヘルスチェックログ：hm_health_log に100件FIFOで記録、サービス・ステータス・メッセージ・タイムスタンプを保存' },
@@ -180,12 +180,12 @@ const CL_TYPE = {
 };
 
 const CHANGELOG_NEXT = [
-  { priority:'high',   text:'Supabase Storage 統合：メディア画像をローカルストレージではなく Supabase クラウドストレージに直接アップロード・管理' },
+  { priority:'high',   text:'API Storage 統合：メディア画像をローカルストレージではなく API クラウドストレージに直接アップロード・管理' },
   { priority:'high',   text:'Google カレンダー同期：確定予約を Google カレンダーに自動追加・更新・削除' },
   { priority:'medium', text:'一括操作：予約・見積りの複数選択とまとめてステータス変更・削除・エクスポート' },
   { priority:'medium', text:'予約カレンダービュー：月次カレンダー形式で予約を視覚的に一覧表示' },
   { priority:'medium', text:'英語管理画面対応（i18n）：管理UIの日英切替サポート' },
-  { priority:'medium', text:'自動バックアップ：設定した間隔で Supabase データを自動エクスポートし、バックアップ履歴を保持' },
+  { priority:'medium', text:'自動バックアップ：設定した間隔で API データを自動エクスポートし、バックアップ履歴を保持' },
   { priority:'low',    text:'自動フォローアップ：引越し完了後の顧客へ自動レビュー依頼メールを送信' },
   { priority:'low',    text:'スタッフ管理：複数管理者アカウントと権限レベル（オーナー・スタッフ）の設定' },
 ];

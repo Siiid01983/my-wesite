@@ -122,18 +122,18 @@ async function _wmcSvcSaveAll() {
   localStorage.setItem('hm_service_images', JSON.stringify(images));
   localStorage.setItem('hm_last_content_update', new Date().toISOString());
 
-  if (window.SupabaseClient) {
-    var r = await window.SupabaseClient
+  if (window.api) {
+    var r = await window.api
       .from('hm_data')
       .upsert({ key: 'hm_service_images', value: images, updated_at: new Date().toISOString() }, { onConflict: 'key' });
     if (r.error) {
-      console.warn('[wmcServices] Supabase write failed:', r.error.message);
+      console.warn('[wmcServices] API write failed:', r.error.message);
       if (typeof toast !== 'undefined') toast('保存失敗: ' + r.error.message);
     } else {
       if (typeof toast !== 'undefined') toast('サービス画像設定を保存しました');
     }
   } else {
-    if (typeof toast !== 'undefined') toast('ローカルに保存しました（Supabase未接続）');
+    if (typeof toast !== 'undefined') toast('ローカルに保存しました（API未接続）');
   }
 
   if (typeof WMCPermissions !== 'undefined') WMCPermissions.audit('update', 'services', 'images', 'サービス画像設定を保存');

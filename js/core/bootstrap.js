@@ -3,7 +3,7 @@
    Single entry point for all service-layer scripts on index.html.
 
    Strict load order:
-     supabase UMD → appConfig → env.js → supabaseClient
+     apiClient.js → appConfig → env.js → dataClient
      → fallbackLogger → dataProvider → serviceRegistry
      → bookingService → contentLoader → swRegister
 
@@ -112,11 +112,11 @@
     var iife = (async function () {
       try {
 
-        /* Stage 1 — Supabase UMD library */
-        window.__BOOTSTRAP__.stage = 'supabase-lib';
-        await _load('js/lib/supabase.js');
-        if (typeof window.supabase === 'undefined') {
-          throw new Error('supabase.js loaded but window.supabase is undefined');
+        /* Stage 1 — Data client (self-hosted PHP + MySQL API client) */
+        window.__BOOTSTRAP__.stage = 'api-client';
+        await _load('js/lib/apiClient.js');
+        if (typeof window.ApiClient === 'undefined') {
+          throw new Error('apiClient.js loaded but window.ApiClient is undefined');
         }
 
         /* Stage 2 — App config (one retry: attempt → 1s → retry → fail) */
@@ -140,12 +140,12 @@
           console.warn('[Bootstrap] No valid credentials found — running in static-content mode.');
         }
 
-        /* Stage 4 — Supabase client */
-        window.__BOOTSTRAP__.stage = 'supabase-client';
-        await _load('js/services/supabaseClient.js');
-        if (!window.SupabaseClient) {
+        /* Stage 4 — API client */
+        window.__BOOTSTRAP__.stage = 'data-client';
+        await _load('js/services/dataClient.js');
+        if (!window.api) {
           /* Not fatal — site renders static content; log clearly */
-          console.warn('[Bootstrap] SupabaseClient is null — site will display static defaults. Check env.js credentials.');
+          console.warn('[Bootstrap] ApiClient is null — site will display static defaults. Check env.js credentials.');
         }
 
         /* Stage 5 — Fallback logger */

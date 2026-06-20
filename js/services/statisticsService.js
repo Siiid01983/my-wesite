@@ -2,7 +2,7 @@
    STATISTICS SERVICE  — Phase 13 BI Dashboard
    ════════════════════════════════════════════════════════
    Provides all Business Intelligence metrics for the admin
-   dashboard. Uses direct Supabase COUNT queries for aggregates
+   dashboard. Uses direct API COUNT queries for aggregates
    (DataProvider doesn't support gte/lte filters) and an
    in-memory cache with two TTL tiers:
 
@@ -13,13 +13,13 @@
      booking:created, booking:updated → KPI + activity
      review:* events                  → activity
 
-   Load order: supabase UMD → env.js → supabaseClient.js → this
+   Load order: apiClient.js → env.js → dataClient.js → this
    Publishes: document 'dashboard:stats-updated' { detail: stats }
    ════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
 
-  const _sb = window.SupabaseClient || null;
+  const _api = window.api || null;
 
   /* ── In-memory cache ───────────────────────────────────── */
   const _mem = {};
@@ -43,20 +43,20 @@
   /* ── Shared raw bookings fetch (30 s TTL) ──────────────────
      All row-level BI functions (revenue, trend, service, customer)
      share this single fetch per renderDash cycle, cutting parallel
-     Supabase round-trips from 4+ down to 1.
+     API round-trips from 4+ down to 1.
      ─────────────────────────────────────────────────────────── */
   let _rawBkInflight = null; // deduplicate concurrent callers
 
   async function _getBookingsRaw() {
     const cached = _cGet('raw_bk');
     if (cached) return cached;
-    if (!_sb) return [];
+    if (!_api) return [];
 
     // If a fetch is already in flight, wait for it instead of launching another
     if (_rawBkInflight) return _rawBkInflight;
 
     _rawBkInflight = (async () => {
-      const { data, error } = await _sb
+      const { data, error } = await _api
         .from('bookings')
         .select('id,booking_date,service_id,status,customer_email,customer_name,created_at')
         .order('created_at', { ascending: false });
@@ -117,8 +117,8 @@
 
   /* ── Aggregate COUNT helper ────────────────────────────── */
   async function _count(table, filters) {
-    if (!_sb) return 0;
-    let q = _sb.from(table).select('*', { count: 'exact', head: true });
+    if (!_api) return 0;
+    let q = _api.from(table).select('*', { count: 'exact', head: true });
     filters.forEach(([method, ...args]) => { q = q[method](...args); });
     const { count, error } = await q;
     if (error) { console.warn(`[StatisticsService] ${table} count error:`, error.message); return 0; }
@@ -149,7 +149,7 @@
   }
 
   async function getDashboardStats() {
-    if (!_sb) return null;
+    if (!_api) return null;
 
     // Fire bookings (shared), occupancy, and reviews in parallel.
     // _getBookingsRaw() is deduplicated across all concurrent BI callers via _rawBkInflight.
@@ -198,7 +198,7 @@
   async function getGrowthStats() {
     const cached = _cGet('growth');
     if (cached) return cached;
-    if (!_sb) return null;
+    if (!_api) return null;
 
     // Single shared fetch — covers all six period counts below
     const data = await _getBookingsRaw();
@@ -240,7 +240,7 @@
   async function getRevenueStats() {
     const cached = _cGet('revenue');
     if (cached) return cached;
-    if (!_sb) return null;
+    if (!_api) return null;
 
     const data = await _getBookingsRaw();
     if (!data.length && !_cGet('raw_bk')) return null; // error during fetch
@@ -285,13 +285,13 @@
     const key = 'trend_' + days;
     const cached = _cGet(key);
     if (cached) return cached;
-    if (!_sb) return null;
+    if (!_api) return null;
 
     const from = _nDaysAgoISO(days - 1);
     const data = await _getBookingsRaw();
     if (!data.length && !_cGet('raw_bk')) return null; // error during fetch
 
-    // Filter to window in JS — no extra Supabase round-trip
+    // Filter to window in JS — no extra API round-trip
     const inWindow = data.filter(r => r.booking_date >= from);
 
     const trend = [];
@@ -321,7 +321,7 @@
     const key = `svp_${f}_${t}`;
     const cached = _cGet(key);
     if (cached) return cached;
-    if (!_sb) return [];
+    if (!_api) return [];
 
     const data = await _getBookingsRaw();
     if (!data.length && !_cGet('raw_bk')) return []; // error during fetch
@@ -353,7 +353,7 @@
   async function getCustomerStats() {
     const cached = _cGet('customers');
     if (cached) return cached;
-    if (!_sb) return null;
+    if (!_api) return null;
 
     const today      = _todayISO();
     const monthStart = _monthStartISO();
@@ -402,7 +402,7 @@
   async function getOperationalStats() {
     const cached = _cGet('operational');
     if (cached) return cached;
-    if (!_sb) return null;
+    if (!_api) return null;
 
     const monthStart = _monthStartISO();
     const monthEnd   = _monthEndISO();
@@ -426,18 +426,18 @@
   }
 
   /* ════════════════════════════════════════════════════════
-     8. RECENT ACTIVITY FEED — live from Supabase
+     8. RECENT ACTIVITY FEED — live from API
      ════════════════════════════════════════════════════════ */
   async function getRecentActivity(limit) {
     const cached = _cGet('activity');
     if (cached) return cached;
-    if (!_sb) return [];
+    if (!_api) return [];
 
     const n = limit || 10;
 
     // Bookings leg: use raw cache (already ordered by created_at DESC) — no extra fetch
     const rawBk = await _getBookingsRaw();
-    const revRes = await _sb
+    const revRes = await _api
       .from('reviews')
       .select('reference_id,customer_name,rating,approved,created_at')
       .order('created_at', { ascending: false }).limit(5);
@@ -476,8 +476,8 @@
   const _STATUS_LOCAL = { pending:'新規', checking:'確認中', confirmed:'確定', completed:'完了', cancelled:'キャンセル' };
 
   async function getAnalyticsData(from, to) {
-    if (!_sb) return null;
-    const { data, error } = await _sb
+    if (!_api) return null;
+    const { data, error } = await _api
       .from('bookings')
       .select('booking_date,service_id,status')
       .gte('booking_date', from)
@@ -513,10 +513,10 @@
   let _reviewsChannel   = null;
 
   function initializeRealtime() {
-    if (!_sb) return;
+    if (!_api) return;
 
     if (!_availChannel) {
-      _availChannel = _sb.channel('stats-availability')
+      _availChannel = _api.channel('stats-availability')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'calendar_availability' }, () => { _cDel('operational'); _refresh(); })
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'calendar_availability' }, () => { _cDel('operational'); _refresh(); })
         .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'calendar_availability' }, () => { _cDel('operational'); _refresh(); })
@@ -524,16 +524,16 @@
     }
 
     if (!_reviewsChannel) {
-      _reviewsChannel = _sb.channel('stats-reviews')
+      _reviewsChannel = _api.channel('stats-reviews')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, () => { _invalidateActivity(); _refresh(); })
         .subscribe();
     }
   }
 
   function destroyRealtime() {
-    if (!_sb) return;
-    if (_availChannel)   { _sb.removeChannel(_availChannel);   _availChannel   = null; }
-    if (_reviewsChannel) { _sb.removeChannel(_reviewsChannel); _reviewsChannel = null; }
+    if (!_api) return;
+    if (_availChannel)   { _api.removeChannel(_availChannel);   _availChannel   = null; }
+    if (_reviewsChannel) { _api.removeChannel(_reviewsChannel); _reviewsChannel = null; }
   }
 
   /* ── Cache invalidation via domain events ──────────────── */
@@ -555,7 +555,7 @@
     getAnalyticsData,
     initializeRealtime,
     destroyRealtime,
-    supabaseReady: !!_sb,
+    apiReady: !!_api,
 
     /* Phase 13 BI */
     getGrowthStats,

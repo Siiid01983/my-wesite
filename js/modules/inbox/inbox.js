@@ -3,7 +3,7 @@
 /* ════════════════════════════════════════════════════════
    INBOX MODULE  (Phase 31 — Resend Inbound)
 
-   Reads inbox_messages from Supabase and renders them as
+   Reads inbox_messages from API and renders them as
    a list of cards inside #messages-container.
 
    Public API exposed on window:
@@ -23,15 +23,15 @@
     return d.toLocaleString('ja-JP', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
   }
 
-  /* ── Fetch from Supabase ──────────────────────────────── */
+  /* ── Fetch from API ──────────────────────────────── */
   async function _fetchMessages() {
-    const _sb = window.SupabaseClient;
-    if (!_sb) {
-      console.error('[INBOX] SupabaseClient not available');
+    const _api = window.api;
+    if (!_api) {
+      console.error('[INBOX] ApiClient not available');
       return [];
     }
 
-    const { data, error } = await _sb
+    const { data, error } = await _api
       .from('inbox_messages')
       .select('id, sender, email, subject, body, booking_id, created_at')
       .order('created_at', { ascending: false })

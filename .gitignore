@@ -18,8 +18,12 @@ types/
 *.zip
 %TEMP%*
 
-# Supabase CLI scratch
-supabase/.temp/
+
+# Self-hosted PHP API — never commit live secrets or uploaded files
+hm-api/_config.php
+hm-api/_uploads/*
+!hm-api/_uploads/.htaccess
+hm-api/vendor/
 
 # Local deploy-verification helper (hits the live site, writes verify_live.png)
 verify_deploy.mjs

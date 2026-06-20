@@ -39,8 +39,8 @@ function _renderHeroUI() {
 
 function renderHero() { _renderHeroUI(); }
 
-function _syncHeroFromSupabase() {
-  if (!Adapter.supabaseReady) return;
+function _syncHeroFromApi() {
+  if (!Adapter.apiReady) return;
   _dpSync('hm_data', {key:'hm_hero'}, () => Adapter.syncHero(), 'view-hero', _renderHeroUI);
 }
 

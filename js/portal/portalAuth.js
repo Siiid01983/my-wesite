@@ -1,10 +1,10 @@
 // js/portal/portalAuth.js → window.PortalAuth
 // Customer Portal authentication & session management.
 //
-// Phase 6A (Authentication Hardening) reworks this module around Supabase Auth
+// Phase 6A (Authentication Hardening) reworks this module around API Auth
 // (Magic Link) while preserving the original Phase 5A logic for safe migration:
 //
-//   PRIMARY  (hardened) — the session comes from a real Supabase Auth JWT. The
+//   PRIMARY  (hardened) — the session comes from a real API Auth JWT. The
 //     customer proved ownership of their email via a one-time link. Authorization
 //     resolves the booking(s) whose customer_email equals that verified email.
 //
@@ -14,8 +14,8 @@
 //     flow is verified in production. New logins no longer use it (login.html now
 //     sends a Magic Link), but PortalAuth.login() remains callable.
 //
-// Reuses existing infrastructure only (PortalSupabaseAuth / BookingService /
-// SupabaseClient). Does NOT touch admin, CRM, WMC, or the database schema.
+// Reuses existing infrastructure only (PortalLogin / BookingService /
+// ApiClient). Does NOT touch admin, CRM, WMC, or the database schema.
 
 (function () {
   'use strict';
@@ -24,8 +24,8 @@
   const TTL_MS      = 60 * 60 * 1000; // 60-minute idle window (legacy path)
 
   // The resolved session for this page load. Set by resolveSession(). For an
-  // authenticated (Supabase) session there is no sessionStorage token — the JWT
-  // lives in the Supabase client — so we cache the derived shape here so the
+  // authenticated (API) session there is no sessionStorage token — the JWT
+  // lives in the API client — so we cache the derived shape here so the
   // sync getSession() callers (e.g. audit actor labelling) keep working.
   let _active = null;
 
@@ -78,28 +78,28 @@
 
   // ── Hardened resolution (Phase 6A) ──────────────────────────────────────────
   // Resolve the active session for a protected page. Order:
-  //   1. Supabase Auth session (verified email)        → authenticated
+  //   1. API Auth session (verified email)        → authenticated
   //   2. Legacy sessionStorage session                 → migration fallback
   //   3. neither                                        → redirect to login
   // Returns the session object (and caches it in _active), or null after redirect.
   async function resolveSession(redirect) {
-    // 1. Supabase Auth (primary)
-    if (window.PortalSupabaseAuth && PortalSupabaseAuth.isConfigured()) {
-      let sbSession = null;
-      try { sbSession = await PortalSupabaseAuth.waitForSession(); } catch (_) {}
+    // 1. API Auth (primary)
+    if (window.PortalLogin && PortalLogin.isConfigured()) {
+      let authSession = null;
+      try { authSession = await PortalLogin.waitForSession(); } catch (_) {}
       // Consume + tidy the magic-link callback artefacts from the URL.
-      try { PortalSupabaseAuth.cleanUrl(); } catch (_) {}
-      if (sbSession && sbSession.user && sbSession.user.email) {
-        const email = String(sbSession.user.email).toLowerCase().trim();
-        const meta  = sbSession.user.user_metadata || {};
+      try { PortalLogin.cleanUrl(); } catch (_) {}
+      if (authSession && authSession.user && authSession.user.email) {
+        const email = String(authSession.user.email).toLowerCase().trim();
+        const meta  = authSession.user.user_metadata || {};
         _active = {
           authed: true,
-          token:  sbSession.access_token || _randToken(),
+          token:  authSession.access_token || _randToken(),
           email:  email,
           name:   meta.name || meta.full_name || '',
           ref:    '',                         // filled once the booking resolves
           iat:    _now(),
-          exp:    sbSession.expires_at ? sbSession.expires_at * 1000 : 0,
+          exp:    authSession.expires_at ? authSession.expires_at * 1000 : 0,
         };
         return _active;
       }
@@ -124,36 +124,40 @@
     if (!email || !ref) {
       return { ok: false, message: 'メールアドレスと予約番号を入力してください。' };
     }
-    if (typeof BookingService === 'undefined' || !window.SupabaseClient) {
+    const base = (window.API_BASE || '').replace(/\/+$/, '');
+    if (!base) {
       return { ok: false, message: '現在ログインできません。しばらくしてから再度お試しください。' };
     }
 
-    let booking = null;
+    // Server-side verification (hm-api/auth.php): email + reference are checked
+    // against the bookings table. A generic failure is returned for both
+    // "not found" and "email mismatch" (anti-enumeration).
+    let out = null;
     try {
-      booking = await BookingService.getBookingById(ref);
+      const res = await fetch(base + '/auth.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, reference: ref }),
+      });
+      out = await res.json().catch(() => null);
     } catch (err) {
-      console.error('[PortalAuth] lookup failed:', err);
+      console.error('[PortalAuth] auth.php failed:', err);
       return { ok: false, message: '接続エラーが発生しました。' };
     }
 
-    // Generic message for both "not found" and "email mismatch" so we never
-    // disclose whether a given reference exists.
-    if (!booking) {
-      return { ok: false, message: '予約が見つかりませんでした。入力内容をご確認ください。' };
-    }
-    const onFile = (booking.email || '').trim().toLowerCase();
-    if (!onFile || onFile !== email) {
+    if (!out || !out.ok || !out.booking) {
       return { ok: false, message: '予約が見つかりませんでした。入力内容をご確認ください。' };
     }
 
-    const displayRef = (booking.id && !/^\d+$/.test(String(booking.id))) ? booking.id : ref;
+    const booking = (typeof _rowToBooking === 'function')
+      ? _rowToBooking(out.booking) : out.booking;
 
     const session = {
       authed: false,
       token: _randToken(),
-      ref:   displayRef,
-      email: onFile,
-      name:  booking.name || '',
+      ref:   ref,
+      email: email,
+      name:  (out.booking.customer_name || (booking && booking.name) || ''),
       iat:   _now(),
       exp:   _now() + TTL_MS,
     };
@@ -162,12 +166,12 @@
     return { ok: true, session: session, booking: booking };
   }
 
-  // Secure logout — ends both the Supabase Auth session and any legacy token.
+  // Secure logout — ends both the API Auth session and any legacy token.
   async function logout() {
     _active = null;
     _clearLegacy();
-    if (window.PortalSupabaseAuth && PortalSupabaseAuth.isConfigured()) {
-      try { await PortalSupabaseAuth.signOut(); } catch (_) {}
+    if (window.PortalLogin && PortalLogin.isConfigured()) {
+      try { await PortalLogin.signOut(); } catch (_) {}
     }
   }
 
@@ -179,7 +183,7 @@
   async function getCurrentBooking() {
     const s = getSession();
     if (!s) return null;
-    if (typeof BookingService === 'undefined' || !window.SupabaseClient) return null;
+    if (typeof BookingService === 'undefined' || !window.api) return null;
 
     // Authenticated path: email is cryptographically trustworthy.
     if (s.authed) {
@@ -216,7 +220,7 @@
   }
 
   // Synchronous guard (legacy callers). Prefer the async resolveSession() on
-  // protected pages so the Supabase Auth session is honoured.
+  // protected pages so the API Auth session is honoured.
   function requireSession(redirect) {
     const s = getSession();
     if (!s) {

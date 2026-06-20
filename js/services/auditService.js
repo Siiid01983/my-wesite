@@ -1,13 +1,13 @@
 // js/services/auditService.js → window.AuditService
-// Centralized, Supabase-backed audit trail (Phase 5F Audit Migration).
+// Centralized, API-backed audit trail (Phase 5F Audit Migration).
 //
 // Replaces the localStorage `hm_audit_log` ring buffer as the source of truth.
 // Used by BOTH surfaces:
 //   • admin panel  — AuditLog (js/modules/audit/auditLog.js) writes + reads here
 //   • customer portal — PortalApproval writes here (record only)
 //
-// Security model (single shared anon key; no Supabase Auth — see
-// supabase/migrations/20260101000000_rls_policies.sql):
+// Security model (single shared anon key; no API Auth — see
+// the original RLS policy migration):
 //   • record()  — INSERT, allowed for everyone (customers + admin).
 //   • query()   — READ, gated to an ADMIN session at the application layer.
 //                 The portal never loads window.Auth, so a customer context
@@ -25,7 +25,7 @@
   var LEGACY_KEY  = 'hm_audit_log';   // pre-migration localStorage ring buffer
   var MAX_DEFAULT = 500;
 
-  function _sb() { return window.SupabaseClient || null; }
+  function _api() { return window.api || null; }
 
   // READ gate: audit reads require an admin session. window.Auth only exists in
   // the admin bundle, so the customer portal can never satisfy this.
@@ -84,10 +84,10 @@
     return [];
   }
 
-  // Append an audit entry to Supabase. Returns { ok } / { ok:false, error }.
-  // Supabase-only write path — does NOT touch localStorage.
+  // Append an audit entry to API. Returns { ok } / { ok:false, error }.
+  // API-only write path — does NOT touch localStorage.
   function record(e) {
-    var sb = _sb();
+    var sb = _api();
     var row = _argsToRow(e);
     if (!sb) return Promise.resolve({ ok: false, error: 'no-client', row: row });
     return sb.from(TABLE).insert(row).then(function (res) {
@@ -102,12 +102,12 @@
     });
   }
 
-  // Read the audit trail (admin only). Merges Supabase rows with any legacy
+  // Read the audit trail (admin only). Merges API rows with any legacy
   // localStorage entries, newest first. Non-admin contexts get an empty list.
   function query(opts) {
     opts = opts || {};
     if (!_isAdminContext()) return Promise.resolve([]);
-    var sb = _sb();
+    var sb = _api();
     var limit = opts.limit || MAX_DEFAULT;
     var legacy = _legacyEntries();
 

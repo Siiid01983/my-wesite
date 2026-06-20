@@ -46,17 +46,17 @@ function renderCalendar() {
 
 function refreshCalendarUI() { renderCalendar(); }
 
-/* Sync calendar_availability + bookings from Supabase, rebuild counts, re-render.
+/* Sync calendar_availability + bookings from API, rebuild counts, re-render.
    Called only on navigation to the calendar view — not on every date-click event. */
-function _syncCalendarFromSupabase() {
-  if (!Adapter.supabaseReady) return;
+function _syncCalendarFromApi() {
+  if (!Adapter.apiReady) return;
   Promise.all([
     window.DataProvider.read('calendar_availability'),
     window.DataProvider.read('bookings'),
   ]).then(([calRes, bkRes]) => {
     if (!document.getElementById('view-calendar').classList.contains('active')) return;
-    const calOk = calRes.source === 'supabase';
-    const bkOk  = bkRes.source  === 'supabase';
+    const calOk = calRes.source === 'api';
+    const bkOk  = bkRes.source  === 'api';
     if (!calOk && !bkOk) return;
     Promise.all([
       calOk ? Adapter.syncAvailability() : Promise.resolve(false),

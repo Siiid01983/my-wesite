@@ -3,7 +3,7 @@
  * DataProvider unit tests — Phase 7
  *
  * Runs against the real admin.html served on localhost:5050.
- * Supabase is mocked via window.__withFakeSb for assertion-critical paths
+ * API is mocked via window.__withFakeApi for assertion-critical paths
  * so tests are deterministic and do not depend on network connectivity.
  *
  * Run: npm test  (or: node --test tests/dataProvider.test.js)
@@ -28,11 +28,11 @@ before(async () => {
   // Inject shared helpers into the browser context once.
   await page.evaluate(() => {
     /**
-     * Build a fake SupabaseClient whose .from().select/insert/update/delete
+     * Build a fake ApiClient whose .from().select/insert/update/delete
      * resolve with the supplied responses in sequence.
      * The last response is repeated for any extra calls.
      */
-    window.__mkFakeSb = function (responses) {
+    window.__mkFakeApi = function (responses) {
       let idx = 0;
       const next = () => responses[Math.min(idx++, responses.length - 1)];
       const mkChain = (rp) => ({
@@ -48,12 +48,12 @@ before(async () => {
       return { from: () => mkChain(Promise.resolve(next())) };
     };
 
-    /** Run fn() with a fake Supabase client, then restore the real one. */
-    window.__withFakeSb = async function (responses, fn) {
-      const real = window.SupabaseClient;
-      window.SupabaseClient = window.__mkFakeSb(responses);
+    /** Run fn() with a fake API client, then restore the real one. */
+    window.__withFakeApi = async function (responses, fn) {
+      const real = window.api;
+      window.api = window.__mkFakeApi(responses);
       try   { return await fn(); }
-      finally { window.SupabaseClient = real; }
+      finally { window.api = real; }
     };
   });
 });
@@ -76,7 +76,7 @@ beforeEach(async () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('read()', () => {
 
-  it('cold read (no cache) → source: supabase, result cached', async () => {
+  it('cold read (no cache) → source: api, result cached', async () => {
     const r = await page.evaluate(async () => {
       const res = await window.DataProvider.read('bookings');
       const cs  = window.DataProvider.cacheStatus().find(s => s.table === 'bookings');
@@ -87,30 +87,30 @@ describe('read()', () => {
         cacheValid: cs?.valid,
       };
     });
-    assert.equal(r.source, 'supabase');
+    assert.equal(r.source, 'api');
     assert.ok(r.isArray,    'data should be an array');
     assert.ok(r.cached,     'cache entry should exist after cold read');
     assert.ok(r.cacheValid, 'cache entry should be valid (within TTL)');
   });
 
-  it('warm read (within TTL) → source: cache, no extra Supabase call', async () => {
+  it('warm read (within TTL) → source: cache, no extra API call', async () => {
     const r = await page.evaluate(async () => {
       await window.DataProvider.read('bookings');                   // seed cache
-      const sbBefore = window.DataProvider.getMetrics().supabaseReads;
+      const apiBefore = window.DataProvider.getMetrics().apiReads;
       const res       = await window.DataProvider.read('bookings'); // warm hit
-      const sbAfter   = window.DataProvider.getMetrics().supabaseReads;
+      const apiAfter   = window.DataProvider.getMetrics().apiReads;
       return {
         source:      res.source,
-        sbReadDelta: sbAfter - sbBefore,
+        apiReadDelta: apiAfter - apiBefore,
         cacheHits:   window.DataProvider.getMetrics().cacheHits,
       };
     });
     assert.equal(r.source,      'cache');
-    assert.equal(r.sbReadDelta, 0, 'warm read must not issue a Supabase request');
+    assert.equal(r.apiReadDelta, 0, 'warm read must not issue a API request');
     assert.ok(r.cacheHits >= 1);
   });
 
-  it('FORCE_FALLBACK=true → source: localStorage, skips Supabase', async () => {
+  it('FORCE_FALLBACK=true → source: localStorage, skips API', async () => {
     const r = await page.evaluate(async () => {
       window.HM_CONFIG.FORCE_FALLBACK = true;
       const res = await window.DataProvider.read('bookings');
@@ -119,17 +119,17 @@ describe('read()', () => {
     assert.equal(r.source, 'localStorage');
   });
 
-  it('after invalidate() → source: supabase (forced refetch)', async () => {
+  it('after invalidate() → source: api (forced refetch)', async () => {
     const r = await page.evaluate(async () => {
       await window.DataProvider.read('bookings');          // seed
       window.DataProvider.invalidate('bookings');          // mark stale
       const res = await window.DataProvider.read('bookings');
       return { source: res.source };
     });
-    assert.equal(r.source, 'supabase');
+    assert.equal(r.source, 'api');
   });
 
-  it('stale envelope (ts=0) → source: supabase (refetches)', async () => {
+  it('stale envelope (ts=0) → source: api (refetches)', async () => {
     const r = await page.evaluate(async () => {
       localStorage.setItem('hm_dp_bookings', JSON.stringify({
         data: [{ id: 'old' }], ts: 0, ttl: 120000,
@@ -137,7 +137,7 @@ describe('read()', () => {
       const res = await window.DataProvider.read('bookings');
       return { source: res.source };
     });
-    assert.equal(r.source, 'supabase');
+    assert.equal(r.source, 'api');
   });
 
   it('HM_CONFIG.CACHE_TTL override → custom TTL stored in envelope', async () => {
@@ -157,12 +157,12 @@ describe('read()', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('write()', () => {
 
-  it('Supabase success → cache invalidated, next read refetches', async () => {
+  it('API success → cache invalidated, next read refetches', async () => {
     const r = await page.evaluate(async () => {
       await window.DataProvider.read('bookings'); // seed valid cache
       const beforeValid = window.DataProvider.cacheStatus().find(s => s.table === 'bookings')?.valid;
 
-      await window.__withFakeSb(
+      await window.__withFakeApi(
         [{ data: null, error: null }],
         () => window.DataProvider.write('bookings', { id: 'new-row' })
       );
@@ -173,7 +173,7 @@ describe('write()', () => {
     });
     assert.ok(r.beforeValid,           'cache should be valid before write');
     assert.equal(r.afterValid, false,  'cache should be stale after successful write');
-    assert.equal(r.refetchSource, 'supabase');
+    assert.equal(r.refetchSource, 'api');
   });
 
   it('fallback (FORCE_FALLBACK) → optimistically appends row to cache', async () => {
@@ -200,10 +200,10 @@ describe('write()', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('update()', () => {
 
-  it('Supabase success → cache invalidated', async () => {
+  it('API success → cache invalidated', async () => {
     const r = await page.evaluate(async () => {
       await window.DataProvider.read('bookings'); // seed
-      await window.__withFakeSb(
+      await window.__withFakeApi(
         [{ data: null, error: null }],
         () => window.DataProvider.update('bookings', 'x', { status: 'done' })
       );
@@ -232,10 +232,10 @@ describe('update()', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('delete()', () => {
 
-  it('Supabase success → cache invalidated', async () => {
+  it('API success → cache invalidated', async () => {
     const r = await page.evaluate(async () => {
       await window.DataProvider.read('bookings'); // seed
-      await window.__withFakeSb(
+      await window.__withFakeApi(
         [{ data: null, error: null }],
         () => window.DataProvider.delete('bookings', 'x')
       );
@@ -268,10 +268,10 @@ describe('delete()', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('retry logic', () => {
 
-  it('503 × 2 then success → retries=2, source: supabase', async () => {
+  it('503 × 2 then success → retries=2, source: api', async () => {
     const r = await page.evaluate(async () => {
       window.HM_CONFIG.RETRY = { maxAttempts: 3, baseDelayMs: 1, maxDelayMs: 2, factor: 1 };
-      return await window.__withFakeSb(
+      return await window.__withFakeApi(
         [
           { data: null, error: { message: '503', status: 503 } },
           { data: null, error: { message: '503', status: 503 } },
@@ -286,14 +286,14 @@ describe('retry logic', () => {
         }
       );
     });
-    assert.equal(r.source,  'supabase');
+    assert.equal(r.source,  'api');
     assert.equal(r.retries, 2);
   });
 
   it('400 (client error) → not retried, source: localStorage', async () => {
     const r = await page.evaluate(async () => {
       window.HM_CONFIG.RETRY = { maxAttempts: 3, baseDelayMs: 1, maxDelayMs: 2, factor: 1 };
-      return await window.__withFakeSb(
+      return await window.__withFakeApi(
         [{ data: null, error: { message: 'bad request', status: 400 } }],
         async () => {
           const res = await window.DataProvider.read('bookings');
@@ -311,7 +311,7 @@ describe('retry logic', () => {
   it('retries exhausted (503 always) → source: localStorage, fallbacks=1', async () => {
     const r = await page.evaluate(async () => {
       window.HM_CONFIG.RETRY = { maxAttempts: 2, baseDelayMs: 1, maxDelayMs: 2, factor: 1 };
-      return await window.__withFakeSb(
+      return await window.__withFakeApi(
         [{ data: null, error: { message: 'always 503', status: 503 } }],
         async () => {
           const res = await window.DataProvider.read('bookings');
@@ -332,9 +332,9 @@ describe('retry logic', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('metrics', () => {
 
-  it('reads / cacheHits / supabaseReads / fallbacks / hitRate counted correctly', async () => {
+  it('reads / cacheHits / apiReads / fallbacks / hitRate counted correctly', async () => {
     const m = await page.evaluate(async () => {
-      await window.DataProvider.read('bookings');  // 1 — cold → supabase
+      await window.DataProvider.read('bookings');  // 1 — cold → api
       await window.DataProvider.read('bookings');  // 2 — warm → cache
       await window.DataProvider.read('bookings');  // 3 — warm → cache
       window.HM_CONFIG.FORCE_FALLBACK = true;
@@ -343,13 +343,13 @@ describe('metrics', () => {
       return window.DataProvider.getMetrics();
     });
     assert.equal(m.reads,         4);
-    assert.equal(m.supabaseReads, 1);
+    assert.equal(m.apiReads, 1);
     assert.equal(m.cacheHits,     2);
     assert.equal(m.fallbacks,     1);
     assert.equal(m.hitRate,       50);  // 2/4
   });
 
-  it('lastLatencyMs and lastSyncTs set after Supabase read', async () => {
+  it('lastLatencyMs and lastSyncTs set after API read', async () => {
     const m = await page.evaluate(async () => {
       await window.DataProvider.read('bookings');
       return window.DataProvider.getMetrics();
@@ -368,7 +368,7 @@ describe('metrics', () => {
     });
     assert.equal(m.reads,         0);
     assert.equal(m.cacheHits,     0);
-    assert.equal(m.supabaseReads, 0);
+    assert.equal(m.apiReads, 0);
     assert.equal(m.fallbacks,     0);
     assert.equal(m.retries,       0);
     assert.equal(m.lastLatencyMs, null);

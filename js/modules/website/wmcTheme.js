@@ -49,12 +49,12 @@ function _tcApply() {
   localStorage.setItem('hm_theme_config', JSON.stringify(_tcConfig));
   localStorage.setItem('hm_custom_theme_css', css);
   localStorage.setItem('hm_theme_applied_at', new Date().toISOString());
-  /* Persist to Supabase so every visitor on every device gets the theme.
+  /* Persist to API so every visitor on every device gets the theme.
      Must be upsert — hm_data uses key as the conflict target. */
-  if (window.SupabaseClient) {
-    window.SupabaseClient.from('hm_data')
+  if (window.api) {
+    window.api.from('hm_data')
       .upsert({ key: 'hm_custom_theme_css', value: css, updated_at: new Date().toISOString() })
-      .then(function (r) { if (r.error) console.warn('[WMCTheme] Supabase write failed:', r.error.message); });
+      .then(function (r) { if (r.error) console.warn('[WMCTheme] API write failed:', r.error.message); });
   }
   var banner = document.getElementById('tcAppliedBanner');
   if (banner) {

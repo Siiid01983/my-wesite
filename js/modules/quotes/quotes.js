@@ -66,8 +66,8 @@ function _renderQuotesUI() {
 
 function renderQuotes() { _renderQuotesUI(); }
 
-function _syncQuotesFromSupabase() {
-  if (!Adapter.supabaseReady) return;
+function _syncQuotesFromApi() {
+  if (!Adapter.apiReady) return;
   _dpSync('hm_data', {key:'hm_quotes'}, () => Adapter.syncQuotes(), 'view-quotes', _renderQuotesUI);
 }
 

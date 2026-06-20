@@ -1,9 +1,9 @@
-// Load order: appConfig.js → supabaseClient.js → fallbackLogger.js → this file
+// Load order: appConfig.js → dataClient.js → fallbackLogger.js → this file
 (function () {
   'use strict';
 
   function _cfg() { return window.HM_CONFIG || {}; }
-  function _sb()  { return window.SupabaseClient || null; }
+  function _api()  { return window.api || null; }
 
   function _log(operation, table, error, success) {
     if (window.FallbackLogger) window.FallbackLogger.log(operation, table, error, success);
@@ -78,9 +78,9 @@
     return false;
   }
 
-  /* Wraps a Supabase fn() → {data, error} with exponential-backoff retries.
+  /* Wraps a API fn() → {data, error} with exponential-backoff retries.
      Returns the last response; caller checks result.error as before. */
-  async function _withRetry(sbFn, table, operation) {
+  async function _withRetry(apiFn, table, operation) {
     const rc       = (_cfg().RETRY) || {};
     const maxTries = (rc.maxAttempts ?? 3) + 1; // first attempt + retries
     const base     = rc.baseDelayMs ?? 500;
@@ -90,7 +90,7 @@
     let result;
     for (let attempt = 0; attempt < maxTries; attempt++) {
       try {
-        result = await sbFn();
+        result = await apiFn();
       } catch (thrown) {
         result = { data: null, error: thrown };
       }
@@ -109,7 +109,7 @@
 
   /* ── In-memory metrics (reset on page reload) ─────────────────────────── */
   const _metrics = {
-    reads: 0, cacheHits: 0, supabaseReads: 0, fallbacks: 0, retries: 0,
+    reads: 0, cacheHits: 0, apiReads: 0, fallbacks: 0, retries: 0,
     lastLatencyMs: null, lastSyncTs: null, lastRetryTs: null,
   };
 
@@ -117,9 +117,9 @@
 
     async read(table, filters) {
       _metrics.reads++;
-      const sb = _sb();
+      const sb = _api();
 
-      /* Fresh cache — skip Supabase entirely */
+      /* Fresh cache — skip API entirely */
       if (!_cfg().FORCE_FALLBACK && _cacheIsValid(table)) {
         _metrics.cacheHits++;
         return { data: _cacheGet(table).data, source: 'cache', error: null };
@@ -134,10 +134,10 @@
           );
           _metrics.lastLatencyMs = Date.now() - t0;
           if (error) throw error;
-          _metrics.supabaseReads++;
+          _metrics.apiReads++;
           _metrics.lastSyncTs = Date.now();
           _cacheSet(table, data);
-          return { data, source: 'supabase', error: null };
+          return { data, source: 'api', error: null };
         } catch (e) {
           _log('read', table, e, false);
           console.warn('[DataProvider] read fallback for', table, '—', e.message || e);
@@ -153,13 +153,13 @@
 
     async write(table, data) {
       const rows = Array.isArray(data) ? data : [data];
-      const sb = _sb();
+      const sb = _api();
       if (sb && !_cfg().FORCE_FALLBACK) {
         try {
           const { error } = await _withRetry(() => sb.from(table).insert(rows), table, 'write');
           if (error) throw error;
           _cacheInvalidate(table);
-          return { success: true, source: 'supabase', error: null };
+          return { success: true, source: 'api', error: null };
         } catch (e) {
           _log('write', table, e, false);
           console.warn('[DataProvider] write fallback for', table, '—', e.message || e);
@@ -172,7 +172,7 @@
     },
 
     async update(table, id, patch) {
-      const sb = _sb();
+      const sb = _api();
       if (sb && !_cfg().FORCE_FALLBACK) {
         try {
           const { error } = await _withRetry(
@@ -181,7 +181,7 @@
           );
           if (error) throw error;
           _cacheInvalidate(table);
-          return { success: true, source: 'supabase', error: null };
+          return { success: true, source: 'api', error: null };
         } catch (e) {
           _log('update', table, e, false);
           console.warn('[DataProvider] update fallback for', table, '—', e.message || e);
@@ -194,7 +194,7 @@
     },
 
     async delete(table, id) {
-      const sb = _sb();
+      const sb = _api();
       if (sb && !_cfg().FORCE_FALLBACK) {
         try {
           const { error } = await _withRetry(
@@ -203,7 +203,7 @@
           );
           if (error) throw error;
           _cacheInvalidate(table);
-          return { success: true, source: 'supabase', error: null };
+          return { success: true, source: 'api', error: null };
         } catch (e) {
           _log('delete', table, e, false);
           console.warn('[DataProvider] delete fallback for', table, '—', e.message || e);
@@ -217,8 +217,8 @@
 
     invalidate(table) { _cacheInvalidate(table); },
 
-    /* Seed the cache with raw Supabase rows without making a network request.
-       Used by Adapter.syncFromSupabase() so the observability panel shows all
+    /* Seed the cache with raw API rows without making a network request.
+       Used by Adapter.syncFromApi() so the observability panel shows all
        tables as valid immediately after login, not only after each view is visited. */
     seed(table, data) { _cacheSet(table, data); },
 
@@ -252,7 +252,7 @@
       return {
         reads:         _metrics.reads,
         cacheHits:     _metrics.cacheHits,
-        supabaseReads: _metrics.supabaseReads,
+        apiReads: _metrics.apiReads,
         fallbacks:     _metrics.fallbacks,
         retries:       _metrics.retries,
         hitRate:       Math.round((_metrics.cacheHits / total) * 100),
@@ -263,7 +263,7 @@
     },
 
     resetMetrics() {
-      _metrics.reads = _metrics.cacheHits = _metrics.supabaseReads =
+      _metrics.reads = _metrics.cacheHits = _metrics.apiReads =
         _metrics.fallbacks = _metrics.retries = 0;
       _metrics.lastLatencyMs = _metrics.lastSyncTs = _metrics.lastRetryTs = null;
     },

@@ -17,7 +17,7 @@
      - OfflineDB serves read requests from IDB cache
      - Queued writes executed on reconnect
 
-   Auto-syncs IDB cache after every successful Supabase
+   Auto-syncs IDB cache after every successful API
    login (via EventBus 'auth:login') and after drain.
    ════════════════════════════════════════════════════════ */
 

@@ -248,13 +248,13 @@
 
   <footer class="page-foot">© Hello Moving — Customer Portal</footer>
 
-  <!-- Supabase infrastructure (reused, unmodified) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <!-- API infrastructure (reused, unmodified) -->
+  <script src="js/lib/apiClient.js"></script>
   <script src="js/config/env.js"></script>
-  <script src="js/services/supabaseClient.js"></script>
+  <script src="js/services/dataClient.js"></script>
   <script src="bookingService.js"></script>
-  <!-- Portal auth (Supabase Auth Magic Link + session helper) -->
-  <script src="js/portal/portalSupabaseAuth.js?v=2"></script>
+  <!-- Portal auth (API Auth Magic Link + session helper) -->
+  <script src="js/portal/portalLogin.js?v=2"></script>
   <script src="js/portal/portalAuth.js"></script>
 
   <script>
@@ -272,9 +272,9 @@
     // the UI as soon as an admin email is recognised. (The server enforces the
     // allowlist; this only relaxes the form.)
     function _isAdmin(email) {
-      return !!(window.PortalSupabaseAuth &&
-                typeof PortalSupabaseAuth.isAdminEmail === 'function' &&
-                PortalSupabaseAuth.isAdminEmail(email));
+      return !!(window.PortalLogin &&
+                typeof PortalLogin.isAdminEmail === 'function' &&
+                PortalLogin.isAdminEmail(email));
     }
     const emailEl = document.getElementById('email');
     const refField = document.getElementById('referenceField');
@@ -284,11 +284,11 @@
     }
     emailEl.addEventListener('input', syncAdminUI);
 
-    // Already authenticated (persisted Supabase session) → go to the portal.
+    // Already authenticated (persisted API session) → go to the portal.
     (async function () {
       try {
-        if (window.PortalSupabaseAuth && PortalSupabaseAuth.isConfigured()) {
-          const s = await PortalSupabaseAuth.waitForSession(0);
+        if (window.PortalLogin && PortalLogin.isConfigured()) {
+          const s = await PortalLogin.waitForSession(0);
           if (s) { location.replace('portal.html'); return; }
         }
         // Honour any legacy session that may still be open.
@@ -307,7 +307,7 @@
       if (!admin && !ref) { showError('メールアドレスと予約番号を入力してください。'); return; }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError('正しいメールアドレスを入力してください。'); return; }
 
-      if (!window.PortalSupabaseAuth || !PortalSupabaseAuth.isConfigured()) {
+      if (!window.PortalLogin || !PortalLogin.isConfigured()) {
         showError('現在ログインできません。しばらくしてから再度お試しください。');
         return;
       }
@@ -316,9 +316,9 @@
       btn.textContent = 'ログイン中…';
 
       try {
-        // Validates email + reference server-side and installs a REAL Supabase
+        // Validates email + reference server-side and installs a REAL API
         // session (no email sent) so Phase 6B RLS stays enforced in the portal.
-        const res = await PortalSupabaseAuth.loginWithReference(email, ref);
+        const res = await PortalLogin.loginWithReference(email, ref);
         if (!res.ok) {
           // Generic message for invalid pairs (anti-enumeration); specific copy
           // only for client-side input / availability problems.
@@ -332,7 +332,7 @@
           btn.textContent = 'ログイン';
           return;
         }
-        // Success — a real Supabase session is now set. Enter the portal.
+        // Success — a real API session is now set. Enter the portal.
         location.replace('portal.html');
       } catch (err) {
         console.error('[Portal login]', err);

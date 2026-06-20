@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Overlay Bookings — reads all bookings from Supabase via Adapter
+   Overlay Bookings — reads all bookings from API via Adapter
    ══════════════════════════════════════════════════════════════ */
 
 function renderOverlayBookings() {

@@ -103,8 +103,8 @@ function _renderDisposalUI() {
 
 function renderDisposal() { _renderDisposalUI(); }
 
-function _syncDisposalFromSupabase() {
-  if (!Adapter.supabaseReady) return;
+function _syncDisposalFromApi() {
+  if (!Adapter.apiReady) return;
   _dpSync('hm_data', {key:'hm_disposal'}, () => Adapter.syncDisposal(), 'view-disposal', _renderDisposalUI);
 }
 

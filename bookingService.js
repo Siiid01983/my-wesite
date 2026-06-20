@@ -1,8 +1,8 @@
-// Load order: supabase UMD → js/config/env.js → js/services/supabaseClient.js → bookingService.js
+// Load order: apiClient.js → js/config/env.js → js/services/dataClient.js → bookingService.js
 
 // ── Status maps ───────────────────────────────────────────────────────────────
 
-const _BK_TO_SB = {
+const _BK_TO_DB = {
   '新規': 'pending', '確認中': 'checking',
   '確定': 'confirmed', '完了': 'completed', 'キャンセル': 'cancelled',
 };
@@ -72,7 +72,7 @@ function _bookingToRow(b) {
     customer_phone: b.phone     || null,
     booking_date:   b.date      || null,
     service_id:     null,
-    status:         _BK_TO_SB[b.status] || 'pending',
+    status:         _BK_TO_DB[b.status] || 'pending',
     notes:          _packNotes(b),
     created_at:     b.createdAt || new Date().toISOString(),
   };
@@ -122,11 +122,12 @@ const IMMUTABLE_FIELDS = new Set(['id', 'createdAt']);
 const BookingService = (() => {
   'use strict';
 
-  function _sb() { return window.SupabaseClient || null; }
+  function _api() { return window.api || null; }
+  function _apiBase() { return (window.API_BASE || '').replace(/\/+$/, ''); }
 
   async function getBookings() {
-    const sb = _sb();
-    if (!sb) { console.warn('[BookingService] Supabase not available'); return []; }
+    const sb = _api();
+    if (!sb) { console.warn('[BookingService] API not available'); return []; }
     const { data, error } = await sb
       .from('bookings')
       .select('*')
@@ -135,7 +136,7 @@ const BookingService = (() => {
     return (data || []).map(_rowToBooking);
   }
 
-  // No-op: full-array persistence is not applicable to Supabase.
+  // No-op: full-array persistence is not applicable to API.
   async function saveBookings() {}
 
   async function createBooking(fields) {
@@ -158,12 +159,17 @@ const BookingService = (() => {
       createdAt: new Date().toISOString(),
     };
 
-    const sb = _sb();
-    if (sb) {
-      const { error } = await sb.from('bookings').insert(_bookingToRow(booking));
-      if (error) {
-        console.error('[BookingService] createBooking:', error.message);
-        throw new Error(error.message);
+    const base = _apiBase();
+    if (base) {
+      const res = await fetch(base + '/create-booking.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(_bookingToRow(booking)),
+      });
+      const out = await res.json().catch(() => ({ ok: false, error: `HTTP ${res.status}` }));
+      if (!out.ok) {
+        console.error('[BookingService] createBooking:', out.error);
+        throw new Error(out.error || 'create-booking failed');
       }
     }
 
@@ -175,39 +181,39 @@ const BookingService = (() => {
   }
 
   async function getBookingById(id) {
-    const sb = _sb();
-    if (!sb) { console.warn('[BookingService] Supabase not available'); return null; }
-    // Numeric DB id — direct lookup
-    if (/^\d+$/.test(String(id))) {
-      const { data, error } = await sb.from('bookings').select('*').eq('id', id).maybeSingle();
-      if (error) { console.error('[BookingService] getBookingById:', error.message); return null; }
-      return data ? _rowToBooking(data) : null;
+    const base = _apiBase();
+    if (!base) { console.warn('[BookingService] API not available'); return null; }
+    // UUID primary key → ?id=, otherwise treat as HM-xxx reference → ?ref=
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(String(id));
+    const qs = isUuid ? ('id=' + encodeURIComponent(id)) : ('ref=' + encodeURIComponent(id));
+    try {
+      const res = await fetch(base + '/get-booking.php?' + qs);
+      const out = await res.json();
+      if (!out.ok) { console.error('[BookingService] getBookingById:', out.error); return null; }
+      return out.data ? _rowToBooking(out.data) : null;
+    } catch (err) {
+      console.error('[BookingService] getBookingById:', err.message);
+      return null;
     }
-    // Reference ID (HM-xxx) stored in notes
-    const { data, error } = await sb
-      .from('bookings')
-      .select('*')
-      .ilike('notes', `%ref:${id}%`)
-      .maybeSingle();
-    if (error) { console.error('[BookingService] getBookingById:', error.message); return null; }
-    return data ? _rowToBooking(data) : null;
   }
 
   // Bookings belonging to one customer email, newest-first. Used by the Phase 6A
   // authenticated portal: a customer's accessible bookings are resolved from the
-  // email Supabase Auth verified, NOT from a typed reference. Scoped server-side
+  // email API Auth verified, NOT from a typed reference. Scoped server-side
   // (.eq) so the client never pulls unrelated rows. Returns [] on error/no input.
   async function getBookingsByEmail(email) {
-    const sb = _sb();
+    const base = _apiBase();
     const norm = (email || '').trim().toLowerCase();
-    if (!sb || !norm) return [];
-    const { data, error } = await sb
-      .from('bookings')
-      .select('*')
-      .ilike('customer_email', norm)
-      .order('created_at', { ascending: false });
-    if (error) { console.error('[BookingService] getBookingsByEmail:', error.message); return []; }
-    return (data || []).map(_rowToBooking);
+    if (!base || !norm) return [];
+    try {
+      const res = await fetch(base + '/get-booking.php?email=' + encodeURIComponent(norm));
+      const out = await res.json();
+      if (!out.ok) { console.error('[BookingService] getBookingsByEmail:', out.error); return []; }
+      return (out.data || []).map(_rowToBooking);
+    } catch (err) {
+      console.error('[BookingService] getBookingsByEmail:', err.message);
+      return [];
+    }
   }
 
   // Returns the updated booking, or null if not found.
@@ -222,7 +228,7 @@ const BookingService = (() => {
     const updated   = { ...current, ...safePatch };
     const updatedAt = new Date().toISOString();
 
-    const sb = _sb();
+    const sb = _api();
     if (sb) {
       const { created_at, ...fields } = _bookingToRow(updated);
       const row = { ...fields, updated_at: updatedAt };
@@ -248,7 +254,7 @@ const BookingService = (() => {
     const cancelled = { ...current, status: 'キャンセル' };
     const updatedAt = new Date().toISOString();
 
-    const sb = _sb();
+    const sb = _api();
     if (sb) {
       const { error } = await sb
         .from('bookings')
@@ -281,7 +287,7 @@ const BookingService = (() => {
     }
 
     const updatedAt = new Date().toISOString();
-    const sb = _sb();
+    const sb = _api();
     if (sb) {
       const { error } = await sb
         .from('bookings')
@@ -303,7 +309,7 @@ const BookingService = (() => {
 
   // Realtime subscription — returns an unsubscribe function.
   function subscribe(callback) {
-    const sb = _sb();
+    const sb = _api();
     if (!sb) return () => {};
     const channel = sb
       .channel('bookings:changes')
@@ -317,7 +323,7 @@ const BookingService = (() => {
     return () => sb.removeChannel(channel);
   }
 
-  // No-op: adapter pattern replaced by direct Supabase calls.
+  // No-op: adapter pattern replaced by direct API calls.
   function setAdapter() {}
 
   return { getBookings, saveBookings, createBooking, getBookingById, getBookingsByEmail, updateBooking, cancelBooking, approveEstimate, subscribe, setAdapter };

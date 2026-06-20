@@ -13,7 +13,7 @@
    • Image picker modal (for Block Editor integration)
 
    Storage key  : hm_wmc_media → array of media objects
-   Supabase sync: hm_data KV table, key = hm_wmc_media
+   API sync: hm_data KV table, key = hm_wmc_media
    ════════════════════════════════════════════════════════ */
 
 window.WMCMedia = (function () {
@@ -44,7 +44,7 @@ window.WMCMedia = (function () {
   }
 
   function _syncSb(items) {
-    var sb = window.SupabaseClient;
+    var sb = window.api;
     if (!sb) return;
     /* Only sync metadata (strip data URLs to keep payload small) */
     var meta = items.map(function(it) {
@@ -124,11 +124,11 @@ window.WMCMedia = (function () {
             date: new Date().toLocaleDateString('ja-JP'),
             type: result.mime,
             data: result.dataUrl,
-            url: '',  /* will be set if Supabase Storage upload succeeds */
+            url: '',  /* will be set if API Storage upload succeeds */
           });
           _save(items);
 
-          /* Try upload to Supabase Storage */
+          /* Try upload to API Storage */
           _uploadToStorage(result.dataUrl, id + '.' + ext, result.mime).then(function(publicUrl) {
             if (publicUrl) {
               var current = _load();
@@ -147,9 +147,9 @@ window.WMCMedia = (function () {
     });
   }
 
-  /* Supabase Storage upload — best-effort, non-blocking */
+  /* API Storage upload — best-effort, non-blocking */
   function _uploadToStorage(dataUrl, filename, mime) {
-    var sb = window.SupabaseClient;
+    var sb = window.api;
     if (!sb || !sb.storage) return Promise.resolve(null);
     try {
       var b64   = dataUrl.split(',')[1];

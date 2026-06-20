@@ -45,8 +45,8 @@ function _renderServicesUI() {
 
 function renderServices() { _renderServicesUI(); }
 
-function _syncServicesFromSupabase() {
-  if (!Adapter.supabaseReady) return;
+function _syncServicesFromApi() {
+  if (!Adapter.apiReady) return;
   _dpSync('services', null, () => Adapter.syncServices(), 'view-services', _renderServicesUI);
 }
 

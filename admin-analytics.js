@@ -262,13 +262,13 @@ function renderAnalyticsCharts() {
   _drawAnalyticsCharts(bk, from, to, fromD, toD, days, isDark, chartPeriodLabel);
   _renderAnalyticsPopularDates(bk, from, to);
 
-  /* Async: re-render with fresh Supabase data */
-  if (window.StatisticsService && StatisticsService.supabaseReady) {
-    StatisticsService.getAnalyticsData(from, to).then(sbBk => {
-      if (!sbBk || !document.getElementById('view-analytics').classList.contains('active')) return;
-      _renderAnalyticsKPIs(sbBk, qtInRange, prices, periodLabel, calIcon);
-      _drawAnalyticsCharts(sbBk, from, to, fromD, toD, days, isDark, chartPeriodLabel);
-      _renderAnalyticsPopularDates(sbBk, from, to);
+  /* Async: re-render with fresh API data */
+  if (window.StatisticsService && StatisticsService.apiReady) {
+    StatisticsService.getAnalyticsData(from, to).then(apiBk => {
+      if (!apiBk || !document.getElementById('view-analytics').classList.contains('active')) return;
+      _renderAnalyticsKPIs(apiBk, qtInRange, prices, periodLabel, calIcon);
+      _drawAnalyticsCharts(apiBk, from, to, fromD, toD, days, isDark, chartPeriodLabel);
+      _renderAnalyticsPopularDates(apiBk, from, to);
     });
   }
 }

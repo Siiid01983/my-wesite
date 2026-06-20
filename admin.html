@@ -1602,11 +1602,11 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 </div>
 
 <!-- ── Infrastructure ── -->
-<script src="js/lib/supabase.js"></script>
+<script src="js/lib/apiClient.js"></script>
 <script src="js/config/appConfig.js"></script>
 <script src="js/config/env.js" onerror="console.warn('[Admin] js/config/env.js missing — copy env.example.js to env.js')"></script>
-<script src="js/services/supabaseClient.js"></script>
-<script src="js/services/supabaseAdapter.js"></script>
+<script src="js/services/dataClient.js"></script>
+<script src="js/services/apiAdapter.js"></script>
 <script src="js/services/statisticsService.js"></script>
 <script src="js/services/fallbackLogger.js"></script>
 <script src="js/services/dataProvider.js"></script>
@@ -1731,18 +1731,16 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 <!-- ── PWA: service worker registration ── -->
 <script src="js/utils/swRegister.js"></script>
 
-<!-- ── Inbox ESM module (Phase 31) ─────────────────────────────────────────
-     Uses the Supabase CDN ESM build so this module is self-contained.
-     Credentials are read from window.SUPABASE_URL / window.SUPABASE_ANON_KEY
-     which env.js already sets before this deferred module executes.
+<!-- ── Inbox module (Phase 31) ─────────────────────────────────────────────
+     Reads inbox_messages through the shared self-hosted data client.
      Overwrites window.renderInbox so go('inbox') calls loadMessages().
      MutationObserver fires loadMessages() whenever #view-inbox gains .active.
 ──────────────────────────────────────────────────────────────────────────── -->
 <script type="module">
-/* ── Reuse the already-initialised Supabase client ─────────
-   window.SupabaseClient is set by js/services/supabaseClient.js
-   using the local UMD bundle — no CDN import needed.          */
-const db = window.SupabaseClient;
+/* ── Reuse the already-initialised data client ─────────────
+   window.api is set by js/services/dataClient.js
+   (the self-hosted PHP + MySQL client — self-hosted).        */
+const db = window.api;
 
 /* ── Helpers ───────────────────────────────────────────── */
 function esc(s) {
@@ -1791,7 +1789,7 @@ async function loadMessages() {
   const container = document.getElementById('messages-container');
   if (!container) return;
   if (!db) {
-    showState(container, '<span style="color:var(--red)">Supabase client not ready — check env.js</span>');
+    showState(container, '<span style="color:var(--red)">API client not ready — check env.js</span>');
     return;
   }
 

@@ -2,7 +2,7 @@
 // Customer moving-photo uploads (Phase 5E).
 //
 // Customers upload photos of their move, organised by category, into their OWN
-// booking's folder in Supabase Storage. Everything is booking-scoped and every
+// booking's folder in API Storage. Everything is booking-scoped and every
 // preview uses a short-lived SIGNED URL — this module never produces a public
 // URL (rule: no public storage access).
 //
@@ -51,7 +51,7 @@
   // single authoritative id (the session booking) — uploads can never target
   // another booking because the path is built from it here.
   async function upload(bookingId, category, file) {
-    const sb = window.SupabaseClient;
+    const sb = window.api;
     const id = bookingId != null ? String(bookingId) : '';
     if (!sb || !sb.storage)        return { ok: false, error: 'storage-unavailable' };
     if (!id)                       return { ok: false, error: 'no-booking' };
@@ -75,7 +75,7 @@
 
   // Resolve a short-lived signed URL for one in-scope photo. Never public.
   async function signedUrl(bookingIds, path) {
-    const sb = window.SupabaseClient;
+    const sb = window.api;
     if (!sb || !sb.storage || !_inScope(path, bookingIds)) return null;
     try {
       const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(path, SIGNED_TTL);
@@ -120,7 +120,7 @@
 
   // List every category for the authenticated booking.
   async function list(bookingIds) {
-    const sb  = window.SupabaseClient;
+    const sb  = window.api;
     const ids = _ids(bookingIds);
     const result = {};
     CATEGORIES.forEach(c => { result[c.id] = []; });
@@ -134,7 +134,7 @@
   // Delete one of the customer's OWN photos. Guarded: refuses any path outside
   // the booking's own photo folders.
   async function remove(bookingIds, path) {
-    const sb = window.SupabaseClient;
+    const sb = window.api;
     if (!sb || !sb.storage) return { ok: false, error: 'storage-unavailable' };
     if (!_inScope(path, bookingIds)) {
       console.warn('[PortalPhotos] blocked out-of-scope delete:', path);

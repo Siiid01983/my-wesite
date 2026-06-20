@@ -606,7 +606,7 @@ function _roleBadge(role) {
    SYSTEM HEALTH PAGE
    ════════════════════════════════════════════════════════ */
 const _HC_SVC_LABEL = {
-  supabase:     'Supabase 接続',
+  api:          'API 接続',
   dataProvider: 'データプロバイダー',
   services:     'サービスレジストリ',
   storage:      'ストレージ',

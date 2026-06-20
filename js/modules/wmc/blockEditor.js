@@ -7,7 +7,7 @@
      button, testimonial, faq, serviceCard, cta, html)
    • HTML5 drag-and-drop reorder + ↑/↓ move buttons
    • Real-time live preview (right panel)
-   • 2-second debounced auto-save to localStorage + Supabase
+   • 2-second debounced auto-save to localStorage + API
    • Block picker modal (insert at any position)
    • Image picker (opens WMC Media Library)
 

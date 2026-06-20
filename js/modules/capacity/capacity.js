@@ -11,8 +11,8 @@ function _loadCapacityUI() {
 
 function loadCapacity() { _loadCapacityUI(); }
 
-function _syncCapacityFromSupabase() {
-  if (!Adapter.supabaseReady) return;
+function _syncCapacityFromApi() {
+  if (!Adapter.apiReady) return;
   _dpSync('hm_data', {key:'hm_capacity'}, () => Adapter.syncCapacity(), 'view-capacity', _loadCapacityUI);
 }
 

@@ -663,11 +663,11 @@ document.getElementById('input-date').min = new Date().toISOString().split('T')[
 renderServices();
 </script>
 
-<!-- Supabase + BookingService — load after inline JS so BookingService is available on submit -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!-- Self-hosted data client + BookingService — load after inline JS so BookingService is available on submit -->
+<script src="js/lib/apiClient.js"></script>
 <script src="js/config/appConfig.js"></script>
-<script src="js/config/env.js" onerror="console.warn('[booking-app] env.js not found — Supabase writes disabled')"></script>
-<script src="js/services/supabaseClient.js"></script>
+<script src="js/config/env.js" onerror="console.warn('[booking-app] env.js not found — API writes disabled')"></script>
+<script src="js/services/dataClient.js"></script>
 <script src="bookingService.js"></script>
 </body>
 </html>

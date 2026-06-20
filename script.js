@@ -151,8 +151,8 @@
               });
               bookingRef = _bk && _bk.id;
             }
-          } catch(sbErr) {
-            console.error('[QuoteForm] Supabase write failed:', sbErr.message);
+          } catch(apiErr) {
+            console.error('[QuoteForm] API write failed:', apiErr.message);
           }
           if (!bookingRef) {
             const _d = new Date(), _p = n => String(n).padStart(2, '0');

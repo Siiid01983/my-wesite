@@ -68,8 +68,8 @@ function _renderPricingUI() {
 
 function renderPricing() { _renderPricingUI(); }
 
-function _syncPricingFromSupabase() {
-  if (!Adapter.supabaseReady) return;
+function _syncPricingFromApi() {
+  if (!Adapter.apiReady) return;
   _dpSync('hm_data', {key:'hm_prices'}, () => Adapter.syncPrices(), 'view-pricing', _renderPricingUI);
 }
 

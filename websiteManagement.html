@@ -1667,11 +1667,11 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
      ══════════════════════════════════════════════════════ -->
 
 <!-- Infrastructure -->
-<script src="js/lib/supabase.js"></script>
+<script src="js/lib/apiClient.js"></script>
 <script src="js/config/appConfig.js"></script>
 <script src="js/config/env.js"></script>
-<script src="js/services/supabaseClient.js"></script>
-<script src="js/services/supabaseAdapter.js"></script>
+<script src="js/services/dataClient.js"></script>
+<script src="js/services/apiAdapter.js"></script>
 <script src="js/services/statisticsService.js"></script>
 <script src="js/services/fallbackLogger.js"></script>
 <script src="js/services/dataProvider.js"></script>
@@ -1747,7 +1747,7 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
   }
 
   /* Navigation glue — wraps wmcGo() to call CMS module render functions.
-     Data freshness is handled by Adapter.syncFromSupabase() on login (_wmcInit).
+     Data freshness is handled by Adapter.syncFromApi() on login (_wmcInit).
      typeof guards prevent errors if a module hasn't loaded yet. */
   if (typeof wmcGo === 'function') {
     var _orig = wmcGo;

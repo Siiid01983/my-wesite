@@ -225,9 +225,9 @@ window.addEventListener('resize', () => {
    INIT
    ════════════════════════════════════════════════════════ */
 async function init() {
-  if (Adapter.supabaseReady) {
-    try { await Adapter.syncFromSupabase(); }
-    catch(e) { console.warn('[Admin] Supabase sync failed, using local cache:', e.message); }
+  if (Adapter.apiReady) {
+    try { await Adapter.syncFromApi(); }
+    catch(e) { console.warn('[Admin] API sync failed, using local cache:', e.message); }
   }
   Adapter.migrate();
   BookingService.bootstrap();
@@ -244,7 +244,7 @@ async function init() {
 /* ════════════════════════════════════════════════════════
    HEALTH BANNER — LOGIN SCREEN
    Driven by the HealthCheck service (js/services/healthCheck.js).
-   Shows a non-blocking amber banner when Supabase is unreachable.
+   Shows a non-blocking amber banner when API is unreachable.
    ════════════════════════════════════════════════════════ */
 var _hcReport = null;
 
@@ -252,18 +252,18 @@ function _applyHcBanner() {
   const banner = document.getElementById('hcBanner');
   if (!banner) return;
   if (!_hcReport) { banner.style.display = 'none'; return; }
-  const sbCheck = _hcReport.checks.find(c => c.service === 'supabase');
-  if (!sbCheck || sbCheck.status === 'healthy') { banner.style.display = 'none'; return; }
-  const isError = sbCheck.status === 'error';
+  const apiCheck = _hcReport.checks.find(c => c.service === 'api');
+  if (!apiCheck || apiCheck.status === 'healthy') { banner.style.display = 'none'; return; }
+  const isError = apiCheck.status === 'error';
   banner.innerHTML = `
     <div style="display:flex;align-items:flex-start;gap:10px">
       <svg viewBox="0 0 24 24" width="18" height="18" style="flex-shrink:0;margin-top:1px">
         <path fill="currentColor" d="M12 2L1 21h22L12 2zm1 14h-2v-2h2v2zm0-4h-2V8h2v4z"/>
       </svg>
       <div style="flex:1">
-        <div style="font-weight:700;font-size:12px;margin-bottom:3px">${isError ? '設定の確認が必要です' : 'Supabase 接続の警告'}</div>
-        <div style="font-size:12px;line-height:1.5">${esc(sbCheck.message)}</div>
-        <div style="font-size:11px;margin-top:5px;opacity:.75">Supabase との同期は機能しません。データはローカルキャッシュから読み込まれます。</div>
+        <div style="font-weight:700;font-size:12px;margin-bottom:3px">${isError ? '設定の確認が必要です' : 'API 接続の警告'}</div>
+        <div style="font-size:12px;line-height:1.5">${esc(apiCheck.message)}</div>
+        <div style="font-size:11px;margin-top:5px;opacity:.75">API との同期は機能しません。データはローカルキャッシュから読み込まれます。</div>
       </div>
       <button onclick="document.getElementById('hcBanner').style.display='none'"
         style="background:none;border:none;cursor:pointer;padding:0;font-size:18px;line-height:1;opacity:.6;color:inherit">&#215;</button>

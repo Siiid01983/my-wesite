@@ -88,7 +88,7 @@ async function exportStatisticsJSON() {
     uniqueCustomers:  new Set(bk.map(b=>b.email).filter(Boolean)).size,
   };
 
-  if (window.StatisticsService && StatisticsService.supabaseReady) {
+  if (window.StatisticsService && StatisticsService.apiReady) {
     try {
       const [growth, rev, op] = await Promise.all([
         StatisticsService.getGrowthStats(),
@@ -98,7 +98,7 @@ async function exportStatisticsJSON() {
       if (growth) payload.growth = growth;
       if (rev)    payload.revenue = rev;
       if (op)     payload.operational = op;
-    } catch(e) { console.warn('[Export] Supabase stats unavailable:', e.message); }
+    } catch(e) { console.warn('[Export] API stats unavailable:', e.message); }
   }
 
   _dlJSON(`hm-statistics-${todayStr()}.json`, payload);

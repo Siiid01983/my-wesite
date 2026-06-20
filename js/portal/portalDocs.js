@@ -1,6 +1,6 @@
 // js/portal/portalDocs.js → window.PortalDocs
 // Customer Documents Center — READ-ONLY access to a customer's own files in
-// Supabase Storage (Phase 5D).
+// API Storage (Phase 5D).
 //
 // Storage layout (reuses the existing `media` bucket — no new bucket, no DB
 // change). Files live under a booking-scoped prefix:
@@ -68,7 +68,7 @@
       } catch (_) { continue; }
       if (error || !data) continue;
       for (const entry of data) {
-        // Skip the Supabase placeholder row and any nested folders (no metadata).
+        // Skip the API placeholder row and any nested folders (no metadata).
         if (!entry.name || entry.name === '.emptyFolderPlaceholder') continue;
         if (entry.id === null && entry.metadata == null) continue;
         const f = _file(entry, folder, sectionId);
@@ -83,7 +83,7 @@
   // List all documents for the authenticated booking, grouped by section,
   // plus a flat `all` list for the Download Center.
   async function list(bookingIds) {
-    const sb  = window.SupabaseClient;
+    const sb  = window.api;
     const ids = _ids(bookingIds);
     const empty = { sections: {}, all: [] };
     SECTIONS.forEach(s => { empty.sections[s.id] = []; });
@@ -124,7 +124,7 @@
   // `bookingId` is the single authoritative session booking id — the path is
   // built from it here, so an upload can never target another booking.
   async function uploadAttachment(bookingId, file) {
-    const sb = window.SupabaseClient;
+    const sb = window.api;
     const id = bookingId != null ? String(bookingId) : '';
     if (!sb || !sb.storage) return { ok: false, error: 'storage-unavailable' };
     if (!id)                return { ok: false, error: 'no-booking' };
@@ -147,7 +147,7 @@
   // Delete one of the customer's OWN uploaded attachments. Guarded: refuses any
   // path outside the booking's attachments sub-tree.
   async function removeAttachment(bookingIds, path) {
-    const sb = window.SupabaseClient;
+    const sb = window.api;
     if (!sb || !sb.storage) return { ok: false, error: 'storage-unavailable' };
     if (!_inAttachScope(path, bookingIds)) {
       console.warn('[PortalDocs] blocked out-of-scope attachment delete:', path);
@@ -166,7 +166,7 @@
   // inside the authenticated booking's folders. Returns null when out of scope
   // (blocks unauthorized access) or on error.
   async function getDownloadUrl(bookingIds, path) {
-    const sb  = window.SupabaseClient;
+    const sb  = window.api;
     const ids = _ids(bookingIds);
     if (!sb || !sb.storage) return null;
     if (!_inScope(path, ids)) {

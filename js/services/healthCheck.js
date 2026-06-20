@@ -23,46 +23,40 @@
 
   /* ── Individual checks ───────────────────────────────────────────────── */
 
-  async function _checkSupabase() {
-    const url = window.SUPABASE_URL;
-    const key = window.SUPABASE_ANON_KEY;
-    const urlOk = !!url && !url.includes('<') && url.startsWith('https://');
-    const keyOk = !!key && !key.includes('<') && key.length > 20;
+  async function _checkApi() {
+    const apiBase = window.API_BASE;
+    const urlOk = !!apiBase && !apiBase.includes('<') && /^https?:\/\//.test(apiBase);
 
-    if (!window.supabase) {
-      return { service: 'supabase', status: 'error', message: 'Supabase UMD ライブラリが読み込まれていません' };
+    if (!window.ApiClient) {
+      return { service: 'api', status: 'error', message: 'API クライアント（apiClient.js）が読み込まれていません' };
     }
     if (!urlOk) {
-      const reason = !url ? '未設定です' : 'プレースホルダーが残っています';
-      return { service: 'supabase', status: 'error', message: `SUPABASE_URL が${reason}（env.js を確認）` };
+      const reason = !apiBase ? '未設定です' : 'プレースホルダーが残っています';
+      return { service: 'api', status: 'error', message: `API_BASE が${reason}（env.js を確認）` };
     }
-    if (!keyOk) {
-      const reason = !key ? '未設定です' : 'プレースホルダーが残っています';
-      return { service: 'supabase', status: 'error', message: `SUPABASE_ANON_KEY が${reason}（env.js を確認）` };
-    }
-    if (!window.SupabaseClient) {
-      return { service: 'supabase', status: 'error', message: 'Supabase クライアントの初期化に失敗しました（ログを確認）' };
+    if (!window.api) {
+      return { service: 'api', status: 'error', message: 'API クライアントの初期化に失敗しました（ログを確認）' };
     }
 
     try {
       const timeoutErr = Object.assign(new Error('timeout'), { isTimeout: true });
-      const query      = window.SupabaseClient.from('hm_data').select('key').limit(1);
+      const query      = window.api.from('hm_data').select('key').limit(1);
       const timeout    = new Promise((_, rej) => setTimeout(() => rej(timeoutErr), QUERY_TIMEOUT));
       const { error }  = await Promise.race([query, timeout]);
 
       if (error) {
-        return { service: 'supabase', status: 'warning', message: `Supabase 接続済み（クエリエラー: ${error.message}）` };
+        return { service: 'api', status: 'warning', message: `データベース接続済み（クエリエラー: ${error.message}）` };
       }
-      return { service: 'supabase', status: 'healthy', message: 'Supabase 接続正常' };
+      return { service: 'api', status: 'healthy', message: 'データベース接続正常' };
     } catch (e) {
       if (e.isTimeout) {
-        return { service: 'supabase', status: 'warning', message: `Supabase 接続タイムアウト（${QUERY_TIMEOUT / 1000}秒超過）` };
+        return { service: 'api', status: 'warning', message: `データベース接続タイムアウト（${QUERY_TIMEOUT / 1000}秒超過）` };
       }
       const isNetwork = e instanceof TypeError || (e.message || '').toLowerCase().includes('fetch');
       return {
-        service: 'supabase',
+        service: 'api',
         status:  isNetwork ? 'error' : 'warning',
-        message: isNetwork ? 'Supabase に接続できません（ネットワークエラー）' : `接続エラー: ${e.message}`
+        message: isNetwork ? 'API に接続できません（ネットワークエラー）' : `接続エラー: ${e.message}`
       };
     }
   }
@@ -170,7 +164,7 @@
 
     async run() {
       const results = await Promise.all([
-        _checkSupabase()   .catch(e => ({ service: 'supabase',      status: 'error', message: String(e) })),
+        _checkApi()   .catch(e => ({ service: 'api',      status: 'error', message: String(e) })),
         _checkDataProvider().catch(e => ({ service: 'dataProvider', status: 'error', message: String(e) })),
         _checkServices()   .catch(e => ({ service: 'services',      status: 'error', message: String(e) })),
         _checkStorage()    .catch(e => ({ service: 'storage',       status: 'error', message: String(e) })),

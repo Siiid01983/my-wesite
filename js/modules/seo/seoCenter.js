@@ -337,7 +337,7 @@ function _seoInjectSchema(pageId) {
   }, null, 2);
 }
 
-function _syncSEOFromSupabase() {
-  if (typeof _dpSync === 'undefined' || !Adapter.supabaseReady) return;
+function _syncSEOFromApi() {
+  if (typeof _dpSync === 'undefined' || !Adapter.apiReady) return;
   _dpSync('hm_data', { key: 'hm_seo' }, () => Adapter.syncData('hm_seo', _SEO_DATA_KEY), 'view-seo', renderSEO);
 }

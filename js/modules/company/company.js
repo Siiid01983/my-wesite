@@ -136,8 +136,8 @@ function saveCompanyAll() {
 
 function renderCompany() { _renderCompanyUI(); }
 
-function _syncCompanyFromSupabase() {
-  if (!Adapter.supabaseReady) return;
+function _syncCompanyFromApi() {
+  if (!Adapter.apiReady) return;
   _dpSync('hm_data', {key:'hm_company_rows'}, () => Adapter.syncCompany(), 'view-company', _renderCompanyUI);
 }
 

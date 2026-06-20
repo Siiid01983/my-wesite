@@ -126,15 +126,15 @@ function renderCustomers() {
   }
 }
 
-function _syncCustomersFromSupabase() {
-  if (!Adapter.supabaseReady) return;
+function _syncCustomersFromApi() {
+  if (!Adapter.apiReady) return;
   /* Sync both customer profiles and bookings — booking counts enrich the customer list */
   Promise.all([
     window.DataProvider.read('hm_data', {key:'hm_customers'}),
     window.DataProvider.read('bookings'),
   ]).then(([custRes, bkRes]) => {
-    const custOk = custRes.source === 'supabase';
-    const bkOk   = bkRes.source   === 'supabase';
+    const custOk = custRes.source === 'api';
+    const bkOk   = bkRes.source   === 'api';
     if (!custOk && !bkOk) return;
     Promise.all([
       custOk ? Adapter.syncCustomers() : Promise.resolve(false),

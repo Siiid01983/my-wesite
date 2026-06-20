@@ -58,7 +58,7 @@
 
   // The customer's existing review for this booking, or null (duplicate guard).
   async function existingReview(bookingIds) {
-    const sb = window.SupabaseClient;
+    const sb = window.api;
     const ids = _ids(bookingIds);
     if (!sb || !ids.length) return null;
     try {
@@ -71,7 +71,7 @@
   // Upload one review photo to the customer's own booking folder. Path is built
   // from the booking id here, so it can never target another booking.
   async function uploadPhoto(bookingId, file) {
-    const sb = window.SupabaseClient;
+    const sb = window.api;
     const id = bookingId != null ? String(bookingId) : '';
     if (!sb || !sb.storage)              return { ok: false, error: 'storage-unavailable' };
     if (!id)                             return { ok: false, error: 'no-booking' };
@@ -90,7 +90,7 @@
 
   // Short-lived signed URL for one in-scope review photo. Never public.
   async function signedUrl(bookingIds, path) {
-    const sb = window.SupabaseClient;
+    const sb = window.api;
     if (!sb || !sb.storage || !_inScope(path, bookingIds)) return null;
     try {
       const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(path, SIGNED_TTL);
@@ -101,7 +101,7 @@
 
   // List the booking's review photos, each with a signed preview URL.
   async function listPhotos(bookingIds) {
-    const sb = window.SupabaseClient;
+    const sb = window.api;
     const ids = _ids(bookingIds);
     const out = [];
     const seen = {};
@@ -135,7 +135,7 @@
   // non-empty text, and no existing review (duplicate prevention).
   // Returns { ok, review } or { ok:false, error, review? }.
   async function submit(booking, payload) {
-    const sb = window.SupabaseClient;
+    const sb = window.api;
     payload = payload || {};
     if (!booking)            return { ok: false, error: 'no-booking' };
     if (!canReview(booking)) return { ok: false, error: 'not-completed' };
@@ -150,7 +150,7 @@
     const dup = await existingReview(ids);
     if (dup) return { ok: false, error: 'duplicate', review: dup };
 
-    // Matches the Adapter's reviewToSb column shape — flows into the existing
+    // Matches the Adapter's reviewToRow column shape — flows into the existing
     // admin review-approval workflow (pending tab, 顧客 badge).
     const row = {
       reference_id:      _genId(),

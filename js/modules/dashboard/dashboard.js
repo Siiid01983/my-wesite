@@ -14,11 +14,11 @@ function _growthHTML(g) {
 }
 
 /* Render stat grid from StatisticsService stats + optional growth data.
-   Falls back to calcStats() values when Supabase is unavailable. */
-function renderStatGrid(sbStats, growthStats) {
+   Falls back to calcStats() values when API is unavailable. */
+function renderStatGrid(apiStats, growthStats) {
   const local = calcStats();
   const bk    = Adapter.getBookings();
-  const s     = sbStats || {};
+  const s     = apiStats || {};
   const g     = growthStats || null;
 
   const today         = s.today          != null ? s.today          : local.todayBk;
@@ -106,7 +106,7 @@ function renderDash() {
   renderStatGrid(null, null);
 
   /* Kick off all async BI fetches in parallel */
-  if (window.StatisticsService && StatisticsService.supabaseReady) {
+  if (window.StatisticsService && StatisticsService.apiReady) {
     const isActive = () => document.getElementById('view-dashboard').classList.contains('active');
     const isCurrent = () => gen === _dashGen;  // guard against stale callbacks
 
@@ -148,7 +148,7 @@ function renderObservability() {
   const m   = window.DataProvider ? DataProvider.getMetrics()  : null;
   const cs  = window.DataProvider ? DataProvider.cacheStatus() : [];
   const fl  = window.FallbackLogger ? FallbackLogger.getAll()  : [];
-  const sbOk = !!(window.Adapter && Adapter.supabaseReady);
+  const apiOk = !!(window.Adapter && Adapter.apiReady);
 
   const hitRate    = m ? m.hitRate : 0;
   const hitColor   = hitRate >= 70 ? 'var(--green)' : hitRate >= 40 ? 'var(--yellow)' : 'var(--ink)';
@@ -185,11 +185,11 @@ function renderObservability() {
         <span class="panel-title">システム監視</span>
         <div style="display:flex;align-items:center;gap:12px">
           <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2)">
-            <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${sbOk ? 'var(--green)' : 'var(--red)'};display:inline-block"></span>
-            Supabase&nbsp;${sbOk ? 'オンライン' : 'オフライン'}
+            <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${apiOk ? 'var(--green)' : 'var(--red)'};display:inline-block"></span>
+            API&nbsp;${apiOk ? 'オンライン' : 'オフライン'}
           </span>
           <button class="btn btn-ghost btn-sm" onclick="renderObservability()">状態更新</button>
-          <button class="btn btn-ghost btn-sm" onclick="_refreshAllCaches()" title="期限切れキャッシュをすべてSupabaseから再取得します">キャッシュ更新</button>
+          <button class="btn btn-ghost btn-sm" onclick="_refreshAllCaches()" title="期限切れキャッシュをすべてAPIから再取得します">キャッシュ更新</button>
         </div>
       </div>
 
@@ -200,8 +200,8 @@ function renderObservability() {
           <div class="stat-sub" style="margin-top:4px">${m ? m.cacheHits + ' / ' + m.reads : '—'} reads</div>
         </div>
         <div class="stat-card" style="margin:0;padding:14px 16px">
-          <div class="stat-label">Supabaseリクエスト</div>
-          <div class="stat-val" style="font-size:22px">${m ? m.supabaseReads : '—'}</div>
+          <div class="stat-label">APIリクエスト</div>
+          <div class="stat-val" style="font-size:22px">${m ? m.apiReads : '—'}</div>
           <div class="stat-sub" style="margin-top:4px">直接フェッチ</div>
         </div>
         <div class="stat-card" style="margin:0;padding:14px 16px">
@@ -212,7 +212,7 @@ function renderObservability() {
         <div class="stat-card" style="margin:0;padding:14px 16px">
           <div class="stat-label">最終同期</div>
           <div class="stat-val" style="font-size:18px;line-height:1.3">${syncAgo}</div>
-          <div class="stat-sub" style="margin-top:4px">Supabase読込</div>
+          <div class="stat-sub" style="margin-top:4px">API読込</div>
         </div>
         <div class="stat-card" style="margin:0;padding:14px 16px">
           <div class="stat-label">フォールバックログ</div>
@@ -259,14 +259,14 @@ function _obsAgo(ts) {
 }
 
 async function _refreshAllCaches() {
-  if (!window.Adapter || !Adapter.supabaseReady) {
-    toast('Supabaseがオフラインのためキャッシュを更新できません');
+  if (!window.Adapter || !Adapter.apiReady) {
+    toast('APIがオフラインのためキャッシュを更新できません');
     return;
   }
   if (window.DataProvider) DataProvider.clearAllCache();
-  await Adapter.syncFromSupabase();
+  await Adapter.syncFromApi();
   renderObservability();
-  toast('キャッシュをSupabaseから再取得しました');
+  toast('キャッシュをAPIから再取得しました');
 }
 
 /* Refresh stat grid when Realtime fires a change */
@@ -274,7 +274,7 @@ document.addEventListener('dashboard:stats-updated', function (e) {
   const isActive = document.getElementById('view-dashboard').classList.contains('active');
   if (!isActive) return;
   renderStatGrid(e.detail);
-  if (window.StatisticsService && StatisticsService.supabaseReady) {
+  if (window.StatisticsService && StatisticsService.apiReady) {
     StatisticsService.getGrowthStats().then(g => { if (g) renderStatGrid(e.detail, g); });
     StatisticsService.getRevenueStats().then(r => _renderBIRevenue(r));
     StatisticsService.getOperationalStats().then(o => _renderBIOperational(o));
@@ -443,7 +443,7 @@ function _renderBITrendData(td) {
 function biSetTrend(days) {
   _biTrendPeriod = days;
   _renderBITrend();
-  if (window.StatisticsService && StatisticsService.supabaseReady) {
+  if (window.StatisticsService && StatisticsService.apiReady) {
     StatisticsService.getTrendData(days).then(td => {
       if (document.getElementById('view-dashboard')?.classList.contains('active')) _renderBITrendData(td);
     });
@@ -591,7 +591,7 @@ function _renderBIOperational(op) {
     </div>`;
 }
 
-/* ── 6. Live Activity Feed (Supabase) ── */
+/* ── 6. Live Activity Feed (API) ── */
 function _renderBIActivity(items) {
   const el = document.getElementById('activityWrap');
   if (!el || !items || !items.length) return;

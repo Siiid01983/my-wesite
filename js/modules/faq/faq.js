@@ -44,8 +44,8 @@ function _renderFaqUI() {
 
 function renderFaq() { _renderFaqUI(); }
 
-function _syncFaqFromSupabase() {
-  if (!Adapter.supabaseReady) return;
+function _syncFaqFromApi() {
+  if (!Adapter.apiReady) return;
   _dpSync('hm_data', {key:'hm_faq'}, () => Adapter.syncFaq(), 'view-faq', _renderFaqUI);
 }
 

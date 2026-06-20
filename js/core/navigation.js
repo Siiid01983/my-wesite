@@ -63,11 +63,11 @@ function _applyRoleToSidebar() {
 /* ════════════════════════════════════════════════════════
    DATA PROVIDER SYNC HELPER
    Routes page-open syncs through DataProvider so FallbackLogger
-   captures every Supabase attempt. If DataProvider confirms Supabase
+   captures every API attempt. If DataProvider confirms API
    is reachable, delegates to Adapter for domain mapping + storage.
    ════════════════════════════════════════════════════════ */
 /* Per-table in-flight guard: prevents two concurrent _dpSync calls for the same
-   table from both firing Supabase fetches that could write different snapshots
+   table from both firing API fetches that could write different snapshots
    of local storage in an unpredictable order. */
 const _dpSyncInFlight = {};
 
@@ -76,7 +76,7 @@ async function _dpSync(table, filters, adapterFn, viewId, rerenderFn) {
   _dpSyncInFlight[table] = true;
   try {
     const { source } = await window.DataProvider.read(table, filters || undefined);
-    if (source !== 'supabase') return;
+    if (source !== 'api') return;
     const ok = await adapterFn();
     if (ok && document.getElementById(viewId)?.classList.contains('active')) rerenderFn();
   } finally {
@@ -104,21 +104,21 @@ function go(view) {
   Auth.touch();
   if (view==='dashboard') renderDash();
   if (view==='bookings') renderBookings();
-  if (view==='calendar') { refreshCalendarUI(); renderGCalPanel(); _syncCalendarFromSupabase(); }
+  if (view==='calendar') { refreshCalendarUI(); renderGCalPanel(); _syncCalendarFromApi(); }
   if (view==='analytics') renderAnalytics();
-  if (view==='capacity') { loadCapacity(); _syncCapacityFromSupabase(); }
-  if (view==='pricing') { renderPricing(); _syncPricingFromSupabase(); }
-  if (view==='disposal') { renderDisposal(); _syncDisposalFromSupabase(); }
-  if (view==='quotes') { renderQuotes(); _syncQuotesFromSupabase(); }
-  if (view==='reviews') { renderReviews(); _syncReviewsFromSupabase(); }
-  if (view==='services') { renderServices(); _syncServicesFromSupabase(); }
-  if (view==='faq') { renderFaq(); _syncFaqFromSupabase(); }
-  if (view==='company') { renderCompany(); _syncCompanyFromSupabase(); }
-  if (view==='footer') { renderFooter(); _syncFooterFromSupabase(); }
-  if (view==='hero') { renderHero(); _syncHeroFromSupabase(); }
+  if (view==='capacity') { loadCapacity(); _syncCapacityFromApi(); }
+  if (view==='pricing') { renderPricing(); _syncPricingFromApi(); }
+  if (view==='disposal') { renderDisposal(); _syncDisposalFromApi(); }
+  if (view==='quotes') { renderQuotes(); _syncQuotesFromApi(); }
+  if (view==='reviews') { renderReviews(); _syncReviewsFromApi(); }
+  if (view==='services') { renderServices(); _syncServicesFromApi(); }
+  if (view==='faq') { renderFaq(); _syncFaqFromApi(); }
+  if (view==='company') { renderCompany(); _syncCompanyFromApi(); }
+  if (view==='footer') { renderFooter(); _syncFooterFromApi(); }
+  if (view==='hero') { renderHero(); _syncHeroFromApi(); }
   if (view==='backup') renderBackup();
   if (view==='media') renderMedia();
-  if (view==='customers') { renderCustomers(); _syncCustomersFromSupabase(); }
+  if (view==='customers') { renderCustomers(); _syncCustomersFromApi(); }
   if (view==='line') renderLine();
   if (view==='email') renderEmail();
   if (view==='changelog') renderChangelog();
@@ -126,9 +126,9 @@ function go(view) {
   if (view==='health')        renderHealth();
   if (view==='staff')         renderStaff();
   if (view==='audit-log')     renderAuditLog();
-  if (view==='seo')           { renderSEO(); _syncSEOFromSupabase(); }
+  if (view==='seo')           { renderSEO(); _syncSEOFromApi(); }
   if (view==='blog')          renderBlog();
-  if (view==='site-settings') { renderSiteSettings(); _syncSiteSettingsFromSupabase(); }
+  if (view==='site-settings') { renderSiteSettings(); _syncSiteSettingsFromApi(); }
   if (view==='overlay-bookings') renderOverlayBookings();
   if (view==='inbox') renderInbox();
   if (window.I18n) I18n.applyToDOM(document.getElementById('adminApp'));

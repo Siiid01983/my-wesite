@@ -3,7 +3,7 @@
    ANALYTICS ENGINE — Phase 23
    Pure computation: linear regression, moving averages,
    anomaly detection, forecasting, data aggregation.
-   No DOM. No Supabase. Safe to call from any context.
+   No DOM. No API. Safe to call from any context.
    ════════════════════════════════════════════════════════ */
 (function () {
 

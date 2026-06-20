@@ -40,8 +40,8 @@ my-website/
 │   │   └── supabase.js         # Supabase UMD bundle (local copy)
 │   │
 │   ├── services/               # Infrastructure layer (Phases 1–8)
-│   │   ├── supabaseClient.js   # window.SupabaseClient singleton
-│   │   ├── supabaseAdapter.js  # window.Adapter — domain CRUD layer
+│   │   ├── dataClient.js   # window.SupabaseClient singleton
+│   │   ├── apiAdapter.js  # window.Adapter — domain CRUD layer
 │   │   ├── statisticsService.js# window.StatisticsService — BI dashboard stats
 │   │   ├── fallbackLogger.js   # window.FallbackLogger — localStorage event log
 │   │   ├── dataProvider.js     # window.DataProvider — generic CRUD + cache + retry
@@ -176,8 +176,8 @@ Infrastructure (Supabase → config → services)
   js/lib/supabase.js
   js/config/appConfig.js
   js/config/env.js
-  js/services/supabaseClient.js
-  js/services/supabaseAdapter.js      ← sets window.Adapter
+  js/services/dataClient.js
+  js/services/apiAdapter.js      ← sets window.Adapter
   js/services/statisticsService.js    ← sets window.StatisticsService
   js/services/fallbackLogger.js       ← sets window.FallbackLogger
   js/services/dataProvider.js         ← sets window.DataProvider
@@ -260,7 +260,7 @@ App bootstrap (must be last — contains the startup IIFE)
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="js/config/appConfig.js"></script>
 <script src="js/config/env.js"></script>
-<script src="js/services/supabaseClient.js"></script>
+<script src="js/services/dataClient.js"></script>
 <script src="js/services/fallbackLogger.js"></script>
 <script src="js/services/dataProvider.js"></script>
 <script src="js/services/serviceRegistry.js"></script>
@@ -304,7 +304,7 @@ subsequent scripts.
 | `EventBus` | `js/core/eventBus.js` | Typed CustomEvent wrapper |
 | `AdminState` | `js/core/stateManager.js` | Reactive ephemeral UI state |
 | `Validators` | `js/utils/validators.js` | Input validation helpers |
-| `Adapter` | `js/services/supabaseAdapter.js` | Domain CRUD (all data writes go here) |
+| `Adapter` | `js/services/apiAdapter.js` | Domain CRUD (all data writes go here) |
 | `DataProvider` | `js/services/dataProvider.js` | Generic CRUD + TTL cache + retry |
 | `Services` | `js/services/serviceRegistry.js` | Central service locator |
 | `DashboardLayout` | `js/modules/dashboard/dashboardLayout.js` | Widget order + visibility storage (`hm_dashboard_layout`) |
@@ -385,7 +385,7 @@ Generic Supabase-first CRUD layer with TTL cache, exponential-backoff retry, and
 ```js
 const { data, source, error } = await DataProvider.read(table, filters)
 // filters: optional object of column:value equality filters
-// source: 'supabase' | 'cache' | 'localStorage'
+// source: 'api' | 'cache' | 'localStorage'
 ```
 
 Cache behaviour:
@@ -467,7 +467,7 @@ window.Services.Storage           // → window.Storage (localStorage helpers)
 
 ---
 
-### `js/services/supabaseAdapter.js` → `window.Adapter`
+### `js/services/apiAdapter.js` → `window.Adapter`
 
 Domain-aware CRUD layer. Owns all localStorage keys and Supabase schema mappings.
 **Do not bypass Adapter for domain writes** — it handles Japanese↔English status mapping,
@@ -496,7 +496,7 @@ Adapter.initializeRealtime()       // subscribe to bookings + calendar channels
 Adapter.destroyRealtime()          // unsubscribe (call on logout)
 
 // One-time full sync (called on login)
-Adapter.syncFromSupabase()
+Adapter.syncFromApi()
 ```
 
 ---
@@ -509,9 +509,9 @@ Every admin view that pulls from Supabase uses `_dpSync()` (defined in `js/core/
 async function _dpSync(table, filters, adapterFn, viewId, rerenderFn) {
   const { source } = await window.DataProvider.read(table, filters);
   // 'cache'        → data is fresh, skip Adapter sync
-  // 'supabase'     → Supabase reachable, run Adapter sync for domain mapping
+  // 'api'     → Supabase reachable, run Adapter sync for domain mapping
   // 'localStorage' → Supabase unreachable, FallbackLogger already logged it
-  if (source !== 'supabase') return;
+  if (source !== 'api') return;
   const ok = await adapterFn();
   if (ok && document.getElementById(viewId)?.classList.contains('active')) rerenderFn();
 }
@@ -589,7 +589,7 @@ npm test
 
 Requires the dev server to be running on `:5050`.
 Tests use Playwright headless Chromium + `node:test`.
-All 20 tests are deterministic (fake Supabase via `window.__withFakeSb`).
+All 20 tests are deterministic (fake Supabase via `window.__withFakeApi`).
 
 Expected output: `pass 20 / fail 0`
 
@@ -704,7 +704,7 @@ applies on every grid render including Realtime-triggered updates.
 
 | Phase | Commit | What was built |
 |---|---|---|
-| Audit | `403da78` | System audit refactor (Plans A–D): (A) WMC module consolidation — `wmcDashboard.html` now loads canonical `js/modules/website/wmcOverview.js`; deleted stale split fragments `js/management/content.js` and `js/admin/dashboard.js`. (B) Deleted `admin-ui.js` (5,543-line pre-Phase 14 orphan, not loaded anywhere). (C) `supabaseAdapter.js` `wt()` now calls `DataProvider.invalidate('hm_data')` on every hm_data write. (D) `statisticsService.js` — all six raw-fetch BI functions now return `null`/`[]` on Supabase error instead of zero-filled objects. |
+| Audit | `403da78` | System audit refactor (Plans A–D): (A) WMC module consolidation — `wmcDashboard.html` now loads canonical `js/modules/website/wmcOverview.js`; deleted stale split fragments `js/management/content.js` and `js/admin/dashboard.js`. (B) Deleted `admin-ui.js` (5,543-line pre-Phase 14 orphan, not loaded anywhere). (C) `apiAdapter.js` `wt()` now calls `DataProvider.invalidate('hm_data')` on every hm_data write. (D) `statisticsService.js` — all six raw-fetch BI functions now return `null`/`[]` on Supabase error instead of zero-filled objects. |
 | Audit | `09aceb4` | Bug fixes: `statisticsService._getBookingsRaw()` was selecting non-existent column `reference_id` → fixed to `id` (root cause of all dashboard stat cards showing 0). Added error guard to `getDashboardStats()` (returns null on fetch failure so dashboard keeps showing prior values). Fixed `getRecentActivity()` to use `b.id`. |
 | 28 | `—` | Website Management Center (WMC): `wmcDashboard.html` + 11 modules across `js/modules/website/` and `js/modules/wmc/`. Sections 8 (Theme Customizer), 9 (Deployment Center), 10 (Permissions — 3-tier RBAC), 11 (Analytics). Block-based page editor (`WMCPageManager`, `WMCMedia`, `WMCBlockEditor`). `WMCPermissions` global, `_padZ`/`_wmcFmtRelative` shared utils. localStorage schema: `hm_wmc_users`, `hm_dc_log`, `hm_dc_backups`, `hm_theme_config`, `hm_custom_theme_css`. |
 | 23 | `—` | Advanced Analytics & BI: AnalyticsEngine (regression/forecasting), RevenueForecast (3-month projection), ServicePerformance (composite score), CustomerInsights (CLV/churn), ConversionAnalytics (funnel), AnalyticsWidgets (demand chart/DOW heatmap/insight cards), AnalyticsUI (orchestrator wrapper) |

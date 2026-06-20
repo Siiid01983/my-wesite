@@ -1,9 +1,9 @@
 'use strict';
 
 /* ════════════════════════════════════════════════════════
-   COMMUNICATIONS MODULE  (Phase 29 — Supabase integration)
+   COMMUNICATIONS MODULE  (Phase 29 — API integration)
 
-   Source of truth: public.communications (Supabase)
+   Source of truth: public.communications (API)
    No localStorage. In-memory cache for synchronous helpers.
 
    Globals:
@@ -70,26 +70,26 @@
     return String(id);
   }
 
-  /* ── Supabase insert ─────────────────────────────────── */
+  /* ── API insert ─────────────────────────────────── */
   async function _insert(payload) {
     payload = { ...payload, booking_id: _safeBookingId(payload.booking_id) };
-    const _sb = window.SupabaseClient;
+    const _api = window.api;
 
     /* ── Step 0: verify client ── */
     console.group('[COMMUNICATIONS] Insert attempt');
-    console.log('SupabaseClient:', _sb ? 'OK (' + (window.SUPABASE_URL || 'url unknown') + ')' : 'NULL — check env.js');
+    console.log('DataClient:', _api ? 'OK (' + (window.API_BASE || 'url unknown') + ')' : 'NULL — check env.js');
 
-    if (!_sb) {
-      console.error('[COMMUNICATIONS] Insert failed: SupabaseClient is null');
+    if (!_api) {
+      console.error('[COMMUNICATIONS] Insert failed: ApiClient is null');
       console.groupEnd();
-      throw new Error('SupabaseClient not available');
+      throw new Error('ApiClient not available');
     }
 
     /* ── Step 1: log payload ── */
     console.log('[COMMUNICATIONS] Insert payload:', JSON.parse(JSON.stringify(payload)));
 
     /* ── Step 2: execute insert, capture full response ── */
-    const response = await _sb
+    const response = await _api
       .from('communications')
       .insert(payload)
       .select('*')
@@ -120,7 +120,7 @@
     console.log('[COMMUNICATIONS] Insert success — id:', data.id);
 
     /* ── Step 3: immediate verification SELECT ── */
-    const verifyRes = await _sb
+    const verifyRes = await _api
       .from('communications')
       .select('id, booking_id, customer_email, direction, created_at')
       .order('created_at', { ascending: false })
@@ -135,13 +135,13 @@
     return _map(data);
   }
 
-  /* ── Supabase fetch — by booking ─────────────────────── */
+  /* ── API fetch — by booking ─────────────────────── */
   async function _fetchForBooking(bookingId) {
-    const _sb = window.SupabaseClient;
+    const _api = window.api;
     const safeId = _safeBookingId(bookingId);
-    if (!_sb || !safeId) return [];
+    if (!_api || !safeId) return [];
 
-    const { data, error } = await _sb
+    const { data, error } = await _api
       .from('communications')
       .select('*')
       .eq('booking_id', safeId)
@@ -157,13 +157,13 @@
     return rows;
   }
 
-  /* ── Supabase fetch — by email ───────────────────────── */
+  /* ── API fetch — by email ───────────────────────── */
   async function _fetchForEmail(email) {
-    const _sb = window.SupabaseClient;
-    if (!_sb || !email) return [];
+    const _api = window.api;
+    if (!_api || !email) return [];
     const norm = email.toLowerCase().trim();
 
-    const { data, error } = await _sb
+    const { data, error } = await _api
       .from('communications')
       .select('*')
       .eq('customer_email', norm)
@@ -187,10 +187,10 @@
 
   /* ── Prefetch aggregate stats for customer table ─────── */
   async function prefetchStats() {
-    const _sb = window.SupabaseClient;
-    if (!_sb) return;
+    const _api = window.api;
+    if (!_api) return;
 
-    const { data, error } = await _sb
+    const { data, error } = await _api
       .from('communications')
       .select('customer_email, created_at')
       .order('created_at', { ascending: false });
@@ -370,16 +370,16 @@
     return 'booking';
   }
 
-  /* ── Update email_status in Supabase ────────────────── */
+  /* ── Update email_status in API ────────────────── */
   async function _updateEmailStatus(commId, status, errorMsg, sentAt) {
-    const _sb = window.SupabaseClient;
-    if (!_sb || !commId) return;
+    const _api = window.api;
+    if (!_api || !commId) return;
 
     const patch = { email_status: status };
     if (errorMsg !== null) patch.email_error = errorMsg;
     if (sentAt   !== null) patch.sent_at = sentAt;
 
-    const { error } = await _sb
+    const { error } = await _api
       .from('communications')
       .update(patch)
       .eq('id', commId);
@@ -399,10 +399,10 @@
 
   /* ── Resend failed email ─────────────────────────────── */
   async function resendEmail(commId) {
-    const _sb = window.SupabaseClient;
-    if (!_sb) { toast('Supabase接続がありません'); return; }
+    const _api = window.api;
+    if (!_api) { toast('API接続がありません'); return; }
 
-    const { data, error } = await _sb
+    const { data, error } = await _api
       .from('communications')
       .select('*')
       .eq('id', commId)
@@ -524,22 +524,21 @@
 
   /* ── Console diagnostic — call CommModule.diagnose() ─── */
   async function diagnose() {
-    const _sb = window.SupabaseClient;
+    const _api = window.api;
     console.group('[COMMUNICATIONS] Full diagnostic');
 
-    console.log('SUPABASE_URL    :', window.SUPABASE_URL    || '(not set)');
-    console.log('SUPABASE_ANON_KEY exists:', !!(window.SUPABASE_ANON_KEY));
-    console.log('SupabaseClient  :', _sb ? 'OK' : 'NULL');
+    console.log('API_BASE        :', window.API_BASE || '(not set)');
+    console.log('DataClient      :', _api ? 'OK' : 'NULL');
 
-    if (!_sb) {
-      console.error('Cannot continue — SupabaseClient is null. Check js/config/env.js.');
+    if (!_api) {
+      console.error('Cannot continue — ApiClient is null. Check js/config/env.js.');
       console.groupEnd();
       return;
     }
 
     /* 1. Verify table is reachable and readable */
     console.log('\n--- SELECT test ---');
-    const selRes = await _sb
+    const selRes = await _api
       .from('communications')
       .select('id, booking_id, customer_email, direction, created_at')
       .order('created_at', { ascending: false })
@@ -562,7 +561,7 @@
     console.log('\n--- INSERT probe ---');
     console.log('Payload:', probe);
 
-    const insRes = await _sb
+    const insRes = await _api
       .from('communications')
       .insert(probe)
       .select('*')
@@ -583,7 +582,7 @@
       console.log('INSERT OK — row id:', insRes.data.id);
 
       /* 3. Verify it appears in a fresh SELECT */
-      const verRes = await _sb
+      const verRes = await _api
         .from('communications')
         .select('id, customer_email, created_at')
         .eq('id', insRes.data.id)
@@ -591,12 +590,12 @@
       console.log('\n--- Verify row visible ---');
       console.log('Verify data :', verRes.data);
       console.log('Verify error:', verRes.error);
-      if (verRes.data) console.log('✅ Row is visible in Supabase — write path works.');
+      if (verRes.data) console.log('✅ Row is visible in the database — write path works.');
       else console.error('❌ Row not returned in SELECT — RLS SELECT policy missing.');
 
       /* 4. Clean up — remove the probe row so it does not persist */
       console.log('\n--- Cleanup probe row ---');
-      const delRes = await _sb
+      const delRes = await _api
         .from('communications')
         .delete()
         .eq('id', insRes.data.id);
@@ -647,22 +646,17 @@
       });
     },
 
-    /* Sends email via Resend API through Supabase Edge Function */
+    /* Sends email via the PHP API (hm-api/send-email.php) */
     async _deliver(record) {
-      const url = (window.SUPABASE_URL || '').replace(/\/$/, '') + '/functions/v1/send-email';
-      const key = window.SUPABASE_ANON_KEY || '';
+      const url = (window.API_BASE || '').replace(/\/$/, '') + '/send-email.php';
 
-      console.log('[COMMUNICATIONS] _deliver → Edge Function:', url);
+      console.log('[COMMUNICATIONS] _deliver → API:', url);
       console.log('[COMMUNICATIONS] _deliver payload:', record);
 
       try {
         const res = await fetch(url, {
           method:  'POST',
-          headers: {
-            'Content-Type':  'application/json',
-            'Authorization': `Bearer ${key}`,
-            'apikey':        key,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(record),
         });
 

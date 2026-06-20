@@ -3,7 +3,7 @@
 /* ════════════════════════════════════════════════════════
    WEBSITE SETTINGS
    Company info · Contact · Social links · Branding
-   Stored in localStorage hm_site_settings + Supabase hm_data
+   Stored in localStorage hm_site_settings + API hm_data
    ════════════════════════════════════════════════════════ */
 
 const _SETTINGS_KEY = 'hm_site_settings';
@@ -255,15 +255,15 @@ function saveSettings() {
   SettingsStore.save(data);
   toast('設定を保存しました');
 
-  // Sync to Supabase
-  if (typeof Adapter !== 'undefined' && Adapter.supabaseReady) {
+  // Sync to API
+  if (typeof Adapter !== 'undefined' && Adapter.apiReady) {
     try { Adapter.saveData('hm_settings', data).catch(() => {}); } catch {}
   }
 
   renderSiteSettings();
 }
 
-function _syncSiteSettingsFromSupabase() {
-  if (typeof _dpSync === 'undefined' || !Adapter.supabaseReady) return;
+function _syncSiteSettingsFromApi() {
+  if (typeof _dpSync === 'undefined' || !Adapter.apiReady) return;
   _dpSync('hm_data', { key: 'hm_settings' }, () => Adapter.syncData('hm_settings', _SETTINGS_KEY), 'view-site-settings', renderSiteSettings);
 }

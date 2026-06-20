@@ -1,0 +1,14 @@
+# Hello Moving API — Apache config (cPanel)
+
+# Protect secrets and internal files
+<FilesMatch "^(_config\.php|_db\.php|_lib\.php|_config\.example\.php|schema\.mysql\.sql)$">
+  Require all denied
+</FilesMatch>
+
+# Block direct browsing of the uploads directory listing
+Options -Indexes
+
+# Endpoints are called directly by their filename:
+#   <API_BASE>/rest.php  ·  /create-booking.php  ·  /get-booking.php  ·  /auth.php
+#   /send-email.php  ·  /receive-email.php  ·  /storage.php
+# CORS-safe headers are emitted by PHP (_lib.php hm_cors()).

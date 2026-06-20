@@ -10,7 +10,7 @@
 //   • Schema     — reuses the existing `confirmed` status value (no DB change).
 //   • CRM/admin  — uses BookingService.approveEstimate (a targeted single-column
 //                  update), so no other booking field or workflow is disturbed.
-//   • Audit      — records the approval to the centralized Supabase-backed
+//   • Audit      — records the approval to the centralized API-backed
 //                  AuditService (Phase 5F Audit Migration), so it appears in the
 //                  admin 監査ログ and survives browser cache clearing.
 
@@ -34,7 +34,7 @@
     return 'customer';
   }
 
-  // Record the approval to the centralized Supabase audit trail (AuditService).
+  // Record the approval to the centralized API audit trail (AuditService).
   // Customers may only INSERT — this never reads the audit log. Returns a promise
   // resolving to whether the entry was persisted.
   function _writeAudit(bookingRef, fromStatus) {

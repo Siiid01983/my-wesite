@@ -779,13 +779,13 @@
     </div>
   </main>
 
-  <!-- Supabase infrastructure (reused, unmodified) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <!-- Self-hosted data client (PHP + MySQL API) -->
+  <script src="js/lib/apiClient.js"></script>
   <script src="js/config/env.js"></script>
-  <script src="js/services/supabaseClient.js"></script>
+  <script src="js/services/dataClient.js"></script>
   <script src="js/services/auditService.js"></script>
   <script src="bookingService.js"></script>
-  <script src="js/portal/portalSupabaseAuth.js"></script>
+  <script src="js/portal/portalLogin.js"></script>
   <script src="js/portal/portalAuth.js"></script>
   <script src="js/portal/portalComms.js"></script>
   <script src="js/portal/portalDocs.js"></script>
@@ -801,9 +801,9 @@
     const $ = id => document.getElementById(id);
 
     // ---- Route guard (Phase 6A): require a valid authenticated session ----
-    // Resolves a Supabase Auth (Magic Link) session first, then any legacy
+    // Resolves a API Auth (Magic Link) session first, then any legacy
     // session, then bounces unauthenticated visitors to login.html. Expired
-    // Supabase sessions that cannot be refreshed resolve to null → redirect.
+    // API sessions that cannot be refreshed resolve to null → redirect.
     const sess = await PortalAuth.resolveSession('login.html');
     if (!sess) return; // redirected to login
 
@@ -820,22 +820,22 @@
     });
     overlay.addEventListener('click', closeDrawer);
 
-    // ---- Logout (secure: ends the Supabase Auth session + any legacy token) ----
+    // ---- Logout (secure: ends the API Auth session + any legacy token) ----
     $('logoutBtn').addEventListener('click', async () => {
       try { await PortalAuth.logout(); } catch (_) {}
       location.replace('login.html');
     });
 
     // ---- Admin mode ----
-    // An admin is recognised from the VERIFIED Supabase session email (authed
+    // An admin is recognised from the VERIFIED API session email (authed
     // sessions only — a legacy/spoofable token can't grant admin mode). The
     // admin holds a real session so Phase 6B RLS stays active: their email
     // matches no customer_email, so no customer data is exposed here. Elevated
     // tooling lives behind admin.html's own separate login.
     const isAdmin = !!(sess.authed && sess.email &&
-      window.PortalSupabaseAuth &&
-      typeof PortalSupabaseAuth.isAdminEmail === 'function' &&
-      PortalSupabaseAuth.isAdminEmail(sess.email));
+      window.PortalLogin &&
+      typeof PortalLogin.isAdminEmail === 'function' &&
+      PortalLogin.isAdminEmail(sess.email));
 
     if (isAdmin) {
       const ADMIN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';

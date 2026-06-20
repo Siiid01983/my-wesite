@@ -15,27 +15,27 @@ async function _wmcCheckSiteStatus() {
   if (!banner) return;
 
   var now = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-  var sbOk = false;
+  var apiOk = false;
   var hcPassed = false;
   if (window.HealthCheck) {
     try {
       var report = await HealthCheck.run();
-      var c = report.checks.find(function (x) { return x.service === 'supabase'; });
+      var c = report.checks.find(function (x) { return x.service === 'api'; });
       hcPassed = !c || c.status === 'healthy';
-      sbOk = hcPassed;
+      apiOk = hcPassed;
     } catch (_) {}
   } else {
-    hcPassed = !!window.SupabaseClient;
-    sbOk = hcPassed;
+    hcPassed = !!window.api;
+    apiOk = hcPassed;
   }
 
-  var siteOk = !!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.supabase) && hcPassed;
+  var siteOk = !!(window.API_BASE && window.ApiClient) && hcPassed;
 
   banner.className = 'wmc-status-banner ' + (siteOk ? 'online' : 'offline');
   if (text)   text.textContent   = siteOk ? 'サイトはオンラインです' : 'サイトに接続できません';
-  if (detail) detail.textContent = sbOk
-    ? 'Supabase バックエンド: 正常 · すべてのサービスが稼働中'
-    : 'Supabase に接続できません — ローカルキャッシュで動作中';
+  if (detail) detail.textContent = apiOk
+    ? 'API バックエンド: 正常 · すべてのサービスが稼働中'
+    : 'API に接続できません — ローカルキャッシュで動作中';
   if (time)   time.textContent = '確認時刻: ' + now;
   if (siteOk && !localStorage.getItem('hm_last_deploy')) {
     localStorage.setItem('hm_last_deploy', new Date().toISOString());
@@ -241,15 +241,15 @@ function _wmcInjectDiagPanel() {
   var banner = document.getElementById('wmcStatusBanner');
   if (!banner) return;
 
-  var adapterReady = typeof Adapter !== 'undefined' && !!Adapter.supabaseReady;
-  var clientReady  = !!window.SupabaseClient;
+  var adapterReady = typeof Adapter !== 'undefined' && !!Adapter.apiReady;
+  var clientReady  = !!window.api;
 
   var panel = document.createElement('div');
   panel.id = 'wmcDiagPanel';
   panel.style.cssText = 'margin-top:10px;padding:8px 10px;background:rgba(0,0,0,.04);border-radius:6px;font-size:11px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;';
   panel.innerHTML =
-    '<span>Adapter.supabaseReady: <strong style="color:' + (adapterReady ? '#10b981' : '#ef4444') + '">' + adapterReady + '</strong></span>' +
-    '<span>SupabaseClient: <strong style="color:' + (clientReady ? '#10b981' : '#ef4444') + '">' + (clientReady ? 'OK' : 'null') + '</strong></span>' +
+    '<span>Adapter.apiReady: <strong style="color:' + (adapterReady ? '#10b981' : '#ef4444') + '">' + adapterReady + '</strong></span>' +
+    '<span>ApiClient: <strong style="color:' + (clientReady ? '#10b981' : '#ef4444') + '">' + (clientReady ? 'OK' : 'null') + '</strong></span>' +
     '<button id="wmcWriteTestBtn" style="padding:3px 10px;border:1px solid #2563eb;border-radius:4px;background:#fff;color:#2563eb;cursor:pointer;font-size:11px;">Write Test Record</button>' +
     '<span id="wmcWriteTestResult"></span>';
   banner.appendChild(panel);
@@ -266,29 +266,29 @@ async function _wmcRunWriteTest() {
   var payload = { key: 'test_connection', value: { timestamp: Date.now() }, updated_at: new Date().toISOString() };
   console.log('[SAVE] write test payload:', payload);
 
-  if (!window.SupabaseClient) {
-    var msg = 'SupabaseClient is null — writes cannot reach Supabase. Verify env.js has window.ENV={ready:true} and valid credentials.';
-    console.error('[SUPABASE ERROR]', msg);
+  if (!window.api) {
+    var msg = 'ApiClient is null — writes cannot reach the API. Verify env.js has window.ENV={ready:true} and valid credentials.';
+    console.error('[API ERROR]', msg);
     if (out) out.innerHTML = '<span style="color:#ef4444">' + msg + '</span>';
     if (btn) btn.disabled = false;
     return;
   }
 
   try {
-    var r = await window.SupabaseClient
+    var r = await window.api
       .from('hm_data')
       .upsert(payload, { onConflict: 'key' });
 
     if (r.error) {
-      console.error('[SUPABASE ERROR] write test failed:', r.error.message, r.error);
+      console.error('[API ERROR] write test failed:', r.error.message, r.error);
       if (out) out.innerHTML = '<span style="color:#ef4444">Error: ' + r.error.message + '</span>';
     } else {
-      console.log('[SUPABASE RESPONSE] write test succeeded:', r.data);
-      if (out) out.innerHTML = '<span style="color:#10b981">✓ Supabase write OK — check: select count(*) from hm_data;</span>';
-      if (typeof toast !== 'undefined') toast('テスト書き込み成功 — Supabase confirmed');
+      console.log('[API RESPONSE] write test succeeded:', r.data);
+      if (out) out.innerHTML = '<span style="color:#10b981">✓ API write OK — check: select count(*) from hm_data;</span>';
+      if (typeof toast !== 'undefined') toast('テスト書き込み成功 — API confirmed');
     }
   } catch (e) {
-    console.error('[SUPABASE ERROR] write test exception:', e.message, e);
+    console.error('[API ERROR] write test exception:', e.message, e);
     if (out) out.innerHTML = '<span style="color:#ef4444">Exception: ' + e.message + '</span>';
   }
 

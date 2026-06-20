@@ -246,7 +246,7 @@ window.I18n = (function () {
     '最終同期':      'Last Sync',
     'ヒット率':      'Hit Rate',
     'レイテンシ':    'Latency',
-    'Supabase':      'Supabase',
+    'API':      'API',
     'オンライン':    'Online',
     'オフライン':    'Offline',
 

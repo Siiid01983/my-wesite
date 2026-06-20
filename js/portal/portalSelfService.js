@@ -19,7 +19,7 @@
 //   • Auth 6A — actor is resolved from the verified PortalAuth session.
 //   • Admin   — cancellation is a *request* (note marker + audit entry); the
 //               admin keeps full control of the real status transition.
-//   • Audit   — every action is recorded to the Supabase AuditService (customers
+//   • Audit   — every action is recorded to the API AuditService (customers
 //               may INSERT only — see 6B audit_auth_insert), so it appears in the
 //               admin 監査ログ.
 

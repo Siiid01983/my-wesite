@@ -8,7 +8,7 @@
      Google Fonts CSS              → stale-while-revalidate
      Google Font files             → cache-first
      CDN bundles (jsdelivr)        → cache-first on first access
-     Supabase API                  → network-only (DataProvider handles fallback)
+     PHP API (hm-api)              → network-only (DataProvider handles fallback)
      Google OAuth/API              → network-only
      Everything else same-origin  → cache-first with network fallback
 
@@ -39,10 +39,10 @@ const PRECACHE = [
   '/admin-analytics.js',
 
   /* Infrastructure */
-  '/js/lib/supabase.js',
+  '/js/lib/apiClient.js',
   '/js/config/appConfig.js',
-  '/js/services/supabaseClient.js',
-  '/js/services/supabaseAdapter.js',
+  '/js/services/dataClient.js',
+  '/js/services/apiAdapter.js',
   '/js/services/statisticsService.js',
   '/js/services/fallbackLogger.js',
   '/js/services/dataProvider.js',
@@ -192,8 +192,9 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(event.request.url);
 
-  /* Supabase API — network-only; DataProvider handles offline fallback */
-  if (url.hostname.endsWith('.supabase.co')) return;
+  /* Self-hosted PHP API (cross-origin hm-api) — network-only; never cache.
+     DataProvider handles offline fallback via localStorage. */
+  if (url.pathname.includes('/hm-api/') || url.pathname.endsWith('.php')) return;
 
   /* Google auth/OAuth — never cache */
   if (url.hostname === 'accounts.google.com' ||
@@ -211,7 +212,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  /* CDN bundles (html2canvas, jsPDF, Supabase UMD) — cache-first on first access */
+  /* CDN bundles (html2canvas, jsPDF) — cache-first on first access */
   if (url.hostname.includes('cdn.jsdelivr.net') ||
       url.hostname.includes('unpkg.com')) {
     event.respondWith(_cacheFirst(event.request, STATIC_CACHE));

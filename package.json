@@ -6,7 +6,6 @@
     "test:all":    "node --test tests/dataProvider.test.js tests/smoke.test.js tests/portalSelfService.test.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.107.0",
     "playwright": "^1.60.0"
   },
   "devDependencies": {

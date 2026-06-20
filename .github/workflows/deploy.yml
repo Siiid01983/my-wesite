@@ -45,8 +45,9 @@ jobs:
           FTP_PORT:         ${{ secrets.FTP_PORT }}
           FTP_REMOTE:       public_html
           FTP_SECURE:       true
-          SUPABASE_URL:     ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          # Self-hosted PHP API base — set this secret to your hm-api URL, e.g.
+          # https://www.dzsecurity.com/hm-api
+          API_BASE:         ${{ secrets.API_BASE }}
         run: node deploy.js
 
       - name: Dry run — list files that would be uploaded

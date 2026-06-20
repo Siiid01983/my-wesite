@@ -2,7 +2,7 @@
 
 /* ════════════════════════════════════════════════════════
    WMC PAGE MANAGER
-   Stores pages in localStorage (hm_wmc_pages) + Supabase
+   Stores pages in localStorage (hm_wmc_pages) + API
    hm_data KV table.  Each page holds a blocks[] array
    consumed by WMCBlockEditor.
 
@@ -50,7 +50,7 @@ window.WMCPageManager = (function () {
   }
 
   function _syncSb(pages) {
-    var sb = window.SupabaseClient;
+    var sb = window.api;
     if (!sb) return;
     sb.from('hm_data')
       .upsert({ key: STORAGE_KEY, value: JSON.stringify(pages), updated_at: new Date().toISOString() })

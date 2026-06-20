@@ -1,6 +1,6 @@
 /* ════════════════════════════════════════════════════════
    CONTENT LOADER
-   Fetches live content from Supabase on every public page
+   Fetches live content from API on every public page
    load and applies it to the DOM, replacing the static
    defaults in index.html.
 
@@ -11,7 +11,7 @@
      reviews table  → approved + published review cards
      calendar_availability → booked dates for public calendar
 
-   Load order: supabaseClient.js → this file (end of <body>)
+   Load order: dataClient.js → this file (end of <body>)
    ════════════════════════════════════════════════════════ */
 window.ContentLoader = (function () {
   'use strict';
@@ -239,9 +239,9 @@ window.ContentLoader = (function () {
       console.error('[ContentLoader] Aborting: window.__APP_READY__ is not set — bootstrap did not complete');
       return;
     }
-    const sb = window.SupabaseClient;
+    const sb = window.api;
     if (!sb) {
-      console.warn('[ContentLoader] SupabaseClient not available — displaying static defaults');
+      console.warn('[ContentLoader] ApiClient not available — displaying static defaults');
       return;
     }
 
@@ -354,8 +354,8 @@ window.contentLoader = window.ContentLoader;
     console.error('[ContentLoader] FATAL: window.__APP_READY__ is false — bootstrap.js did not complete. Check bootstrap stage:', window.__BOOTSTRAP__ && window.__BOOTSTRAP__.stage);
     return;
   }
-  if (!window.SupabaseClient) {
-    console.warn('[ContentLoader] SupabaseClient is null — static defaults will be shown. Check env.js credentials and supabaseClient.js.');
+  if (!window.api) {
+    console.warn('[ContentLoader] ApiClient is null — static defaults will be shown. Check env.js credentials and dataClient.js.');
     return;
   }
   console.debug('[ContentLoader] OK — __APP_READY__ true, stage:', window.__BOOTSTRAP__ && window.__BOOTSTRAP__.stage);

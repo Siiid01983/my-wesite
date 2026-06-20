@@ -16,8 +16,8 @@ window.AuditLog = (function () {
   var STORAGE_KEY = 'hm_audit_log';
   var MAX_ENTRIES = 500;
 
-  /* In-memory cache of audit entries (UI shape). Filled from Supabase via
-     AuditService on every render; the canonical store is Supabase, not
+  /* In-memory cache of audit entries (UI shape). Filled from API via
+     AuditService on every render; the canonical store is API, not
      localStorage. */
   var _cache = [];
 
@@ -35,7 +35,7 @@ window.AuditLog = (function () {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch (_) {}
   }
 
-  /* Pull the latest entries from the Supabase-backed AuditService into _cache.
+  /* Pull the latest entries from the API-backed AuditService into _cache.
      Falls back to legacy localStorage only when AuditService is unavailable. */
   function _refresh() {
     if (!window.AuditService) { _cache = _load().entries; return Promise.resolve(_cache); }
@@ -70,7 +70,7 @@ window.AuditLog = (function () {
     };
 
     /* Optimistic in-memory update so the live 監査ログ view reflects the action
-       immediately; the canonical row is persisted to Supabase below. */
+       immediately; the canonical row is persisted to API below. */
     _cache.unshift(entry);
     if (_cache.length > MAX_ENTRIES) _cache = _cache.slice(0, MAX_ENTRIES);
 
@@ -93,8 +93,8 @@ window.AuditLog = (function () {
 
   function getAll() { return window.AuditService ? _cache : _load().entries; }
 
-  /* The Supabase audit_log is append-only (immutable). "Clear" drops only the
-     legacy localStorage entries + the in-memory cache; Supabase rows survive
+  /* The API audit_log is append-only (immutable). "Clear" drops only the
+     legacy localStorage entries + the in-memory cache; API rows survive
      and reappear on the next refresh. */
   function clear() {
     _persist({ version: 1, entries: [] });
@@ -191,7 +191,7 @@ window.AuditLog = (function () {
       '</div>';
 
     _renderTable();                 /* immediate paint from cache (may be empty) */
-    _refresh().then(_renderTable);  /* then pull the latest from Supabase */
+    _refresh().then(_renderTable);  /* then pull the latest from API */
   }
 
   function _renderTable() {
@@ -251,7 +251,7 @@ window.AuditLog = (function () {
   }
 
   function _confirmClear() {
-    if (confirm('ローカルの旧監査ログを削除します。Supabaseの監査記録（正本）は保持されます。よろしいですか？')) {
+    if (confirm('ローカルの旧監査ログを削除します。APIの監査記録（正本）は保持されます。よろしいですか？')) {
       clear();
       renderAuditLog();
       if (typeof toast === 'function') toast('ローカル監査ログをクリアしました');

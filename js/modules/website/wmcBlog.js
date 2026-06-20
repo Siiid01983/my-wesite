@@ -77,9 +77,9 @@ function wmcNewBlogPost() {
 
   if (typeof WMCPermissions !== 'undefined') WMCPermissions.audit('add', 'blog_post', post.id, '新規ブログ投稿: ' + title.trim());
 
-  /* Sync to Supabase hm_data */
-  if (typeof Adapter !== 'undefined' && Adapter.supabaseReady && window.SupabaseClient) {
-    window.SupabaseClient.from('hm_data')
+  /* Sync to API hm_data */
+  if (typeof Adapter !== 'undefined' && Adapter.apiReady && window.api) {
+    window.api.from('hm_data')
       .upsert({ key: 'hm_blog_posts', value: JSON.stringify(posts), updated_at: new Date().toISOString() })
       .then(function (r) { if (r.error) console.warn('[WMC] blog sync:', r.error.message); });
   }

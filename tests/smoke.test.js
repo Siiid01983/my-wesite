@@ -56,7 +56,7 @@ describe('Globals', () => {
       DataProvider:   typeof window.DataProvider   === 'object',
       Services:       typeof window.Services       === 'object',
       Adapter:        typeof window.Adapter        === 'object',
-      SupabaseClient: window.SupabaseClient !== null,
+      ApiClient: window.api !== null,
     }));
     for (const [k, v] of Object.entries(g)) {
       assert.ok(v, `window.${k} should be present`);
@@ -257,7 +257,7 @@ describe('DataProvider integration', () => {
     }
   });
 
-  it('no Supabase fallback failures logged during the smoke run', async () => {
+  it('no API fallback failures logged during the smoke run', async () => {
     const entries  = await page.evaluate(() => window.FallbackLogger.getAll());
     const failures = entries.filter(e => !e.success);
     assert.equal(failures.length, 0,

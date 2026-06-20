@@ -115,8 +115,8 @@ function _renderReviewsUI() {
 
 function renderReviews() { _renderReviewsUI(); }
 
-function _syncReviewsFromSupabase() {
-  if (!Adapter.supabaseReady) return;
+function _syncReviewsFromApi() {
+  if (!Adapter.apiReady) return;
   _dpSync('reviews', null, () => Adapter.syncReviews(), 'view-reviews', _renderReviewsUI);
 }
 

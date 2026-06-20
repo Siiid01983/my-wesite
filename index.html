@@ -2732,7 +2732,7 @@ loadSession();
 goToStep(1,true);
 updateS2Btn();
 
-// Fetch real booked dates from Supabase and mark them on the calendar.
+// Fetch real booked dates from API and mark them on the calendar.
 // Polls every 1.5 s until BookingService is loaded by bootstrap.js.
 (function _pollCalAvail(){
   if(typeof BookingService!=='undefined'&&typeof BookingService.getBookings==='function'){
@@ -3465,7 +3465,7 @@ updateS2Btn();
       }
       _baRenderCalendar();
       _baUpdateDateCta();
-      _baFetchSupabaseAvail();
+      _baFetchAvail();
     }
   }
   function baCloseDrawer(id) { document.getElementById('ba-drawer-' + id).classList.remove('open'); }
@@ -3603,8 +3603,8 @@ updateS2Btn();
     grid.innerHTML = html;
   }
 
-  function _baFetchSupabaseAvail() {
-    var sb = window.SupabaseClient;
+  function _baFetchAvail() {
+    var sb = window.api;
     if (!sb || typeof sb.from !== 'function') return;
     Promise.all([
       sb.from('calendar_availability').select('date,status'),
@@ -3764,7 +3764,7 @@ updateS2Btn();
     baPush('contact');
   };
 
-  // ── Step 3 → submit: write directly to Supabase via BookingService ──
+  // ── Step 3 → submit: write directly to API via BookingService ──
   window.baSubmitBooking = function () {
     var name  = document.getElementById('ba-input-name').value.trim();
     var email = document.getElementById('ba-input-email').value.trim();
@@ -3823,7 +3823,7 @@ updateS2Btn();
         }).catch(function (_e) { console.warn('[ba send_email] skipped:', _e.message); });
       })
       .catch(function (err) {
-        console.error('[baSubmit] Supabase error:', err);
+        console.error('[baSubmit] API error:', err);
         alert('送信に失敗しました。もう一度お試しください。');
         btn.disabled = false;
         btn.textContent = '見積りを依頼する';

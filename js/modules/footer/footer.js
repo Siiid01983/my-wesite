@@ -114,8 +114,8 @@ function saveFooterAll() {
 
 function renderFooter() { _renderFooterUI(); }
 
-function _syncFooterFromSupabase() {
-  if (!Adapter.supabaseReady) return;
+function _syncFooterFromApi() {
+  if (!Adapter.apiReady) return;
   _dpSync('hm_data', {key:'hm_footer'}, () => Adapter.syncFooter(), 'view-footer', _renderFooterUI);
 }
 

@@ -49,7 +49,7 @@
   // Returns rows newest-first. Returns [] on any error or missing scope so the
   // UI degrades gracefully and never shows un-scoped data.
   async function fetchForBooking(bookingIds, customerEmail) {
-    const sb    = window.SupabaseClient;
+    const sb    = window.api;
     const ids   = _safeIds(bookingIds);
     const email = _norm(customerEmail);
 

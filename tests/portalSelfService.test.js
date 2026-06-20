@@ -3,7 +3,7 @@
  * PortalSelfService + PortalDocs attachment unit tests — Phase 6C
  *
  * Self-contained: loads the portal modules onto about:blank via addScriptTag
- * (no dev server required) and stubs BookingService / AuditService / Supabase
+ * (no dev server required) and stubs BookingService / AuditService / API
  * storage so every case is deterministic and offline.
  *
  * Run: node --test tests/portalSelfService.test.js
@@ -253,7 +253,7 @@ describe('PortalDocs attachment isolation', () => {
   beforeEach(async () => {
     await page.evaluate(() => {
       window.__removed = null;
-      window.SupabaseClient = {
+      window.api = {
         storage: {
           from: () => ({
             upload: async (p) => ({ data: { path: p }, error: null }),
