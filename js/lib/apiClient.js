@@ -76,10 +76,14 @@
       headers: _hdrs({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(spec),
     })
-      .then((res) => res.json().then(
-        (j) => j,
-        () => ({ data: null, error: { message: 'Invalid JSON from API (HTTP ' + res.status + ')' } })
-      ))
+      .then((res) => res.text().then((text) => {
+        try {
+          return JSON.parse(text);
+        } catch (_) {
+          const snippet = String(text || '').slice(0, 300);
+          return { data: null, error: { message: 'Invalid JSON from API (HTTP ' + res.status + '): ' + snippet } };
+        }
+      }))
       .then((j) => ({ data: (j && 'data' in j) ? j.data : null, count: (j && 'count' in j) ? j.count : null, error: (j && j.error) || null }))
       .catch((e) => ({ data: null, error: { message: (e && e.message) || 'network error' } }));
   };
