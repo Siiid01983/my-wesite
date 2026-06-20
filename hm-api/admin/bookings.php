@@ -14,8 +14,10 @@ declare(strict_types=1);
 require_once __DIR__ . '/../_db.php';
 require_once __DIR__ . '/../_cache.php';
 require_once __DIR__ . '/../_log.php';
+require_once __DIR__ . '/../_ratelimit.php';
 hm_cors();
 hm_require_api_key();
+hm_rate_limit('admin_bookings', 20, 60);   // general tier (per-endpoint bucket)
 
 $TTL    = 30;   // seconds
 $status = trim((string)($_GET['status'] ?? ''));

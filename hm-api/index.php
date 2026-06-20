@@ -10,7 +10,15 @@
 // ════════════════════════════════════════════════════════════════════════════
 declare(strict_types=1);
 require_once __DIR__ . '/_lib.php';
-hm_cors();   // also exits early with "API not configured" if _config.php is absent
+
+// Health check stays reachable even when the server is not configured yet:
+// answer {ok:false, db:false} instead of the generic "API not configured" exit.
+if (!hm_has_config()) {
+  header('Access-Control-Allow-Origin: *');
+  hm_json(['ok' => false, 'db' => false, 'error' => 'DB not configured'], 503);
+}
+
+hm_cors();
 
 try {
   $c   = hm_config();

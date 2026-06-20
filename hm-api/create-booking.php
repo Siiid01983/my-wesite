@@ -39,7 +39,7 @@ if ($bdate === '' || strtotime($bdate) === false)            $errs[] = 'valid bo
 if ($errs) {
   hm_log_write('error.log', ['type' => 'invalid_request', 'endpoint' => 'create-booking',
     'errors' => $errs, 'fp' => hm_client_fingerprint()]);
-  hm_json(['ok' => false, 'error' => implode('; ', $errs)], 400);
+  hm_json(['ok' => false, 'data' => null, 'error' => implode('; ', $errs)], 400);
 }
 
 $data['id'] = hm_uuid4();
@@ -53,8 +53,9 @@ try {
   $st->execute(array_values($data));
   hm_log_booking($data['id'], ['email' => (string)($data['customer_email'] ?? ''), 'date' => (string)($data['booking_date'] ?? '')]);
   hm_cache_invalidate_table('bookings');   // dashboard stats / lists pick this up
-  hm_json(['ok' => true, 'id' => $data['id']]);
+  // `id` kept top-level for back-compat; data/error added for the standard envelope.
+  hm_json(['ok' => true, 'id' => $data['id'], 'data' => ['id' => $data['id']], 'error' => null]);
 } catch (Throwable $e) {
   hm_log_error('create-booking failed', ['err' => $e->getMessage()]);
-  hm_json(['ok' => false, 'error' => $e->getMessage()], 500);
+  hm_json(['ok' => false, 'data' => null, 'error' => $e->getMessage()], 500);
 }

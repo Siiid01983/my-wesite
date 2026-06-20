@@ -17,8 +17,10 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_lib.php';
 require_once __DIR__ . '/_log.php';
+require_once __DIR__ . '/_ratelimit.php';
 hm_cors();
 hm_require_api_key();
+hm_rate_limit('metrics', 20, 60);   // general tier
 
 // Persistent boot marker — first request stamps it; uptime measures from there.
 function hm_uptime_start(): int {
