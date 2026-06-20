@@ -2,11 +2,41 @@
 (function () {
   'use strict';
 
-  const STORAGE_KEY   = 'hm_health_log';
-  const MAX_ENTRIES   = 100;
-  const QUERY_TIMEOUT = 5000;
+  const STORAGE_KEY     = 'hm_health_log';
+  const REPORT_KEY      = 'hm_health_report_v2';   // versioned single-report cache (Task 5)
+  const LEGACY_REPORT_KEY = 'hm_health_report';    // pre-v2 key — purged on healthy (Task 4)
+  const MAX_ENTRIES     = 100;
+  const QUERY_TIMEOUT   = 5000;
+  const REPORT_STALE_MS = 5 * 60 * 1000;           // ignore cached warning/error older than 5 min (Task 6)
 
-  let _lastReport = null;
+  /* ── Versioned report cache helpers ──────────────────────────────────── */
+  function _saveReport(report) {
+    try { localStorage.setItem(REPORT_KEY, JSON.stringify(report)); } catch { /* quota */ }
+  }
+  function _purgeLegacyReport() {
+    try { localStorage.removeItem(LEGACY_REPORT_KEY); }   catch { /* ignore */ }
+    try { sessionStorage.removeItem(LEGACY_REPORT_KEY); } catch { /* ignore */ }
+  }
+  // Hydrate the last report from cache on load. A non-healthy report older than
+  // REPORT_STALE_MS is discarded — it may predate a backend fix, so a stale
+  // warning must never outlive the problem it described.
+  function _loadReport() {
+    try {
+      const raw = localStorage.getItem(REPORT_KEY);
+      if (!raw) return null;
+      const rep = JSON.parse(raw);
+      if (!rep || !rep.ts || !Array.isArray(rep.checks)) return null;
+      const age = Date.now() - new Date(rep.ts).getTime();
+      if (rep.status !== 'healthy' && age > REPORT_STALE_MS) {
+        console.info('[HealthCheck] Cached result ignored');
+        localStorage.removeItem(REPORT_KEY);
+        return null;
+      }
+      return rep;
+    } catch { return null; }
+  }
+
+  let _lastReport = _loadReport();
 
   /* ── Log helpers ─────────────────────────────────────────────────────── */
   function _loadLog() {
@@ -173,11 +203,24 @@
 
       _lastReport = _aggregate(results);
 
+      // Persist the fresh result to the versioned cache and clear any stale
+      // warning state. A healthy result overwrites the cache and purges the
+      // legacy key, so an old "Invalid JSON" warning can never be reused
+      // (Tasks 3–5).
+      _saveReport(_lastReport);
+      if (_lastReport.status === 'healthy') _purgeLegacyReport();
+      console.info('[HealthCheck] Fresh result loaded');
+
       for (const r of results) _appendLog(r.service, r.status, r.message);
 
       try {
         document.dispatchEvent(new CustomEvent('health:' + _lastReport.status, { detail: _lastReport }));
       } catch { /* no-op */ }
+
+      // Immediately re-render the health view if it is mounted (Task 3).
+      // renderHealth() self-guards when the view is absent, so this is a no-op
+      // on every other page.
+      try { if (typeof window.renderHealth === 'function') window.renderHealth(); } catch { /* no-op */ }
 
       return _lastReport;
     },

@@ -15,7 +15,7 @@
    Bump CACHE_VERSION to force cache replacement on next deploy.
    ════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'v7';
+const CACHE_VERSION = 'v8';
 const STATIC_CACHE  = 'hm-static-' + CACHE_VERSION;
 const FONT_CACHE    = 'hm-fonts-'  + CACHE_VERSION;
 const ALL_CACHES    = [STATIC_CACHE, FONT_CACHE];
