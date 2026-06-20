@@ -92,9 +92,11 @@ function go(view) {
     return;
   }
   Adapter.initializeRealtime(); // no-op if channels already active; re-connects if lost
+  const _viewEl = document.getElementById('view-'+view);
+  if (!_viewEl) { console.warn('go(): unknown view "'+view+'" — no #view-'+view+' element'); return; }
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.sb-link').forEach(l => l.classList.remove('active'));
-  document.getElementById('view-'+view).classList.add('active');
+  _viewEl.classList.add('active');
   const lnk = document.querySelector(`[data-view="${view}"]`);
   if (lnk) lnk.classList.add('active');
   document.getElementById('topbarTitle').textContent = VIEW_TITLES[view]||'';

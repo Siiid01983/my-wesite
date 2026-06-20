@@ -14,13 +14,12 @@ const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
 
-// All navigable admin views
+// All navigable admin views (must mirror the #view-<id> elements in admin.html)
 const VIEWS = [
-  'dashboard', 'bookings',  'calendar', 'quotes',   'reviews',
-  'services',  'faq',       'company',  'footer',   'hero',
-  'capacity',  'pricing',   'disposal', 'customers','analytics',
-  'backup',    'media',     'line',     'email',    'changelog',
-  'security',
+  'dashboard', 'bookings',  'calendar',  'quotes',     'customers',
+  'analytics', 'capacity',  'pricing',   'disposal',   'inbox',
+  'email',     'line',      'crm',       'automation', 'actions',
+  'staff',     'camera',    'health',    'changelog',  'security',
 ];
 
 let browser, page;
