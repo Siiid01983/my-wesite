@@ -114,6 +114,44 @@
   }
   .p-logout:hover { border-color: var(--navy); color: var(--navy); }
 
+  /* ---------- Admin mode ---------- */
+  .p-badge-admin {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: #fdecea;
+    color: #c0392b;
+    border: 1px solid #f3c6c0;
+    font-family: var(--font-en);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    white-space: nowrap;
+  }
+  .p-badge-admin::before {
+    content: '';
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #c0392b;
+  }
+  .admin-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 6px;
+    padding: 13px 26px;
+    border-radius: 999px;
+    background: var(--navy);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all .2s var(--easing);
+  }
+  .admin-cta:hover { background: var(--navy-2); transform: translateY(-1px); }
+  .admin-cta svg { width: 18px; height: 18px; }
+
   /* ---------- Sidebar ---------- */
   .p-sidebar {
     position: fixed;
@@ -787,6 +825,57 @@
       try { await PortalAuth.logout(); } catch (_) {}
       location.replace('login.html');
     });
+
+    // ---- Admin mode ----
+    // An admin is recognised from the VERIFIED Supabase session email (authed
+    // sessions only — a legacy/spoofable token can't grant admin mode). The
+    // admin holds a real session so Phase 6B RLS stays active: their email
+    // matches no customer_email, so no customer data is exposed here. Elevated
+    // tooling lives behind admin.html's own separate login.
+    const isAdmin = !!(sess.authed && sess.email &&
+      window.PortalSupabaseAuth &&
+      typeof PortalSupabaseAuth.isAdminEmail === 'function' &&
+      PortalSupabaseAuth.isAdminEmail(sess.email));
+
+    if (isAdmin) {
+      const ADMIN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
+      // Header badge
+      const right = document.querySelector('.p-header-right');
+      if (right && !$('adminBadge')) {
+        const b = document.createElement('span');
+        b.id = 'adminBadge';
+        b.className = 'p-badge-admin';
+        b.textContent = 'ADMIN MODE';
+        right.insertBefore(b, right.firstChild);
+      }
+      // Replace the customer sidebar nav with a link into the admin console.
+      document.querySelectorAll('.p-nav-item').forEach(n => { n.style.display = 'none'; });
+      if (sidebar && !$('adminNav')) {
+        const a = document.createElement('a');
+        a.id = 'adminNav';
+        a.className = 'p-nav-item active';
+        a.href = 'admin.html';
+        a.innerHTML = ADMIN_ICON + '<span>管理画面へ</span>';
+        sidebar.appendChild(a);
+      }
+      // Header identity + landing content
+      $('userName').textContent = '管理者';
+      $('userRef').textContent  = sess.email;
+      $('content').innerHTML = `
+        <div class="p-page-head">
+          <div class="p-page-title">管理者モード</div>
+          <div class="p-page-sub">${esc(sess.email)} としてログインしています。</div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">ADMIN MODE <span class="p-badge-admin" style="margin-left:auto">ADMIN MODE</span></div>
+          <p style="font-size:13.5px;color:var(--gray-2);line-height:1.9;margin-bottom:6px">
+            管理者アカウントでログインしました。お客様の予約データはこの画面には表示されません
+            （行レベルセキュリティにより保護されています）。管理機能は管理コンソールからご利用ください。
+          </p>
+          <a class="admin-cta" href="admin.html">${ADMIN_ICON}<span>管理コンソールを開く</span></a>
+        </div>`;
+      return; // skip the customer booking flow entirely
+    }
 
     // ---- Helpers ----
     function esc(s) {

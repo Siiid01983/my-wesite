@@ -135,6 +135,16 @@
     color: var(--gray-3);
     margin-top: 6px;
   }
+  .admin-note {
+    font-size: 11.5px;
+    color: var(--gray-2);
+    text-align: center;
+    margin: -4px 0 16px;
+    letter-spacing: .04em;
+  }
+  /* Reference field is dimmed + marked optional once an admin email is typed. */
+  .field.optional { opacity: .5; }
+  .field.optional input { background: var(--bg-soft); }
   .btn-login {
     width: 100%;
     padding: 15px;
@@ -219,12 +229,13 @@
                  placeholder="you@example.com" required />
           <div class="hint">ご予約時に登録されたメールアドレスをご入力ください。</div>
         </div>
-        <div class="field">
+        <div class="field" id="referenceField">
           <label for="reference">予約番号（確認番号）</label>
           <input type="text" id="reference" name="reference" autocomplete="off"
                  inputmode="text" placeholder="HM-00000000-XXXX" required />
           <div class="hint">ご予約確認メールに記載の予約番号をご入力ください。</div>
         </div>
+        <p class="admin-note" id="adminNote">管理者はメールアドレスのみでログインできます</p>
         <button type="submit" class="btn-login" id="loginBtn">ログイン</button>
       </form>
 
@@ -257,6 +268,22 @@
     function showError(msg) { alertMsg.textContent = msg; alertEl.classList.add('show'); }
     function clearError()   { alertEl.classList.remove('show'); }
 
+    // Admins log in with the email alone. Mirror the reference-optional state in
+    // the UI as soon as an admin email is recognised. (The server enforces the
+    // allowlist; this only relaxes the form.)
+    function _isAdmin(email) {
+      return !!(window.PortalSupabaseAuth &&
+                typeof PortalSupabaseAuth.isAdminEmail === 'function' &&
+                PortalSupabaseAuth.isAdminEmail(email));
+    }
+    const emailEl = document.getElementById('email');
+    const refField = document.getElementById('referenceField');
+    function syncAdminUI() {
+      const admin = _isAdmin(emailEl.value.trim());
+      if (refField) refField.classList.toggle('optional', admin);
+    }
+    emailEl.addEventListener('input', syncAdminUI);
+
     // Already authenticated (persisted Supabase session) → go to the portal.
     (async function () {
       try {
@@ -275,7 +302,9 @@
 
       const email = document.getElementById('email').value.trim();
       const ref   = document.getElementById('reference').value.trim();
-      if (!email || !ref) { showError('メールアドレスと予約番号を入力してください。'); return; }
+      const admin = _isAdmin(email);
+      if (!email) { showError('メールアドレスを入力してください。'); return; }
+      if (!admin && !ref) { showError('メールアドレスと予約番号を入力してください。'); return; }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError('正しいメールアドレスを入力してください。'); return; }
 
       if (!window.PortalSupabaseAuth || !PortalSupabaseAuth.isConfigured()) {

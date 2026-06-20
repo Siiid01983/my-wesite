@@ -10,6 +10,10 @@
  *   2. Rate-limit (per IP + per email).
  *   3. Validate the pair against `bookings` using the service_role key
  *      (bypasses RLS for this lookup only). Generic 401 on any mismatch.
+ *      EXCEPTION: emails on the ADMIN_EMAILS allowlist skip this step and log in
+ *      with the email alone. They still receive a REAL Supabase session (Phase 6B
+ *      RLS stays enforced — an admin email matches no customer_email, so RLS
+ *      returns zero customer rows; this is NOT an RLS bypass).
  *   4. Ensure a confirmed auth user exists for the email (reused if present;
  *      sends NO email).
  *   5. Mint a session WITHOUT emailing: generateLink (computes a token,
@@ -41,6 +45,17 @@ const ALLOWED_ORIGINS = new Set<string>([
   "https://www.hello-moving.com",
 ]);
 const CANONICAL_ORIGIN = "https://hello-moving.com";
+
+/* ── Admin allowlist ──────────────────────────────────────────
+ * Emails permitted to obtain a portal session WITHOUT a booking reference.
+ * An admin still receives a REAL Supabase Auth session (so Phase 6B RLS keys
+ * off auth.email() exactly as for customers) — this is NOT an RLS bypass. The
+ * admin's email matches no customer_email, so RLS returns zero customer rows;
+ * elevated admin tooling lives behind admin.html's own separate login.
+ * Keep lowercase; comparison is done against the normalised (lowercased) email. */
+const ADMIN_EMAILS = new Set<string>([
+  "admin@hello-moving.com",
+]);
 
 function corsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get("origin") || "";
@@ -150,7 +165,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const email     = String(payload.email ?? "").trim().toLowerCase();
   const reference = String(payload.reference ?? "").trim();
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !reference) {
+  // Admins log in with the email alone; customers must supply a reference.
+  // The audit actor/label are parametrised so admin logins are distinguishable
+  // in audit_log ("admin:…" / "Admin login …" vs "customer:…" / "Portal login …").
+  const isAdmin = ADMIN_EMAILS.has(email);
+  const actor   = (isAdmin ? "admin:" : "customer:") + email;
+  const kind    = isAdmin ? "Admin" : "Portal";
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || (!isAdmin && !reference)) {
     return denied(cors); // malformed input — not a credentialed login attempt
   }
 
@@ -159,37 +181,41 @@ Deno.serve(async (req: Request): Promise<Response> => {
   if (rateLimited("ip:" + ip) || rateLimited("email:" + email)) {
     console.warn("[portal-auth] rate-limited", { ip });
     await audit(admin, {
-      actor:   "customer:" + email,
-      details: "Portal login failed: rate limited (ip:" + ip + ")",
+      actor,
+      details: kind + " login failed: rate limited (ip:" + ip + ")",
     });
     return json({ ok: false, error: "rate-limited" }, 429, cors);
   }
 
-  /* ── 1. Validate email + reference against bookings (service_role) ──*/
-  let rows: Array<{ id: unknown; customer_email: unknown; notes: unknown }> = [];
-  try {
-    const { data, error } = await admin
-      .from("bookings")
-      .select("id, customer_email, notes")
-      .ilike("customer_email", email);
-    if (error) {
-      console.error("[portal-auth] bookings lookup failed:", error.message);
+  /* ── 1. Validate email + reference against bookings (service_role) ──
+   * Skipped for admins (allowlisted email is the credential). Customers must
+   * match an existing booking by reference. */
+  if (!isAdmin) {
+    let rows: Array<{ id: unknown; customer_email: unknown; notes: unknown }> = [];
+    try {
+      const { data, error } = await admin
+        .from("bookings")
+        .select("id, customer_email, notes")
+        .ilike("customer_email", email);
+      if (error) {
+        console.error("[portal-auth] bookings lookup failed:", error.message);
+        return json({ ok: false, error: "lookup-failed" }, 502, cors);
+      }
+      rows = data || [];
+    } catch (err) {
+      console.error("[portal-auth] bookings lookup threw:", err);
       return json({ ok: false, error: "lookup-failed" }, 502, cors);
     }
-    rows = data || [];
-  } catch (err) {
-    console.error("[portal-auth] bookings lookup threw:", err);
-    return json({ ok: false, error: "lookup-failed" }, 502, cors);
-  }
 
-  const matched = rows.some((r) => referenceMatches(r, reference));
-  if (!matched) {
-    console.warn("[portal-auth] no booking match", { ip });
-    await audit(admin, {
-      actor:   "customer:" + email,
-      details: "Portal login failed: invalid credentials (email/reference mismatch)",
-    });
-    return denied(cors);
+    const matched = rows.some((r) => referenceMatches(r, reference));
+    if (!matched) {
+      console.warn("[portal-auth] no booking match", { ip });
+      await audit(admin, {
+        actor,
+        details: "Portal login failed: invalid credentials (email/reference mismatch)",
+      });
+      return denied(cors);
+    }
   }
 
   /* ── 2. Ensure a confirmed auth user — reuse if it already exists ──
@@ -204,18 +230,18 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (createErr && !/already|registered|exists/i.test(createErr.message)) {
       console.error("[portal-auth] createUser failed:", createErr.message);
       await audit(admin, {
-        actor:   "customer:" + email,
+        actor,
         targetId: reference,
-        details: "Portal login failed: user provisioning error",
+        details: kind + " login failed: user provisioning error",
       });
       return json({ ok: false, error: "user-provision-failed" }, 502, cors);
     }
   } catch (err) {
     console.error("[portal-auth] createUser threw:", err);
     await audit(admin, {
-      actor:   "customer:" + email,
+      actor,
       targetId: reference,
-      details: "Portal login failed: user provisioning exception",
+      details: kind + " login failed: user provisioning exception",
     });
     return json({ ok: false, error: "user-provision-failed" }, 502, cors);
   }
@@ -230,9 +256,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (error || !data?.properties?.hashed_token) {
       console.error("[portal-auth] generateLink failed:", error?.message);
       await audit(admin, {
-        actor:   "customer:" + email,
+        actor,
         targetId: reference,
-        details: "Portal login failed: session mint error (generateLink)",
+        details: kind + " login failed: session mint error (generateLink)",
       });
       return json({ ok: false, error: "session-mint-failed" }, 502, cors);
     }
@@ -240,9 +266,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
   } catch (err) {
     console.error("[portal-auth] generateLink threw:", err);
     await audit(admin, {
-      actor:   "customer:" + email,
+      actor,
       targetId: reference,
-      details: "Portal login failed: session mint exception (generateLink)",
+      details: kind + " login failed: session mint exception (generateLink)",
     });
     return json({ ok: false, error: "session-mint-failed" }, 502, cors);
   }
@@ -258,18 +284,18 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (error || !session?.access_token || !session?.refresh_token) {
       console.error("[portal-auth] verifyOtp failed:", error?.message);
       await audit(admin, {
-        actor:   "customer:" + email,
+        actor,
         targetId: reference,
-        details: "Portal login failed: session mint error (verifyOtp)",
+        details: kind + " login failed: session mint error (verifyOtp)",
       });
       return json({ ok: false, error: "session-mint-failed" }, 502, cors);
     }
 
-    console.log("[portal-auth] LOGIN_SUCCESS", { email });
+    console.log("[portal-auth] LOGIN_SUCCESS", { email, isAdmin });
     await audit(admin, {
-      actor:   "customer:" + email,
+      actor,
       targetId: reference,
-      details: "Portal login success",
+      details: kind + " login success",
     });
     return json({
       ok: true,
@@ -279,9 +305,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
   } catch (err) {
     console.error("[portal-auth] verifyOtp threw:", err);
     await audit(admin, {
-      actor:   "customer:" + email,
+      actor,
       targetId: reference,
-      details: "Portal login failed: session mint exception (verifyOtp)",
+      details: kind + " login failed: session mint exception (verifyOtp)",
     });
     return json({ ok: false, error: "session-mint-failed" }, 502, cors);
   }

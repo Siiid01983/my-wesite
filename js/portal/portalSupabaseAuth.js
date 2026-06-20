@@ -21,6 +21,15 @@
 (function () {
   'use strict';
 
+  // Admin allowlist — emails permitted to log in with the email alone (no
+  // booking reference). MUST mirror ADMIN_EMAILS in
+  // supabase/functions/portal-auth/index.ts. The server is authoritative; this
+  // client copy only relaxes the reference requirement in the UI. Lowercase.
+  var ADMIN_EMAILS = ['admin@hello-moving.com'];
+  function isAdminEmail(email) {
+    return ADMIN_EMAILS.indexOf(String(email || '').trim().toLowerCase()) !== -1;
+  }
+
   // Where Supabase should send the customer back to after they click the link.
   // Must be added to the project's Auth → URL Configuration allow-list.
   function _redirectTo() {
@@ -99,7 +108,8 @@
     ref   = (ref || '').trim();
     if (!sb || !sb.auth) return { ok: false, error: 'unavailable' };
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: 'bad-email' };
-    if (!ref) return { ok: false, error: 'bad-ref' };
+    // Admins authenticate with the email alone; everyone else needs a reference.
+    if (!ref && !isAdminEmail(email)) return { ok: false, error: 'bad-ref' };
 
     const base    = String(window.SUPABASE_URL || '').replace(/\/+$/, '');
     const anonKey = window.SUPABASE_ANON_KEY || '';
@@ -200,6 +210,7 @@
 
   window.PortalSupabaseAuth = {
     isConfigured,
+    isAdminEmail,
     sendMagicLink,
     loginWithReference,
     waitForSession,
