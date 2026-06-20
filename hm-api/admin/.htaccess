@@ -1,0 +1,3 @@
+# Admin API endpoints are reached directly by filename (stats.php, bookings.php).
+# Auth is enforced in PHP via hm_require_api_key(). Block directory listing only.
+Options -Indexes

@@ -34,6 +34,27 @@ return [
   //   key is a bot/abuse deterrent alongside CORS, not user authentication.)
   'api_key' => '',
 
+  // ── Monitoring & logging (metrics.php / _log.php) ─────────────────────────
+  //   Structured JSON logs are written to this directory (access/error/bookings).
+  //   Default: hm-api/logs (protected by .htaccess). Logs auto-rotate at 5 MB.
+  'log_dir' => __DIR__ . '/logs',
+
+  // ── Response cache (admin/stats.php, admin/bookings.php) ──────────────────
+  //   Lightweight file cache for read-heavy admin endpoints. Set false to bypass.
+  'cache_enabled' => true,
+  'cache_dir'     => __DIR__ . '/_cache',
+
+  // ── Rate limiting / abuse blocking (_ratelimit.php) ───────────────────────
+  //   IP-based sliding window. Public endpoints set their own tighter limits
+  //   (auth 10/min, booking 15/min, email 20/min); these are the defaults +
+  //   the repeat-offender block policy. Set rate_limit_enabled=false to disable.
+  'rate_limit_enabled'         => true,
+  'rate_limit_max'             => 120,   // default hits allowed per window
+  'rate_limit_window'          => 60,    // window length, seconds
+  'rate_limit_block_threshold' => 3,     // window violations before a hard block
+  'rate_limit_block_minutes'   => 15,    // block duration once threshold hit
+  'rate_limit_dir'             => __DIR__ . '/_cache/rl',
+
   // ── Storage (file uploads: portal photos/documents, media library) ────────
   //   Absolute path to a writable directory OUTSIDE web root is safest.
   //   Default keeps uploads under this folder; protected by .htaccess.

@@ -9,8 +9,11 @@
 // ════════════════════════════════════════════════════════════════════════════
 declare(strict_types=1);
 require_once __DIR__ . '/_db.php';
+require_once __DIR__ . '/_cache.php';
+require_once __DIR__ . '/_ratelimit.php';
 hm_cors();
 hm_require_api_key();
+hm_rate_limit('booking', 15, 60);   // public submit: max 15 / IP / minute
 
 $p = hm_body();
 $ALLOWED = ['customer_name','customer_email','customer_phone','booking_date','service_id','status','notes','items','created_at'];
@@ -29,7 +32,10 @@ try {
   $sql  = 'INSERT INTO bookings (' . implode(',', array_map(fn($c) => "`$c`", $keys)) . ") VALUES ($ph)";
   $st = hm_db()->prepare($sql);
   $st->execute(array_values($data));
+  hm_log_booking($data['id'], ['email' => (string)($data['customer_email'] ?? ''), 'date' => (string)($data['booking_date'] ?? '')]);
+  hm_cache_invalidate_table('bookings');   // dashboard stats / lists pick this up
   hm_json(['ok' => true, 'id' => $data['id']]);
 } catch (Throwable $e) {
+  hm_log_error('create-booking failed', ['err' => $e->getMessage()]);
   hm_json(['ok' => false, 'error' => $e->getMessage()], 500);
 }

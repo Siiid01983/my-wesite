@@ -1,0 +1,2 @@
+# Logs contain client IPs / User-Agents — never serve them to the public.
+Require all denied

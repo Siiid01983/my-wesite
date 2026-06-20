@@ -11,8 +11,10 @@
 // ════════════════════════════════════════════════════════════════════════════
 declare(strict_types=1);
 require_once __DIR__ . '/_db.php';
+require_once __DIR__ . '/_ratelimit.php';
 hm_cors();
 hm_require_api_key();
+hm_rate_limit('auth', 10, 60);   // portal login: max 10 attempts / IP / minute
 
 $p     = hm_body();
 $email = strtolower(trim((string)($p['email'] ?? '')));
@@ -28,6 +30,7 @@ try {
   $row = $st->fetch();
 
   if (!$row || strtolower(trim((string)($row['customer_email'] ?? ''))) !== $email) {
+    hm_log_auth_fail('portal_login');
     hm_json(['ok' => false, 'error' => 'invalid']);
   }
 
@@ -37,5 +40,6 @@ try {
   }
   hm_json(['ok' => true, 'booking' => $row]);
 } catch (Throwable $e) {
+  hm_log_error('auth failed', ['err' => $e->getMessage()]);
   hm_json(['ok' => false, 'error' => 'server'], 500);
 }

@@ -1,0 +1,2 @@
+# Internal cache + rate-limit state — deny all public access.
+Require all denied
