@@ -15,9 +15,13 @@
     Header set Pragma "no-cache"
   </FilesMatch>
 
-  # CSS / JS — 1-hour browser TTL; SW manages its own cache on top of this
+  # CSS / JS — always revalidate (no-cache) so a deploy is reflected within ONE
+  # reload, never up to an hour late. "no-cache" still stores the file and uses a
+  # conditional request (ETag/Last-Modified) → cheap 304 when unchanged, full body
+  # only when the asset actually changed. The SW (cache-first, version-namespaced)
+  # still serves these instantly for controlled/offline clients on top of this.
   <FilesMatch "\.(css|js)$">
-    Header set Cache-Control "public, max-age=3600, must-revalidate"
+    Header set Cache-Control "no-cache, must-revalidate"
   </FilesMatch>
 </IfModule>
 
