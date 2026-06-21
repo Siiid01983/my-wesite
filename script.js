@@ -434,8 +434,7 @@
       setTimeout(() => qf.classList.remove('form-pulse'), 800);
     }
 
-    const quoteSection = document.getElementById('quote');
-    if (quoteSection) setTimeout(() => { quoteSection.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 300);
+    if (typeof openBookingApp === 'function') setTimeout(() => { openBookingApp(); }, 300);
   }
 
   const STANDARDS = [

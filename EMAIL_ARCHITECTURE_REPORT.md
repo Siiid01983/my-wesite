@@ -65,7 +65,8 @@ exists in the repository.
 ## 4. `verify_deploy.mjs` — ✅ added to `.gitignore`
 
 `verify_deploy.mjs` is a **local-only helper**: a Playwright script that loads the
-**live production site** (`https://hello-moving.com/#quote`), checks a few DOM
+**live production site** (`https://hello-moving.com/` — the BA overlay booking
+system; the legacy `#quote` page has been removed), checks a few DOM
 markers to confirm the latest deploy is live, and writes a local screenshot
 (`verify_live.png`). It is not imported by any app code and is not part of the
 test suite. It was added to `.gitignore`:

@@ -56,7 +56,7 @@ window.WMCBlockEditor = (function () {
       testimonial: { name:'田中 太郎', company:'東京都', text:'とても丁寧なサービスでした。', rating:5, avatar:'' },
       faq:         { question:'質問を入力してください', answer:'回答を入力してください。' },
       serviceCard: { icon:'🚛', title:'サービス名', description:'サービスの説明を入力してください。', price:'¥25,000〜', badge:'人気', cta:'詳しく見る' },
-      cta:         { headline:'今すぐ無料お見積り', subtext:'東京・神奈川エリア対応。スタッフが丁寧にサポートします。', primaryBtn:{text:'無料見積もり',href:'#quote'}, secondaryBtn:{text:'電話で相談',href:'tel:000'}, bg:'navy' },
+      cta:         { headline:'今すぐ無料お見積り', subtext:'東京・神奈川エリア対応。スタッフが丁寧にサポートします。', primaryBtn:{text:'無料見積もり',href:'#booking'}, secondaryBtn:{text:'電話で相談',href:'tel:000'}, bg:'navy' },
       html:        { code:'<!-- カスタムHTMLをここに入力 -->' },
     };
     return JSON.parse(JSON.stringify(m[type] || {}));
