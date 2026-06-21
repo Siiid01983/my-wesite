@@ -112,7 +112,7 @@
     var form = e.target;
     if (!form || !form.tagName) return;
     var isHeroForm = form.id === 'quoteForm' ||
-      (typeof form.closest === 'function' && form.closest('#quote'));
+      (typeof form.closest === 'function' && form.closest('#home-hero'));
     if (!isHeroForm || e.defaultPrevented) return;
     e.preventDefault();
     console.warn('[RUNTIME GUARD] Unhandled hero form submit intercepted → routing to BA overlay');

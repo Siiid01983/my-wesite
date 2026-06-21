@@ -44,7 +44,7 @@ describe('Legacy elimination', () => {
   });
 });
 
-// ── 2. #quote may exist ONLY as the hero section id / CSS selector ────────────
+// ── 2. #quote is fully removed (hero section id renamed quote → home-hero) ────
 describe('#quote is not a navigation target', () => {
   it('index.html has no href="#quote"', () => {
     assert.ok(!/href\s*=\s*["']#quote["']/.test(indexHtml),
@@ -60,11 +60,11 @@ describe('#quote is not a navigation target', () => {
       'no scrollIntoView targeting quote');
   });
 
-  it('every #quote occurrence in index.html is the protected section#quote CSS/id', () => {
-    const total       = count(indexHtml, /#quote/g);
-    const sectionOnly = count(indexHtml, /section#quote/g);
-    assert.equal(total - sectionOnly, 0,
-      'the only allowed #quote usage is the hero "section#quote" CSS selectors');
+  it('index.html has zero #quote references (hero id renamed to home-hero)', () => {
+    assert.equal(count(indexHtml, /#quote/g), 0,
+      '#quote is fully removed; the hero section id is now "home-hero"');
+    assert.ok(/id="home-hero"/.test(indexHtml),
+      'the hero section must use id="home-hero"');
   });
 
   it('script.js has no #quote navigation', () => {

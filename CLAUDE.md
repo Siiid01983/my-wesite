@@ -39,7 +39,7 @@ Prefer adding new files over modifying core files.
   fills `window.BA_PREFILL` and calls `openBookingApp()` (logic in `script.js`).
 - DEPRECATED / REMOVED FROM PRODUCTION:
   - `booking-app.html` — deleted (was an orphan standalone booking page).
-  - `#quote` as a navigation target — removed (allowed ONLY as the hero `section#quote` CSS/id).
+  - `#quote` fully removed — the hero section id was renamed `quote`→`home-hero`; no `#quote` remains anywhere.
   - `bk*` inline multi-step form + `doSubmit()` in `index.html` — dead code (DOM removed),
     neutralized to a no-op; do NOT revive.
   - quoteForm's old Formspree + `BookingService.createBooking` dual pipeline — removed.
