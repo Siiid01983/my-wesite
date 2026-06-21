@@ -2517,78 +2517,16 @@ function buildConfTable(){
 // ═══════════════════════════════════════════
 var submitting=false;
 
+/* DEPRECATED_DO_NOT_USE — legacy bk* inline booking writer.
+   The BA overlay (openBookingApp → BookingService.createBooking, below) is the
+   SINGLE production booking system. This handler's trigger (#bkSubmitBtn) and
+   form DOM no longer exist, so it never runs. Its booking-write
+   (BookingService.createBooking) and Formspree submission have been removed to
+   enforce the single-flow architecture lock. Kept only as a safe no-op that
+   routes any stray invocation into the BA overlay. Do NOT re-add booking logic
+   here — see tests/architecture-lock.test.js (regression guard). */
 async function doSubmit(){
-  if(submitting)return;
-  var ds=BS.date;
-  if(!ds||storage.getStatus(ds)==='booked'){
-    var err=document.getElementById('bkSubmitErr');
-    if(err){err.textContent='選択された日付は満了となりました。別の日付をお選びください。';err.style.display='';}
-    return;
-  }
-  submitting=true;
-  var btn=document.getElementById('bkSubmitBtn');
-  var errEl=document.getElementById('bkSubmitErr');
-  btn.disabled=true;btn.innerHTML='<span class="bk-spinner"></span>送信中...';
-  if(errEl)errEl.style.display='none';
-
-  var time=document.querySelector('[name="booking_time"]:checked');
-  var fromDetail=BS.fromAddr;
-  if(BS.fromFloor)fromDetail+=' ('+BS.fromFloor+(BS.fromEv?' / EV:'+BS.fromEv:'')+')';
-  var toDetail=BS.toAddr;
-  if(BS.toFloor)toDetail+=' ('+BS.toFloor+(BS.toEv?' / EV:'+BS.toEv:'')+')';
-
-  var ref;
-  try{
-    var booking=await BookingService.createBooking({
-      service: BS.service,
-      date:    ds,
-      time:    time?time.value:'',
-      fromAddr:fromDetail,
-      toAddr:  toDetail,
-      name:    BS.name,
-      email:   BS.email,
-      notes:   BS.notes,
-    });
-    ref=booking.id;
-  }catch(e){
-    console.error('[Booking] createBooking failed:',e);
-    btn.disabled=false;btn.innerHTML='予約リクエストを送信';
-    if(errEl){errEl.textContent='送信に失敗しました。お電話またはLINEにてご連絡ください。';errEl.style.display='';}
-    submitting=false;
-    return;
-  }
-
-  // Email notification — non-blocking
-  var fd=new FormData();
-  fd.append('service_type',BS.service);
-  fd.append('booking_date',ds);
-  fd.append('booking_time',time?time.value:'');
-  fd.append('address_from',fromDetail);
-  fd.append('address_to',toDetail);
-  fd.append('furniture',BS.furniture.join(', ')||'なし');
-  fd.append('disposal',BS.disposal.join(', ')||'なし');
-  fd.append('customer_name',BS.name);
-  fd.append('customer_email',BS.email);
-  fd.append('customer_notes',BS.notes);
-  fd.append('booking_ref',ref);
-  var photos=document.getElementById('bkPhotoUpload');
-  if(photos&&photos.files){for(var i=0;i<Math.min(photos.files.length,5);i++)fd.append('photo_'+i,photos.files[i]);}
-  fetch('https://formspree.io/f/xdajqzlo',{method:'POST',body:fd,headers:{'Accept':'application/json'}})
-    .catch(function(e){console.error('[Booking] Formspree notification failed:',e);});
-
-  storage.book(ds);
-  sessionStorage.removeItem('hm_booking');
-  renderCal('hmCalBook',true);renderCal('hmCalAvail',false);
-  document.getElementById('bkRefCard').innerHTML=
-    '<span class="bk-ref-num">'+ref+'</span>'
-    +'<table class="bk-conf-table">'
-    +'<tr><td>サービス</td><td>'+BS.service+'</td></tr>'
-    +'<tr><td>希望日</td><td>'+fmtJp(ds)+'</td></tr>'
-    +'<tr><td>希望時間帯</td><td>'+(time?time.value:'')+'</td></tr>'
-    +'<tr><td>お名前</td><td>'+BS.name+'</td></tr>'
-    +'<tr><td>メールアドレス</td><td>'+BS.email+'</td></tr>'
-    +'</table>';
-  showSuccess();submitting=false;
+  if (typeof openBookingApp === 'function') openBookingApp(BS && BS.service ? BS.service : undefined);
 }
 
 // ═══════════════════════════════════════════
@@ -2613,6 +2551,11 @@ function resetAll(){
 // EVENT LISTENERS
 // ═══════════════════════════════════════════
 
+/* DEPRECATED_DO_NOT_USE — legacy bk* multi-step booking form listeners.
+   Their DOM elements (#bkS1Next, #bkSubmitBtn, #bkStep*, …) no longer exist, so
+   every getElementById is null and these handlers never bind. They write no
+   bookings. Retained (guarded, inert) to avoid churn in this core file; the BA
+   overlay is the single booking flow. Do NOT revive this form. */
 // Step 1 → 2
 var s1n=document.getElementById('bkS1Next');
 if(s1n)s1n.addEventListener('click',function(){
@@ -3494,6 +3437,9 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 </script>
 
 <script src="js/customer-login.js"></script>
+
+<!-- Runtime protection layer: enforces BA overlay as the only booking execution path -->
+<script src="js/security/bookingRuntimeGuard.js"></script>
 
 </body>
 </html>

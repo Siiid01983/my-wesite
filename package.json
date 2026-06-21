@@ -3,7 +3,8 @@
     "test":        "node --test tests/dataProvider.test.js",
     "test:smoke":  "node --test tests/smoke.test.js",
     "test:portal": "node --test tests/portalSelfService.test.js",
-    "test:all":    "node --test tests/dataProvider.test.js tests/smoke.test.js tests/portalSelfService.test.js"
+    "test:arch":   "node --test tests/architecture-lock.test.js",
+    "test:all":    "node --test tests/dataProvider.test.js tests/smoke.test.js tests/portalSelfService.test.js tests/architecture-lock.test.js"
   },
   "dependencies": {
     "playwright": "^1.60.0"

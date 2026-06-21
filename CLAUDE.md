@@ -30,6 +30,22 @@ Prefer adding new files over modifying core files.
 > Note: the site was migrated OFF Supabase. Do not assume Supabase exists; config global
 > is `window.API_BASE` (not `SUPABASE_URL`/`SUPABASE_ANON_KEY`).
 
+## Booking Architecture — SINGLE PRODUCTION BOOKING SYSTEM (LOCKED) 🔒
+- **BA overlay (`#booking-app` / `openBookingApp()`) is the ONLY booking system.**
+  Flow: User action → `openBookingApp()` → BA overlay collects data →
+  `BookingService.createBooking()` (single source of truth) → success screen.
+- All booking CTAs route to `openBookingApp()`; `#booking` is only a no-JS fallback anchor.
+- Hero `quoteForm` is a **UI-only entry gate**: it creates NO bookings — on submit it
+  fills `window.BA_PREFILL` and calls `openBookingApp()` (logic in `script.js`).
+- DEPRECATED / REMOVED FROM PRODUCTION:
+  - `booking-app.html` — deleted (was an orphan standalone booking page).
+  - `#quote` as a navigation target — removed (allowed ONLY as the hero `section#quote` CSS/id).
+  - `bk*` inline multi-step form + `doSubmit()` in `index.html` — dead code (DOM removed),
+    neutralized to a no-op; do NOT revive.
+  - quoteForm's old Formspree + `BookingService.createBooking` dual pipeline — removed.
+- Regression guard: `tests/architecture-lock.test.js` (`npm run test:arch`) FAILS THE BUILD
+  if any legacy booking pattern reappears. Do NOT relax it — fix the code instead.
+
 ## Brand
 - Colors: #2C3626 (dark green), #9AB57A (sage), #F9F9F6 (off-white)
 - Fonts: DM Serif Display + DM Sans
@@ -43,8 +59,7 @@ Prefer adding new files over modifying core files.
 - Emergency rollback flag: `FORCE_FALLBACK` (in `js/config/appConfig.js`)
 
 ## Key Files
-- index.html — public marketing site
-- booking-app.html — standalone booking flow (BA overlay)
+- index.html — public marketing site (includes the BA overlay booking flow: #booking-app / openBookingApp — the single production booking entry point)
 - login.html / portal.html — customer portal (email + booking-reference login via hm-api/auth.php)
 - admin.html — admin panel shell (HTML + CSS only)
 - wmcDashboard.html / websiteManagement.html — Website Management Center

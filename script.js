@@ -119,129 +119,47 @@
       });
     });
 
-    form.addEventListener('submit', async (e) => {
+    // ── Hero quoteForm is a PURE ENTRY POINT into the BA overlay. ──
+    // It does NOT create bookings: no BookingService.createBooking, no Formspree
+    // booking submission, no confirmation email, no success/redirect. The BA
+    // overlay is the single booking system. This handler only collects the
+    // entered intent, exposes it on window.BA_PREFILL, and opens the overlay.
+    form.addEventListener('submit', (e) => {
       e.preventDefault();
       if (!validate(4)) return;
-      _hmTrack('quote_submitted');
-      const btn = document.getElementById('submitBtn');
-      const _btnText = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = '送信中...';
-      try {
-        const resp = await fetch('https://formspree.io/f/xdajqzlo', {
-          method: 'POST',
-          body: new FormData(form),
-          headers: { 'Accept': 'application/json' }
-        });
-        if (resp.ok) {
-          let bookingRef = null;
-          try {
-            if (typeof BookingService !== 'undefined') {
-              const _bk = await BookingService.createBooking({
-                name:     form.querySelector('[name="name"]').value.trim()    || '',
-                email:    form.querySelector('[name="email"]').value.trim()   || '',
-                phone:    (form.querySelector('[name="tel"]') || {value:''}).value.trim() || '',
-                service:  (form.querySelector('[name="service"]:checked') || {}).value || '',
-                date:     form.querySelector('[name="date"]').value            || '',
-                time:     (form.querySelector('[name="time"]') || {value:''}).value || '',
-                fromAddr: form.querySelector('[name="currentAddress"]').value.trim() || '',
-                toAddr:   form.querySelector('[name="newAddress"]').value.trim()     || '',
-                notes:    (form.querySelector('[name="message"]') || {value:''}).value || '',
-                status:   '新規',
-              });
-              bookingRef = _bk && _bk.id;
-            }
-          } catch(apiErr) {
-            console.error('[QuoteForm] API write failed:', apiErr.message);
-          }
-          if (!bookingRef) {
-            const _d = new Date(), _p = n => String(n).padStart(2, '0');
-            bookingRef = 'HM-' + _d.getFullYear() + _p(_d.getMonth()+1) + _p(_d.getDate()) + '-' + Math.random().toString(36).slice(2,6).toUpperCase();
-          }
-          sessionStorage.removeItem('hm_quote');
-          stepEls.forEach(el => { el.classList.remove('active'); el.style.display = 'none'; });
-          if (progressWrap) progressWrap.style.display = 'none';
-          if (successEl) successEl.style.display = 'block';
-          const _refNum = document.getElementById('successRefNum');
-          const _refWrap = document.getElementById('successRefWrap');
-          if (_refNum) _refNum.textContent = bookingRef;
-          if (_refWrap) _refWrap.style.display = '';
-          const _copyBtn = document.getElementById('successCopyBtn');
-          if (_copyBtn) {
-            _copyBtn.onclick = function() {
-              navigator.clipboard.writeText(bookingRef).then(function() {
-                _copyBtn.textContent = 'コピーしました ✓';
-                setTimeout(function() { _copyBtn.textContent = 'コピー'; }, 2000);
-              }).catch(function() {});
-            };
-          }
-          _hmTrack('quote_success');
+      _hmTrack('quote_to_overlay');
 
-          /* ── PHP mailer — confirmation email via send_email.php ── */
-          fetch('send_email.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              to_email:    form.querySelector('[name="email"]').value.trim(),
-              to_name:     form.querySelector('[name="name"]').value.trim(),
-              booking_ref: bookingRef,
-              service:     (form.querySelector('[name="service"]:checked') || {}).value || '',
-              move_date:   form.querySelector('[name="date"]').value || '',
-              time_slot:   (form.querySelector('[name="time"]') || {value:''}).value || '未定',
-              from_addr:   form.querySelector('[name="currentAddress"]').value.trim() || '',
-              to_addr:     form.querySelector('[name="newAddress"]').value.trim() || '',
-            }),
-          }).catch(function(_mailErr) {
-            console.warn('[send_email] request failed:', _mailErr);
-          });
+      const _v = (sel) => { const el = form.querySelector(sel); return el ? el.value.trim() : ''; };
+      const service = (form.querySelector('[name="service"]:checked') || {}).value || '';
+      const prefillData = {
+        name:     _v('[name="name"]'),
+        email:    _v('[name="email"]'),
+        phone:    _v('[name="tel"]'),
+        service:  service,
+        date:     _v('[name="date"]'),
+        time:     _v('[name="time"]'),
+        fromAddr: _v('[name="currentAddress"]'),
+        toAddr:   _v('[name="newAddress"]'),
+        notes:    _v('[name="message"]'),
+      };
 
-          /* ── Redirect to home after 5 s so user can note the reference number ── */
-          setTimeout(function() { window.location.href = '/'; }, 5000);
+      // Safe global bridge — the BA overlay consumes this if it opts in.
+      window.BA_PREFILL = {
+        name:     prefillData.name,
+        email:    prefillData.email,
+        phone:    prefillData.phone,
+        fromHero: true,
+        source:   'quoteForm',
+        prefillData: prefillData,
+      };
 
-          const bookedDate = form.querySelector('[name="date"]').value;
-          if (bookedDate) {
-            BOOKED_DATES.add(bookedDate);
-            try {
-              const _lb = JSON.parse(localStorage.getItem('hm_booked') || '[]');
-              if (!_lb.includes(bookedDate)) _lb.push(bookedDate);
-              localStorage.setItem('hm_booked', JSON.stringify(_lb));
-            } catch(e) {}
-            renderCalendar();
-            renderCompactCalendar();
-            const _fb = document.querySelector('.calendar-selection-feedback');
-            if (_fb) {
-              const _fn = document.createElement('p');
-              _fn.className = 'selection-text';
-              _fn.style.color = '#1D9E75';
-              _fn.textContent = 'ご予約ありがとうございます。選択した日程は仮予約済みとなりました。';
-              _fb.appendChild(_fn);
-            }
-            const gcalLink = document.getElementById('gcalLink');
-            if (gcalLink) {
-              const _d1 = bookedDate.replace(/-/g, '');
-              const _nd = new Date(bookedDate); _nd.setDate(_nd.getDate() + 1);
-              const _d2 = formatDateString(_nd).replace(/-/g, '');
-              gcalLink.href = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
-                + '&text=' + encodeURIComponent('Hello Moving 引越し予約')
-                + '&dates=' + _d1 + '/' + _d2
-                + '&details=' + encodeURIComponent('Hello Movingへのお引越しご予約を承りました。')
-                + '&location=' + encodeURIComponent('Tokyo, Japan');
-              gcalLink.style.display = 'inline-flex';
-            }
-          }
-        } else {
-          console.error('[QuoteForm] Formspree error status:', resp.status);
-          _hmTrack('quote_error', { reason: 'formspree', status: resp.status });
-          btn.disabled = false;
-          btn.textContent = _btnText;
-          showError('submitError');
-        }
-      } catch(submitErr) {
-        console.error('[QuoteForm] submit error:', submitErr);
-        _hmTrack('quote_error', { reason: 'network' });
-        btn.disabled = false;
-        btn.textContent = _btnText;
-        showError('submitError');
+      // Hand off to the single booking flow.
+      const overlay = document.getElementById('booking-app');
+      if (overlay && overlay.classList.contains('open')) {
+        // Already open: update BA state directly if the overlay exposes a hook.
+        if (typeof window.baApplyPrefill === 'function') window.baApplyPrefill(window.BA_PREFILL);
+      } else if (typeof openBookingApp === 'function') {
+        openBookingApp(service || undefined);
       }
     });
 
