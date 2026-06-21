@@ -20,7 +20,8 @@
   # conditional request (ETag/Last-Modified) → cheap 304 when unchanged, full body
   # only when the asset actually changed. The SW (cache-first, version-namespaced)
   # still serves these instantly for controlled/offline clients on top of this.
-  <FilesMatch "\.(css|js)$">
+  # NB: sw.js is excluded here so the dedicated no-store rule above wins for it.
+  <FilesMatch "^(?!sw\.js$).*\.(css|js)$">
     Header set Cache-Control "no-cache, must-revalidate"
   </FilesMatch>
 </IfModule>
