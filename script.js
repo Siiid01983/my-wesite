@@ -36,163 +36,15 @@
     io.observe(el);
   });
 
-  // ===== MULTI-STEP QUOTE FORM =====
-  (function () {
-    const form = document.getElementById('quoteForm');
-    if (!form) return;
-
-    const stepEls = [
-      document.getElementById('formStep1'),
-      document.getElementById('formStep2'),
-      document.getElementById('formStep3'),
-      document.getElementById('formStep4'),
-    ];
-    const progressFill = document.getElementById('formProgressFill');
-    const stepLabels = form.querySelectorAll('.step-label');
-    const successEl = document.getElementById('formSuccess');
-    const progressWrap = form.querySelector('.form-progress-wrap');
-    let current = 1;
-    let _trackStarted = false;
-
-    function _hmTrack(name, params) {
-      try {
-        const p = Object.assign({ form: 'quote' }, params || {});
-        if (typeof gtag === 'function') gtag('event', name, p);
-        if (Array.isArray(window.dataLayer)) window.dataLayer.push(Object.assign({ event: name }, p));
-      } catch(_) {}
-    }
-
-    function showStep(n) {
-      stepEls.forEach((el, i) => el.classList.toggle('active', i + 1 === n));
-      stepLabels.forEach((el, i) => {
-        el.classList.toggle('active', i + 1 === n);
-        el.classList.toggle('done', i + 1 < n);
-      });
-      if (progressFill) progressFill.style.width = (n / 4 * 100) + '%';
-      if (!_trackStarted && n === 1) { _hmTrack('quote_started'); _trackStarted = true; }
-      else if (n > current) _hmTrack('quote_step_completed', { step: current });
-      current = n;
-      const _allInputs = stepEls[n - 1].querySelectorAll('input:not([type="radio"]):not([type="checkbox"]), textarea');
-      const firstInput = Array.from(_allInputs).find(el => el.offsetParent !== null);
-      if (firstInput) setTimeout(() => firstInput.focus(), 80);
-    }
-
-    function hideError(id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
-    function showError(id) { const el = document.getElementById(id); if (el) el.style.display = 'block'; }
-
-    function validate(step) {
-      hideError('step1Error'); hideError('step2Error');
-      hideError('step3Error'); hideError('step4Error'); hideError('submitError');
-      if (step === 1) {
-        if (!form.querySelector('[name="service"]:checked')) { showError('step1Error'); return false; }
-      }
-      if (step === 2) {
-        const a = form.querySelector('[name="currentAddress"]').value.trim();
-        const b = form.querySelector('[name="newAddress"]').value.trim();
-        if (!a || !b) {
-          const _e2 = document.getElementById('step2Error');
-          if (_e2) _e2.textContent = !a && !b ? '引越し元と引越し先の住所を両方ご入力ください。' : !a ? '引越し元の住所をご入力ください。' : '引越し先の住所をご入力ください。';
-          showError('step2Error'); return false;
-        }
-      }
-      if (step === 3) {
-        if (!form.querySelector('[name="date"]').value) { showError('step3Error'); return false; }
-      }
-      if (step === 4) {
-        const name  = form.querySelector('[name="name"]').value.trim();
-        const email = form.querySelector('[name="email"]').value.trim();
-        if (!name || !email || !email.includes('@')) { showError('step4Error'); return false; }
-      }
-      return true;
-    }
-
-    document.getElementById('step1Next').addEventListener('click', () => { if (validate(1)) showStep(2); });
-    document.getElementById('step2Back').addEventListener('click', () => showStep(1));
-    document.getElementById('step2Next').addEventListener('click', () => { if (validate(2)) showStep(3); });
-    document.getElementById('step3Back').addEventListener('click', () => showStep(2));
-    document.getElementById('step3Next').addEventListener('click', () => { if (validate(3)) showStep(4); });
-    document.getElementById('step4Back').addEventListener('click', () => showStep(3));
-
-    document.querySelectorAll('[name="service"]').forEach(r => {
-      r.addEventListener('change', () => {
-        setTimeout(() => { if (validate(1)) showStep(2); }, 320);
-      });
-    });
-
-    // ── Hero quoteForm is a PURE ENTRY POINT into the BA overlay. ──
-    // It does NOT create bookings: no BookingService.createBooking, no Formspree
-    // booking submission, no confirmation email, no success/redirect. The BA
-    // overlay is the single booking system. This handler only collects the
-    // entered intent, exposes it on window.BA_PREFILL, and opens the overlay.
-    form.addEventListener('submit', (e) => {
+  // ===== SERVICE-CARD → BA OVERLAY =====
+  // Hero quote form removed; BA overlay (openBookingApp) is the sole booking entry.
+  // Service cards still deep-link into the overlay by service.
+  document.querySelectorAll('[data-service]').forEach(link => {
+    link.addEventListener('click', (e) => {
       e.preventDefault();
-      if (!validate(4)) return;
-      _hmTrack('quote_to_overlay');
-
-      const _v = (sel) => { const el = form.querySelector(sel); return el ? el.value.trim() : ''; };
-      const service = (form.querySelector('[name="service"]:checked') || {}).value || '';
-      const prefillData = {
-        name:     _v('[name="name"]'),
-        email:    _v('[name="email"]'),
-        phone:    _v('[name="tel"]'),
-        service:  service,
-        date:     _v('[name="date"]'),
-        time:     _v('[name="time"]'),
-        fromAddr: _v('[name="currentAddress"]'),
-        toAddr:   _v('[name="newAddress"]'),
-        notes:    _v('[name="message"]'),
-      };
-
-      // Safe global bridge — the BA overlay consumes this if it opts in.
-      window.BA_PREFILL = {
-        name:     prefillData.name,
-        email:    prefillData.email,
-        phone:    prefillData.phone,
-        fromHero: true,
-        source:   'quoteForm',
-        prefillData: prefillData,
-      };
-
-      // Hand off to the single booking flow.
-      const overlay = document.getElementById('booking-app');
-      if (overlay && overlay.classList.contains('open')) {
-        // Already open: update BA state directly if the overlay exposes a hook.
-        if (typeof window.baApplyPrefill === 'function') window.baApplyPrefill(window.BA_PREFILL);
-      } else if (typeof openBookingApp === 'function') {
-        openBookingApp(service || undefined);
-      }
+      if (typeof openBookingApp === 'function') openBookingApp(link.dataset.service);
     });
-
-    document.querySelectorAll('[data-service]').forEach(link => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const val = link.dataset.service;
-        const radio = form.querySelector(`[name="service"][value="${val}"]`);
-        if (radio) radio.checked = true;
-        openBookingApp(val);
-      });
-    });
-
-    form.addEventListener('input', () => {
-      const data = {};
-      new FormData(form).forEach((v, k) => data[k] = v);
-      sessionStorage.setItem('hm_quote', JSON.stringify(data));
-    });
-
-    const _saved = JSON.parse(sessionStorage.getItem('hm_quote') || 'null');
-    if (_saved) {
-      Object.entries(_saved).forEach(([k, v]) => {
-        const radios = form.querySelectorAll(`[name="${k}"][type="radio"],[name="${k}"][type="checkbox"]`);
-        if (radios.length) {
-          radios.forEach(r => { if (r.value === v) r.checked = true; });
-          return;
-        }
-        const el = form.querySelector(`[name="${k}"]`);
-        if (el && el.type !== 'file') el.value = v;
-      });
-    }
-    showStep(1);
-  })();
+  });
 
   // ===== BOOKING CALENDAR =====
   const ADMIN_AVAILABILITY = {
@@ -343,14 +195,6 @@
         if (aria.includes(`${dateObj.getDate()}日`)) el.classList.add('selected');
       }
     });
-
-    const qf = document.getElementById('quoteForm');
-    if (qf) {
-      qf.classList.remove('form-pulse');
-      void qf.offsetWidth;
-      qf.classList.add('form-pulse');
-      setTimeout(() => qf.classList.remove('form-pulse'), 800);
-    }
 
     if (typeof openBookingApp === 'function') setTimeout(() => { openBookingApp(); }, 300);
   }

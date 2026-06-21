@@ -35,9 +35,11 @@ Prefer adding new files over modifying core files.
   Flow: User action → `openBookingApp()` → BA overlay collects data →
   `BookingService.createBooking()` (single source of truth) → success screen.
 - All booking CTAs route to `openBookingApp()`; `#booking` is only a no-JS fallback anchor.
-- Hero `quoteForm` is a **UI-only entry gate**: it creates NO bookings — on submit it
-  fills `window.BA_PREFILL` and calls `openBookingApp()` (logic in `script.js`).
+- The hero is a single-column marketing block (H1/badges/trust/license) with one prominent
+  `今すぐ予約する` CTA → `openBookingApp()`. Service cards deep-link via `[data-service]` → `openBookingApp(service)`.
 - DEPRECATED / REMOVED FROM PRODUCTION:
+  - Hero `quoteForm` (multi-step hero form) — **removed entirely** (markup + CSS + JS). The hero
+    no longer renders any form; the BA overlay is the sole booking entry.
   - `booking-app.html` — deleted (was an orphan standalone booking page).
   - `#quote` fully removed — the hero section id was renamed `quote`→`home-hero`; no `#quote` remains anywhere.
   - `bk*` inline multi-step form + `doSubmit()` in `index.html` — dead code (DOM removed),

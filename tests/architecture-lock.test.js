@@ -128,15 +128,15 @@ describe('Runtime protection layer', () => {
   });
 });
 
-// ── 4. quoteForm is a UI-only entry gate via the BA_PREFILL bridge ────────────
-describe('quoteForm entry gate', () => {
-  it('script.js exposes the BA_PREFILL bridge', () => {
-    assert.ok(/window\.BA_PREFILL\s*=/.test(scriptJs),
-      'quoteForm must pass data via window.BA_PREFILL');
+// ── 4. Hero quote form is removed; BA overlay is the sole booking entry ───────
+describe('booking entry (hero form removed)', () => {
+  it('index.html no longer renders the hero quote form', () => {
+    assert.ok(!/id="quoteForm"/.test(indexHtml), 'the hero #quoteForm must be removed');
+    assert.ok(!/hero-form-side/.test(indexHtml), 'hero-form-side markup/CSS must be removed');
   });
 
-  it('script.js routes the quoteForm submit into openBookingApp()', () => {
+  it('script.js routes service-card clicks into openBookingApp()', () => {
     assert.ok(/openBookingApp\s*\(/.test(scriptJs),
-      'quoteForm submit must call openBookingApp()');
+      'service cards must open the BA overlay via openBookingApp()');
   });
 });

@@ -158,7 +158,6 @@
 <style>
 .sticky-cta { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
 @keyframes formPulse { 0% { box-shadow: 0 0 0 0 rgba(29,158,117,0.35); } 60% { box-shadow: 0 0 0 14px rgba(29,158,117,0); } 100% { box-shadow: none; } }
-.form-pulse { animation: formPulse 0.7s ease-out; }
 
 
 
@@ -462,9 +461,7 @@ select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{
 /* Primary — filled, strongest weight */
 .btn-hero-book{padding:12px 32px;background:var(--ink);color:#fff}
 .btn-hero-book:hover{background:var(--navy);transform:translateY(-1px);box-shadow:0 10px 24px rgba(11,15,23,.18)}
-/* Secondary — outlined, second tier */
-.btn-hero-quote{padding:11px 26px;background:transparent;color:var(--ink);border-color:rgba(11,15,23,.3)}
-.btn-hero-quote:hover{background:var(--bg-soft);transform:translateY(-1px);border-color:var(--ink)}
+
 /* LINE — green tint, lightest tier */
 .btn-hero-line{
   display:inline-flex;align-items:center;gap:7px;padding:12px 20px;
@@ -746,44 +743,10 @@ section#home-hero .hero-license {
   color: var(--gray-2) !important;
 }
 
-/* ── Form side → booking card ── */
-section#home-hero .hero-form-side {
-  width: 100% !important;
-  background: #fff !important;
-  border: 1px solid #e8e8e4 !important;
-  border-radius: 14px !important;
-  padding: 32px 36px !important;
-  box-shadow: 0 1px 6px rgba(0,0,0,.06) !important;
-  box-sizing: border-box !important;
-}
-/* Form badge → CTA-band style */
-section#home-hero .hero-form-badge {
-  display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-  background: #f7f7f4 !important;
-  border: 1px solid #e8e8e4 !important;
-  border-radius: 8px !important;
-  padding: 12px 16px !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  color: var(--ink) !important;
-  letter-spacing: .02em !important;
-  margin-bottom: 22px !important;
-  position: static !important;
-}
-section#home-hero .hero-form-badge-dot {
-  width: 8px !important; height: 8px !important;
-  background: #22c55e !important;
-  border-radius: 50% !important;
-  flex-shrink: 0 !important;
-}
-/* Quote form: remove pill border-radius override */
-section#home-hero .hero-quote-form { border-radius: 0 !important; }
+
 
 @media (max-width: 720px) {
   section#home-hero.hero { padding: 40px 0 56px !important; }
-  section#home-hero .hero-form-side { padding: 24px 18px !important; }
   section#home-hero .hero-title { font-size: 22px !important; }
 }
 
@@ -1167,7 +1130,6 @@ body { padding-bottom: 76px; }
 /* ── Mobile: stack form-row on very small screens ── */
 @media(max-width:400px) {
   .form-row { flex-direction: column; }
-  section#home-hero .hero-form-side { padding: 20px 14px !important; }
 }
 </style>
 </head>
@@ -1270,13 +1232,9 @@ body { padding-bottom: 76px; }
         <span class="hsb-item" role="listitem">♻️ 不用品回収</span>
       </div>
       <div class="hero-cta">
-        <a href="#booking" class="btn-hero-book">
+        <a href="#booking" onclick="openBookingApp();return false;" class="btn-hero-book">
           <span class="btn-sup" id="heroCtaBookSup">オンライン予約</span>
           <span class="btn-lbl" id="heroCtaBookLbl">今すぐ予約する</span>
-        </a>
-        <a href="#booking" onclick="openBookingApp();return false;" class="btn-hero-quote">
-          <span class="btn-sup" id="heroCtaQuoteSup">無料見積り</span>
-          <span class="btn-lbl" id="heroCtaQuoteLbl">料金を確認する</span>
         </a>
         <a href="https://line.me/R/ti/p/~hellomoving" class="btn-hero-line" target="_blank" rel="noopener noreferrer">
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.6 1.6 4.9 4 6.4-.1.5-.6 2.1-.7 2.5 0 0 0 .3.2.4.2.1.4 0 .4 0 .6-.1 3-2 3.6-2.4.8.1 1.6.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3Z"/></svg>
@@ -1296,174 +1254,7 @@ body { padding-bottom: 76px; }
         国土交通省 認可運送事業者 — 損害補償保険加入済
       </p>
     </div>
-    <aside class="hero-form-side" aria-label="無料お見積りフォーム">
-      <div class="hero-form-badge">
-        <span class="hero-form-badge-dot" aria-hidden="true"></span>
-        無料お見積り — 最短2時間でご返信
-      </div>
-      <form class="cta-form multistep-form hero-quote-form" id="quoteForm" novalidate>
-        <div class="form-progress-wrap">
-          <div class="form-step-labels">
-            <div class="step-label active" data-step="1">① サービス</div>
-            <div class="step-label" data-step="2">② 場所</div>
-            <div class="step-label" data-step="3">③ 日程</div>
-            <div class="step-label" data-step="4">④ 連絡先</div>
-          </div>
-          <div class="form-progress-track"><div class="form-progress-fill" id="formProgressFill"></div></div>
-        </div>
-        <div class="form-step active" id="formStep1">
-          <p class="step-heading">どのサービスをご希望ですか？</p>
-          <div class="service-choice-grid">
-            <label class="service-choice"><input type="radio" name="service" value="当日・お急ぎ引越しプラン" /><div class="choice-body"><div class="choice-icon"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.5 5H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg></div><strong>当日・お急ぎ</strong><em>今日・明日対応</em></div></label>
-            <label class="service-choice"><input type="radio" name="service" value="単身引越し" /><div class="choice-body"><div class="choice-icon"><svg viewBox="0 0 24 24" fill="none" width="22" height="22"><circle cx="7" cy="6.5" r="3.5" fill="#3b82f6"/><path d="M1.5 18.5v-1C1.5 14.567 4.067 12 7 12s5.5 2.567 5.5 5.5v1H1.5z" fill="#3b82f6"/><path d="M14.5 10.5 15.5 8h7l1 2.5" fill="#d97706"/><rect x="14" y="10.5" width="9" height="9" rx="1" fill="#f59e0b"/><rect x="16.5" y="10.5" width="4" height="3.5" rx="0.5" fill="#fcd34d"/></svg></div><strong>単身引越し</strong><em>お一人様向け</em></div></label>
-            <label class="service-choice"><input type="radio" name="service" value="カップル・ご夫婦引越し" /><div class="choice-body"><div class="choice-icon"><svg viewBox="0 0 24 24" fill="none" width="22" height="22"><circle cx="7" cy="6.5" r="3.5" fill="#f43f5e"/><path d="M1.5 18.5v-1C1.5 14.567 4.067 12 7 12s5.5 2.567 5.5 5.5v1H1.5z" fill="#f43f5e"/><circle cx="17" cy="6.5" r="3.5" fill="#3b82f6"/><path d="M11.5 18.5v-1c0-2.933 2.567-5.5 5.5-5.5s5.5 2.567 5.5 5.5v1H11.5z" fill="#3b82f6"/></svg></div><strong>カップル・夫婦</strong><em>二人暮らし向け</em></div></label>
-            <label class="service-choice"><input type="radio" name="service" value="学生・新生活引越し" /><div class="choice-body"><div class="choice-icon"><svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M12 4 22 9.5 12 15 2 9.5z" fill="#0d9488"/><path d="M7 12.5v4a5 5 0 0 0 10 0v-4l-5 2.9-5-2.9z" fill="#0f766e"/><line x1="21" y1="9.5" x2="21" y2="15.5" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round"/><circle cx="21" cy="17" r="1.8" fill="#fbbf24"/></svg></div><strong>学生・新生活</strong><em>初めての引越し</em></div></label>
-            <label class="service-choice"><input type="radio" name="service" value="不用品回収・処分サービス" /><div class="choice-body"><div class="choice-icon"><svg viewBox="0 0 24 24" fill="none" width="22" height="22"><rect x="9.5" y="2.5" width="5" height="2" rx="1" fill="#22c55e"/><rect x="4" y="5.5" width="16" height="2.5" rx="1.25" fill="#16a34a"/><path d="M6.5 8h11l-1.2 12H7.7z" fill="#22c55e"/><line x1="10.5" y1="10" x2="10" y2="18.5" stroke="rgba(255,255,255,0.45)" stroke-width="1.2" stroke-linecap="round"/><line x1="12" y1="10" x2="12" y2="18.5" stroke="rgba(255,255,255,0.45)" stroke-width="1.2" stroke-linecap="round"/><line x1="13.5" y1="10" x2="14" y2="18.5" stroke="rgba(255,255,255,0.45)" stroke-width="1.2" stroke-linecap="round"/></svg></div><strong>不用品回収</strong><em>処分も一括で</em></div></label>
-            <label class="service-choice"><input type="radio" name="service" value="家具組立・分解" /><div class="choice-body"><div class="choice-icon"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M22 8 12 2 2 8v8l10 6 10-6Zm-10 2.2L4.3 8 12 4.5 19.7 8Z"/></svg></div><strong>家具組立・分解</strong><em>組立のみもOK</em></div></label>
-          </div>
-          <p class="step-error" id="step1Error">サービスをお選びください。</p>
-          <div class="step-actions"><button type="button" class="btn btn-primary btn-lg btn-block" id="step1Next">次のステップへ →</button></div>
-        </div>
-        <div class="form-step" id="formStep2">
-          <p class="step-heading">引越し元・引越し先を教えてください</p>
-          <div class="form-row">
-            <div class="form-field">
-              <label for="qFromZip"><span>現住所（引越し元） <em>*</em></span></label>
-              <div class="zip-row">
-                <input type="text" id="qFromZip" class="zip-input" placeholder="例：160-0023" maxlength="8" inputmode="numeric" autocomplete="postal-code" />
-                <span class="zip-status" id="qFromZipStatus" aria-live="polite" aria-atomic="true"></span>
-              </div>
-              <div class="zip-addr-block" id="qFromAddrBlock" style="display:none">
-                <div class="zip-addr-label">住所</div>
-                <div class="zip-addr-value" id="qFromAddrVal"></div>
-              </div>
-              <div class="zip-bldg" id="qFromBldgField" style="display:none">
-                <label for="qFromBldg">建物名・部屋番号（任意）</label>
-                <input type="text" id="qFromBldg" placeholder="例：〇〇マンション101号室" autocomplete="address-line2" />
-              </div>
-              <div class="zip-manual" id="qFromManual" style="display:none">
-                <p class="zip-manual-hint">住所が見つかりませんでした。手動で入力してください。</p>
-                <input type="text" placeholder="例：東京都新宿区新宿1-1-1" autocomplete="street-address" aria-label="引越し元の住所（手動入力）" />
-              </div>
-              <input type="hidden" id="qFromAddr" name="currentAddress" />
-            </div>
-            <div class="form-field">
-              <label for="qToZip"><span>新住所（引越し先） <em>*</em></span></label>
-              <div class="zip-row">
-                <input type="text" id="qToZip" class="zip-input" placeholder="例：160-0023" maxlength="8" inputmode="numeric" autocomplete="postal-code" />
-                <span class="zip-status" id="qToZipStatus" aria-live="polite" aria-atomic="true"></span>
-              </div>
-              <div class="zip-addr-block" id="qToAddrBlock" style="display:none">
-                <div class="zip-addr-label">住所</div>
-                <div class="zip-addr-value" id="qToAddrVal"></div>
-              </div>
-              <div class="zip-bldg" id="qToBldgField" style="display:none">
-                <label for="qToBldg">建物名・部屋番号（任意）</label>
-                <input type="text" id="qToBldg" placeholder="例：〇〇マンション101号室" autocomplete="address-line2" />
-              </div>
-              <div class="zip-manual" id="qToManual" style="display:none">
-                <p class="zip-manual-hint">住所が見つかりませんでした。手動で入力してください。</p>
-                <input type="text" placeholder="例：東京都渋谷区渋谷1-1-1" autocomplete="street-address" aria-label="引越し先の住所（手動入力）" />
-              </div>
-              <input type="hidden" id="qToAddr" name="newAddress" />
-            </div>
-          </div>
-          <p class="step-error" id="step2Error">両方の住所をご入力ください。</p>
-          <div class="step-actions step-actions-split">
-            <button type="button" class="btn btn-ghost btn-lg" id="step2Back">← 戻る</button>
-            <button type="button" class="btn btn-primary btn-lg" id="step2Next">次のステップへ →</button>
-          </div>
-        </div>
-        <div class="form-step" id="formStep3">
-          <p class="step-heading">引越し日とお荷物を確認</p>
-          <div id="compactCalendar" class="compact-calendar"></div>
-          <div class="form-field" style="display:none"><label><span>引越し希望日 <em>*</em></span><input type="date" name="date" required /></label></div>
-          <label class="form-checkbox"><input type="checkbox" name="quickMoving" /><span class="checkbox-label">当日・お急ぎプランを希望する</span></label>
-          <div class="furniture-checklist">
-            <span class="fieldset-title">主なお荷物（任意）</span>
-            <div class="checklist-grid">
-              <label class="checklist-item"><input type="checkbox" name="furniture[]" value="冷蔵庫" /><span>冷蔵庫</span></label>
-              <label class="checklist-item"><input type="checkbox" name="furniture[]" value="洗濯機" /><span>洗濯機</span></label>
-              <label class="checklist-item"><input type="checkbox" name="furniture[]" value="テレビ" /><span>テレビ</span></label>
-              <label class="checklist-item"><input type="checkbox" name="furniture[]" value="ベッド" /><span>ベッド</span></label>
-              <label class="checklist-item"><input type="checkbox" name="furniture[]" value="ソファ" /><span>ソファ</span></label>
-              <label class="checklist-item"><input type="checkbox" name="furniture[]" value="テーブル" /><span>テーブル</span></label>
-              <label class="checklist-item"><input type="checkbox" name="furniture[]" value="電子レンジ" /><span>電子レンジ</span></label>
-              <label class="checklist-item"><input type="checkbox" name="furniture[]" value="自転車" /><span>自転車</span></label>
-              <label class="checklist-item"><input type="checkbox" name="furniture[]" value="その他" /><span>その他</span></label>
-            </div>
-          </div>
-          <div class="furniture-checklist" style="margin-top:16px">
-            <span class="fieldset-title">処分する不用品（任意）</span>
-            <div class="checklist-grid">
-              <label class="checklist-item"><input type="checkbox" name="disposal[]" value="ベッド・マットレス" /><span>ベッド・マットレス</span></label>
-              <label class="checklist-item"><input type="checkbox" name="disposal[]" value="ソファ" /><span>ソファ</span></label>
-              <label class="checklist-item"><input type="checkbox" name="disposal[]" value="冷蔵庫" /><span>冷蔵庫</span></label>
-              <label class="checklist-item"><input type="checkbox" name="disposal[]" value="洗濯機" /><span>洗濯機</span></label>
-              <label class="checklist-item"><input type="checkbox" name="disposal[]" value="テレビ" /><span>テレビ</span></label>
-              <label class="checklist-item"><input type="checkbox" name="disposal[]" value="テーブル・棚" /><span>テーブル・棚</span></label>
-              <label class="checklist-item"><input type="checkbox" name="disposal[]" value="その他大型ゴミ" /><span>その他大型ゴミ</span></label>
-            </div>
-          </div>
-          <p class="step-error" id="step3Error">引越し希望日をご選択ください。</p>
-          <div class="step-actions step-actions-split">
-            <button type="button" class="btn btn-ghost btn-lg" id="step3Back">← 戻る</button>
-            <button type="button" class="btn btn-primary btn-lg" id="step3Next">次のステップへ →</button>
-          </div>
-        </div>
-        <div class="form-step" id="formStep4">
-          <p class="step-heading">お客様情報をご入力ください</p>
-          <div class="form-row">
-            <div class="form-field"><label><span>お名前 <em>*</em></span><input type="text" name="name" required placeholder="山田 太郎" autocomplete="name" /></label></div>
-            <div class="form-field"><label><span>メールアドレス <em>*</em></span><input type="email" name="email" required placeholder="taro@example.com" autocomplete="email" /></label></div>
-          </div>
-          <div class="form-field">
-            <span class="form-label-text">お部屋の写真（任意）</span>
-            <label class="upload-drop-zone" id="uploadZone" for="photoUpload">
-              <input type="file" id="photoUpload" name="photos" accept="image/*" multiple />
-              <div class="upload-drop-inner">
-                <svg class="upload-drop-icon" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path fill="currentColor" d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
-                <span class="upload-drop-label">写真をドラッグ&amp;ドロップ<br><em>またはクリックして選択</em></span>
-                <span class="upload-drop-hint">JPG / PNG · 最大 5 枚</span>
-              </div>
-              <div class="upload-file-list" id="uploadFileList"></div>
-            </label>
-          </div>
-          <div class="form-field"><label><span>ご要望・備考（任意）</span><textarea name="message" rows="3" placeholder="ご不明な点・ご要望などをご記入ください。"></textarea></label></div>
-          <p class="step-error" id="step4Error">必須項目（お名前・メールアドレス）をご確認ください。</p>
-          <p class="step-error" id="submitError" style="display:none">送信に失敗しました。お電話（090-2489-3402）またはLINEにてご連絡ください。</p>
-          <div class="step-actions step-actions-split">
-            <button type="button" class="btn btn-ghost btn-lg" id="step4Back">← 戻る</button>
-            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">無料お見積りを依頼する</button>
-          </div>
-          <p class="form-note">ご入力いただいた情報は、厳重に管理し、お見積り対応以外には使用いたしません。</p>
-        </div>
-        <div class="form-success-state" id="formSuccess" style="display:none">
-          <div class="success-check">✓</div>
-          <h3>お問い合わせを受け付けました</h3>
-          <p>通常<strong>当日〜翌営業日</strong>にご返信いたします。</p>
-          <div class="success-ref-wrap" id="successRefWrap" style="display:none">
-            <span class="success-ref-label">受付番号</span>
-            <strong class="success-ref-num" id="successRefNum"></strong>
-            <button type="button" class="success-copy-btn" id="successCopyBtn">コピー</button>
-          </div>
-          <div class="success-ctas">
-            <a href="https://line.me/R/ti/p/~hellomoving" class="success-cta-line" target="_blank" rel="noopener" aria-label="LINEで確認する">
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.6 1.6 4.9 4 6.4-.1.5-.6 2.1-.7 2.5 0 0 0 .3.2.4.2.1.4 0 .4 0 .6-.1 3-2 3.6-2.4.8.1 1.6.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3Z"/></svg>
-              LINEで確認する
-            </a>
-            <a href="tel:+819024893402" class="success-cta-phone" aria-label="090-2489-3402に電話する">
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg>
-              090-2489-3402
-            </a>
-          </div>
-          <a id="gcalLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-ghost" style="display:none;margin-top:8px;gap:6px;">
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
-            Googleカレンダーに追加
-          </a>
-        </div>
-      </form>
-    </aside>
+
   </div>
   <div class="hero-scroll" aria-hidden="true"><span></span></div>
 </section>
@@ -1482,8 +1273,6 @@ body { padding-bottom: 76px; }
     set('heroSubSecondary', h.sub_secondary);
     set('heroCtaBookSup', h.cta_book_sup);
     set('heroCtaBookLbl', h.cta_book_lbl);
-    set('heroCtaQuoteSup', h.cta_quote_sup);
-    set('heroCtaQuoteLbl', h.cta_quote_lbl);
     set('heroCtaLine',    h.cta_line);
     if (Array.isArray(h.trust_badges) && h.trust_badges.length) {
       var strip = el('heroTrustStrip');
