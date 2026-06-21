@@ -516,6 +516,69 @@
   renderStandards();
   initImageLightbox();
 
+  // ===== LIVE CALENDAR SYNC (backend) =====
+  // Daily capacity mirrors the admin defaults (CAP={max:5,limitedThreshold:3}):
+  // ≥5 active bookings ⇒ fully booked (×), ≥3 ⇒ limited (△). Keeps the public
+  // calendar in step with real bookings so the same day can't be over-booked.
+  const _CAL_CAP_MAX = 5;
+  const _CAL_CAP_LIMITED = 3;
+  let _calSyncing = false;
+
+  async function syncCalendarFromApi() {
+    if (_calSyncing) return;
+    if (typeof BookingService === 'undefined' || !BookingService.getBookings) return;
+    _calSyncing = true;
+    let bookings;
+    try {
+      bookings = await BookingService.getBookings();
+    } catch (e) {
+      console.warn('[calendar] API sync failed:', e && e.message);
+      _calSyncing = false;
+      return;
+    }
+    _calSyncing = false;
+    if (!Array.isArray(bookings)) return;
+    const counts = {};
+    bookings.forEach(b => {
+      const d = b.date || b.move_date || b.booking_date || '';
+      if (!d) return;
+      const st = String(b.status || '');
+      if (st === 'キャンセル' || st.toLowerCase() === 'cancelled') return;
+      counts[d] = (counts[d] || 0) + 1;
+    });
+    Object.keys(counts).forEach(d => {
+      if (counts[d] >= _CAL_CAP_MAX) { BOOKED_DATES.add(d); LIMITED_DATES.delete(d); }
+      else if (counts[d] >= _CAL_CAP_LIMITED) { LIMITED_DATES.add(d); }
+    });
+    // Persist counts so the #hmCalAvail availability calendar (which reads
+    // hm_counts/hm_booked) reflects real bookings too, then refresh it.
+    try {
+      localStorage.setItem('hm_counts', JSON.stringify(counts));
+      const booked = JSON.parse(localStorage.getItem('hm_booked') || '[]');
+      Object.keys(counts).forEach(d => { if (counts[d] >= _CAL_CAP_MAX && !booked.includes(d)) booked.push(d); });
+      localStorage.setItem('hm_booked', JSON.stringify(booked));
+    } catch (e) {}
+    if (typeof window.hmAvailReload === 'function') window.hmAvailReload();
+    renderCalendar();
+    renderCompactCalendar();
+  }
+
+  // Exposed so the BA overlay can refresh on open and guard against booked dates.
+  window.refreshBookingCalendar = syncCalendarFromApi;
+  window.hmIsDateBooked = (iso) => PARK_MODE || BOOKED_DATES.has(iso);
+
+  // BookingService loads after this script, so defer the first pull to window load.
+  if (document.readyState === 'complete') syncCalendarFromApi();
+  else window.addEventListener('load', syncCalendarFromApi, { once: true });
+
+  // Reflect a freshly created booking (from any surface) immediately.
+  document.addEventListener('booking:created', () => { syncCalendarFromApi(); });
+
+  // Minimal polling while the tab is visible (replaces the old _pollCalAvail).
+  setInterval(() => {
+    if (document.visibilityState === 'visible') syncCalendarFromApi();
+  }, 120000);
+
   // Park Mode toggle
   const _parkBtn = document.getElementById('parkModeToggle');
   if (_parkBtn) {
