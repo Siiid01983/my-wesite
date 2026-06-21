@@ -120,5 +120,6 @@ try {
 
   hm_err('Unknown action', 400);
 } catch (Throwable $e) {
-  hm_err('Storage error: ' . $e->getMessage(), 500);
+  hm_log_error('storage failed', ['err' => $e->getMessage()]);
+  hm_err(hm_safe_msg('Request failed', $e), 500);
 }

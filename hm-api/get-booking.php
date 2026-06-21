@@ -50,5 +50,5 @@ try {
   hm_json(['ok' => false, 'data' => null, 'error' => 'id, ref or email required'], 400);
 } catch (Throwable $e) {
   hm_log_error('get-booking failed', ['err' => $e->getMessage()]);
-  hm_json(['ok' => false, 'data' => null, 'error' => $e->getMessage()], 500);
+  hm_json(['ok' => false, 'data' => null, 'error' => hm_safe_msg('Request failed', $e)], 500);
 }

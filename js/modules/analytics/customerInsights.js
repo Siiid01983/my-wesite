@@ -170,9 +170,9 @@
       const ini = (c.name || '—').split(/[\s　]+/).map(p => p[0] || '').join('').slice(0, 2).toUpperCase() || '—';
       return `
         <div class="bi-customer-row">
-          <div class="bi-customer-avatar">${ini}</div>
+          <div class="bi-customer-avatar">${esc(ini)}</div>
           <div style="flex:1;min-width:0">
-            <div class="bi-customer-name">${c.name || '—'}</div>
+            <div class="bi-customer-name">${esc(c.name || '—')}</div>
             <div class="bi-customer-sub">${c.bookings.length}件 · ${fmt(c.clv)}</div>
           </div>
           <span style="font-size:11px;font-weight:700;color:var(--green);flex-shrink:0">${fmt(c.clv)}</span>

@@ -30,5 +30,6 @@ try {
   $pdo->query('SELECT 1');
   hm_json(['ok' => true, 'db' => true, 'time' => date('c')]);
 } catch (Throwable $e) {
-  hm_json(['ok' => false, 'db' => false, 'error' => $e->getMessage()], 500);
+  hm_log_error('healthcheck failed', ['err' => $e->getMessage()]);
+  hm_json(['ok' => false, 'db' => false, 'error' => hm_safe_msg('Request failed', $e)], 500);
 }

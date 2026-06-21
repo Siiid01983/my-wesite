@@ -81,7 +81,7 @@ $OPS = [
   'like' => 'LIKE', 'ilike' => 'LIKE',
 ];
 
-$req   = hm_body();
+$req   = hm_body(true);
 $table = (string)($req['table'] ?? '');
 if (!isset($SCHEMA[$table])) hm_err('Unknown table: ' . $table, 400, 'bad_table');
 $S      = $SCHEMA[$table];
@@ -253,7 +253,7 @@ try {
 
 } catch (Throwable $e) {
   hm_log_error('rest query failed', ['table' => $table, 'action' => $action, 'err' => $e->getMessage()]);
-  hm_err('Query failed: ' . $e->getMessage(), 500, 'query');
+  hm_err(hm_safe_msg('Request failed', $e), 500, 'query');
 }
 
 // ── output shaping (single / maybeSingle) ────────────────────────────────────

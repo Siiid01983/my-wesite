@@ -78,7 +78,8 @@ if ($mode === 'smtp' && is_file(__DIR__ . '/vendor/autoload.php')) {
     $mail->send();
     hm_json(['ok' => true, 'from' => $acc['email'], 'messageId' => $mail->getLastMessageID() ?: ('smtp-' . time())]);
   } catch (Throwable $e) {
-    hm_json(['ok' => false, 'error' => $e->getMessage()], 502);
+    hm_log_error('send-email failed', ['err' => $e->getMessage()]);
+    hm_json(['ok' => false, 'error' => hm_safe_msg('Email send failed', $e)], 502);
   }
 }
 

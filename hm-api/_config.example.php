@@ -34,6 +34,13 @@ return [
   //   key is a bot/abuse deterrent alongside CORS, not user authentication.)
   'api_key' => '',
 
+  // ── Debug ─────────────────────────────────────────────────────────────────
+  //   false (default / production): internal exception messages (SQL errors,
+  //   table names, file paths) are NEVER returned to the client — endpoints
+  //   answer with a generic "Request failed" and the detail goes to the logs.
+  //   true (local dev only): surface the real message in JSON error fields.
+  'debug' => false,
+
   // ── Monitoring & logging (metrics.php / _log.php) ─────────────────────────
   //   Structured JSON logs are written to this directory (access/error/bookings).
   //   Default: hm-api/logs (protected by .htaccess). Logs auto-rotate at 5 MB.

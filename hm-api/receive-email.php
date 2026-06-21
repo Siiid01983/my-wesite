@@ -22,5 +22,6 @@ try {
   $st->execute([hm_uuid4(), $sender ?: $email, $email, $subject, $body, $booking ?: null]);
   hm_json(['ok' => true]);
 } catch (Throwable $e) {
-  hm_json(['ok' => false, 'error' => $e->getMessage()], 500);
+  hm_log_error('receive-email failed', ['err' => $e->getMessage()]);
+  hm_json(['ok' => false, 'error' => hm_safe_msg('Request failed', $e)], 500);
 }

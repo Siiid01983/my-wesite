@@ -4,6 +4,27 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_log.php';   // structured logging (defines hm_log_* + hm_client_ip)
 
+// Production posture: never render PHP warnings/notices/fatals into the HTTP
+// response — they can leak filesystem paths, SQL, and internal table names.
+// Errors are still written to the log files by the handlers below. Set
+// 'debug' => true in _config.php to surface details in JSON error fields.
+@ini_set('display_errors', '0');
+@ini_set('log_errors', '1');
+
+// True only when _config.php explicitly opts into debug. Safe to call before the
+// DB is configured (uses the non-fatal hm_has_config probe).
+function hm_debug(): bool {
+  if (!hm_has_config()) return false;
+  $cfg = @require __DIR__ . '/_config.php';
+  return is_array($cfg) && !empty($cfg['debug']);
+}
+
+// Return the real exception message only in debug; otherwise a generic string.
+// Always pair with an hm_log_* call so the detail is captured server-side.
+function hm_safe_msg(string $generic, Throwable $e): string {
+  return hm_debug() ? $e->getMessage() : $generic;
+}
+
 function hm_config(): array {
   static $cfg = null;
   if ($cfg === null) {
@@ -92,11 +113,32 @@ function hm_err(string $message, int $status = 400, ?string $code = null): void 
   hm_json(['ok' => false, 'data' => null, 'error' => ['message' => $message, 'code' => $code]], $status);
 }
 
-function hm_body(): array {
+// Parse the JSON request body. With $strict, a non-empty body that is not a
+// valid JSON object/array is rejected with 400 (used by the data + booking
+// endpoints). Lenient by default so form-style webhooks (receive-email) keep
+// working when they post nothing or non-JSON.
+function hm_body(bool $strict = false): array {
+  if ($strict) {
+    // Reject anything that isn't a JSON request (the data + booking endpoints
+    // only ever receive application/json from apiClient.js / bookingService.js).
+    // charset suffixes are tolerated. Multipart upload + the email webhook use
+    // the lenient path and are intentionally exempt.
+    $ct = (string)($_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '');
+    if (stripos($ct, 'application/json') === false) {
+      hm_err('Unsupported Media Type', 415, 'bad_content_type');
+    }
+  }
   $raw = file_get_contents('php://input');
-  if ($raw === '' || $raw === false) return [];
+  if ($raw === '' || $raw === false) {
+    if ($strict) hm_err('Invalid JSON body', 400, 'bad_json');
+    return [];
+  }
   $j = json_decode($raw, true);
-  return is_array($j) ? $j : [];
+  if (!is_array($j)) {
+    if ($strict) hm_err('Invalid JSON body', 400, 'bad_json');
+    return [];
+  }
+  return $j;
 }
 
 function hm_uuid4(): string {
