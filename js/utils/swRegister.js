@@ -9,6 +9,19 @@
 (function () {
   if (!('serviceWorker' in navigator)) return;
 
+  /* Service workers require a secure, non-opaque http(s) origin. Opening the
+     page from a file:// URL or a sandboxed iframe yields location.origin ===
+     'null', where register() throws "protocol of the current origin ('null')
+     is not supported". Skip quietly there with a clear hint — the page must be
+     served over http(s) to function at all (API_BASE also breaks on a null
+     origin). This is the only context this guard changes; normal http/https
+     loads are unaffected. */
+  if (location.origin === 'null' || !/^https?:$/.test(location.protocol)) {
+    console.info('[SW] Skipped — unsupported origin (' + location.origin +
+      '). Open the site via its http(s):// URL, not a local file.');
+    return;
+  }
+
   /* Register */
   navigator.serviceWorker.register('/sw.js', { scope: '/' })
     .then(reg => {
