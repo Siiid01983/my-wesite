@@ -85,7 +85,12 @@
         }
       }))
       .then((j) => ({ data: (j && 'data' in j) ? j.data : null, count: (j && 'count' in j) ? j.count : null, error: (j && j.error) || null }))
-      .catch((e) => ({ data: null, error: { message: (e && e.message) || 'network error' } }));
+      // A rejection here is a transport-level failure (fetch threw: DNS, TLS,
+      // CORS, connection reset, offline) — NOT a server query error. Tag it with
+      // isNetwork so callers (e.g. HealthCheck) can distinguish "can't reach the
+      // server" from "server replied with an error" and never mislabel a network
+      // outage as "database connected (query error)".
+      .catch((e) => ({ data: null, error: { message: (e && e.message) || 'network error', isNetwork: true } }));
   };
 
   // Thenable: `await client.from('x').select()...` resolves to { data, error }.

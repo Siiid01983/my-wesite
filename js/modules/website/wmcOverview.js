@@ -7,7 +7,7 @@
    ══════════════════════════════════════════════════════ */
 
 /* ── Site status ── */
-async function _wmcCheckSiteStatus() {
+async function _wmcCheckSiteStatus(preReport) {
   var banner = document.getElementById('wmcStatusBanner');
   var text   = document.getElementById('wmcStatusText');
   var detail = document.getElementById('wmcStatusDetail');
@@ -19,7 +19,9 @@ async function _wmcCheckSiteStatus() {
   var hcPassed = false;
   if (window.HealthCheck) {
     try {
-      var report = await HealthCheck.run();
+      // When invoked from a health:* event we reuse the pushed report; running
+      // HealthCheck.run() here would re-fire the event → infinite loop.
+      var report = preReport || await HealthCheck.run();
       var c = report.checks.find(function (x) { return x.service === 'api'; });
       hcPassed = !c || c.status === 'healthy';
       apiOk = hcPassed;
@@ -30,6 +32,7 @@ async function _wmcCheckSiteStatus() {
   }
 
   var siteOk = !!(window.API_BASE && window.ApiClient) && hcPassed;
+  console.info('[HealthCheck] banner update (wmcOverview) → apiOk=' + apiOk + ' siteOk=' + siteOk);
 
   banner.className = 'wmc-status-banner ' + (siteOk ? 'online' : 'offline');
   if (text)   text.textContent   = siteOk ? 'サイトはオンラインです' : 'サイトに接続できません';
@@ -41,6 +44,13 @@ async function _wmcCheckSiteStatus() {
     localStorage.setItem('hm_last_deploy', new Date().toISOString());
   }
 }
+
+/* Refresh the WMC status banner whenever a health check completes, using the
+   pushed report so HealthCheck.run() is never re-triggered (no recursion). This
+   makes a recovered (healthy) status clear the stale banner without a reload. */
+['health:healthy', 'health:warning', 'health:error'].forEach(function (ev) {
+  document.addEventListener(ev, function (e) { try { _wmcCheckSiteStatus(e.detail); } catch (_) {} });
+});
 
 /* ── SEO score ── */
 function _wmcCalcSeo() {

@@ -140,3 +140,41 @@ describe('booking entry (hero form removed)', () => {
       'service cards must open the BA overlay via openBookingApp()');
   });
 });
+
+// ── 5. API connectivity: same-origin + canonical host + CORS allowlist ────────
+describe('API connectivity / origin consistency', () => {
+  const APEX = 'https://hello-moving.com';
+  const WWW  = 'https://www.hello-moving.com';
+  const htaccess   = read('.htaccess');
+  const deployJs   = read('deploy.js');
+  const envPublic  = read('js/config/env.public.js');
+  const cfgExample = read('hm-api/_config.example.php');
+
+  it('.htaccess has a permanent www → apex (non-www) 301 redirect', () => {
+    // www and apex must NOT diverge — every visitor lands on the canonical host.
+    assert.ok(/RewriteCond\s+%\{HTTP_HOST\}\s+\^www\\\.hello-moving\\\.com/i.test(htaccess),
+      '.htaccess must match the www host');
+    assert.ok(/RewriteRule.*hello-moving\.com.*\[R=301/i.test(htaccess),
+      '.htaccess must 301-redirect www → https://hello-moving.com');
+  });
+
+  it('deploy.js generates a SAME-ORIGIN API_BASE (never a cross-origin literal)', () => {
+    assert.ok(/window\.API_BASE\s*=\s*window\.location\.origin\s*\+\s*['"]\/hm-api['"]/.test(deployJs),
+      'env.js must be generated as window.location.origin + "/hm-api"');
+    assert.ok(!/window\.API_BASE\s*=\s*['"]https?:\/\//.test(deployJs),
+      'deploy.js must not hardcode an absolute (cross-origin) API_BASE into env.js');
+  });
+
+  it('committed env config uses the same-origin API_BASE', () => {
+    assert.ok(/window\.API_BASE\s*=\s*window\.location\.origin\s*\+\s*['"]\/hm-api['"]/.test(envPublic),
+      'env.public.js must use window.location.origin + "/hm-api"');
+  });
+
+  it('CORS allowlist (example config) includes BOTH apex and www', () => {
+    const m = cfgExample.match(/'allowed_origin'\s*=>\s*'([^']*)'/);
+    assert.ok(m, "allowed_origin must be set in _config.example.php");
+    const list = m[1];
+    const ok = list === '*' || (list.includes(APEX) && list.includes(WWW));
+    assert.ok(ok, `allowed_origin must include both ${APEX} and ${WWW} (got "${list}")`);
+  });
+});

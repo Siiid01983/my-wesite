@@ -21,11 +21,11 @@ return [
   'db_pass' => 'CHANGE_ME_STRONG_PASSWORD',
   'db_charset' => 'utf8mb4',
 
-  // ── CORS: the browser origin allowed to call this API ─────────────────────
-  //   Production example: 'https://hello-moving.com'
-  //   Local dev          : 'http://localhost:5050'
-  //   Multiple allowed   : comma-separate, e.g. 'https://a.com,http://localhost:5050'
-  'allowed_origin' => '*',
+  // ── CORS: the browser origin(s) allowed to call this API ──────────────────
+  //   Production: list BOTH canonical hosts so apex and www both work.
+  //   Local dev : add 'http://localhost:5050'
+  //   Multiple allowed   : comma-separate (hm_cors reflects the matching origin)
+  'allowed_origin' => 'https://hello-moving.com,https://www.hello-moving.com',
 
   // ── API key gate ──────────────────────────────────────────────────────────
   //   When non-empty, guarded endpoints require header  X-API-KEY: <this>.

@@ -314,4 +314,16 @@ function _applyHcBanner() {
       if (Auth.isLoggedIn()) _applyAppHealthBanner(report);
     }).catch(e => console.warn('[HealthCheck] startup check failed:', e));
   }
+
+  /* Keep the login/app health banners in sync with EVERY health check — not just
+     the boot one — so a recovered (healthy) status clears stale error banners
+     immediately, with no page reload. Driven by the health:* event run() fires. */
+  ['health:healthy', 'health:warning', 'health:error'].forEach(function (ev) {
+    document.addEventListener(ev, function (e) {
+      _hcReport = e.detail;
+      console.info('[HealthCheck] banner update (appBootstrap) → status=' + (e.detail && e.detail.status));
+      try { _applyHcBanner(); } catch (_) {}
+      try { if (Auth.isLoggedIn() && typeof _applyAppHealthBanner === 'function') _applyAppHealthBanner(e.detail); } catch (_) {}
+    });
+  });
 })();

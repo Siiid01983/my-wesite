@@ -69,16 +69,27 @@
     }
 
     try {
+      console.info('[HealthCheck] API request start → hm_data.select(key).limit(1) | apiBase=', apiBase, '| pageOrigin=', location.origin);
       const timeoutErr = Object.assign(new Error('timeout'), { isTimeout: true });
       const query      = window.api.from('hm_data').select('key').limit(1);
       const timeout    = new Promise((_, rej) => setTimeout(() => rej(timeoutErr), QUERY_TIMEOUT));
       const { error }  = await Promise.race([query, timeout]);
 
       if (error) {
+        // A transport-level failure (fetch rejected: network/CORS/offline) must
+        // be reported as a real connectivity error — never as "database connected
+        // (query error)", which falsely implies the server was reached.
+        if (error.isNetwork) {
+          console.warn('[HealthCheck] API response: NETWORK FAILURE (fetch rejected) →', error.message);
+          return { service: 'api', status: 'error', message: 'API に接続できません（ネットワークエラー）' };
+        }
+        console.warn('[HealthCheck] API response: query returned {error} →', error.message);
         return { service: 'api', status: 'warning', message: `データベース接続済み（クエリエラー: ${error.message}）` };
       }
+      console.info('[HealthCheck] API response: SUCCESS (DB reachable)');
       return { service: 'api', status: 'healthy', message: 'データベース接続正常' };
     } catch (e) {
+      console.warn('[HealthCheck] API response: FAILURE →', (e && e.message) || e, '| isTimeout=', !!e.isTimeout);
       if (e.isTimeout) {
         return { service: 'api', status: 'warning', message: `データベース接続タイムアウト（${QUERY_TIMEOUT / 1000}秒超過）` };
       }
@@ -193,6 +204,7 @@
   window.HealthCheck = {
 
     async run() {
+      console.info('[HealthCheck] run() start @', new Date().toISOString(), '| window.api ready=', !!window.api, '| cached status=', _lastReport ? _lastReport.status : 'none');
       const results = await Promise.all([
         _checkApi()   .catch(e => ({ service: 'api',      status: 'error', message: String(e) })),
         _checkDataProvider().catch(e => ({ service: 'dataProvider', status: 'error', message: String(e) })),
@@ -202,6 +214,7 @@
       ]);
 
       _lastReport = _aggregate(results);
+      console.info('[HealthCheck] fresh status=' + _lastReport.status);
 
       // Persist the fresh result to the versioned cache and clear any stale
       // warning state. A healthy result overwrites the cache and purges the
@@ -220,6 +233,7 @@
       // Immediately re-render the health view if it is mounted (Task 3).
       // renderHealth() self-guards when the view is absent, so this is a no-op
       // on every other page.
+      console.info('[HealthCheck] UI status update → status=' + _lastReport.status);
       try { if (typeof window.renderHealth === 'function') window.renderHealth(); } catch { /* no-op */ }
 
       return _lastReport;

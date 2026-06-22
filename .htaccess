@@ -1,3 +1,12 @@
+# ── Canonical host: force www → non-www (https://hello-moving.com) ───────────
+# Keeps every visitor on a single origin so the same-origin API (/hm-api) is
+# never cross-origin. Must run before anything else.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTP_HOST} ^www\.hello-moving\.com$ [NC]
+  RewriteRule ^(.*)$ https://hello-moving.com/$1 [R=301,L]
+</IfModule>
+
 # ── Service worker — must never be cached by the server ──────────────────────
 # Browsers check for SW script changes on every navigation. If the server
 # caches sw.js, browsers never see the new cache-version stamp and stale
