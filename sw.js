@@ -15,7 +15,7 @@
    Bump CACHE_VERSION to force cache replacement on next deploy.
    ════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'v10';
+const CACHE_VERSION = 'v11';
 const STATIC_CACHE  = 'hm-static-' + CACHE_VERSION;
 const FONT_CACHE    = 'hm-fonts-'  + CACHE_VERSION;
 const ALL_CACHES    = [STATIC_CACHE, FONT_CACHE];
@@ -51,6 +51,7 @@ const PRECACHE = [
   '/js/services/dataProvider.js',
   '/js/services/healthCheck.js',
   '/js/services/diagnostics.js',
+  '/js/services/adminReauth.js',
   '/js/services/serviceRegistry.js',
   '/js/services/contentLoader.js',
 

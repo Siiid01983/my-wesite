@@ -75,6 +75,14 @@
 
   QP._exec = function () {
     const spec = this._spec;
+    // Pre-flight admin gate: when admin enforcement is active and no admin token
+    // exists, never even attempt a protected write — return admin_required so the
+    // optimistic save is rolled back and the re-login prompt shown. No-op when
+    // AdminReauth is absent (portal pages) or enforcement is off.
+    if (window.AdminReauth && window.AdminReauth.shouldBlock(spec)) {
+      window.AdminReauth.notify();
+      return Promise.resolve({ data: null, count: null, error: { message: 'Admin authorization required', code: 'admin_required' } });
+    }
     return fetch(this._url, {
       method: 'POST',
       headers: _hdrs({ 'Content-Type': 'application/json' }),
@@ -88,7 +96,14 @@
           return { data: null, error: { message: 'Invalid JSON from API (HTTP ' + res.status + '): ' + snippet } };
         }
       }))
-      .then((j) => ({ data: (j && 'data' in j) ? j.data : null, count: (j && 'count' in j) ? j.count : null, error: (j && j.error) || null }))
+      .then((j) => {
+        const out = { data: (j && 'data' in j) ? j.data : null, count: (j && 'count' in j) ? j.count : null, error: (j && j.error) || null };
+        // Centralized detection of a real rest.php admin_required (401): roll back
+        // optimistic local state + show the re-login prompt — once, for every
+        // protected write path, with no per-module duplication.
+        if (out.error && out.error.code === 'admin_required' && window.AdminReauth) window.AdminReauth.handle(out.error);
+        return out;
+      })
       // A rejection here is a transport-level failure (fetch threw: DNS, TLS,
       // CORS, connection reset, offline) — NOT a server query error. Tag it with
       // isNetwork so callers (e.g. HealthCheck) can distinguish "can't reach the

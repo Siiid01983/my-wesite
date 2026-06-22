@@ -18,6 +18,7 @@
 const Auth = {
   KEY:          'hm_admin_sess',
   TOKEN_KEY:    'hm_admin_token',
+  ENFORCED_KEY: 'hm_admin_enforced',
   CREDS_KEY:    'hm_admin_creds',
   LOCK_KEY:     'hm_admin_lock',
   LOG_KEY:      'hm_admin_log',
@@ -70,13 +71,20 @@ const Auth = {
       if (j && j.ok && j.data && j.data.token) {
         try { sessionStorage.setItem(this.TOKEN_KEY, j.data.token); } catch (_) {}
         window.__HM_ADMIN_TOKEN = j.data.token;
+        // Record whether the server is ENFORCING admin auth, so the client can
+        // pre-flight-block protected writes that have no token (AdminReauth).
+        const enf = !!(j.data.enforced);
+        try { sessionStorage.setItem(this.ENFORCED_KEY, enf ? '1' : '0'); } catch (_) {}
+        window.__HM_ADMIN_ENFORCED = enf;
       }
     } catch (_) { /* offline / not configured — proceed without a token */ }
   },
 
   _clearAdminToken() {
     try { sessionStorage.removeItem(this.TOKEN_KEY); } catch (_) {}
+    try { sessionStorage.removeItem(this.ENFORCED_KEY); } catch (_) {}
     window.__HM_ADMIN_TOKEN = null;
+    window.__HM_ADMIN_ENFORCED = false;
   },
 
   async initCreds() {
@@ -358,4 +366,5 @@ window.Auth = Auth;
 try {
   const _hmTok = sessionStorage.getItem(Auth.TOKEN_KEY);
   if (_hmTok) window.__HM_ADMIN_TOKEN = _hmTok;
+  window.__HM_ADMIN_ENFORCED = sessionStorage.getItem(Auth.ENFORCED_KEY) === '1';
 } catch (e) { /* sessionStorage blocked — token simply absent */ }
