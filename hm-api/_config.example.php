@@ -80,6 +80,26 @@ return [
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   ],
 
+  // ── Admin authorization (rest.php admin-only operations) ──────────────────
+  //   Server-side admin session: protects DELETE on any table + writes to the
+  //   admin-only tables (hm_data, services, calendar_availability, inbox_messages)
+  //   with a signed token from admin-session.php. Customer/portal writes
+  //   (bookings/reviews/communications/audit_log) stay on the API key.
+  //
+  //   SAFE BY DEFAULT: 'admin_auth_enabled' => false means rest.php behaves
+  //   exactly as before (API-key only). Provision the two secrets below, confirm
+  //   admins obtain a token, THEN flip the flag. Rollback = set it back to false
+  //   (one line, no redeploy).
+  'admin_auth_enabled' => false,
+  //   bcrypt hash of the admin password. Generate on the server with:
+  //     php -r "echo password_hash('YOUR_ADMIN_PASSWORD', PASSWORD_DEFAULT), PHP_EOL;"
+  //   (Use the SAME password the admin types into admin.html / WMC.)
+  'admin_pass_hash' => '',
+  //   HMAC signing key for admin session tokens. 64+ random chars; keep secret.
+  'admin_session_secret' => '',
+  //   Admin token lifetime in seconds (default 12h). Min 300.
+  'admin_session_ttl' => 12 * 60 * 60,
+
   // ── Email (send-email.php) ────────────────────────────────────────────────
   //   'mail'   → use PHP mail() (works out-of-the-box on most cPanel hosts)
   //   'smtp'   → use SMTP (fill smtp_* below; needs PHPMailer in api/vendor or

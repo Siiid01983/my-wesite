@@ -20,6 +20,10 @@
     const h = base || {};
     const k = window.API_KEY;
     if (k) h['X-API-KEY'] = k;
+    // Admin session token (set by js/core/auth.js after admin login). Authorizes
+    // rest.php admin-only operations; harmless on customer/portal pages where it
+    // is never set, and ignored by the server for non-admin operations.
+    if (window.__HM_ADMIN_TOKEN) h['X-ADMIN-TOKEN'] = window.__HM_ADMIN_TOKEN;
     return h;
   }
 

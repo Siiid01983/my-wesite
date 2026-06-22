@@ -97,6 +97,54 @@ function hm_require_api_key(): void {
   }
 }
 
+// ── Admin session (server-side authorization for rest.php admin-only ops) ─────
+// Stateless HMAC-signed token: base64url(JSON payload) . hex(HMAC-SHA256). No
+// server-side session store needed. Minted by admin-session.php after a
+// password_verify() against admin_pass_hash; verified here on each request.
+function hm_admin_secret(): string { return (string)(hm_config()['admin_session_secret'] ?? ''); }
+function hm_admin_hash():   string { return (string)(hm_config()['admin_pass_hash'] ?? ''); }
+
+// Enforcement is OFF unless explicitly enabled AND both secrets are provisioned.
+// This is the safe-by-default gate: a half-configured server never locks admins
+// out — it simply behaves like the prior API-key-only model.
+function hm_admin_auth_enabled(): bool {
+  $c = hm_config();
+  return !empty($c['admin_auth_enabled']) && hm_admin_hash() !== '' && hm_admin_secret() !== '';
+}
+
+function hm_admin_token_sign(array $payload): string {
+  $body = rtrim(strtr(base64_encode(json_encode($payload)), '+/', '-_'), '=');
+  $sig  = hash_hmac('sha256', $body, hm_admin_secret());
+  return $body . '.' . $sig;
+}
+
+// Returns the payload array on a valid, unexpired token; null otherwise.
+function hm_admin_token_verify(string $token): ?array {
+  $secret = hm_admin_secret();
+  if ($secret === '' || strpos($token, '.') === false) return null;
+  [$body, $sig] = explode('.', $token, 2);
+  $expected = hash_hmac('sha256', $body, $secret);
+  if (!hash_equals($expected, $sig)) return null;           // constant-time
+  $json = base64_decode(strtr($body, '-_', '+/'), true);
+  if ($json === false) return null;
+  $p = json_decode($json, true);
+  if (!is_array($p) || ($p['exp'] ?? 0) < time()) return null;
+  return $p;
+}
+
+// Require a valid admin session for admin-only operations. A no-op while
+// enforcement is disabled (the API-key gate already ran in the caller), so
+// enabling/disabling is a pure config switch with no code change.
+function hm_require_admin(): void {
+  if (!hm_admin_auth_enabled()) return;
+  $tok = $_SERVER['HTTP_X_ADMIN_TOKEN'] ?? '';
+  $p   = (is_string($tok) && $tok !== '') ? hm_admin_token_verify($tok) : null;
+  if (!$p || ($p['role'] ?? '') !== 'admin') {
+    hm_log_auth_fail('admin_token');
+    hm_json(['ok' => false, 'data' => null, 'error' => ['message' => 'Admin authorization required', 'code' => 'admin_required']], 401);
+  }
+}
+
 function hm_json($data, int $status = 200): void {
   http_response_code($status);
   header('Content-Type: application/json; charset=utf-8');

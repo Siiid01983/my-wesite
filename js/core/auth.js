@@ -17,6 +17,7 @@
    ════════════════════════════════════════════════════════ */
 const Auth = {
   KEY:          'hm_admin_sess',
+  TOKEN_KEY:    'hm_admin_token',
   CREDS_KEY:    'hm_admin_creds',
   LOCK_KEY:     'hm_admin_lock',
   LOG_KEY:      'hm_admin_log',
@@ -47,6 +48,35 @@ const Auth = {
 
   _mkToken() {
     return Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join('');
+  },
+
+  /* ── Server admin session token ───────────────────────────────────────────
+     After a successful client-side credential check, exchange the SAME password
+     for a server-signed admin token (admin-session.php). The token authorizes
+     rest.php admin-only operations (deletes + writes to hm_data/services/
+     calendar_availability/inbox_messages). Best-effort: NEVER blocks login — if
+     admin auth is unconfigured or unreachable the app still works, because
+     server-side enforcement stays off until provisioned. */
+  async _fetchAdminToken(password) {
+    try {
+      const base = (window.API_BASE || '').replace(/\/+$/, '');
+      if (!base) return;
+      const res = await fetch(base + '/admin-session.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-KEY': window.API_KEY || '' },
+        body: JSON.stringify({ action: 'login', password: password }),
+      });
+      const j = await res.json().catch(() => null);
+      if (j && j.ok && j.data && j.data.token) {
+        try { sessionStorage.setItem(this.TOKEN_KEY, j.data.token); } catch (_) {}
+        window.__HM_ADMIN_TOKEN = j.data.token;
+      }
+    } catch (_) { /* offline / not configured — proceed without a token */ }
+  },
+
+  _clearAdminToken() {
+    try { sessionStorage.removeItem(this.TOKEN_KEY); } catch (_) {}
+    window.__HM_ADMIN_TOKEN = null;
   },
 
   async initCreds() {
@@ -142,6 +172,8 @@ const Auth = {
       sessionStorage.setItem(this.KEY, JSON.stringify(sess));
       if (remember) localStorage.setItem('hm_admin_remember', JSON.stringify({user, exp: Date.now() + this.REMEMBER_MS}));
       else          localStorage.removeItem('hm_admin_remember');
+      /* Exchange the same password for a server admin token (best-effort). */
+      await this._fetchAdminToken(pass);
       this._addLog('login', 'success');
       return {ok:true, mustChange};
     }
@@ -170,6 +202,7 @@ const Auth = {
   logout() {
     this._addLog('logout', 'manual');
     sessionStorage.removeItem(this.KEY);
+    this._clearAdminToken();
     if (typeof Adapter !== 'undefined') Adapter.destroyRealtime();
     showLogin();
   },
@@ -318,3 +351,11 @@ const Auth = {
 
 /* Expose Auth so healthCheck.js can verify session validation */
 window.Auth = Auth;
+
+/* Restore the admin session token into memory on page load so admin-only writes
+   keep working across reloads within the same browser session (without forcing
+   a re-login). Cleared on logout / when sessionStorage is cleared. */
+try {
+  const _hmTok = sessionStorage.getItem(Auth.TOKEN_KEY);
+  if (_hmTok) window.__HM_ADMIN_TOKEN = _hmTok;
+} catch (e) { /* sessionStorage blocked — token simply absent */ }

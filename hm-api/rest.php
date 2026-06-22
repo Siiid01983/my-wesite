@@ -86,6 +86,23 @@ $table = (string)($req['table'] ?? '');
 if (!isset($SCHEMA[$table])) hm_err('Unknown table: ' . $table, 400, 'bad_table');
 $S      = $SCHEMA[$table];
 $action = (string)($req['action'] ?? 'select');
+
+// ── Admin authorization gate (additive; enforced only when admin_auth_enabled) ─
+// Customer/portal writes — bookings update, reviews/communications/audit_log
+// insert+update — stay on the API-key gate above. Admin-only operations require
+// a valid server admin session token (X-ADMIN-TOKEN from admin-session.php):
+//   • ANY delete (the portal never deletes via rest.php)
+//   • insert/upsert/update on admin-only tables (site content/services/calendar/inbox)
+// hm_require_admin() is a no-op while enforcement is disabled, so this changes
+// nothing until the server flips admin_auth_enabled on.
+$ADMIN_WRITE_TABLES = ['hm_data', 'services', 'calendar_availability', 'inbox_messages'];
+if ($action === 'delete') {
+  hm_require_admin();
+} elseif (in_array($action, ['insert', 'upsert', 'update'], true)
+          && in_array($table, $ADMIN_WRITE_TABLES, true)) {
+  hm_require_admin();
+}
+
 $db     = hm_db();
 
 // ── helpers ──────────────────────────────────────────────────────────────────
