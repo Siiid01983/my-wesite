@@ -2858,7 +2858,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   <div class="ba-overlay" id="ba-drawer-date" onclick="baBgClose(event,'date')">
     <div class="ba-drawer">
       <div class="ba-drawer-top"><div class="ba-drawer-handle"></div><div class="ba-drawer-title">引越し希望日</div></div>
-      <div class="ba-drawer-scroll"><input class="ba-date-input" type="date" id="ba-input-date"></div>
+      <div class="ba-drawer-scroll"><input type="hidden" id="ba-input-date"><div id="ba-cal-drawer" class="ba-cal-drawer"></div></div>
       <div class="ba-drawer-footer"><button class="ba-drawer-cta" onclick="baConfirmDate()">確定する</button></div>
     </div>
   </div>
@@ -3011,7 +3011,10 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   };
 
   // ── Drawers ─────────────────────────────────────────────
-  function baOpenDrawer(id) { document.getElementById('ba-drawer-' + id).classList.add('open'); }
+  function baOpenDrawer(id) {
+    document.getElementById('ba-drawer-' + id).classList.add('open');
+    if (id === 'date') { try { baRenderDateCal(); } catch (_) {} }
+  }
   function baCloseDrawer(id) { document.getElementById('ba-drawer-' + id).classList.remove('open'); }
   window.baOpenDrawer  = baOpenDrawer;
   window.baCloseDrawer = baCloseDrawer;
@@ -3095,7 +3098,62 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     baCloseDrawer('furniture');
   };
 
-  // ── Date ────────────────────────────────────────────────
+  // ── Date (restored inline calendar — reuses the section calendar's CSS +
+  //    availability helpers; drives the hidden #ba-input-date so baConfirmDate /
+  //    baSetDate stay unchanged). Self-contained month state to avoid touching
+  //    the shared renderCal()/calView used by the availability section. ────────
+  var baCalView = new Date(); baCalView.setDate(1);
+  // Local copies — the section calendar's DN/MN/storage/isPast live in a separate
+  // closure. Availability comes from window.hmIsDateBooked (the only exposed hook).
+  var DN = ['日','月','火','水','木','金','土'];
+  var MN = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  var TODAY_STR = (function () { var t = new Date(); return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'); })();
+  function isPast(ds) { var t = new Date(); t.setHours(0, 0, 0, 0); return new Date(ds + 'T00:00:00') < t; }
+  var storage = { getStatus: function (ds) { return (typeof window.hmIsDateBooked === 'function' && window.hmIsDateBooked(ds)) ? 'booked' : 'available'; } };
+  function baRenderDateCal() {
+    var el = document.getElementById('ba-cal-drawer'); if (!el) return;
+    var y = baCalView.getFullYear(), m = baCalView.getMonth();
+    var first = new Date(y, m, 1).getDay(), total = new Date(y, m + 1, 0).getDate();
+    var nowM = new Date(); var prevDis = (y === nowM.getFullYear() && m <= nowM.getMonth());
+    var sel = (document.getElementById('ba-input-date') || {}).value || '';
+    var rows = '';
+    DN.forEach(function (d, i) { rows += '<div class="hm-dow' + (i === 0 ? ' hm-dow-sun' : i === 6 ? ' hm-dow-sat' : '') + '">' + d + '</div>'; });
+    for (var i = 0; i < first; i++) rows += '<button class="hm-day hm-day-empty" disabled></button>';
+    for (var d = 1; d <= total; d++) {
+      var ds = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+      var past = isPast(ds), st = past ? 'past' : storage.getStatus(ds);
+      var dis = past || st === 'booked';
+      var sym = st === 'available' ? '○' : st === 'limited' ? '△' : st === 'booked' ? '×' : '';
+      var symCls = st === 'available' ? 'hm-sym-avail' : st === 'limited' ? 'hm-sym-limited' : st === 'booked' ? 'hm-sym-booked' : '';
+      var dow = new Date(y, m, d).getDay();
+      var cls = ['hm-day'];
+      if (ds === TODAY_STR) cls.push('hm-day-today');
+      if (ds === sel) cls.push('hm-day-selected');
+      if (st === 'booked') cls.push('hm-day-booked');
+      if (st === 'limited') cls.push('hm-day-limited');
+      if (st === 'available') cls.push('hm-day-avail');
+      if (past) cls.push('hm-day-past');
+      if (dow === 0) cls.push('hm-day-sun'); if (dow === 6) cls.push('hm-day-sat');
+      rows += '<button type="button" class="' + cls.join(' ') + '" data-date="' + ds + '"' + (dis ? ' disabled' : '') +
+        '><span class="hm-day-num">' + d + '</span>' + (sym ? '<span class="hm-day-sym ' + symCls + '">' + sym + '</span>' : '') + '</button>';
+    }
+    el.innerHTML = '<div class="hm-cal-wrap"><div class="hm-cal-hdr">' +
+      '<button class="hm-nav-btn" type="button" data-dir="-1"' + (prevDis ? ' disabled' : '') + '>&#8592;</button>' +
+      '<span class="hm-cal-month">' + y + '年' + MN[m] + '</span>' +
+      '<button class="hm-nav-btn" type="button" data-dir="1">&#8594;</button>' +
+      '</div><div class="hm-cal-grid" role="grid">' + rows + '</div>' +
+      '<div class="hm-cal-legend"><span class="hm-leg-item"><span class="hm-sym-avail">○</span> 空き</span><span class="hm-leg-item"><span class="hm-sym-limited">△</span> 残りわずか</span><span class="hm-leg-item"><span class="hm-sym-booked">×</span> 満了</span></div></div>';
+    el.querySelectorAll('[data-dir]').forEach(function (btn) {
+      btn.addEventListener('click', function () { baCalView.setMonth(baCalView.getMonth() + parseInt(btn.dataset.dir, 10)); baRenderDateCal(); });
+    });
+    el.querySelectorAll('.hm-day:not([disabled])').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var inp = document.getElementById('ba-input-date'); if (inp) inp.value = btn.dataset.date;
+        baRenderDateCal();
+      });
+    });
+  }
+
   window.baConfirmDate = function () {
     var v = document.getElementById('ba-input-date').value;
     if (!v) return;
