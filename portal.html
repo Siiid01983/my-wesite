@@ -784,7 +784,7 @@
   <script src="js/lib/apiClient.js"></script>
   <script src="js/config/appConfig.js"></script>
   <script src="js/config/env.public.js"></script><!-- committed same-origin fallback -->
-  <script src="js/config/env.js"></script>
+  <script src="js/config/env.js" onerror="console.warn('[Portal] js/config/env.js missing — using env.public.js fallback')"></script>
   <script src="js/services/dataClient.js"></script>
   <script src="js/services/auditService.js"></script>
   <script src="bookingService.js"></script>
