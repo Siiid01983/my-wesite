@@ -79,8 +79,13 @@
         // A transport-level failure (fetch rejected: network/CORS/offline) must
         // be reported as a real connectivity error — never as "database connected
         // (query error)", which falsely implies the server was reached.
-        if (error.isNetwork) {
-          console.warn('[HealthCheck] API response: NETWORK FAILURE (fetch rejected) →', error.message);
+        // We trust the isNetwork flag when present, but ALSO fall back to a message
+        // heuristic: a cache-stale apiClient.js (pre-isNetwork) still surfaces
+        // "Failed to fetch" here, and that must not be mislabelled as a query error.
+        const networkish = error.isNetwork ||
+          /failed to fetch|networkerror|load failed|fetch/i.test(error.message || '');
+        if (networkish) {
+          console.warn('[HealthCheck] API response: NETWORK FAILURE (transport) →', error.message);
           return { service: 'api', status: 'error', message: 'API に接続できません（ネットワークエラー）' };
         }
         console.warn('[HealthCheck] API response: query returned {error} →', error.message);

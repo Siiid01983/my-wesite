@@ -192,7 +192,7 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(event.request.url);
 
-  /* Self-hosted PHP API (cross-origin hm-api) — network-only; never cache.
+  /* Self-hosted PHP API (same-origin /hm-api) — network-only; never cache.
      DataProvider handles offline fallback via localStorage. */
   if (url.pathname.includes('/hm-api/') || url.pathname.endsWith('.php')) return;
 
@@ -229,13 +229,17 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  /* Bootstrap-critical scripts (config / services / core) — network-first with
-     cache fallback. These drive startup; a stale cached copy must never be able
-     to stall or break the boot sequence. Cache is still updated for offline use. */
+  /* Bootstrap-critical scripts (config / services / core / lib) — network-first
+     with cache fallback. These drive startup; a stale cached copy must never be
+     able to stall or break the boot sequence. /js/lib holds apiClient.js (the
+     data seam): if it lags behind a freshly-fetched healthCheck.js the version
+     skew produces false "Failed to fetch / query error" banners, so it MUST be
+     network-first too. Cache is still updated for offline use. */
   if (url.origin === self.location.origin &&
-      (url.pathname.startsWith('/js/config/')  ||
+      (url.pathname.startsWith('/js/config/')   ||
        url.pathname.startsWith('/js/services/') ||
-       url.pathname.startsWith('/js/core/'))) {
+       url.pathname.startsWith('/js/core/')     ||
+       url.pathname.startsWith('/js/lib/'))) {
     event.respondWith(_networkFirst(event.request, STATIC_CACHE));
     return;
   }
