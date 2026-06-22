@@ -69,7 +69,11 @@ async function uploadDir(client, localDir) {
   const entries = fs.readdirSync(localDir, { withFileTypes: true });
   for (const entry of entries) {
     if (isRoot && SKIP.has(entry.name)) continue;
-    if (entry.name.startsWith('.') && entry.name !== '.htaccess') continue;
+    // Dotfiles are skipped EXCEPT server-config files that must reach cPanel:
+    //   .htaccess  — rewrite/redirect/security rules
+    //   .user.ini  — PHP-FPM runtime overrides (raises upload limits so large
+    //                customer photos/documents are not rejected by PHP defaults)
+    if (entry.name.startsWith('.') && entry.name !== '.htaccess' && entry.name !== '.user.ini') continue;
     if (entry.name.endsWith('.test.js')) continue;
 
     const localPath = path.join(localDir, entry.name);
