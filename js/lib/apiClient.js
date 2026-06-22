@@ -90,7 +90,10 @@
       // isNetwork so callers (e.g. HealthCheck) can distinguish "can't reach the
       // server" from "server replied with an error" and never mislabel a network
       // outage as "database connected (query error)".
-      .catch((e) => ({ data: null, error: { message: (e && e.message) || 'network error', isNetwork: true } }));
+      .catch((e) => {
+        if (window.HMDiagnostics) window.HMDiagnostics.record('api', { table: spec && spec.table, action: spec && spec.action, message: (e && e.message) || 'network error', network: true });
+        return { data: null, error: { message: (e && e.message) || 'network error', isNetwork: true } };
+      });
   };
 
   // Thenable: `await client.from('x').select()...` resolves to { data, error }.
@@ -161,29 +164,57 @@
   };
 
   // ── Storage (buckets backed by storage.php) ────────────────────────────────
+  // Parse a storage.php response defensively. storage.php returns the standard
+  // { ok, data, error } envelope — but a PHP fatal, a 413/500 HTML error page,
+  // or an empty body would make a naive r.json() throw and collapse EVERY
+  // failure into a generic "upload failed", hiding the real cause (size limit,
+  // permissions, MIME). Here we read text, honour the envelope when present,
+  // and otherwise surface the HTTP status + a body snippet so callers (and
+  // HMDiagnostics) can see what actually went wrong.
+  function _readStorage(res, label) {
+    return res.text().then((text) => {
+      let j = null;
+      try { j = JSON.parse(text); } catch (_) { /* non-JSON error body */ }
+      if (j && (('data' in j) || ('error' in j))) {
+        return { data: ('data' in j) ? j.data : null, error: j.error || null };
+      }
+      if (!res.ok) {
+        const snippet = String(text || '').replace(/\s+/g, ' ').slice(0, 200);
+        const msg = label + ' failed (HTTP ' + res.status + ')' + (snippet ? ': ' + snippet : '');
+        if (window.HMDiagnostics) window.HMDiagnostics.record('upload', { label, status: res.status, message: snippet });
+        return { data: null, error: { message: msg, status: res.status } };
+      }
+      return { data: j, error: null };
+    });
+  }
+  function _storageNetErr(e, label) {
+    if (window.HMDiagnostics) window.HMDiagnostics.record('upload', { label, network: true, message: (e && e.message) || '' });
+    return { data: null, error: { message: (e && e.message) || (label + ' failed'), isNetwork: true } };
+  }
+
   function StorageBucket(storageUrl, bucket) { this._url = storageUrl; this._bucket = bucket; }
   StorageBucket.prototype.upload = function (path, file, opts) {
     const fd = new FormData();
     fd.append('bucket', this._bucket); fd.append('path', path); fd.append('file', file);
     return fetch(this._url + '?action=upload', { method: 'POST', headers: _hdrs(), body: fd })
-      .then((r) => r.json())
-      .catch((e) => ({ data: null, error: { message: (e && e.message) || 'upload failed' } }));
+      .then((r) => _readStorage(r, 'upload'))
+      .catch((e) => _storageNetErr(e, 'upload'));
   };
   StorageBucket.prototype.remove = function (paths) {
     return fetch(this._url + '?action=remove', {
       method: 'POST', headers: _hdrs({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ bucket: this._bucket, paths: Array.isArray(paths) ? paths : [paths] }),
-    }).then((r) => r.json()).catch((e) => ({ data: null, error: { message: (e && e.message) || 'remove failed' } }));
+    }).then((r) => _readStorage(r, 'remove')).catch((e) => _storageNetErr(e, 'remove'));
   };
   StorageBucket.prototype.list = function (folder, _opts) {
     const q = '?action=list&bucket=' + encodeURIComponent(this._bucket) + '&prefix=' + encodeURIComponent(folder || '');
-    return fetch(this._url + q, { headers: _hdrs() }).then((r) => r.json())
-      .catch((e) => ({ data: null, error: { message: (e && e.message) || 'list failed' } }));
+    return fetch(this._url + q, { headers: _hdrs() }).then((r) => _readStorage(r, 'list'))
+      .catch((e) => _storageNetErr(e, 'list'));
   };
   StorageBucket.prototype.createSignedUrl = function (path, ttl) {
     const q = '?action=sign&bucket=' + encodeURIComponent(this._bucket) + '&path=' + encodeURIComponent(path) + '&ttl=' + (ttl || 300);
-    return fetch(this._url + q, { headers: _hdrs() }).then((r) => r.json())
-      .catch((e) => ({ data: null, error: { message: (e && e.message) || 'sign failed' } }));
+    return fetch(this._url + q, { headers: _hdrs() }).then((r) => _readStorage(r, 'sign'))
+      .catch((e) => _storageNetErr(e, 'sign'));
   };
   StorageBucket.prototype.getPublicUrl = function (path) {
     const url = this._url + '?action=get&bucket=' + encodeURIComponent(this._bucket) + '&path=' + encodeURIComponent(path);

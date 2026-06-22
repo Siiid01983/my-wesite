@@ -1602,9 +1602,11 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 </div>
 
 <!-- ── Infrastructure ── -->
+<script src="js/services/diagnostics.js"></script>
 <script src="js/lib/apiClient.js"></script>
 <script src="js/config/appConfig.js"></script>
-<script src="js/config/env.js" onerror="console.warn('[Admin] js/config/env.js missing — copy env.example.js to env.js')"></script>
+<script src="js/config/env.public.js"></script><!-- committed same-origin fallback -->
+<script src="js/config/env.js" onerror="console.warn('[Admin] js/config/env.js missing — using env.public.js fallback')"></script>
 <script src="js/services/dataClient.js"></script>
 <script src="js/services/apiAdapter.js"></script>
 <script src="js/services/statisticsService.js"></script>

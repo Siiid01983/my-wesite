@@ -68,6 +68,17 @@ return [
   'storage_dir'  => __DIR__ . '/_uploads',
   // Secret used to sign short-lived "signed URLs" for private files.
   'storage_secret' => 'CHANGE_ME_RANDOM_64_CHARS',
+  // Max accepted upload size in bytes (server-enforced by storage.php). Keep this
+  // <= the PHP upload_max_filesize / post_max_size set in hm-api/.user.ini.
+  'upload_max_bytes' => 15 * 1024 * 1024,   // 15 MB
+  // Allowed upload MIME types — validated from the actual file bytes, not the
+  // client-declared type. Covers portal photos, documents, and the media library.
+  'upload_allowed_mime' => [
+    'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  ],
 
   // ── Email (send-email.php) ────────────────────────────────────────────────
   //   'mail'   → use PHP mail() (works out-of-the-box on most cPanel hosts)
