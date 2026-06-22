@@ -782,6 +782,7 @@
   <!-- Self-hosted data client (PHP + MySQL API) -->
   <script src="js/services/diagnostics.js"></script>
   <script src="js/lib/apiClient.js"></script>
+  <script src="js/config/appConfig.js"></script>
   <script src="js/config/env.public.js"></script><!-- committed same-origin fallback -->
   <script src="js/config/env.js"></script>
   <script src="js/services/dataClient.js"></script>
@@ -802,10 +803,9 @@
 
     const $ = id => document.getElementById(id);
 
-    // ---- Route guard (Phase 6A): require a valid authenticated session ----
-    // Resolves a API Auth (Magic Link) session first, then any legacy
-    // session, then bounces unauthenticated visitors to login.html. Expired
-    // API sessions that cannot be refreshed resolve to null → redirect.
+    // ---- Route guard: require a valid session ----
+    // Resolves the server-verified email+reference session (sessionStorage
+    // token); bounces unauthenticated visitors to login.html.
     const sess = await PortalAuth.resolveSession('login.html');
     if (!sess) return; // redirected to login
 
@@ -828,12 +828,12 @@
       location.replace('login.html');
     });
 
-    // ---- Admin mode ----
-    // An admin is recognised from the VERIFIED API session email (authed
-    // sessions only — a legacy/spoofable token can't grant admin mode). The
-    // admin holds a real session so Phase 6B RLS stays active: their email
-    // matches no customer_email, so no customer data is exposed here. Elevated
-    // tooling lives behind admin.html's own separate login.
+    // ---- Admin mode (currently inert) ----
+    // Gated on sess.authed, which is only ever set by a server-VERIFIED session.
+    // The magic-link/JWT path that produced authed sessions was removed, so this
+    // is presently unreachable (isAdmin is always false). Retained as the seam
+    // for a future server-verified admin session; a legacy/spoofable token must
+    // never grant admin mode. Elevated tooling lives behind admin.html's login.
     const isAdmin = !!(sess.authed && sess.email &&
       window.PortalLogin &&
       typeof PortalLogin.isAdminEmail === 'function' &&

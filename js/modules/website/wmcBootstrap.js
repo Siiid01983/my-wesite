@@ -127,6 +127,57 @@ function wmcLogout() {
   Auth.logout();
 }
 
+/* ════════════════════════════════════════════════════════
+   HEALTH BANNER — WMC parity with admin (appBootstrap.js)
+   Previously WMC LOADED healthCheck.js but never ran it, so admin showed a
+   connectivity banner while WMC showed nothing. This runs the SAME shared
+   HealthCheck service (and shares the hm_health_report_v2 cache), and clears
+   the banner immediately on recovery via the health:* events run() dispatches.
+   Self-injecting — no dependency on a pre-existing element in the WMC HTML.
+   ════════════════════════════════════════════════════════ */
+function _wmcApplyHealthBanner(report) {
+  var existing = document.getElementById('wmcHealthBanner');
+  var api = report && Array.isArray(report.checks)
+    ? report.checks.find(function (c) { return c.service === 'api'; }) : null;
+  /* Healthy / no report → remove any banner so a recovered status clears at once. */
+  if (!api || api.status === 'healthy') { if (existing) existing.remove(); return; }
+
+  var isError = api.status === 'error';
+  var banner  = existing || document.createElement('div');
+  banner.id = 'wmcHealthBanner';
+  Object.assign(banner.style, {
+    position: 'fixed', top: '0', left: '0', right: '0', zIndex: '9998',
+    background: isError ? '#7f1d1d' : '#92400e', color: '#fff',
+    font: "13px/1.5 'Noto Sans JP','Inter',system-ui,sans-serif",
+    padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '12px',
+    boxShadow: '0 2px 8px rgba(0,0,0,.25)',
+  });
+  banner.textContent = '';
+  var msg = document.createElement('div'); msg.style.flex = '1';
+  var title = document.createElement('strong');
+  title.textContent = isError ? '設定の確認が必要です' : 'API 接続の警告';
+  var detail = document.createElement('div'); detail.style.opacity = '.9';
+  /* textContent — never innerHTML — so a server-supplied message can't inject markup. */
+  detail.textContent = (api.message || '') + ' — データはローカルキャッシュから読み込まれます。';
+  msg.appendChild(title); msg.appendChild(detail);
+  var close = document.createElement('button');
+  close.textContent = '✕';
+  Object.assign(close.style, { background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '16px', lineHeight: '1' });
+  close.onclick = function () { banner.remove(); };
+  banner.appendChild(msg); banner.appendChild(close);
+  if (!existing) document.body.appendChild(banner);
+}
+
+/* Wire the live health:* events ONCE at module load so the banner tracks every
+   subsequent check (parity with appBootstrap.js:321-328). */
+(function () {
+  ['health:healthy', 'health:warning', 'health:error'].forEach(function (ev) {
+    document.addEventListener(ev, function (e) {
+      try { _wmcApplyHealthBanner(e.detail); } catch (_) {}
+    });
+  });
+}());
+
 /* Dark mode — apply before first paint */
 (function () {
   if (localStorage.getItem('hm_dark') === '1') document.documentElement.classList.add('dark');
@@ -183,6 +234,14 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('wmcPass').addEventListener('keydown',  function (e) { if (e.key === 'Enter') document.getElementById('wmcLoginBtn').click(); });
   document.getElementById('wmcEmail').addEventListener('keydown', function (e) { if (e.key === 'Enter') document.getElementById('wmcPass').focus(); });
   if (Auth.isLoggedIn()) { _wmcShowApp(); await _wmcInit(); } else { _wmcShowLogin(); }
+
+  /* Run the shared health check after the screen is shown — non-blocking, and
+     it dispatches health:* events that keep the banner in sync thereafter. */
+  if (window.HealthCheck) {
+    window.HealthCheck.run()
+      .then(function (r) { _wmcApplyHealthBanner(r); })
+      .catch(function (e) { console.warn('[WMC][HealthCheck] startup check failed:', e); });
+  }
 }());
 
 async function _wmcInit() {

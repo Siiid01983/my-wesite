@@ -1,18 +1,16 @@
 // js/portal/portalAuth.js → window.PortalAuth
 // Customer Portal authentication & session management.
 //
-// Phase 6A (Authentication Hardening) reworks this module around API Auth
-// (Magic Link) while preserving the original Phase 5A logic for safe migration:
+// MODEL (self-hosted build): login is server-verified EMAIL + BOOKING REFERENCE.
+//   login.html → PortalLogin.loginWithReference → PortalAuth.login → hm-api/auth.php
+//   verifies the pair against the bookings table and mints a sessionStorage token
+//   ('hm_portal_sess'). That token is the single source of truth for the session.
 //
-//   PRIMARY  (hardened) — the session comes from a real API Auth JWT. The
-//     customer proved ownership of their email via a one-time link. Authorization
-//     resolves the booking(s) whose customer_email equals that verified email.
-//
-//   LEGACY   (fallback) — the original "email + booking reference → sessionStorage
-//     token" path. KEPT, unmodified in behaviour, so any session opened before
-//     the cut-over keeps working and the lookup logic is retained until the new
-//     flow is verified in production. New logins no longer use it (login.html now
-//     sends a Magic Link), but PortalAuth.login() remains callable.
+// NOTE: an earlier design added an API-Auth "Magic Link / JWT" path. It is
+//   REMOVED in this build — PortalLogin.sendMagicLink() is disabled and
+//   waitForSession() resolves null — so there is no second session source. The
+//   `authed` flag therefore stays false; it is retained only as the seam for a
+//   future server-verified admin session (read by portal.html's admin-mode block).
 //
 // Reuses existing infrastructure only (PortalLogin / BookingService /
 // ApiClient). Does NOT touch admin, CRM, WMC, or the database schema.
@@ -23,10 +21,8 @@
   const SESSION_KEY = 'hm_portal_sess';
   const TTL_MS      = 60 * 60 * 1000; // 60-minute idle window (legacy path)
 
-  // The resolved session for this page load. Set by resolveSession(). For an
-  // authenticated (API) session there is no sessionStorage token — the JWT
-  // lives in the API client — so we cache the derived shape here so the
-  // sync getSession() callers (e.g. audit actor labelling) keep working.
+  // The resolved session for this page load (cached so the synchronous
+  // getSession() callers — header render, audit actor labelling — keep working).
   let _active = null;
 
   function _now() { return Date.now(); }
@@ -83,40 +79,17 @@
   //   3. neither                                        → redirect to login
   // Returns the session object (and caches it in _active), or null after redirect.
   async function resolveSession(redirect) {
-    // 1. API Auth (primary)
-    if (window.PortalLogin && PortalLogin.isConfigured()) {
-      let authSession = null;
-      try { authSession = await PortalLogin.waitForSession(); } catch (_) {}
-      // Consume + tidy the magic-link callback artefacts from the URL.
-      try { PortalLogin.cleanUrl(); } catch (_) {}
-      if (authSession && authSession.user && authSession.user.email) {
-        const email = String(authSession.user.email).toLowerCase().trim();
-        const meta  = authSession.user.user_metadata || {};
-        _active = {
-          authed: true,
-          token:  authSession.access_token || _randToken(),
-          email:  email,
-          name:   meta.name || meta.full_name || '',
-          ref:    '',                         // filled once the booking resolves
-          iat:    _now(),
-          exp:    authSession.expires_at ? authSession.expires_at * 1000 : 0,
-        };
-        return _active;
-      }
-    }
-
-    // 2. Legacy fallback (pre-migration sessions keep working)
+    // Single source of truth: the server-verified email+reference session token.
+    // (Magic-link/JWT was removed — PortalLogin.waitForSession() returns null —
+    // so there is no other session to resolve.)
     const legacy = _legacyGetSession();
     if (legacy) { _active = legacy; return _active; }
-
-    // 3. No session
     if (redirect) location.replace(redirect);
     return null;
   }
 
-  // ── Legacy login (retained until migration verified — NOT used by login.html
-  //    anymore, which now sends a Magic Link). Verifies email + reference against
-  //    a real booking and mints a legacy sessionStorage token. ───────────────────
+  // ── Login (the live path). Verifies email + reference against a real booking
+  //    server-side (hm-api/auth.php) and mints the sessionStorage token. ──────────
   async function login(email, ref) {
     email = (email || '').trim().toLowerCase();
     ref   = (ref   || '').trim();
@@ -166,13 +139,14 @@
     return { ok: true, session: session, booking: booking };
   }
 
-  // Secure logout — ends both the API Auth session and any legacy token.
+  // Secure logout — clears the in-memory + sessionStorage token. That is the
+  // whole session in this build.
+  // NOTE: do NOT call PortalLogin.signOut() here. PortalLogin.signOut() calls
+  // back into PortalAuth.logout(), so doing so creates infinite mutual recursion
+  // (previously only halted by an eventual stack-overflow swallowed in a catch).
   async function logout() {
     _active = null;
     _clearLegacy();
-    if (window.PortalLogin && PortalLogin.isConfigured()) {
-      try { await PortalLogin.signOut(); } catch (_) {}
-    }
   }
 
   // Re-fetch the booking the current session is authorised for.
@@ -185,25 +159,8 @@
     if (!s) return null;
     if (typeof BookingService === 'undefined' || !window.api) return null;
 
-    // Authenticated path: email is cryptographically trustworthy.
-    if (s.authed) {
-      let list = [];
-      try {
-        list = await BookingService.getBookingsByEmail(s.email);
-      } catch (err) {
-        console.error('[PortalAuth] getBookingsByEmail failed:', err);
-        return null;
-      }
-      if (!list || !list.length) return null;
-      const booking = list[0]; // newest
-      // Defence-in-depth: the row's email must equal the authenticated email.
-      if ((booking.email || '').trim().toLowerCase() !== s.email) return null;
-      // Bind the session to the resolved booking reference.
-      if (_active) _active.ref = booking.id || _active.ref;
-      return booking;
-    }
-
-    // Legacy path: reference lookup + email re-verification.
+    // Reference lookup + email re-verification, so a tampered token can never
+    // read another customer's booking.
     let booking = null;
     try {
       booking = await BookingService.getBookingById(s.ref);

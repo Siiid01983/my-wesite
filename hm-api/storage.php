@@ -18,6 +18,12 @@ require_once __DIR__ . '/_lib.php';
 $cfg     = hm_config();
 $ROOT    = rtrim((string)($cfg['storage_dir'] ?? (__DIR__ . '/_uploads')), '/\\');
 $SECRET  = (string)($cfg['storage_secret'] ?? 'change-me');
+// Public vs private buckets — this is why retrieval "behaves differently" per
+// surface, NOT a bug: 'media' (the WMC media library) is world-readable via a
+// plain ?action=get URL (getPublicUrl). Every OTHER bucket — customer portal
+// photos/documents/attachments — is PRIVATE and only reachable through a
+// short-lived HMAC-signed URL (createSignedUrl). Uploads use the identical path
+// for all buckets; only read access differs.
 $PUBLIC  = ['media'];   // buckets readable without a signed URL
 
 // Upload guards (server-enforced — the OS-level PHP limits should be raised in

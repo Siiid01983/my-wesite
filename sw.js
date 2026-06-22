@@ -15,7 +15,7 @@
    Bump CACHE_VERSION to force cache replacement on next deploy.
    ════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'v9';
+const CACHE_VERSION = 'v10';
 const STATIC_CACHE  = 'hm-static-' + CACHE_VERSION;
 const FONT_CACHE    = 'hm-fonts-'  + CACHE_VERSION;
 const ALL_CACHES    = [STATIC_CACHE, FONT_CACHE];
@@ -28,6 +28,9 @@ const PRECACHE = [
   '/admin.html',
   '/review.html',
   '/admin-reviews.html',
+  '/login.html',
+  '/portal.html',
+  '/websiteManagement.html',
   /* Public site */
   '/styles.css',
   '/script.js',
@@ -240,7 +243,11 @@ self.addEventListener('fetch', event => {
       (url.pathname.startsWith('/js/config/')   ||
        url.pathname.startsWith('/js/services/') ||
        url.pathname.startsWith('/js/core/')     ||
-       url.pathname.startsWith('/js/lib/'))) {
+       url.pathname.startsWith('/js/lib/')      ||
+       url.pathname.startsWith('/js/portal/'))) {
+    /* /js/portal holds the customer portal modules. The SW scope is '/', so an
+       admin browser's SW also controls portal.html — these must be network-first
+       too, or a portal module update could be served stale from cache. */
     event.respondWith(_networkFirst(event.request, STATIC_CACHE));
     return;
   }
