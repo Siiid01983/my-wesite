@@ -93,12 +93,33 @@ return [
   'admin_auth_enabled' => false,
   //   bcrypt hash of the admin password. Generate on the server with:
   //     php -r "echo password_hash('YOUR_ADMIN_PASSWORD', PASSWORD_DEFAULT), PHP_EOL;"
-  //   (Use the SAME password the admin types into admin.html / WMC.)
+  //   LEGACY single-account path. With the MySQL admin_users table (see below)
+  //   this is OPTIONAL — leave '' once admin_users is seeded. If present, it is
+  //   used as the seed password during migration (admin keeps the same password).
   'admin_pass_hash' => '',
   //   HMAC signing key for admin session tokens. 64+ random chars; keep secret.
+  //   REQUIRED for server-side admin auth (token sign/verify). Generate with:
+  //     php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"
   'admin_session_secret' => '',
   //   Admin token lifetime in seconds (default 12h). Min 300.
   'admin_session_ttl' => 12 * 60 * 60,
+
+  // ── MySQL admin accounts (admin_users table — admin-login.php) ────────────
+  //   The admin login now verifies against the admin_users table with
+  //   password_hash()/password_verify() (multiple accounts, roles admin|manager),
+  //   replacing the browser-localStorage credential store. Provision with:
+  //     php hm-api/admin-migrate.php
+  //   These keys configure the FIRST seeded admin (used once, then removable):
+  'admin_seed_email'    => 'admin@hello-moving.com',
+  'admin_seed_name'     => 'Admin',
+  //   Plaintext password for the seed admin. Set, run admin-migrate.php, then
+  //   DELETE this line. If omitted, the migrator reuses admin_pass_hash (above)
+  //   or prints a generated temporary password (flagged must-change).
+  'admin_seed_password' => '',
+  //   One-time token to allow running admin-migrate.php over HTTP when you have
+  //   no shell. Set a long random value, run it once, then DELETE this line.
+  //   Leave '' to require CLI (php hm-api/admin-migrate.php) only.
+  'admin_setup_token'   => '',
 
   // ── Email (send-email.php) ────────────────────────────────────────────────
   //   'mail'   → use PHP mail() (works out-of-the-box on most cPanel hosts)

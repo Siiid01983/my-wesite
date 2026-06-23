@@ -16,10 +16,11 @@ function renderStaff() {
   const _roleBadge = role => {
     const map = {
       admin:       'rgba(37,99,235,.12);color:#1d4ed8',
+      manager:     'rgba(16,185,129,.1);color:#059669',
       staff:       'rgba(16,185,129,.1);color:#059669',
       'read-only': 'rgba(107,114,128,.12);color:#6b7280',
     };
-    const label = { admin:'管理者', staff:'スタッフ', 'read-only':'読み取り専用' };
+    const label = { admin:'管理者', manager:'マネージャー', staff:'スタッフ', 'read-only':'読み取り専用' };
     return `<span style="font-size:11px;padding:2px 9px;border-radius:12px;font-weight:600;background:${map[role]||map.staff}">${label[role]||role}</span>`;
   };
 

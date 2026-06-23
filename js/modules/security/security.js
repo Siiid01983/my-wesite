@@ -13,9 +13,10 @@ let _staffResetId = null;
 const _RING_R = 32;
 const _RING_C = +(2 * Math.PI * _RING_R).toFixed(1);  // ≈ 201.1
 
-const _ROLE_LABEL = { admin: '管理者', staff: 'スタッフ', 'read-only': '閲覧専用' };
+const _ROLE_LABEL = { admin: '管理者', manager: 'マネージャー', staff: 'スタッフ', 'read-only': '閲覧専用' };
 const _ROLE_COLOR = {
   admin:       { bg:'rgba(37,99,235,.1)',  color:'#2563eb', border:'rgba(37,99,235,.2)' },
+  manager:     { bg:'rgba(16,185,129,.1)', color:'#059669', border:'rgba(16,185,129,.2)' },
   staff:       { bg:'rgba(16,185,129,.1)', color:'#059669', border:'rgba(16,185,129,.2)' },
   'read-only': { bg:'rgba(107,114,128,.1)',color:'#4b5563', border:'rgba(107,114,128,.2)' },
 };
@@ -126,10 +127,8 @@ function _renderSecScore(score, items) {
    ACCOUNT PANEL
    ════════════════════════════════════════════════════════ */
 function _renderSecAccount() {
-  const creds = (() => {
-    try { return JSON.parse(localStorage.getItem(Auth.CREDS_KEY) || 'null'); } catch(e) { return null; }
-  })();
   const user = Auth.getUser();
+  const email = user.email || '';
   const initials = (user.name || 'A').slice(0, 2).toUpperCase();
 
   return `<div class="panel">
@@ -139,14 +138,14 @@ function _renderSecAccount() {
         <div class="sec-avatar" style="background:var(--navy)">${initials}</div>
         <div>
           <div style="font-weight:600;font-size:14px;color:var(--ink)">${esc(user.name)}</div>
-          <div style="font-size:12px;color:var(--gray-1);margin-top:2px">${creds ? esc(creds.user) : '—'}</div>
+          <div style="font-size:12px;color:var(--gray-1);margin-top:2px">${email ? esc(email) : '—'}</div>
           ${_roleBadge(user.role)}
         </div>
       </div>
       <div class="m-field">
         <label class="m-label">管理者メールアドレス</label>
         <div style="display:flex;gap:8px;align-items:center">
-          <input class="m-input" id="secEmailInput" type="email" value="${creds ? esc(creds.user) : ''}" placeholder="admin@example.com" style="flex:1" />
+          <input class="m-input" id="secEmailInput" type="email" value="${email ? esc(email) : ''}" placeholder="admin@example.com" style="flex:1" />
         </div>
       </div>
       <div id="secEmailMsg" class="sec-pass-msg"></div>
@@ -404,16 +403,13 @@ async function doChangeEmail() {
     msg.textContent = '有効なメールアドレスを入力してください';
     return;
   }
-  try {
-    const creds = JSON.parse(localStorage.getItem(Auth.CREDS_KEY) || 'null');
-    if (!creds) { msg.className = 'sec-pass-msg sec-pass-err'; msg.textContent = '認証情報が見つかりません'; return; }
-    creds.user = email;
-    localStorage.setItem(Auth.CREDS_KEY, JSON.stringify(creds));
+  const ok = await Auth.changeOwnEmail(email);
+  if (ok) {
     msg.className = 'sec-pass-msg sec-pass-ok';
     msg.textContent = 'メールアドレスを変更しました';
     toast('メールアドレスを変更しました');
     setTimeout(renderSecurity, 300);
-  } catch(e) {
+  } else {
     msg.className = 'sec-pass-msg sec-pass-err';
     msg.textContent = '変更に失敗しました';
   }

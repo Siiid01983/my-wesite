@@ -104,12 +104,20 @@ function hm_require_api_key(): void {
 function hm_admin_secret(): string { return (string)(hm_config()['admin_session_secret'] ?? ''); }
 function hm_admin_hash():   string { return (string)(hm_config()['admin_pass_hash'] ?? ''); }
 
-// Enforcement is OFF unless explicitly enabled AND both secrets are provisioned.
-// This is the safe-by-default gate: a half-configured server never locks admins
-// out — it simply behaves like the prior API-key-only model.
+// Enforcement is OFF unless explicitly enabled AND the token signing secret is
+// provisioned (without it, tokens cannot be verified). Credentials may come from
+// the legacy single hash (admin_pass_hash) OR the admin_users table — either one
+// satisfies the gate. Safe-by-default: a half-configured server behaves like the
+// prior API-key-only model.
 function hm_admin_auth_enabled(): bool {
   $c = hm_config();
-  return !empty($c['admin_auth_enabled']) && hm_admin_hash() !== '' && hm_admin_secret() !== '';
+  if (empty($c['admin_auth_enabled']) || hm_admin_secret() === '') return false;
+  if (hm_admin_hash() !== '') return true;                       // legacy single-hash path
+  // MySQL admin_users path — only when those helpers are loaded (admin-login.php).
+  if (function_exists('hm_admin_users_provisioned')) return hm_admin_users_provisioned();
+  // _admin_users.php not loaded (e.g. rest.php): the flag+secret are an explicit
+  // opt-in by the operator, so honour enforcement.
+  return true;
 }
 
 function hm_admin_token_sign(array $payload): string {
