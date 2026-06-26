@@ -46,17 +46,34 @@ const Auth = {
     return Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join('');
   },
 
+  /* Map each action to its dedicated PHP endpoint (centralized server auth).
+     login/force_change → admin-login.php · logout → admin-logout.php ·
+     verify → admin-session.php · user mgmt + change_password → admin-users.php. */
+  _ENDPOINT: {
+    login:                 'admin-login.php',
+    force_change_password: 'admin-login.php',
+    logout:                'admin-logout.php',
+    verify:                'admin-session.php',
+    list_users:            'admin-users.php',
+    create_user:           'admin-users.php',
+    update_user:           'admin-users.php',
+    reset_password:        'admin-users.php',
+    delete_user:           'admin-users.php',
+    change_password:       'admin-users.php',
+  },
+
   /* ── Server call helper ───────────────────────────────────────────────────
-     POSTs to admin-login.php with the API key + admin token (when present).
-     credentials:'include' so the PHP session cookie flows on same-origin (and
-     cross-origin when the API host sets Access-Control-Allow-Credentials). */
+     POSTs the action to its mapped endpoint with the API key + admin token (when
+     present). credentials:'include' so the PHP session cookie flows on same-origin
+     (and cross-origin when the API host sets Access-Control-Allow-Credentials). */
   async _api(action, body) {
     const base = (window.API_BASE || '').replace(/\/+$/, '');
     if (!base) return { ok:false, error:{ message:'No API', code:'no_api' } };
+    const endpoint = this._ENDPOINT[action] || 'admin-login.php';
     const headers = { 'Content-Type':'application/json', 'X-API-KEY': window.API_KEY || '' };
     if (window.__HM_ADMIN_TOKEN) headers['X-ADMIN-TOKEN'] = window.__HM_ADMIN_TOKEN;
     try {
-      const res = await fetch(base + '/admin-login.php', {
+      const res = await fetch(base + '/' + endpoint, {
         method: 'POST', headers, credentials: 'include',
         body: JSON.stringify(Object.assign({ action }, body || {})),
       });
@@ -172,13 +189,18 @@ const Auth = {
       return { ok:true, mustChange: !!d.mustChange };
     }
 
-    const code = r && r.error && r.error.code;
-    if (code === 'admin_users_unprovisioned') {
-      /* Server has no admin_users yet — surface distinctly (no lockout penalty). */
-      return { ok:false, locked:false, left:this.attemptsLeft(), unprovisioned:true };
+    /* Classify the failure. ONLY a genuine credential rejection (admin-login.php
+       → error code 'invalid') counts toward the client lockout. Server
+       misconfiguration (admin_secret_missing / admin_users_unprovisioned),
+       wrong API key, network failures and rate-limiting must NOT penalise the
+       operator (otherwise a server problem locks them out) and must surface a
+       distinct, actionable reason instead of a misleading "wrong password". */
+    const code = (r && r.error && r.error.code) || '';
+    if (code === 'invalid') {
+      this._recordFail();
+      return { ok:false, locked:this.isLockedOut(), left:this.attemptsLeft(), code:'invalid' };
     }
-    this._recordFail();
-    return { ok:false, locked:this.isLockedOut(), left:this.attemptsLeft() };
+    return { ok:false, locked:false, left:this.attemptsLeft(), system:true, code };
   },
 
   async logout() {

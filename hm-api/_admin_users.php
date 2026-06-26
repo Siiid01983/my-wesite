@@ -80,7 +80,7 @@ function hm_admin_user_public(array $row): array {
     'email'      => (string)($row['email'] ?? ''),
     'role'       => (string)($row['role'] ?? 'admin'),
     'active'     => (bool)(int)($row['active'] ?? 0),
-    'mustChange' => (bool)(int)($row['must_change'] ?? 0),
+    'mustChange' => (bool)(int)($row['must_change_password'] ?? 0),
     'lastLogin'  => $row['last_login'] ?? null,
     'createdAt'  => $row['created_at'] ?? null,
   ];
@@ -93,7 +93,7 @@ function hm_admin_user_create(string $name, string $email, string $password, str
   $id    = hm_uuid4();
   $hash  = password_hash($password, PASSWORD_DEFAULT);
   $st = hm_db()->prepare(
-    'INSERT INTO admin_users (id, email, name, pass_hash, role, active, must_change)
+    'INSERT INTO admin_users (id, email, name, pass_hash, role, active, must_change_password)
      VALUES (?, ?, ?, ?, ?, 1, ?)'
   );
   $st->execute([$id, $email, trim($name), $hash, $role, $mustChange ? 1 : 0]);
@@ -121,7 +121,7 @@ function hm_admin_user_update(string $id, array $patch): bool {
 // admin-initiated resets, so the target must pick their own password).
 function hm_admin_set_password(string $id, string $password, bool $mustChange = false): bool {
   $hash = password_hash($password, PASSWORD_DEFAULT);
-  $st = hm_db()->prepare('UPDATE admin_users SET pass_hash = ?, must_change = ?, reset_hash = NULL, reset_expires = NULL WHERE id = ?');
+  $st = hm_db()->prepare('UPDATE admin_users SET pass_hash = ?, must_change_password = ?, reset_hash = NULL, reset_expires = NULL WHERE id = ?');
   $st->execute([$hash, $mustChange ? 1 : 0, $id]);
   return $st->rowCount() >= 0;
 }

@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS `admin_users` (
   `pass_hash`     VARCHAR(255) NOT NULL,                       -- password_hash(PASSWORD_DEFAULT)
   `role`          VARCHAR(20)  NOT NULL DEFAULT 'admin',       -- 'admin' | 'manager'
   `active`        TINYINT(1)   NOT NULL DEFAULT 1,
-  `must_change`   TINYINT(1)   NOT NULL DEFAULT 0,             -- force password change on next login
+  `must_change_password` TINYINT(1) NOT NULL DEFAULT 0,       -- force password change on next login
   `last_login`    DATETIME     NULL DEFAULT NULL,
   `reset_hash`    VARCHAR(255) NULL DEFAULT NULL,              -- reserved: hashed one-time reset token
   `reset_expires` DATETIME     NULL DEFAULT NULL,              -- reserved: reset token expiry

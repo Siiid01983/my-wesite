@@ -93,7 +93,7 @@ try {
 
   $id = hm_uuid4();
   $st = hm_db()->prepare(
-    'INSERT INTO admin_users (id, email, name, pass_hash, role, active, must_change)
+    'INSERT INTO admin_users (id, email, name, pass_hash, role, active, must_change_password)
      VALUES (?, ?, ?, ?, "admin", 1, ?)'
   );
   $st->execute([$id, $email, $name, $hash, $mustChange ? 1 : 0]);

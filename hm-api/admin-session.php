@@ -1,55 +1,45 @@
 <?php
 // ════════════════════════════════════════════════════════════════════════════
-//  admin-session.php — server-side admin login → signed session token
+//  admin-session.php — report the current admin session / token validity.
 //
-//  POST JSON:
-//    { action:'login',  password }   → { ok, data:{ token, exp, enforced } }
-//    { action:'verify' } (X-ADMIN-TOKEN header) → { ok, data:{ valid, enforced } }
+//  POST or GET (X-API-KEY). Reads the HMAC admin token (header X-ADMIN-TOKEN)
+//  and/or the PHP session cookie and returns whether the caller is an
+//  authenticated admin, plus their public identity. Used by the SPA to confirm a
+//  restored session is still valid (e.g. after reload) without re-login.
 //
-//  The token authorizes admin-only operations in rest.php (DELETE on any table +
-//  writes to hm_data / services / calendar_availability / inbox_messages).
-//
-//  A token is minted whenever admin_pass_hash is provisioned and the password
-//  verifies — INDEPENDENT of admin_auth_enabled — so admins already carry a
-//  token before enforcement is switched on (zero-downtime cut-over). The
-//  enabled flag only controls ENFORCEMENT (in rest.php).
+//  NOTE: this replaces the legacy "login against admin_pass_hash" behaviour.
+//  Login is now admin-login.php (MySQL admin_users). rest.php enforcement uses
+//  hm_require_admin() in _lib.php and does NOT call this endpoint, so the change
+//  is backward compatible.
 // ════════════════════════════════════════════════════════════════════════════
 declare(strict_types=1);
-require_once __DIR__ . '/_lib.php';
-require_once __DIR__ . '/_ratelimit.php';
+require_once __DIR__ . '/_admin_users.php';
 hm_cors();
+header('Access-Control-Allow-Credentials: true');
 hm_require_api_key();
-hm_rate_limit('admin_session', 10, 60);   // 10 attempts / IP / minute
-
-$p      = hm_body(true);
-$action = (string)($p['action'] ?? 'login');
 
 try {
-  if ($action === 'login') {
-    $hash = hm_admin_hash();
-    if ($hash === '' || hm_admin_secret() === '') {
-      // Not provisioned yet — tell the client so it simply skips token use.
-      hm_json(['ok' => false, 'data' => null,
-        'error' => ['message' => 'Admin auth not configured', 'code' => 'admin_auth_disabled']], 200);
-    }
-    $password = (string)($p['password'] ?? '');
-    if ($password === '' || !password_verify($password, $hash)) {
-      hm_log_auth_fail('admin_session');
-      hm_err('Invalid credentials', 401, 'invalid');
-    }
-    $ttl = max(300, (int)(hm_config()['admin_session_ttl'] ?? 43200));
-    $exp = time() + $ttl;
-    $token = hm_admin_token_sign(['role' => 'admin', 'iat' => time(), 'exp' => $exp]);
-    hm_ok(['token' => $token, 'exp' => $exp, 'enforced' => hm_admin_auth_enabled()]);
+  $tok   = $_SERVER['HTTP_X_ADMIN_TOKEN'] ?? '';
+  $pl    = (is_string($tok) && $tok !== '') ? hm_admin_token_verify($tok) : null;
+  $valid = $pl !== null && ($pl['role'] ?? '') === 'admin';
+
+  $user = null;
+  if ($valid && !empty($pl['uid'])) {
+    // Revocation-aware: a token for a deleted/disabled account is not valid.
+    $u = hm_admin_user_by_id((string)$pl['uid']);
+    if ($u && (int)$u['active']) $user = hm_admin_user_public($u);
+    else $valid = false;
   }
 
-  if ($action === 'verify') {
-    $tok   = $_SERVER['HTTP_X_ADMIN_TOKEN'] ?? '';
-    $valid = is_string($tok) && $tok !== '' && hm_admin_token_verify($tok) !== null;
-    hm_ok(['valid' => $valid, 'enforced' => hm_admin_auth_enabled()]);
-  }
+  // PHP-session identity (when the cookie is present) — secondary signal.
+  $sess = hm_admin_session_user();
 
-  hm_err('Unknown action', 400, 'bad_action');
+  hm_ok([
+    'valid'    => $valid,
+    'enforced' => hm_admin_auth_enabled(),
+    'user'     => $user,
+    'session'  => $sess ? ['email' => $sess['email'], 'role' => $sess['role']] : null,
+  ]);
 } catch (Throwable $e) {
   hm_log_error('admin-session failed', ['err' => $e->getMessage()]);
   hm_err(hm_safe_msg('Request failed', $e), 500);

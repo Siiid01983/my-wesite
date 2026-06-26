@@ -21,7 +21,10 @@ keeps working exactly as before. `admin.html` markup is untouched.
 |---|---|
 | `hm-api/admin_users.schema.sql` | `admin_users` table DDL (migration SQL) |
 | `hm-api/_admin_users.php` | Data layer + secure PHP session + token guard (include; `.htaccess`-denied) |
-| `hm-api/admin-login.php` | Endpoint: `login`/`logout`/`verify`/`change_password`/`force_change_password` + user management (`list_users`/`create_user`/`update_user`/`reset_password`/`delete_user`) |
+| `hm-api/admin-login.php` | `login` + `force_change_password` (login gate only) |
+| `hm-api/admin-logout.php` | `logout` — destroys the PHP session |
+| `hm-api/admin-session.php` | `verify` — token/session validity + current identity (revocation-aware) |
+| `hm-api/admin-users.php` | user management (`list`/`create`/`update`=edit+disable/`reset_password`/`delete`) + `change_password` |
 | `hm-api/admin-migrate.php` | One-time table create + first-admin seed; self-locks once provisioned |
 | `hm-api/_lib.php` | `hm_admin_auth_enabled()` now accepts the MySQL path (legacy hash no longer required) — additive |
 | `hm-api/_config.example.php` | New keys: `admin_seed_email/name/password`, `admin_setup_token` |

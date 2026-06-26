@@ -74,8 +74,9 @@ cPanel → **phpMyAdmin** → select `hellom41_staging` → **Import**:
 > **`API_KEY` is empty**. That is why Step 6 sets the staging API key to `''`.
 
 Confirm these arrived under `public_html/staging/hm-api/`:
-`admin-login.php`, `admin-migrate.php`, `_admin_users.php`, `admin_users.schema.sql`,
-`_lib.php`, `_db.php`, `_log.php`, `_ratelimit.php`, `rest.php`, `.htaccess`,
+`admin-login.php`, `admin-logout.php`, `admin-session.php`, `admin-users.php`,
+`admin-migrate.php`, `_admin_users.php`, `admin_users.schema.sql`, `_lib.php`,
+`_db.php`, `_log.php`, `_ratelimit.php`, `rest.php`, `.htaccess`,
 **`.user.ini`** (PHP runtime overrides — verify it copied; dotfiles are easy to miss).
 
 ## 6. Create the staging `hm-api/_config.php` (REQUIRED FILE)
@@ -181,7 +182,8 @@ npx playwright test tests/admin-auth.spec.js
 |---|---|---|
 | `hm-api/schema.mysql.sql` | 8 app tables | import into `hellom41_staging` (Step 4) |
 | `hm-api/admin_users.schema.sql` | admin_users DDL | created by migrate (or import) |
-| `hm-api/admin-login.php`, `_admin_users.php`, `admin-migrate.php` | auth endpoint + lib + migrator | deploy (Step 5) |
+| `hm-api/admin-login.php`, `admin-logout.php`, `admin-session.php`, `admin-users.php` | auth + logout + session + user mgmt endpoints | deploy (Step 5) |
+| `hm-api/_admin_users.php`, `admin-migrate.php` | shared lib + migrator/seeder | deploy (Step 5) |
 | `hm-api/_lib.php`, `_db.php`, `_log.php`, `_ratelimit.php`, `rest.php` | shared backend | deploy |
 | `hm-api/.htaccess`, `hm-api/.user.ini` | security + PHP runtime | deploy (verify dotfiles) |
 | `hm-api/_config.php` (staging) | DB + secret + seed | **create on server** (Step 6) — not in git |

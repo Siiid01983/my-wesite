@@ -36,7 +36,7 @@ const VIEW_TITLES = {
   dashboard:'ダッシュボード', bookings:'予約管理', quotes:'見積り管理',
   reviews:'レビュー管理', services:'サービス管理', faq:'FAQ編集', company:'会社情報編集', footer:'フッター編集', hero:'ヒーロー編集', calendar:'カレンダー管理', analytics:'分析',
   capacity:'容量設定', pricing:'料金管理', disposal:'不用品管理', actions:'クイック操作',
-  backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理', line:'LINE通知設定', email:'メール通知設定', changelog:'変更履歴', security:'セキュリティ', health:'システム健全性',
+  backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理', 'portal-users':'顧客ポータル管理', line:'LINE通知設定', email:'メール通知設定', changelog:'変更履歴', security:'セキュリティ', health:'システム健全性',
   staff:'スタッフ管理',
   'audit-log':'監査ログ',
   'seo':'SEO センター',
@@ -47,7 +47,7 @@ const VIEW_TITLES = {
 };
 
 /* Views only accessible to the admin role */
-const _ADMIN_ONLY = new Set(['pricing','disposal','services','faq','company','footer','hero','backup','email','line','security','staff','audit-log']);
+const _ADMIN_ONLY = new Set(['pricing','disposal','services','faq','company','footer','hero','backup','email','line','security','staff','audit-log','portal-users']);
 
 function _applyRoleToSidebar() {
   const role = Auth.getRole ? Auth.getRole() : 'admin';
@@ -119,6 +119,7 @@ function go(view) {
   if (view==='backup') renderBackup();
   if (view==='media') renderMedia();
   if (view==='customers') { renderCustomers(); _syncCustomersFromApi(); }
+  if (view==='portal-users') renderPortalUsers();
   if (view==='line') renderLine();
   if (view==='email') renderEmail();
   if (view==='changelog') renderChangelog();

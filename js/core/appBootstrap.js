@@ -155,15 +155,22 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
 
   btn.disabled=false;
   btn.querySelector('.login-btn-text').textContent='ログイン';
-  emailEl.classList.add('has-error');
-  passEl.classList.add('has-error');
 
   if (result.locked) {
+    emailEl.classList.add('has-error');
+    passEl.classList.add('has-error');
     errEl.textContent=`ログイン試行回数が上限を超えました。${Auth.lockoutMins()}分間ロックされています。`;
     errEl.className='login-err login-err-lock';
     btn.disabled=true;
     btn.querySelector('.login-btn-text').textContent='ロック中';
+  } else if (result.system) {
+    /* Server-side / network problem — NOT a wrong password. Don't flag the
+       fields and don't imply bad credentials; tell the operator what to fix. */
+    errEl.textContent = _loginSystemMsg(result.code);
+    errEl.className='login-err login-err-lock';
   } else {
+    emailEl.classList.add('has-error');
+    passEl.classList.add('has-error');
     const left=result.left;
     errEl.textContent = left>0
       ? `メールアドレスまたはパスワードが正しくありません（残り${left}回）`
@@ -171,6 +178,29 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
   }
   errEl.style.display='block';
 });
+
+/* Map a server/network error code to an actionable, non-credential message.
+   Used by the login handler so a backend misconfiguration is never reported as
+   "incorrect email or password" (see js/core/auth.js Auth.login classification). */
+function _loginSystemMsg(code) {
+  switch (code) {
+    case 'admin_users_unprovisioned':
+      return 'サーバーに管理者アカウントが未設定です。移行スクリプト（admin-migrate.php）を実行してください。';
+    case 'admin_secret_missing':
+      return 'サーバーの認証設定が未完了です（署名キー未設定）。_config.php の admin_session_secret を設定してください。';
+    case 'api_key':
+      return 'APIキーが一致しません。サーバー設定（_config.php の api_key）をご確認ください。';
+    case 'network':
+    case 'no_api':
+    case 'bad_response':
+      return 'サーバーに接続できません。ネットワーク状況とAPI設定（API_BASE）をご確認ください。';
+    case 'rate_limited':
+    case 'rate_limit':
+      return 'リクエストが多すぎます。しばらくしてから再試行してください。';
+    default:
+      return 'サーバーエラーが発生しました。しばらくしてから再試行するか、管理者にお問い合わせください。';
+  }
+}
 
 document.getElementById('loginPass').addEventListener('keydown', e => {
   if (e.key==='Enter') document.getElementById('loginBtn').click();
