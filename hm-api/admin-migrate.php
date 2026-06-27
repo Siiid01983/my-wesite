@@ -64,6 +64,11 @@ try {
   $sql = (string)file_get_contents($schemaPath);
   hm_db()->exec($sql);
 
+  // 1b. Upgrade older installs in place (idempotent — adds columns added after
+  //     the table was first created, e.g. tokens_valid_after). Runs BEFORE the
+  //     self-lock so re-running the migrator on a provisioned site still upgrades.
+  hm_admin_ensure_columns();
+
   // 2. Self-lock if already provisioned.
   if (hm_admin_count_active_admins() > 0) {
     mig_out(['ok' => true, 'status' => 'already_provisioned',

@@ -332,6 +332,14 @@ function _applyHcBanner() {
   } else if (Auth.isLoggedIn()) {
     if (Auth.mustChangePassword()) { showForceChange(); }
     else { showApp(); await init(); }
+    /* Validate the restored token against the server (admin-session.php). The
+       client only trusts its own marker; this catches a token revoked SERVER-side
+       (account disabled/deleted, or logged out elsewhere) while the marker still
+       looks valid. Fire-and-forget; log out ONLY on an explicit invalid so a
+       transient network outage never ejects a working admin. */
+    Auth.verifySession().then(function (v) {
+      if (v && v.valid === false) { Auth._addLog('logout', 'revoked'); Auth.logout(); }
+    }).catch(function () {});
   } else {
     showLogin();
   }

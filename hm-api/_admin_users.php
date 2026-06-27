@@ -214,22 +214,49 @@ function hm_admin_require_token(): array {
     hm_log_auth_fail('admin_mgmt_token');
     hm_err('Admin authorization required', 401, 'admin_required');
   }
-  // Revocation check: a token that names a specific account (uid) is only honoured
-  // while that account still EXISTS and is ACTIVE. Closes the "deleted/deactivated
-  // admin keeps a valid token until it expires" gap for management actions. Also
-  // re-reads the CURRENT role so a just-demoted admin (admin→manager) immediately
-  // loses manage rights. Legacy tokens (no uid, from admin-session.php) skip this
-  // for rollback compatibility.
+  // Revocation check (shared with rest.php's hm_require_admin via _lib.php): a
+  // token that names a specific account (uid) is only honoured while that account
+  // still EXISTS, is ACTIVE, and was not invalidated by a logout (tokens_valid_after).
+  // Legacy tokens (no uid) skip this for rollback compatibility.
+  if (!hm_admin_token_account_valid($p)) {
+    hm_log_auth_fail('admin_token_revoked');
+    hm_err('Admin authorization required', 401, 'admin_required');
+  }
+  // Re-read the CURRENT role so a just-demoted admin (admin→manager) immediately
+  // loses manage rights — authoritative (DB), not the issued-at value.
   $uid = (string)($p['uid'] ?? '');
   if ($uid !== '') {
     $u = hm_admin_user_by_id($uid);
-    if (!$u || !(int)$u['active']) {
-      hm_log_auth_fail('admin_token_revoked');
-      hm_err('Admin authorization required', 401, 'admin_required');
-    }
-    $p['urole'] = (string)$u['role'];   // authoritative (DB), not the issued-at value
+    if ($u) $p['urole'] = (string)$u['role'];
   }
   return $p;
+}
+
+// Invalidate EVERY outstanding token for an account (logout / forced sign-out).
+// Sets the tokens_valid_after cutoff to "now" (epoch seconds) so any token whose
+// `iat` predates this is rejected by hm_admin_token_account_valid(). Best-effort:
+// non-fatal if the column is absent on an un-migrated install (run admin-migrate.php
+// — hm_admin_ensure_columns() — to add it).
+function hm_admin_revoke_tokens(string $id): void {
+  if ($id === '') return;
+  try {
+    $st = hm_db()->prepare('UPDATE admin_users SET tokens_valid_after = ? WHERE id = ?');
+    $st->execute([time(), $id]);
+  } catch (Throwable $e) { /* column may not exist yet — non-fatal */ }
+}
+
+// Idempotent schema upgrade for installs created before a column existed. Called by
+// admin-migrate.php. Adds tokens_valid_after (epoch-seconds logout/revocation
+// cutoff) when missing; tolerant of MySQL versions without ADD COLUMN IF NOT EXISTS.
+function hm_admin_ensure_columns(): void {
+  try {
+    $have = hm_db()->query("SHOW COLUMNS FROM admin_users LIKE 'tokens_valid_after'")->fetchAll();
+    if (!$have) {
+      hm_db()->exec('ALTER TABLE admin_users ADD COLUMN tokens_valid_after BIGINT UNSIGNED NULL DEFAULT NULL');
+    }
+  } catch (Throwable $e) {
+    hm_log_error('admin schema ensure failed', ['err' => $e->getMessage()]);
+  }
 }
 
 // Only role='admin' accounts (not 'manager') may manage other admin accounts.

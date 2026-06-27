@@ -233,7 +233,15 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   document.getElementById('wmcPass').addEventListener('keydown',  function (e) { if (e.key === 'Enter') document.getElementById('wmcLoginBtn').click(); });
   document.getElementById('wmcEmail').addEventListener('keydown', function (e) { if (e.key === 'Enter') document.getElementById('wmcPass').focus(); });
-  if (Auth.isLoggedIn()) { _wmcShowApp(); await _wmcInit(); } else { _wmcShowLogin(); }
+  if (Auth.isLoggedIn()) {
+    _wmcShowApp(); await _wmcInit();
+    /* Validate the restored token server-side (admin-session.php) — catches a
+       token revoked elsewhere (disabled account / logout) while the local marker
+       still looks valid. Log out only on an explicit invalid; ignore network. */
+    Auth.verifySession().then(function (v) {
+      if (v && v.valid === false) { Auth._addLog('logout', 'revoked'); Auth.logout(); }
+    }).catch(function () {});
+  } else { _wmcShowLogin(); }
 
   /* Run the shared health check after the screen is shown — non-blocking, and
      it dispatches health:* events that keep the banner in sync thereafter. */
