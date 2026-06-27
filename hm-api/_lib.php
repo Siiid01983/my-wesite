@@ -99,8 +99,11 @@ function hm_require_api_key(): void {
 
 // ── Admin session (server-side authorization for rest.php admin-only ops) ─────
 // Stateless HMAC-signed token: base64url(JSON payload) . hex(HMAC-SHA256). No
-// server-side session store needed. Minted by admin-session.php after a
-// password_verify() against admin_pass_hash; verified here on each request.
+// server-side session store needed. Minted by admin-login.php after a
+// password_verify() against the admin_users table; verified here on each request.
+// Although the token itself is stateless, revocation (account disabled/deleted,
+// or an explicit logout) is enforced per-request by hm_admin_token_account_valid()
+// so a single config of admin_auth_enabled gates every admin-only write.
 function hm_admin_secret(): string { return (string)(hm_config()['admin_session_secret'] ?? ''); }
 function hm_admin_hash():   string { return (string)(hm_config()['admin_pass_hash'] ?? ''); }
 
@@ -140,6 +143,41 @@ function hm_admin_token_verify(string $token): ?array {
   return $p;
 }
 
+// Revocation check for an already signature-verified token payload. Returns true
+// when the account named by the token's `uid` still EXISTS, is ACTIVE, and has
+// not invalidated its tokens via logout (`tokens_valid_after`). This is what makes
+// the stateless token revocable: it closes the "deleted / deactivated / logged-out
+// admin keeps a working token until it expires" gap for EVERY admin gate, including
+// rest.php (previously only the management endpoints re-checked the account).
+//
+//   • Legacy tokens with no `uid` (e.g. the old admin-session.php single-hash
+//     path) are accepted — there is no account to revoke against.
+//   • Fail-open on a transient DB error: a momentary database hiccup must not lock
+//     legitimate admins out, and writes need the DB anyway. A SUCCESSFUL lookup
+//     that finds the account missing/inactive/revoked fails closed (returns false).
+//   • Backward compatible: SELECT * tolerates installs whose admin_users table has
+//     not yet gained the tokens_valid_after column (that signal is simply absent).
+function hm_admin_token_account_valid(array $payload): bool {
+  $uid = (string)($payload['uid'] ?? '');
+  if ($uid === '') return true;                       // legacy token, not account-bound
+  if (!function_exists('hm_db')) return true;
+  try {
+    $st = hm_db()->prepare('SELECT * FROM admin_users WHERE id = ? LIMIT 1');
+    $st->execute([$uid]);
+    $row = $st->fetch();
+  } catch (Throwable $e) {
+    return true;                                       // DB hiccup — do not lock admins out
+  }
+  if (!$row) return false;                             // account deleted
+  if (!(int)($row['active'] ?? 0)) return false;       // account disabled
+  // Logout / forced-revocation cutoff (epoch seconds). A token minted strictly
+  // before the cutoff is dead. NULL/absent column ⇒ no revocation in effect.
+  $cut = isset($row['tokens_valid_after']) && $row['tokens_valid_after'] !== null
+       ? (int)$row['tokens_valid_after'] : 0;
+  if ($cut > 0 && (int)($payload['iat'] ?? 0) < $cut) return false;
+  return true;
+}
+
 // Require a valid admin session for admin-only operations. A no-op while
 // enforcement is disabled (the API-key gate already ran in the caller), so
 // enabling/disabling is a pure config switch with no code change.
@@ -147,7 +185,7 @@ function hm_require_admin(): void {
   if (!hm_admin_auth_enabled()) return;
   $tok = $_SERVER['HTTP_X_ADMIN_TOKEN'] ?? '';
   $p   = (is_string($tok) && $tok !== '') ? hm_admin_token_verify($tok) : null;
-  if (!$p || ($p['role'] ?? '') !== 'admin') {
+  if (!$p || ($p['role'] ?? '') !== 'admin' || !hm_admin_token_account_valid($p)) {
     hm_log_auth_fail('admin_token');
     hm_json(['ok' => false, 'data' => null, 'error' => ['message' => 'Admin authorization required', 'code' => 'admin_required']], 401);
   }

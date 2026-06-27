@@ -21,14 +21,14 @@ hm_require_api_key();
 try {
   $tok   = $_SERVER['HTTP_X_ADMIN_TOKEN'] ?? '';
   $pl    = (is_string($tok) && $tok !== '') ? hm_admin_token_verify($tok) : null;
-  $valid = $pl !== null && ($pl['role'] ?? '') === 'admin';
+  // Revocation-aware: signature + role + account still active and not logged out
+  // (shared check with rest.php / admin-users.php via hm_admin_token_account_valid).
+  $valid = $pl !== null && ($pl['role'] ?? '') === 'admin' && hm_admin_token_account_valid($pl);
 
   $user = null;
   if ($valid && !empty($pl['uid'])) {
-    // Revocation-aware: a token for a deleted/disabled account is not valid.
     $u = hm_admin_user_by_id((string)$pl['uid']);
-    if ($u && (int)$u['active']) $user = hm_admin_user_public($u);
-    else $valid = false;
+    if ($u) $user = hm_admin_user_public($u);
   }
 
   // PHP-session identity (when the cookie is present) — secondary signal.

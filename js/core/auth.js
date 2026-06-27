@@ -27,7 +27,9 @@
 const Auth = {
   KEY:          'hm_admin_sess',
   TOKEN_KEY:    'hm_admin_token',
+  EXP_KEY:      'hm_admin_token_exp',   // server token expiry (epoch s) — keeps the UI marker from outliving the token
   ENFORCED_KEY: 'hm_admin_enforced',
+  LOGOUT_PING:  'hm_admin_logout_ping', // localStorage broadcast → log every same-origin tab out together
   CREDS_KEY:    'hm_admin_creds',   // retained for back-compat cleanup; no longer written
   LOCK_KEY:     'hm_admin_lock',
   LOG_KEY:      'hm_admin_log',
@@ -86,8 +88,10 @@ const Auth = {
 
   _clearAdminToken() {
     try { sessionStorage.removeItem(this.TOKEN_KEY); } catch (_) {}
+    try { sessionStorage.removeItem(this.EXP_KEY); } catch (_) {}
     try { sessionStorage.removeItem(this.ENFORCED_KEY); } catch (_) {}
     window.__HM_ADMIN_TOKEN = null;
+    window.__HM_ADMIN_EXP = 0;
     window.__HM_ADMIN_ENFORCED = false;
   },
 
@@ -172,6 +176,9 @@ const Auth = {
       const d = r.data;
       try { sessionStorage.setItem(this.TOKEN_KEY, d.token); } catch (_) {}
       window.__HM_ADMIN_TOKEN = d.token;
+      const exp = Number(d.exp) || 0;       // server token expiry (epoch s)
+      try { sessionStorage.setItem(this.EXP_KEY, String(exp)); } catch (_) {}
+      window.__HM_ADMIN_EXP = exp;
       const enf = !!d.enforced;
       try { sessionStorage.setItem(this.ENFORCED_KEY, enf ? '1' : '0'); } catch (_) {}
       window.__HM_ADMIN_ENFORCED = enf;
@@ -205,11 +212,18 @@ const Auth = {
 
   async logout() {
     this._addLog('logout', 'manual');
-    try { await this._api('logout', {}); } catch (_) {}   // best-effort: destroy PHP session
+    // Best-effort: destroy the PHP session AND server-revoke every outstanding
+    // token for this account (admin-logout.php sets tokens_valid_after) so no
+    // other tab/device can keep writing with a copied token after logout.
+    try { await this._api('logout', {}); } catch (_) {}
     sessionStorage.removeItem(this.KEY);
     this._clearAdminToken();
     this._user = null;
     this._staffCache = null;
+    // Broadcast to every other same-origin tab so they drop their token + show
+    // the login screen too (sessionStorage is per-tab; this localStorage write
+    // fires a `storage` event in the OTHER tabs only).
+    try { localStorage.setItem(this.LOGOUT_PING, String(Date.now())); } catch (_) {}
     if (typeof Adapter !== 'undefined') Adapter.destroyRealtime();
     showLogin();
   },
@@ -219,8 +233,39 @@ const Auth = {
       const s = this._marker();
       if (!s || !s.token) return false;
       if (Date.now() - s.ts > this.TIMEOUT) { sessionStorage.removeItem(this.KEY); return false; }
+      // Hard token-expiry gate: the client marker is kept alive by activity
+      // (touch()), but the server HMAC token has a FIXED lifetime. Once it lapses,
+      // every admin write 401s — so treat the session as ended even if the marker
+      // is still "fresh", instead of showing a logged-in UI with dead writes.
+      const exp = window.__HM_ADMIN_EXP || 0;
+      if (exp && (Date.now() / 1000) >= exp) {
+        this._clearAdminToken();
+        sessionStorage.removeItem(this.KEY);
+        return false;
+      }
       return true;
     } catch(e) { return false; }
+  },
+
+  /* Best-effort server-side validation of the restored token (admin-session.php).
+     Call on page load: the client only knows its own marker/expiry, so this is the
+     single point that catches a token revoked SERVER-side (account disabled/deleted
+     or logged out elsewhere) while the local marker still looks valid.
+     Returns { valid:true|false|null } — null means "couldn't tell" (offline /
+     network / no token); callers must log out ONLY on an explicit false so a
+     transient outage never ejects a working admin. */
+  async verifySession() {
+    if (!window.__HM_ADMIN_TOKEN) return { valid: false };
+    const r = await this._api('verify', {});
+    if (r && r.ok && r.data) {
+      // Keep the enforcement flag in sync with the server's current answer.
+      if (typeof r.data.enforced !== 'undefined') {
+        window.__HM_ADMIN_ENFORCED = !!r.data.enforced;
+        try { sessionStorage.setItem(this.ENFORCED_KEY, r.data.enforced ? '1' : '0'); } catch (_) {}
+      }
+      return { valid: r.data.valid === true };
+    }
+    return { valid: null };   // network / unknown — do not act
   },
 
   /* Rotate session token on navigation — prevents fixation. Preserves identity. */
@@ -413,7 +458,26 @@ window.Auth = Auth;
 try {
   const _hmTok = sessionStorage.getItem(Auth.TOKEN_KEY);
   if (_hmTok) window.__HM_ADMIN_TOKEN = _hmTok;
+  window.__HM_ADMIN_EXP = parseInt(sessionStorage.getItem(Auth.EXP_KEY) || '0', 10) || 0;
   window.__HM_ADMIN_ENFORCED = sessionStorage.getItem(Auth.ENFORCED_KEY) === '1';
   const _m = Auth._marker();
   if (_m && _m.userId) Auth._user = { id:_m.userId, name:_m.userName, email:_m.userEmail, role:_m.role };
 } catch (e) { /* sessionStorage blocked — token simply absent */ }
+
+/* Cross-tab logout: when ANY same-origin admin tab logs out it writes
+   Auth.LOGOUT_PING to localStorage, which fires this `storage` event in every
+   OTHER tab. Drop the local token/marker and return to the login screen so a
+   logout (e.g. on a shared computer) takes effect everywhere at once. */
+try {
+  window.addEventListener('storage', function (e) {
+    if (e.key !== Auth.LOGOUT_PING || !e.newValue) return;
+    try {
+      sessionStorage.removeItem(Auth.KEY);
+      Auth._clearAdminToken();
+      Auth._user = null;
+      Auth._staffCache = null;
+      if (typeof Adapter !== 'undefined' && Adapter.destroyRealtime) Adapter.destroyRealtime();
+      if (typeof showLogin === 'function') showLogin();
+    } catch (_) {}
+  });
+} catch (e) { /* no window/localStorage — non-fatal */ }

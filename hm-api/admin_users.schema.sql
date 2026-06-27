@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS `admin_users` (
   `active`        TINYINT(1)   NOT NULL DEFAULT 1,
   `must_change_password` TINYINT(1) NOT NULL DEFAULT 0,       -- force password change on next login
   `last_login`    DATETIME     NULL DEFAULT NULL,
+  `tokens_valid_after` BIGINT UNSIGNED NULL DEFAULT NULL,      -- logout/revocation cutoff (epoch s); tokens with iat < this are rejected
   `reset_hash`    VARCHAR(255) NULL DEFAULT NULL,              -- reserved: hashed one-time reset token
   `reset_expires` DATETIME     NULL DEFAULT NULL,              -- reserved: reset token expiry
   `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
