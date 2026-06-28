@@ -34,10 +34,14 @@ hm-api/send-email.php
 ```
 
 **`hm-api/_smtp.php` (new, dependency-free):**
-- Socket via **`fsockopen()`**; `ssl://` transport for implicit TLS (465); `stream_socket_enable_crypto()` for STARTTLS (587).
-- **STARTTLS**, **AUTH LOGIN** (PLAIN fallback from advertised `EHLO` caps).
+- **Transport / TLS** (verification enabled — certificate **and** hostname):
+  - `secure='tls'` (587, recommended): plain connect via **`fsockopen()`**, then STARTTLS via `stream_socket_enable_crypto()`. Because `fsockopen()` cannot carry a stream context, the verification options (`verify_peer`, `verify_peer_name`, `allow_self_signed=false`, `SNI_enabled`, `peer_name=host`) are applied to the stream's context with **`stream_context_set_option()`** immediately before the handshake.
+  - `secure='ssl'` (465, implicit TLS): handshake happens at connect, so the same options are passed via a context to **`stream_socket_client('ssl://…', …, $ctx)`** (fsockopen can't, for this branch).
+  - `secure=''` (25): plain, no encryption.
+- **AUTH LOGIN** (PLAIN fallback from advertised `EHLO` caps).
+- **Recipient validation** in `hm_smtp_send()` (and the self-test send): rejects CR/LF and non-`FILTER_VALIDATE_EMAIL` addresses → `invalid_recipient`, blocking SMTP/header injection for every caller.
 - **UTF-8 + HTML**: `multipart/alternative` (plain+HTML), base64 bodies, MIME-encoded Subject/From — safe for Japanese.
-- **Response validation** on every command (220/250/334/235/354); **timeouts** via `stream_set_timeout` + `fsockopen` connect timeout; typed `HM_SMTP_Exception` carrying a `->smtpCode`.
+- **Response validation** on every command (220/250/334/235/354); **full-payload write loop** (handles partial `fwrite`, throws `smtp_send` if the socket closes mid-DATA); **timeouts** via `stream_set_timeout` + connect timeout; typed `HM_SMTP_Exception` carrying a `->smtpCode`.
 - Public API: `hm_smtp_send(...)`, `hm_smtp_selftest(...)`, plus helpers `hm_smtp_build_message`, `hm_smtp_opts`, `hm_smtp_public_msg`. Whole file wrapped in `if (!class_exists('HM_SMTP_Exception'))` to be re-include-safe.
 
 **Response envelope (additive — backward compatible):**
@@ -84,7 +88,8 @@ if (is_file(__DIR__ . '/_smtp.php')) {
 | Half-deploy (`send-email.php` without `_smtp.php`) | Guarded load → `smtp_unavailable`, no fatal. Still: **deploy both files together.** |
 | Wrong `smtp_host`/port/secure | Self-test surfaces exact failing stage + code before real sends. |
 | Port 587/465 blocked by host firewall | `smtp_connect` error + log; ask cPanel host to allow outbound SMTP, or use `mail` mode. |
-| TLS cert/SNI issues | `verify_peer`/`verify_peer_name` on; `smtp_tls` error + log. |
+| TLS cert/SNI/hostname mismatch | `verify_peer` + `verify_peer_name` + `SNI_enabled` + `peer_name` enforced (via context for `ssl://`, via `stream_context_set_option()` before STARTTLS); a bad/mismatched cert fails the handshake → `smtp_tls` error + log (no silent downgrade). |
+| Recipient-based SMTP/header injection | `hm_smtp_send()` rejects CR/LF + invalid addresses (`invalid_recipient`, HTTP 400) before any socket write. |
 | Frontend regression | Envelope is additive; legacy fields kept; no frontend edit needed. |
 | Self-test abuse / open-relay probing | API-key + admin-token gated, rate-limited `5/min`, default test recipient is `smtp_user` (self). |
 

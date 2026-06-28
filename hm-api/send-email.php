@@ -171,7 +171,10 @@ if ($mode === 'smtp') {
       'code' => $e->smtpCode, 'err' => $e->getMessage(),
       'host' => (string)($cfg['smtp_host'] ?? ''), 'to' => $to, 'from_account' => $account,
     ]);
-    email_err(hm_debug() ? $e->getMessage() : hm_smtp_public_msg($e->smtpCode), $e->smtpCode, 502);
+    // A rejected/injected recipient is a client error (400); everything else is
+    // an upstream/transport failure (502).
+    $status = $e->smtpCode === 'invalid_recipient' ? 400 : 502;
+    email_err(hm_debug() ? $e->getMessage() : hm_smtp_public_msg($e->smtpCode), $e->smtpCode, $status);
   } catch (Throwable $e) {
     hm_log_error('send-email smtp failed', ['err' => $e->getMessage(), 'to' => $to, 'from_account' => $account]);
     email_err(hm_safe_msg('Email send failed', $e), 'smtp_error', 502);

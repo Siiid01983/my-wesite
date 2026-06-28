@@ -19,7 +19,8 @@
 //    hm_smtp_public_msg($code) → safe, human string for an error code.
 //
 //  Error codes (HM_SMTP_Exception->smtpCode):
-//    smtp_config  smtp_dns  smtp_connect  smtp_tls  smtp_auth  smtp_send  smtp_error
+//    invalid_recipient  smtp_config  smtp_dns  smtp_connect  smtp_tls
+//    smtp_auth  smtp_send  smtp_error
 //
 //  Logging: this file NEVER logs on its own — callers (send-email.php) decide
 //  what to log via hm_log_error so logging stays in one place. AUTH credentials
@@ -44,6 +45,7 @@ class HM_SMTP {
   private array $caps = [];          // EHLO capabilities (UPPERCASE => args)
   private string $lastResponse = '';
   private int    $lastCode = 0;
+  private string $host = '';         // remote host, reused as TLS peer_name
 
   public function __construct(array $opt) {
     $this->opt = $opt + [
@@ -55,7 +57,19 @@ class HM_SMTP {
   public function lastResponse(): string { return $this->lastResponse; }
   public function capabilities(): array  { return $this->caps; }
 
-  // ── Open the socket with fsockopen() and read the 220 greeting ────────────
+  // TLS verification options applied to every encrypted handshake (implicit TLS
+  // at connect, and the STARTTLS upgrade). Certificate + hostname are verified.
+  private function tlsContextOptions(string $host): array {
+    return [
+      'verify_peer'       => true,
+      'verify_peer_name'  => true,
+      'allow_self_signed' => false,
+      'SNI_enabled'       => true,
+      'peer_name'         => $host,
+    ];
+  }
+
+  // ── Open the socket and read the 220 greeting ─────────────────────────────
   public function connect(): void {
     $secure = strtolower((string)$this->opt['secure']);
     $host   = (string)$this->opt['host'];
@@ -63,13 +77,20 @@ class HM_SMTP {
     $timeout= (int)$this->opt['timeout'] ?: 15;
 
     if ($host === '') throw new HM_SMTP_Exception('SMTP host not configured', 'smtp_config');
-
-    // 'ssl' = implicit TLS (465): connect with the ssl:// transport.
-    // 'tls'/'' = connect plain, then upgrade via STARTTLS later.
-    $remote = ($secure === 'ssl') ? 'ssl://' . $host : $host;
+    $this->host = $host;
 
     $errno = 0; $errstr = '';
-    $fp = @fsockopen($remote, $port, $errno, $errstr, $timeout);
+    if ($secure === 'ssl') {
+      // Implicit TLS (465): the handshake happens at connect, so verification
+      // MUST be supplied via a stream context here — fsockopen() can't carry one.
+      $ctx = stream_context_create(['ssl' => $this->tlsContextOptions($host)]);
+      $fp  = @stream_socket_client('ssl://' . $host . ':' . $port, $errno, $errstr,
+                                   $timeout, STREAM_CLIENT_CONNECT, $ctx);
+    } else {
+      // 'tls'/'' connect plain, then upgrade via STARTTLS later (verification
+      // options are applied to this stream's context in startTls()).
+      $fp = @fsockopen($host, $port, $errno, $errstr, $timeout);
+    }
     if (!$fp) {
       throw new HM_SMTP_Exception(
         sprintf('Connect to %s:%d failed: %s (%d)', $host, $port, $errstr ?: 'no route', $errno),
@@ -117,6 +138,14 @@ class HM_SMTP {
     [$code] = $this->read();
     if ($code !== 220) throw new HM_SMTP_Exception('STARTTLS refused: ' . $this->lastResponse, 'smtp_tls');
 
+    // Apply certificate-verification options to THIS stream's context before the
+    // handshake. stream_socket_enable_crypto() reads the stream context at call
+    // time, so this restores peer/peer-name verification + SNI on the fsockopen
+    // stream (which could not be given a context at connect time).
+    foreach ($this->tlsContextOptions($this->host) as $k => $v) {
+      @stream_context_set_option($this->fp, 'ssl', $k, $v);
+    }
+
     $crypto = STREAM_CRYPTO_METHOD_TLS_CLIENT;
     if (defined('STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT')) {
       $crypto |= STREAM_CRYPTO_METHOD_TLSv1_1_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT;
@@ -125,7 +154,7 @@ class HM_SMTP {
       $crypto |= STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT;
     }
     $ok = @stream_socket_enable_crypto($this->fp, true, $crypto);
-    if ($ok !== true) throw new HM_SMTP_Exception('TLS handshake failed after STARTTLS', 'smtp_tls');
+    if ($ok !== true) throw new HM_SMTP_Exception('TLS handshake/verification failed after STARTTLS', 'smtp_tls');
   }
 
   // ── AUTH (LOGIN preferred, PLAIN fallback) ────────────────────────────────
@@ -198,10 +227,21 @@ class HM_SMTP {
 
   private function write(string $data): void {
     if (!$this->fp) throw new HM_SMTP_Exception('SMTP socket not open', 'smtp_send');
-    $len = @fwrite($this->fp, $data);
-    if ($len === false) {
-      $this->failOnTimeout();
-      throw new HM_SMTP_Exception('Write to SMTP socket failed', 'smtp_send');
+    // fwrite() on a socket may write fewer bytes than requested (backpressure);
+    // loop until the whole payload is flushed so a long DATA body is never
+    // silently truncated. A 0/false return on a blocking socket means it closed.
+    $len = strlen($data);
+    $sent = 0;
+    while ($sent < $len) {
+      $n = @fwrite($this->fp, substr($data, $sent));
+      if ($n === false || $n === 0) {
+        $this->failOnTimeout();
+        if (@feof($this->fp)) {
+          throw new HM_SMTP_Exception('SMTP connection closed before the full message was sent', 'smtp_send');
+        }
+        throw new HM_SMTP_Exception('Write to SMTP socket failed', 'smtp_send');
+      }
+      $sent += $n;
     }
   }
 
@@ -266,6 +306,18 @@ function hm_smtp_encode_name(string $name): string {
   return mb_encode_mimeheader($name, 'UTF-8', 'B', "\r\n");
 }
 
+// ── Recipient validation — guards against SMTP/header injection ──────────────
+// Rejects CR/LF (which would let a crafted recipient inject extra SMTP commands
+// or message headers) and anything that is not a syntactically valid address.
+// Throws HM_SMTP_Exception('invalid_recipient'); returns the trimmed address.
+function hm_smtp_assert_recipient(string $to): string {
+  $to = trim($to);
+  if ($to === '' || strpbrk($to, "\r\n") !== false || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+    throw new HM_SMTP_Exception('Invalid recipient address', 'invalid_recipient');
+  }
+  return $to;
+}
+
 // ── Normalised options from _config.php ───────────────────────────────────────
 function hm_smtp_opts(array $cfg): array {
   return [
@@ -286,6 +338,10 @@ function hm_smtp_send(array $cfg, string $fromEmail, string $fromName, string $t
   if ($opt['host'] === '' || $opt['user'] === '' || $opt['pass'] === '') {
     throw new HM_SMTP_Exception('SMTP not fully configured (need smtp_host, smtp_user, smtp_pass)', 'smtp_config');
   }
+
+  // Validate the recipient HERE so every caller is protected against injection,
+  // regardless of any (weaker) checks they ran first.
+  $to = hm_smtp_assert_recipient($to);
 
   [$raw, $mid] = hm_smtp_build_message($fromEmail, $fromName, $to, $fromEmail, $subject, $html, $text);
 
@@ -338,6 +394,7 @@ function hm_smtp_selftest(array $cfg, ?string $sendTo = null): array {
     $data['capabilities'] = array_keys($smtp->capabilities());
 
     if ($sendTo !== null && $sendTo !== '') {
+      $sendTo = hm_smtp_assert_recipient($sendTo);   // same injection guard
       $stamp = date('c');
       [$raw, $mid] = hm_smtp_build_message(
         $opt['user'], 'Hello Moving SMTP self-test', $sendTo, $opt['user'],
@@ -364,6 +421,7 @@ function hm_smtp_selftest(array $cfg, ?string $sendTo = null): array {
 // ── Public, non-leaking message for an SMTP error code ───────────────────────
 function hm_smtp_public_msg(string $code): string {
   switch ($code) {
+    case 'invalid_recipient': return 'Invalid recipient address';
     case 'smtp_config':  return 'SMTP is not fully configured';
     case 'smtp_dns':     return 'Could not resolve the mail server hostname';
     case 'smtp_connect': return 'Could not connect to the mail server';
