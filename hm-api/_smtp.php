@@ -248,11 +248,20 @@ class HM_SMTP {
   /** @return array{0:int,1:string} [code, full response text] */
   private function read(): array {
     if (!$this->fp) throw new HM_SMTP_Exception('SMTP socket not open', 'smtp_send');
-    $data = '';
-    while (($line = @fgets($this->fp, 515)) !== false) {
-      $data .= $line;
-      // A multiline reply uses "250-text"; the final line uses "250 text".
-      if (strlen($line) < 4 || $line[3] === ' ') break;
+    $data = '';     // full transcript of this (possibly multiline) reply
+    $line = '';     // the current reply line being assembled
+    // fgets() can return a chunk shorter than a full line (buffer boundary, or a
+    // line longer than any fixed size), so assemble complete lines (ending in LF)
+    // before deciding continuation ("250-") vs final ("250 "). A sanity cap guards
+    // against a server that never sends a newline.
+    while (($chunk = @fgets($this->fp, 1024)) !== false) {
+      $data .= $chunk;
+      $line .= $chunk;
+      if (strlen($data) > 65536) throw new HM_SMTP_Exception('SMTP response too large', 'smtp_connect');
+      if (substr($line, -1) !== "\n") continue;   // partial line — keep reading
+      $trimmed = rtrim($line, "\r\n");
+      if (strlen($trimmed) < 4 || $trimmed[3] === ' ') break;   // final line reached
+      $line = '';                                  // continuation — start next line
     }
     if ($data === '') { $this->failOnTimeout(); throw new HM_SMTP_Exception('No response from SMTP server', 'smtp_connect'); }
     $this->lastResponse = trim($data);
@@ -331,12 +340,22 @@ function hm_smtp_opts(array $cfg): array {
   ];
 }
 
+// Single source of truth for "is SMTP usable?" — host + authenticated creds.
+// (define(), not const: this file is wrapped in a conditional block and const
+// declarations are only legal at top-level scope.)
+function hm_smtp_config_complete(array $opt): bool {
+  return $opt['host'] !== '' && $opt['user'] !== '' && $opt['pass'] !== '';
+}
+if (!defined('HM_SMTP_CONFIG_ERROR')) {
+  define('HM_SMTP_CONFIG_ERROR', 'SMTP not fully configured (need smtp_host, smtp_user, smtp_pass)');
+}
+
 // ── One-shot authenticated send. Throws HM_SMTP_Exception on any failure. ────
 function hm_smtp_send(array $cfg, string $fromEmail, string $fromName, string $to,
                       string $subject, string $html, string $text): array {
   $opt = hm_smtp_opts($cfg);
-  if ($opt['host'] === '' || $opt['user'] === '' || $opt['pass'] === '') {
-    throw new HM_SMTP_Exception('SMTP not fully configured (need smtp_host, smtp_user, smtp_pass)', 'smtp_config');
+  if (!hm_smtp_config_complete($opt)) {
+    throw new HM_SMTP_Exception(HM_SMTP_CONFIG_ERROR, 'smtp_config');
   }
 
   // Validate the recipient HERE so every caller is protected against injection,
@@ -373,8 +392,8 @@ function hm_smtp_selftest(array $cfg, ?string $sendTo = null): array {
   };
 
   // 0. Config present?
-  if ($opt['host'] === '' || $opt['user'] === '' || $opt['pass'] === '') {
-    return $fail('SMTP not fully configured (need smtp_host, smtp_user, smtp_pass)', 'smtp_config');
+  if (!hm_smtp_config_complete($opt)) {
+    return $fail(HM_SMTP_CONFIG_ERROR, 'smtp_config');
   }
 
   // 1. DNS resolution.
