@@ -123,15 +123,27 @@ return [
 
   // ── Email (send-email.php) ────────────────────────────────────────────────
   //   'mail'   → use PHP mail() (works out-of-the-box on most cPanel hosts)
-  //   'smtp'   → use SMTP (fill smtp_* below; needs PHPMailer in api/vendor or
-  //              cPanel's sendmail). 'mail' is the simplest default.
+  //   'smtp'   → authenticated SMTP via hm-api/_smtp.php (native socket client —
+  //              NO Composer/PHPMailer needed; PHPMailer is used only if you drop
+  //              it into hm-api/vendor/). In 'smtp' mode a send NEVER silently
+  //              falls back to mail(): any connect/auth/send failure is returned
+  //              and logged to logs/error.log.
+  //   Verify SMTP without sending real mail (admin-token + API key required):
+  //     GET <API_BASE>/send-email.php?action=selftest          (connect+auth)
+  //     GET <API_BASE>/send-email.php?action=selftest&send=1    (+ test email to smtp_user)
   'mail_mode'  => 'mail',
   'mail_from_booking' => 'booking@hello-moving.com',
   'mail_from_support' => 'support@hello-moving.com',
   'mail_from_contact' => 'contact@hello-moving.com',
+  //   smtp_secure:  'tls' → STARTTLS on port 587 (recommended)
+  //                 'ssl' → implicit TLS on port 465
+  //                 ''    → no encryption on port 25 (not recommended)
   'smtp_host'  => 'mail.dzsecurity.com',
   'smtp_port'  => 587,
   'smtp_user'  => 'booking@hello-moving.com',
   'smtp_pass'  => '',
   'smtp_secure'=> 'tls',
+  //   Optional SMTP tuning (safe to omit — defaults shown):
+  'smtp_timeout' => 15,        // socket connect/read timeout, seconds
+  // 'smtp_helo'  => 'hello-moving.com',  // EHLO hostname (defaults to server name)
 ];
