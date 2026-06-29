@@ -1669,10 +1669,9 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 <script src="js/utils/i18n.js"></script>
 <script src="js/utils/pdf.js"></script>
 
-<!-- ── CDN: PDF generation ── -->
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-
+<!-- ── PDF generation: html2canvas + jsPDF are loaded ON DEMAND by pdf.js
+     (_ensurePdfLibs) on the first PDF export, so they no longer weigh down
+     every admin page load. ── -->
 <!-- ── Data modules ── -->
 <script src="admin-bookings.js"></script>
 <script src="admin-analytics.js"></script>

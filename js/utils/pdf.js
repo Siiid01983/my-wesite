@@ -8,6 +8,44 @@
    _pdfDownload: renders captured HTML in an off-screen
    iframe, captures via html2canvas, exports with jsPDF.
    ════════════════════════════════════════════════════════ */
+/* ── On-demand loader for the PDF libraries ───────────────────────────────────
+   html2canvas + jsPDF are ~heavy third-party scripts only needed when an admin
+   actually exports a PDF. Rather than load them eagerly on every page view, we
+   inject them on first use. Idempotent + backward compatible: if a page still
+   includes the libs eagerly (e.g. admin.html), the global check short-circuits
+   and this never runs; concurrent export clicks share one in-flight promise. */
+var _PDF_LIB_SRCS = [
+  'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',
+  'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',
+];
+var _pdfLibsPromise = null;
+
+function _loadScriptOnce(src) {
+  return new Promise(function (resolve, reject) {
+    var existing = document.querySelector('script[data-pdf-lib="' + src + '"]');
+    if (existing) {                       // already injected — wait for it
+      if (existing.dataset.loaded === '1') return resolve();
+      existing.addEventListener('load',  function () { resolve(); });
+      existing.addEventListener('error', function () { reject(new Error('pdf lib failed: ' + src)); });
+      return;
+    }
+    var s = document.createElement('script');
+    s.src = src; s.async = true;
+    s.setAttribute('data-pdf-lib', src);
+    s.onload  = function () { s.dataset.loaded = '1'; resolve(); };
+    s.onerror = function () { reject(new Error('pdf lib failed: ' + src)); };
+    document.head.appendChild(s);
+  });
+}
+
+function _ensurePdfLibs() {
+  if (window.html2canvas && window.jspdf) return Promise.resolve();   // eager-loaded / cached
+  if (_pdfLibsPromise) return _pdfLibsPromise;                        // share one in-flight load
+  _pdfLibsPromise = Promise.all(_PDF_LIB_SRCS.map(_loadScriptOnce))
+    .catch(function (err) { _pdfLibsPromise = null; throw err; });    // reset so a later click can retry
+  return _pdfLibsPromise;
+}
+
 function _capturePrintHtml(printFn) {
   let captured = null;
   const orig = window.open;
@@ -22,8 +60,15 @@ function _capturePrintHtml(printFn) {
 }
 
 async function _pdfDownload(html, filename) {
+  toast('PDFライブラリを読み込み中...');
+  try {
+    await _ensurePdfLibs();
+  } catch (e) {
+    console.error('[PDF] library load failed', e);
+    toast('PDFライブラリの読み込みに失敗しました。接続を確認して再試行してください'); return;
+  }
   if (!window.html2canvas || !window.jspdf) {
-    toast('PDFライブラリを読み込み中です。しばらく待ってから再試行してください'); return;
+    toast('PDFライブラリを利用できません'); return;
   }
   toast('PDF生成中...');
   const safeHtml = html.replace(/<script[\s\S]*?<\/script>/gi, '');
