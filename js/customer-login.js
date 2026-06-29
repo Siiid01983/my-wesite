@@ -17,20 +17,12 @@
 
   var LS_EMAIL = 'hm_cl_email';
   var LS_REF   = 'hm_cl_ref';
+  // One-time, same-origin handoff to login.html. The verified email+reference are
+  // placed here (NOT in the URL/history/logs); login.html consumes it once to
+  // silently establish the portal session. Mirrors PortalAuth's session model.
+  var SS_HANDOFF = 'hm_portal_handoff';
 
   // ── tiny helpers ───────────────────────────────────────────────────────────
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
-  function fmtDate(iso) {
-    if (!iso) return '—';
-    var d = new Date(String(iso) + 'T00:00:00');
-    if (isNaN(d)) return esc(iso);
-    var DN = ['日', '月', '火', '水', '木', '金', '土'];
-    return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日（' + DN[d.getDay()] + '）';
-  }
   function lsGet(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
@@ -192,6 +184,7 @@
     if (!base) { showError('Booking not found. Please check your details.'); return; }
 
     var label = btn.innerHTML;
+    var navigating = false;
     btn.disabled = true;
     btn.innerHTML = '<span class="cl-spin"></span>確認中... / Checking...';
 
@@ -205,38 +198,35 @@
       if (out && out.ok && out.booking) {
         lsSet(LS_EMAIL, email);
         lsSet(LS_REF, ref);
-        renderCard(decodeBooking(out.booking));
-        document.getElementById('clForm').style.display = 'none';
-      } else {
-        showError('Booking not found. Please check your details. / 予約が見つかりませんでした。');
+        // Booking verified → hand off to the customer portal login, which
+        // establishes the real session and enters portal.html. The verified
+        // pair travels via sessionStorage; only the booking id is in the URL.
+        var bookingId = decodeBooking(out.booking).id || ref;
+        try {
+          sessionStorage.setItem(SS_HANDOFF, JSON.stringify({
+            email: email, ref: ref, bookingId: bookingId, ts: Date.now(),
+          }));
+        } catch (e) {}
+        navigating = true;
+        btn.innerHTML = '<span class="cl-spin"></span>移動中... / Redirecting...';
+        window.location.href = 'login.html?booking=' + encodeURIComponent(bookingId);
+        return;
       }
+      // Invalid lookup → stay on the page and surface the error in the modal.
+      showError('Booking not found. Please check your details. / 予約が見つかりませんでした。');
     } catch (err) {
       showError('Booking not found. Please check your details. / 予約が見つかりませんでした。');
     } finally {
-      btn.disabled = false;
-      btn.innerHTML = label;
+      // Leave the loading state intact while the browser navigates away.
+      if (!navigating) {
+        btn.disabled = false;
+        btn.innerHTML = label;
+      }
     }
   }
 
-  function renderCard(bk) {
-    var resEl = document.getElementById('clResult');
-    function row(k, v) {
-      return '<div class="cl-bk-row"><span class="cl-bk-k">' + esc(k) + '</span>'
-        + '<span class="cl-bk-v">' + esc(v || '—') + '</span></div>';
-    }
-    resEl.innerHTML = ''
-      + '<div class="cl-bk">'
-      + '  <div class="cl-bk-top"><span class="cl-bk-ref">' + esc(bk.id || '—') + '</span>'
-      + '    <span class="cl-bk-badge">' + esc(bk.status || '—') + '</span></div>'
-      + '  <div class="cl-bk-rows">'
-      +      row('サービス', bk.service)
-      +      row('引越し日', fmtDate(bk.date))
-      +      row('引越し元', bk.fromAddr)
-      +      row('引越し先', bk.toAddr)
-      + '  </div>'
-      + '</div>'
-      + '<p class="cl-ok">ご予約を確認しました。/ Booking found.</p>';
-  }
+  // Booking results are no longer rendered inline: a verified lookup now hands
+  // off to login.html (see onSubmit), which establishes the portal session.
 
   // ── entry points (header + mobile nav + footer) ─────────────────────────────
   function bindEntry(el) {
