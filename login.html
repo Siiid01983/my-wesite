@@ -287,6 +287,43 @@
     }
     emailEl.addEventListener('input', syncAdminUI);
 
+    // One-time handoff from the index.html "My Booking" modal. The modal already
+    // verified this email + reference against hm-api/auth.php, so consume the
+    // handoff once and silently establish the portal session (no second click).
+    // Falls back to the manual form if the handoff is stale or login now fails.
+    (function consumeBookingHandoff() {
+      let raw;
+      try { raw = sessionStorage.getItem('hm_portal_handoff'); } catch (_) { raw = null; }
+      if (!raw) return;
+      try { sessionStorage.removeItem('hm_portal_handoff'); } catch (_) {} // consume once
+
+      let data = null;
+      try { data = JSON.parse(raw); } catch (_) { data = null; }
+      if (!data || !data.email || !data.ref) return;
+      // Reject stale handoffs (>5 min) so a leftover entry can't auto-login later.
+      if (!data.ts || (Date.now() - data.ts) > 5 * 60 * 1000) return;
+
+      // Prefill so that, if auto-login fails, the user only has to press ログイン.
+      emailEl.value = data.email;
+      document.getElementById('reference').value = data.ref;
+      syncAdminUI();
+
+      if (!window.PortalLogin || !PortalLogin.isConfigured()) return;
+
+      btn.disabled = true;
+      btn.textContent = 'ログイン中…';
+      PortalLogin.loginWithReference(data.email, data.ref).then(function (res) {
+        if (res && res.ok) { location.replace('portal.html'); return; }
+        btn.disabled = false;
+        btn.textContent = 'ログイン';
+        showError('メールアドレスまたは予約番号が正しくありません。');
+      }).catch(function () {
+        btn.disabled = false;
+        btn.textContent = 'ログイン';
+        showError('接続エラーが発生しました。しばらくしてから再度お試しください。');
+      });
+    })();
+
     // Already authenticated (persisted API session) → go to the portal.
     (async function () {
       try {
