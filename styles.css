@@ -278,6 +278,9 @@ html.dark .header-chat-pill:hover { background: rgba(255,255,255,.12); color: #f
   font-size: 19px;
   letter-spacing: 0;
 }
+/* Logo as image (single source of truth: /icons/icon.svg). Transparent bg so the
+   glyph-era dark box never shows behind the SVG's rounded corners; same 42px box. */
+img.brand-mark { background: transparent; object-fit: contain; }
 .brand-text { display: flex; flex-direction: column; line-height: 1.1; }
 .brand-name {
   font-family: var(--font-en);
