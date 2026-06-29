@@ -263,11 +263,7 @@ window.ContentLoader = (function () {
         const kv = {};
         kvRes.data.forEach(({ key, value }) => { kv[key] = value; _ls(key, value); });
 
-        const heroData = kv.hm_hero;
-        console.log('[Hero]', heroData);
-        console.log('[Hero] headline_ja', heroData && heroData.headline_ja);
-        console.log('[Hero] headline_en', heroData && heroData.headline_en);
-        _applyHero(heroData);
+        _applyHero(kv.hm_hero);
         _applyServicesMeta(kv.hm_services_section);
         _applyRevsMeta(kv.hm_reviews_section);
         _applyFaqMeta(kv.hm_faq_section);
