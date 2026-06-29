@@ -151,6 +151,18 @@ function saveServicesAll() {
   Adapter.pushSvcHistory({ meta: Adapter.getSvcMeta(), services: Adapter.getServices() });
   Adapter.saveSvcMeta(meta);
   renderSvcHistory();
+
+  /* The Services view also hosts the image-manager panel (wmcServices.js), which
+     historically had its OWN separate "すべて保存" button that users miss — so
+     service-image edits were never persisted (hm_service_images stayed empty).
+     Persist images in the SAME click here, but only when that panel is actually
+     rendered with its cards (so we never overwrite hm_service_images with {} on a
+     page/role where the image manager isn't shown, and this stays a no-op on
+     admin.html where wmcServices.js isn't loaded). */
+  if (typeof _wmcSvcSaveAll === 'function' && document.querySelector('.wmc-svc-img-card')) {
+    try { _wmcSvcSaveAll(); } catch (e) { console.warn('[services] image-config save failed:', e); }
+  }
+
   const ind = document.getElementById('svcSaveInd');
   ind.style.opacity = '1';
   clearTimeout(ind._t);
