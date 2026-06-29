@@ -25,7 +25,8 @@
 
   let _cache     = new Map();   // custId → enriched customer (for the detail open)
   let _active    = null;        // currently open customer
-  let _activeIds = [];          // booking ids (HM-ref + uuid) for file scoping
+  let _activeBookingId = null;  // the ONE booking reference the hub is scoped to
+  let _activeIds = [];          // scoped booking ids (HM-ref + uuid) for file scoping
   let _fcache    = {};          // index → file row (download handler lookup)
 
   /* ── Safe wrappers over shared globals (defensive on load order) ─────────── */
@@ -182,6 +183,60 @@
         <tbody>${rows}</tbody></table></div>`);
   }
 
+  /* Both ids a single booking can be keyed by in storage (HM reference + uuid). */
+  function _bookingScopeIds(b) {
+    return [...new Set([b && b.id, b && b._dbId]
+      .filter(v => v != null && v !== '')
+      .map(String))];
+  }
+
+  /* Compact booking-reference picker shown above the bookings table. Changing it
+     scopes the messages + files sections to ONE reference, so a multi-booking
+     customer's data is never mixed. Hidden when there are 0–1 bookings (nothing
+     to disambiguate — the hub auto-scopes to the single/none booking). */
+  function _bookingSelectorHTML(c) {
+    if (!c.bookings || c.bookings.length < 2) return '';
+    const opts = c.bookings.map(b =>
+      `<option value="${_esc(b.id)}">${_esc(b.id)} · ${_esc(_fmtD(b.date))} · ${_esc(b.service || '—')}</option>`
+    ).join('');
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:700;color:var(--gray-1)">表示中の予約 / Booking</span>
+      <select id="puBookingSel" class="sel" style="font-size:12px;max-width:100%" onchange="PortalUsers.selectBooking(this.value)">${opts}</select>
+      <span style="font-size:11px;color:var(--gray-2)">メッセージ・ファイルをこの予約番号で絞り込み</span>
+    </div>`;
+  }
+
+  /* Scope the unified hub (messages + files) to a SINGLE booking reference, so a
+     multi-booking customer's records are never mixed across references. Falls back
+     to the customer-email message timeline ONLY when the customer has no booking
+     at all (nothing to scope by). */
+  function _selectBooking(bookingId) {
+    if (!_active) return;
+    const b = (_active.bookings || []).find(x => String(x.id) === String(bookingId))
+            || _active.latestBk || null;
+    _activeBookingId = b ? b.id : null;
+    _activeIds = b ? _bookingScopeIds(b) : [];
+
+    /* Messages — scoped to THIS booking reference (communications.booking_id). */
+    const comm = document.getElementById('puCommHistory');
+    if (comm) {
+      if (window.CommModule && CommModule.renderTimeline && _activeBookingId) {
+        CommModule.renderTimeline(_activeBookingId, 'puCommHistory');
+      } else if (window.CommModule && CommModule.renderCustomerTimeline && _active.email) {
+        CommModule.renderCustomerTimeline(_active.email, 'puCommHistory');   // no booking → email fallback
+      } else {
+        comm.innerHTML = _section('メッセージ / Messages', _empty('メッセージはありません'));
+      }
+    }
+
+    /* Files — booking-scoped list/download already key off _activeIds. */
+    _fcache = {};
+    _renderFiles();
+
+    const sel = document.getElementById('puBookingSel');
+    if (sel && _activeBookingId != null) sel.value = String(_activeBookingId);
+  }
+
   /* Read-only notices — the three features the portal has no data for. */
   function _accessHTML() {
     const row = (jp, en, note) => `<div style="display:flex;justify-content:space-between;gap:12px;padding:9px 12px;border-top:1px solid var(--line-2);font-size:12px">
@@ -200,37 +255,40 @@
     const c = _cache.get(id) || _enriched().find(x => x.id === id);
     if (!c) return;
     _active = c;
+    _activeBookingId = null;
     _activeIds = [];
-    c.bookings.forEach(b => [b.id, b._dbId].forEach(v => { if (v != null && v !== '') _activeIds.push(String(v)); }));
-    _activeIds = [...new Set(_activeIds)];
 
     document.getElementById('puAvatar').textContent = (c.name || '?').trim().charAt(0) || '?';
     document.getElementById('puName').textContent   = c.name || '—';
     document.getElementById('puId').textContent     = c.id || '';
     document.getElementById('puProfile').innerHTML  = _profileHTML(c);
-    document.getElementById('puBookings').innerHTML = _bookingsHTML(c);
+    document.getElementById('puBookings').innerHTML = _bookingSelectorHTML(c) + _bookingsHTML(c);
     document.getElementById('puAccess').innerHTML   = _accessHTML();
 
-    /* Messages — reuse CommModule's own timeline (renders its own header). */
-    const comm = document.getElementById('puCommHistory');
-    if (comm) {
-      if (window.CommModule && CommModule.renderCustomerTimeline && c.email) {
-        CommModule.renderCustomerTimeline(c.email, 'puCommHistory');
-      } else {
-        comm.innerHTML = _section('メッセージ / Messages', _empty('メッセージはありません'));
-      }
-    }
-
-    /* Files — async list from storage.php private buckets. */
+    /* Scope the hub to ONE booking reference (default: the latest). _selectBooking
+       renders the per-booking message timeline AND the booking-scoped file list. */
     _fcache = {};
-    _renderFiles();
+    const _defId = (c.latestBk && c.latestBk.id) || (c.bookings[0] && c.bookings[0].id) || null;
+    _selectBooking(_defId);
 
     const sendBtn = document.getElementById('puSendBtn');
     if (sendBtn) {
       sendBtn.style.display = c.email ? '' : 'none';
       sendBtn.onclick = () => {
-        if (window.CommModule && CommModule.openQuickReply) CommModule.openQuickReply(c.email, c.name, c.name);
-        else _toast('メッセージ機能が利用できません');
+        if (!window.CommModule) { _toast('メッセージ機能が利用できません'); return; }
+        /* Tag the reply with the CURRENTLY SELECTED booking so it lands in that
+           reference's timeline (keeps the per-booking isolation consistent).
+           Falls back to a customer-level reply when no booking is selected. */
+        const sb = _activeBookingId
+          ? (_active.bookings || []).find(x => String(x.id) === String(_activeBookingId))
+          : null;
+        if (sb && CommModule.openReply) {
+          CommModule.openReply(sb.id, c.email, c.name, sb.id, sb.service, sb.date);
+        } else if (CommModule.openQuickReply) {
+          CommModule.openQuickReply(c.email, c.name, c.name);
+        } else {
+          _toast('メッセージ機能が利用できません');
+        }
       };
     }
 
@@ -310,6 +368,6 @@
   }
 
   /* ── Exports ─────────────────────────────────────────────────────────────── */
-  window.PortalUsers = { render, filter, open, close, download };
+  window.PortalUsers = { render, filter, open, close, download, selectBooking: _selectBooking };
   window.renderPortalUsers = render;   // navigation.js go('portal-users') calls this
 })();
