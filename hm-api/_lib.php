@@ -191,6 +191,26 @@ function hm_require_admin(): void {
   }
 }
 
+// Strict content-write gate (RC-D). Requires a VALID, non-revoked staff session
+// token (role admin OR manager) for writes to CMS/content tables — enforced even
+// when admin_auth_enabled is OFF, so the page-served public API key alone can
+// never mutate site content. A logged-in admin/manager's apiClient already sends
+// X-ADMIN-TOKEN, so the CMS keeps working; anonymous public-key callers are 401'd.
+// Fail-safe: if no signing secret is provisioned (tokens can't be verified at
+// all), we DON'T hard-block every write — we defer to the standard gate so a
+// mis-provisioned server can't brick content editing. (In production the secret
+// is set, since admin login mints tokens, so enforcement is active.)
+function hm_require_staff_write(): void {
+  if (hm_admin_secret() === '') { hm_require_admin(); return; }   // can't verify → preserve prior behavior
+  $tok  = $_SERVER['HTTP_X_ADMIN_TOKEN'] ?? '';
+  $p    = (is_string($tok) && $tok !== '') ? hm_admin_token_verify($tok) : null;
+  $role = is_array($p) ? ($p['role'] ?? '') : '';
+  if (!$p || ($role !== 'admin' && $role !== 'manager') || !hm_admin_token_account_valid($p)) {
+    hm_log_auth_fail('content_write_token');
+    hm_json(['ok' => false, 'data' => null, 'error' => ['message' => 'Admin authorization required for content writes', 'code' => 'admin_required']], 401);
+  }
+}
+
 function hm_json($data, int $status = 200): void {
   http_response_code($status);
   header('Content-Type: application/json; charset=utf-8');
