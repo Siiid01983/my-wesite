@@ -19,7 +19,8 @@
 //                error:"<string>",                       ← legacy string kept
 //                error_detail:{ message, code } }        ← new structured detail
 //
-//  Self-test (admin-gated):  GET/POST  ?action=selftest[&send=1&to=addr]
+//  Self-test (admin-gated):  GET/POST  ?action=selftest[&send=1]
+//    (a test send targets smtp_user only; a client-supplied `to` is ignored)
 //
 //  All connect / auth / send failures are logged via hm_log_error (_log.php).
 // ════════════════════════════════════════════════════════════════════════════
@@ -64,9 +65,12 @@ function email_err(string $message, string $code, int $status = 502): void {
 }
 
 // ── Self-test branch (diagnostics) ───────────────────────────────────────────
-//  Verifies SMTP connection + authentication, and optionally sends a test email.
-//  Admin-gated (hm_require_admin is a no-op until admin_auth_enabled) on top of
-//  the API key, and rate-limited separately so it can't be used to probe/relay.
+//  Verifies SMTP connection + authentication, and optionally sends a test email
+//  to the authenticated mailbox ITSELF. Protected by the API key + a dedicated
+//  rate limit, plus hm_require_admin when admin auth is enabled. The optional
+//  test send always targets smtp_user — NEVER a client-supplied recipient — so
+//  the diagnostic can't be used as an open relay even if the API key leaks
+//  (a client-supplied `to` is ignored; this does not depend on admin auth).
 if (($_GET['action'] ?? '') === 'selftest' || isset($_GET['selftest'])) {
   hm_require_admin();
   hm_rate_limit('email_selftest', 5, 60);
@@ -78,8 +82,10 @@ if (($_GET['action'] ?? '') === 'selftest' || isset($_GET['selftest'])) {
 
   $body   = hm_body();
   $doSend = !empty($body['send']) || (($_GET['send'] ?? '') === '1');
-  $sendTo = trim((string)($body['to'] ?? ($_GET['to'] ?? '')));
-  if ($doSend && $sendTo === '') $sendTo = (string)($cfg['smtp_user'] ?? '');   // send to self
+  // Hardening: the test send goes to smtp_user only; any client-supplied `to`
+  // is intentionally ignored so this endpoint can never relay to arbitrary
+  // recipients.
+  $sendTo = (string)($cfg['smtp_user'] ?? '');
 
   if (($cfg['mail_mode'] ?? 'mail') !== 'smtp') {
     hm_json([
@@ -153,31 +159,35 @@ $mode = $cfg['mail_mode'] ?? 'mail';
 //  the native client in _smtp.php. On ANY failure we log + return an error and
 //  STOP — we never fall through to mail() in smtp mode.
 if ($mode === 'smtp') {
-  // Requirement 10: never fatal if the SMTP module is absent — and never
-  // silently fall back to mail() in smtp mode. Degrade to a structured error.
-  if (!$HM_SMTP_READY) {
-    hm_log_error('send-email smtp unavailable', ['reason' => '_smtp.php missing', 'to' => $to, 'from_account' => $account]);
-    email_err('SMTP transport unavailable (_smtp.php missing on server)', 'smtp_unavailable', 500);
+  // Two interchangeable SMTP transports: PHPMailer if it is installed in vendor/,
+  // otherwise the native client in _smtp.php. We fail loudly (and never fall
+  // through to mail()) only when NEITHER is available — a host that ships
+  // PHPMailer but no _smtp.php must still be able to send.
+  $hasPhpmailer = is_file(__DIR__ . '/vendor/autoload.php');
+  if (!$hasPhpmailer && !$HM_SMTP_READY) {
+    hm_log_error('send-email smtp unavailable', ['reason' => 'no PHPMailer in vendor/ and _smtp.php missing', 'to' => $to, 'from_account' => $account]);
+    email_err('SMTP transport unavailable (install PHPMailer in vendor/ or deploy _smtp.php)', 'smtp_unavailable', 500);
   }
   try {
-    if (is_file(__DIR__ . '/vendor/autoload.php')) {
-      $res = send_via_phpmailer($cfg, $acc, $to, $subject, $html, trim($message));
-    } else {
-      $res = hm_smtp_send($cfg, $acc['email'], $acc['name'], $to, $subject, $html, trim($message));
-    }
+    $res = $hasPhpmailer
+      ? send_via_phpmailer($cfg, $acc, $to, $subject, $html, trim($message))
+      : hm_smtp_send($cfg, $acc['email'], $acc['name'], $to, $subject, $html, trim($message));
     email_ok(['from' => $acc['email'], 'messageId' => $res['messageId'], 'transport' => $res['transport'] ?? 'smtp']);
-  } catch (HM_SMTP_Exception $e) {
+  } catch (Throwable $e) {
+    // The native client throws HM_SMTP_Exception (carries a structured ->smtpCode);
+    // PHPMailer / anything else has none. instanceof is safe even when the class
+    // is undefined (PHPMailer-only host without _smtp.php) — it just yields false.
+    $typed    = $e instanceof HM_SMTP_Exception;
+    $smtpCode = $typed ? $e->smtpCode : 'smtp_error';
     hm_log_error('send-email smtp failed', [
-      'code' => $e->smtpCode, 'err' => $e->getMessage(),
+      'code' => $smtpCode, 'err' => $e->getMessage(),
       'host' => (string)($cfg['smtp_host'] ?? ''), 'to' => $to, 'from_account' => $account,
     ]);
     // A rejected/injected recipient is a client error (400); everything else is
     // an upstream/transport failure (502).
-    $status = $e->smtpCode === 'invalid_recipient' ? 400 : 502;
-    email_err(hm_debug() ? $e->getMessage() : hm_smtp_public_msg($e->smtpCode), $e->smtpCode, $status);
-  } catch (Throwable $e) {
-    hm_log_error('send-email smtp failed', ['err' => $e->getMessage(), 'to' => $to, 'from_account' => $account]);
-    email_err(hm_safe_msg('Email send failed', $e), 'smtp_error', 502);
+    $status = $smtpCode === 'invalid_recipient' ? 400 : 502;
+    $public = $typed ? hm_smtp_public_msg($smtpCode) : 'Email send failed';
+    email_err(hm_debug() ? $e->getMessage() : $public, $smtpCode, $status);
   }
 }
 
@@ -217,7 +227,9 @@ function send_via_phpmailer(array $cfg, array $acc, string $to, string $subject,
     $mail->send();
     return ['messageId' => $mail->getLastMessageID() ?: ('smtp-' . time()), 'transport' => 'smtp-phpmailer'];
   } catch (Throwable $e) {
-    // Re-wrap as our typed exception so the caller logs + maps it uniformly.
-    throw new HM_SMTP_Exception($e->getMessage(), 'smtp_send', $e);
+    // Surface as a generic transport failure for the caller to log + map. We
+    // deliberately avoid HM_SMTP_Exception here so the PHPMailer path has NO
+    // dependency on _smtp.php being present on the server.
+    throw new RuntimeException('PHPMailer send failed: ' . $e->getMessage(), 0, $e);
   }
 }

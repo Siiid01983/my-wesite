@@ -15,8 +15,10 @@
   if (window.__HM_CUSTOMER_LOGIN__) return;      // guard against double-include
   window.__HM_CUSTOMER_LOGIN__ = true;
 
-  var LS_EMAIL = 'hm_cl_email';
-  var LS_REF   = 'hm_cl_ref';
+  var LS_EMAIL = 'hm_cl_email';   // non-sensitive — persisted for return-visit prefill
+  var SS_REF   = 'hm_cl_ref';     // the booking reference is a login credential, so
+                                  // it is kept in sessionStorage (per-tab, cleared on
+                                  // tab close) and NEVER persisted to disk.
   // One-time, same-origin handoff to login.html. The verified email+reference are
   // placed here (NOT in the URL/history/logs); login.html consumes it once to
   // silently establish the portal session. Mirrors PortalAuth's session model.
@@ -25,6 +27,8 @@
   // ── tiny helpers ───────────────────────────────────────────────────────────
   function lsGet(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function ssGet(k) { try { return sessionStorage.getItem(k) || ''; } catch (e) { return ''; } }
+  function ssSet(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }
 
   // Decode a raw booking row via the existing formatter, with a safe fallback so
   // the card still works if bookingService.js has not finished loading.
@@ -144,7 +148,7 @@
     var emailEl = document.getElementById('clEmail');
     var refEl = document.getElementById('clRef');
     if (!emailEl.value) emailEl.value = lsGet(LS_EMAIL);
-    if (!refEl.value)   refEl.value = lsGet(LS_REF);
+    if (!refEl.value)   refEl.value = ssGet(SS_REF);
     wrap.classList.add('cl-open');
     document.body.style.overflow = 'hidden';
     setTimeout(function () { (emailEl.value ? refEl : emailEl).focus(); }, 60);
@@ -197,7 +201,7 @@
       var out = await res.json().catch(function () { return null; });
       if (out && out.ok && out.booking) {
         lsSet(LS_EMAIL, email);
-        lsSet(LS_REF, ref);
+        ssSet(SS_REF, ref);
         // Booking verified → hand off to the customer portal login, which
         // establishes the real session and enters portal.html. The verified
         // pair AND the booking id travel ONLY via sessionStorage — nothing is
@@ -264,6 +268,9 @@
 
   // ── init ────────────────────────────────────────────────────────────────────
   function init() {
+    // Migrate away from the old persistent reference: purge any booking reference
+    // a previous build left in localStorage (it now lives in sessionStorage only).
+    try { localStorage.removeItem(SS_REF); } catch (e) {}
     injectCSS();
     injectEntryPoints();
     // If the page is navigated to #customer-login directly, open the modal.
