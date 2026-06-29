@@ -183,7 +183,12 @@ window.ContentLoader = (function () {
       Object.keys(imageCfg).forEach(function (k) {
         var cfg  = imageCfg[k];
         var slug = _canonSlug(k);
-        if (cfg && cfg.display_mode === 'image' && cfg.image_url) {
+        /* Apply the image whenever an image_url (URL or data-URI) is set —
+           regardless of the admin's svg/image toggle. Requiring display_mode
+           ==='image' was a trap: admins set a URL but left the mode on 'svg',
+           so the image was silently ignored. To show the default SVG icon
+           again, clear the URL. */
+        if (cfg && cfg.image_url) {
           overrides[slug] = overrides[slug] || {};
           overrides[slug].image = cfg.image_url;
         }
