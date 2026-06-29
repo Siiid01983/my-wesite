@@ -8,7 +8,10 @@
    ══════════════════════════════════════════════════════ */
 
 var _WMC_SVC_DEFS = [
-  { slug: 'emergency', title: '当日・お急ぎ引越しプラン', icon: '⚡' },
+  /* slug 'sameday' is the canonical key shared with index.html SERVICE_CONFIG +
+     contentLoader (_REF_TO_SLUG SVC-4). Legacy 'emergency' is still accepted on
+     read via contentLoader's _SLUG_ALIAS. */
+  { slug: 'sameday',   title: '当日・お急ぎ引越しプラン', icon: '⚡' },
   { slug: 'single',    title: '単身引越し',             icon: '👤' },
   { slug: 'couple',    title: 'カップル・ご夫婦引越し', icon: '👫' },
   { slug: 'student',   title: '学生・新生活引越し',     icon: '🎓' },

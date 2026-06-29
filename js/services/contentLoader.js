@@ -47,29 +47,9 @@ window.ContentLoader = (function () {
     _set('svcLeadEl',    m.lead);
   }
 
-  function _applyServiceCards(svcs) {
-    if (!svcs || !svcs.length) return;
-    // Match by title — DB display_order differs from HTML card positions
-    const byTitle = {};
-    document.querySelectorAll('#svcGridEl .service-card').forEach(card => {
-      const h3 = card.querySelector('h3');
-      if (h3) byTitle[h3.textContent.trim()] = card;
-    });
-    svcs.forEach(svc => {
-      const card = byTitle[svc.title];
-      if (!card) return;
-      const featured = card.classList.contains('service-card-featured');
-      const p = card.querySelector(featured ? '.service-featured-body p' : 'p');
-      if (p && svc.description)
-        p.textContent = svc.description;
-      const badge = card.querySelector(featured ? '.service-featured-eyebrow' : '.svc-pop-badge');
-      if (badge && svc.badge)
-        badge.textContent = svc.badge;
-      const cta = card.querySelector('.service-card-cta');
-      if (cta && svc.cta_text)
-        cta.textContent = svc.cta_text;
-    });
-  }
+  /* (Service cards are now rendered via _applyServicesToGrid →
+     window.HM_renderServiceCards, keyed by a stable slug. The old title-match
+     renderer that targeted the non-existent #svcGridEl has been removed.) */
 
   /* ── Reviews ──────────────────────────────────────────── */
   function _applyRevsMeta(m) {
@@ -168,40 +148,49 @@ window.ContentLoader = (function () {
     _ls('hm_booked', booked);
   }
 
-  /* ── Service images ──────────────────────────────────── */
-  /* Fallback title→slug map — used only for cards that lack data-service.
-     Primary lookup is card.dataset.service set in index.html. */
-  var _SVC_TITLE_TO_SLUG = {
-    '当日・お急ぎ引越しプラン': 'emergency',
-    '単身引越し':             'single',
-    'カップル・ご夫婦引越し': 'couple',
-    '学生・新生活引越し':     'student',
-    '不用品回収・処分':       'disposal',
-    '家具組立・分解':         'furniture',
-  };
+  /* (Service images are now folded into _applyServicesToGrid below, keyed by the
+     same stable slug; the old #svcGridEl/title-based image applier was removed.) */
 
-  function _applyServiceImages(serviceImages) {
-    if (!serviceImages || typeof serviceImages !== 'object') return;
-    document.querySelectorAll('#svcGridEl .service-card').forEach(function (card) {
-      /* Primary: stable data-service attribute on the <article> element */
-      var slug = card.dataset.service;
-      /* Fallback: title text match for cards that predate the attribute */
-      if (!slug) {
-        var h3 = card.querySelector('h3');
-        slug = h3 ? _SVC_TITLE_TO_SLUG[h3.textContent.trim()] : null;
-      }
+  /* ── Stable service identity (RC-A) ───────────────────────
+     The homepage service cards are keyed by a stable SLUG (index.html
+     SERVICE_CONFIG.id), NOT by title — so renaming a service no longer breaks
+     rendering. The `services` table is keyed by reference_id; map it here. */
+  var _REF_TO_SLUG = {
+    'SVC-1': 'single', 'SVC-2': 'couple', 'SVC-3': 'student',
+    'SVC-4': 'sameday', 'SVC-5': 'disposal', 'SVC-6': 'furniture',
+  };
+  /* Legacy slug reconciliation: the CMS image manager historically keyed the
+     same-day service as 'emergency'; the homepage canonical slug is 'sameday'. */
+  var _SLUG_ALIAS = { 'emergency': 'sameday' };
+  function _canonSlug(s) { return _SLUG_ALIAS[s] || s; }
+
+  /* Build the per-slug override map from live CMS data and hand it to the
+     homepage renderer (window.HM_renderServiceCards). Falls back silently on a
+     page that does not expose the renderer. */
+  function _applyServicesToGrid(svcs, imageCfg) {
+    if (typeof window.HM_renderServiceCards !== 'function') return;
+    var overrides = {};
+    (svcs || []).forEach(function (s) {
+      if (s.active === false) return;
+      var slug = _REF_TO_SLUG[s.id] || _canonSlug(s.slug);
       if (!slug) return;
-      var cfg = serviceImages[slug];
-      if (!cfg || cfg.display_mode !== 'image' || !cfg.image_url) return;
-      var iconEl = card.querySelector('.service-icon');
-      if (!iconEl) return;
-      var img = document.createElement('img');
-      img.src = cfg.image_url;
-      img.alt = slug;
-      img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;';
-      iconEl.innerHTML = '';
-      iconEl.appendChild(img);
+      overrides[slug] = overrides[slug] || {};
+      if (s.title)       overrides[slug].title       = s.title;
+      if (s.description) overrides[slug].description = s.description;
+      if (s.badge != null) overrides[slug].badge     = s.badge;
     });
+    if (imageCfg && typeof imageCfg === 'object') {
+      Object.keys(imageCfg).forEach(function (k) {
+        var cfg  = imageCfg[k];
+        var slug = _canonSlug(k);
+        if (cfg && cfg.display_mode === 'image' && cfg.image_url) {
+          overrides[slug] = overrides[slug] || {};
+          overrides[slug].image = cfg.image_url;
+        }
+      });
+    }
+    try { window.HM_renderServiceCards(overrides); }
+    catch (e) { console.warn('[ContentLoader] service render failed:', e && e.message); }
   }
 
   /* ── Map services table row → local shape ─────────────── */
@@ -300,29 +289,32 @@ window.ContentLoader = (function () {
           themeEl.textContent = css;
         }
 
-        /* Fallbacks if dedicated tables returned nothing */
-        if (!svcRes.data || !svcRes.data.length)
-          _applyServiceCards(kv.hm_services);
+        /* Reviews fallback if the dedicated table returned nothing.
+           (Services render below via the unified _applyServicesToGrid.) */
         if (!revRes.data || !revRes.data.length)
           _applyRevCards(kv.hm_reviews);
       } else if (kvRes.error) {
         console.warn('[ContentLoader] hm_data read error:', kvRes.error.message);
       }
 
-      /* services table ─────────────────────────────────── */
-      if (svcRes.data && svcRes.data.length) {
-        const svcs = svcRes.data.map(_mapService);
-        _ls('hm_services', svcs);
-        _applyServiceCards(svcs);
-      } else if (svcRes.error) {
-        console.warn('[ContentLoader] services read error:', svcRes.error.message);
-      }
-
-      /* service images — applied after cards are rendered ─ */
-      const imgCfg = (kvRes.data && kvRes.data.length)
-        ? (() => { const row = kvRes.data.find(d => d.key === 'hm_service_images'); return row ? row.value : null; })()
+      /* services (RC-A) ─────────────────────────────────────
+         Render the homepage service cards from the `services` table — keyed by a
+         STABLE slug, not title — falling back to the hm_services KV snapshot, and
+         fold in the hm_service_images config in ONE grid render so titles,
+         descriptions, badges and images all update together. */
+      const _kvVal = (k) => (kvRes.data && kvRes.data.length)
+        ? (() => { const row = kvRes.data.find(d => d.key === k); return row ? row.value : null; })()
         : null;
-      if (imgCfg) _applyServiceImages(imgCfg);
+      const imgCfg = _kvVal('hm_service_images');
+      let svcsForGrid;
+      if (svcRes.data && svcRes.data.length) {
+        svcsForGrid = svcRes.data.map(_mapService);
+        _ls('hm_services', svcsForGrid);
+      } else {
+        if (svcRes.error) console.warn('[ContentLoader] services read error:', svcRes.error.message);
+        svcsForGrid = _kvVal('hm_services');   // KV/local fallback snapshot
+      }
+      _applyServicesToGrid(svcsForGrid, imgCfg);
 
       /* reviews table ──────────────────────────────────── */
       if (revRes.data && revRes.data.length) {

@@ -95,12 +95,23 @@ $action = (string)($req['action'] ?? 'select');
 //   • insert/upsert/update on admin-only tables (site content/services/calendar/inbox)
 // hm_require_admin() is a no-op while enforcement is disabled, so this changes
 // nothing until the server flips admin_auth_enabled on.
-$ADMIN_WRITE_TABLES = ['hm_data', 'services', 'calendar_availability', 'inbox_messages'];
+// RC-D — content-write protection. These tables hold site content and must never
+// be mutable with only the page-served (public) API key. Writes now require a
+// valid staff token via hm_require_staff_write() EVEN WHEN admin_auth_enabled is
+// off. Reads stay fully public (no gate on 'select').
+//   • FULL gate  → every write (insert/upsert/update/delete) needs staff.
+//   • MODERATION → reviews: INSERT stays public (customer/portal submissions),
+//                  but upsert/update/delete (approve/publish/edit) need staff.
+$CONTENT_TABLES_FULL = ['hm_data', 'services', 'calendar_availability', 'inbox_messages'];
+$CONTENT_TABLES_MOD  = ['reviews'];
 if ($action === 'delete') {
-  hm_require_admin();
-} elseif (in_array($action, ['insert', 'upsert', 'update'], true)
-          && in_array($table, $ADMIN_WRITE_TABLES, true)) {
-  hm_require_admin();
+  hm_require_staff_write();                                   // no public deletes, any table
+} elseif (in_array($action, ['insert', 'upsert', 'update'], true)) {
+  if (in_array($table, $CONTENT_TABLES_FULL, true)) {
+    hm_require_staff_write();
+  } elseif (in_array($table, $CONTENT_TABLES_MOD, true) && $action !== 'insert') {
+    hm_require_staff_write();                                 // reviews moderation only
+  }
 }
 
 $db     = hm_db();
