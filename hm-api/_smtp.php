@@ -46,6 +46,8 @@ class HM_SMTP {
   private string $lastResponse = '';
   private int    $lastCode = 0;
   private string $host = '';         // remote host, reused as TLS peer_name
+  private bool   $tlsActive = false; // true once the channel is encrypted
+                                     // (implicit TLS at connect, or post-STARTTLS)
 
   public function __construct(array $opt) {
     $this->opt = $opt + [
@@ -86,6 +88,7 @@ class HM_SMTP {
       $ctx = stream_context_create(['ssl' => $this->tlsContextOptions($host)]);
       $fp  = @stream_socket_client('ssl://' . $host . ':' . $port, $errno, $errstr,
                                    $timeout, STREAM_CLIENT_CONNECT, $ctx);
+      $this->tlsActive = ($fp !== false);   // channel is encrypted from connect
     } else {
       // 'tls'/'' connect plain, then upgrade via STARTTLS later (verification
       // options are applied to this stream's context in startTls()).
@@ -155,6 +158,7 @@ class HM_SMTP {
     }
     $ok = @stream_socket_enable_crypto($this->fp, true, $crypto);
     if ($ok !== true) throw new HM_SMTP_Exception('TLS handshake/verification failed after STARTTLS', 'smtp_tls');
+    $this->tlsActive = true;          // channel is now encrypted
   }
 
   // ── AUTH (LOGIN preferred, PLAIN fallback) ────────────────────────────────
@@ -163,6 +167,16 @@ class HM_SMTP {
     $pass = (string)$this->opt['pass'];
     if ($user === '' || $pass === '') {
       throw new HM_SMTP_Exception('SMTP username/password not set', 'smtp_config');
+    }
+    // Never transmit AUTH credentials over a cleartext socket. AUTH is only
+    // permitted on an encrypted channel (implicit TLS via secure='ssl', or after
+    // a successful STARTTLS via secure='tls'). secure='' (plain, port 25) is
+    // therefore refused here rather than leaking the password base64-but-cleartext.
+    if (!$this->tlsActive) {
+      throw new HM_SMTP_Exception(
+        'Refusing to send SMTP credentials over an unencrypted connection (set smtp_secure to "tls" or "ssl")',
+        'smtp_tls'
+      );
     }
 
     $methods  = $this->caps['AUTH'] ?? [];

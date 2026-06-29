@@ -200,7 +200,9 @@
         lsSet(LS_REF, ref);
         // Booking verified → hand off to the customer portal login, which
         // establishes the real session and enters portal.html. The verified
-        // pair travels via sessionStorage; only the booking id is in the URL.
+        // pair AND the booking id travel ONLY via sessionStorage — nothing is
+        // placed in the URL, because the booking reference is a login
+        // credential and would otherwise leak into history/logs/Referer.
         var bookingId = decodeBooking(out.booking).id || ref;
         try {
           sessionStorage.setItem(SS_HANDOFF, JSON.stringify({
@@ -209,7 +211,7 @@
         } catch (e) {}
         navigating = true;
         btn.innerHTML = '<span class="cl-spin"></span>移動中... / Redirecting...';
-        window.location.href = 'login.html?booking=' + encodeURIComponent(bookingId);
+        window.location.href = 'login.html';
         return;
       }
       // Invalid lookup → stay on the page and surface the error in the modal.
