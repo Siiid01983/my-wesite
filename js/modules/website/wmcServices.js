@@ -26,6 +26,49 @@ function _wmcSvcLoadImages() {
   } catch (_) { return {}; }
 }
 
+/* ── Image storage (reuse the shared media bucket via storage.php) ──────────
+   Service images are uploaded to media/service-images/<slug>-<ts>.<ext> and only
+   the public URL is stored in hm_service_images — never base64 (which would bloat
+   hm_data and every public page load). Mirrors the WMC media library uploader. */
+async function _wmcSvcUpload(fileOrBlob, slug, mime) {
+  var sb = window.api;
+  if (!sb || !sb.storage) return null;
+  var ext  = (mime && mime.indexOf('/') > -1) ? mime.split('/')[1].split('+')[0] : 'jpg';
+  var path = 'service-images/' + slug + '-' + Date.now() + '.' + ext;
+  try {
+    var r = await sb.storage.from('media').upload(path, fileOrBlob, { contentType: mime || 'image/jpeg', upsert: false });
+    if (r && r.error) { console.warn('[wmcServices] upload failed:', r.error.message); return null; }
+    var u = sb.storage.from('media').getPublicUrl(path);
+    return (u && u.data && u.data.publicUrl) || null;
+  } catch (e) { console.warn('[wmcServices] upload error:', e && e.message); return null; }
+}
+
+/* Decode a data:image/…;base64,… URI into a Blob for migration uploads. */
+function _wmcSvcDataUrlToBlob(dataUrl) {
+  var m = /^data:([^;,]+)[^,]*,(.*)$/i.exec(dataUrl || '');
+  if (!m) return null;
+  var mime = m[1] || 'image/jpeg';
+  try {
+    var bytes = Uint8Array.from(atob(m[2]), function (c) { return c.charCodeAt(0); });
+    return { blob: new Blob([bytes], { type: mime }), mime: mime };
+  } catch (_) { return null; }
+}
+
+/* File-picker handler: upload the chosen image and put its public URL into the
+   card's URL field + switch the card to image mode. Never stores base64. */
+async function _wmcSvcPickImage(slug, file) {
+  if (!file) return;
+  var card  = document.querySelector('.wmc-svc-img-card[data-slug="' + slug + '"]');
+  var urlEl = card && card.querySelector('.wmc-svc-img-url');
+  if (typeof toast === 'function') toast('画像をアップロード中…');
+  var url = await _wmcSvcUpload(file, slug, file.type);
+  if (!url) { if (typeof toast === 'function') toast('アップロードに失敗しました'); return; }
+  if (urlEl) urlEl.value = url;
+  var modeImg = card && card.querySelector('input[name="svc_mode_' + slug + '"][value="image"]');
+  if (modeImg) { modeImg.checked = true; modeImg.dispatchEvent(new Event('change', { bubbles: true })); }
+  if (typeof toast === 'function') toast('アップロード完了。「すべて保存」で反映されます');
+}
+
 function _wmcSvcCardHtml(svc, cfg) {
   var isSvg   = cfg.display_mode !== 'image';
   var imgUrl  = cfg.image_url || '';
@@ -48,6 +91,10 @@ function _wmcSvcCardHtml(svc, cfg) {
       '</label>' +
     '</div>' +
     '<input type="url" class="wmc-svc-img-url" placeholder="画像URL（https://...）" value="' + esc(imgUrl) + '">' +
+    '<label class="btn btn-ghost btn-sm" style="margin-top:6px;display:inline-flex;align-items:center;gap:6px;cursor:pointer">' +
+      '<input type="file" accept="image/*" style="display:none" onchange="_wmcSvcPickImage(\'' + esc(svc.slug) + '\', this.files[0])">' +
+      '画像をアップロード' +
+    '</label>' +
   '</div>';
 }
 
@@ -121,6 +168,20 @@ async function _wmcSvcSaveAll() {
       image_url:    urlEl  ? urlEl.value.trim() : '',
     };
   });
+
+  /* Migrate any inline base64 data-URI to an uploaded file so hm_data stores only
+     a compact URL. On a failed upload we KEEP the base64 (the image stays visible)
+     — service is never blanked during migration. */
+  for (var _i = 0; _i < _WMC_SVC_DEFS.length; _i++) {
+    var _sl = _WMC_SVC_DEFS[_i].slug, _cfg = images[_sl];
+    if (_cfg && /^data:image\//i.test(_cfg.image_url)) {
+      var _p = _wmcSvcDataUrlToBlob(_cfg.image_url);
+      if (_p) {
+        var _u = await _wmcSvcUpload(_p.blob, _sl, _p.mime);
+        if (_u) { _cfg.image_url = _u; _cfg.display_mode = 'image'; }
+      }
+    }
+  }
 
   localStorage.setItem('hm_service_images', JSON.stringify(images));
   localStorage.setItem('hm_last_content_update', new Date().toISOString());
