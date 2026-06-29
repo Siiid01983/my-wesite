@@ -1714,10 +1714,10 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
 <script src="js/modules/website/wmcDeploy.js"></script>
 <script src="js/modules/website/wmcServices.js"></script>
 
-<!-- PDF support (needed for backup + hero history exports) -->
+<!-- PDF support (needed for backup + hero history exports).
+     html2canvas + jsPDF are loaded ON DEMAND by pdf.js (_ensurePdfLibs) on the
+     first PDF export, so they no longer block / weigh down every page load. -->
 <script src="js/utils/pdf.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <!-- CMS content modules — migrated from admin.html (load order preserved) -->
 <script src="js/modules/hero/hero.js"></script>
