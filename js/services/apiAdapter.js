@@ -284,6 +284,51 @@
     };
   }
 
+  /* ── Blog mappers (camelCase post ⇄ snake_case blog_posts row) ─────────── */
+  function blogToRow(p) {
+    return {
+      reference_id:   p.id,
+      /* slug is NOT NULL + UNIQUE; legacy posts (old minimal editor) had none —
+         fall back to a deterministic id-based slug so migration never collides. */
+      slug:           p.slug          || ('post-' + String(p.id || '').toLowerCase()),
+      title:          p.title         || '',
+      content:        p.content       || '',
+      excerpt:        p.excerpt       || null,
+      featured_image: p.featuredImage || null,
+      categories:     Array.isArray(p.categories) ? p.categories : [],
+      tags:           Array.isArray(p.tags)       ? p.tags       : [],
+      status:         p.status        || 'draft',
+      featured:       p.featured      || false,
+      author:         p.author        || null,
+      author_bio:     p.authorBio     || null,
+      scheduled_at:   p.scheduledAt   || null,
+      published_at:   p.publishedAt   || null,
+      created_at:     p.createdAt     || new Date().toISOString(),
+      updated_at:     p.updatedAt     || new Date().toISOString(),
+    };
+  }
+
+  function rowToBlog(r) {
+    return {
+      id:            r.reference_id || r.id,
+      slug:          r.slug          || '',
+      title:         r.title         || '',
+      content:       r.content       || '',
+      excerpt:       r.excerpt       || '',
+      featuredImage: r.featured_image|| '',
+      categories:    Array.isArray(r.categories) ? r.categories : [],
+      tags:          Array.isArray(r.tags)       ? r.tags       : [],
+      status:        r.status        || 'draft',
+      featured:      !!r.featured,
+      author:        r.author        || '',
+      authorBio:     r.author_bio    || '',
+      scheduledAt:   r.scheduled_at  || null,
+      publishedAt:   r.published_at  || null,
+      createdAt:     r.created_at    || new Date().toISOString(),
+      updatedAt:     r.updated_at    || new Date().toISOString(),
+    };
+  }
+
   /* ── Adapter ──────────────────────────────────────────── */
   window.Adapter = {
 
@@ -303,8 +348,10 @@
         _api.from('hm_data').select('key, value'),
       ]);
 
-      // Config baseline
-      if (kvRes.data) kvRes.data.forEach(({ key, value }) => _set(key, value));
+      // Config baseline. Skip 'hm_blog_posts' — blog is now table-backed
+      // (blog_posts via syncBlog); a legacy hm_data string row must not clobber
+      // the array shape that getBlogPosts()/overview badges expect.
+      if (kvRes.data) kvRes.data.forEach(({ key, value }) => { if (key !== 'hm_blog_posts') _set(key, value); });
 
       // Bookings
       if (bkRes.data) {
@@ -484,6 +531,57 @@
 
     getSvcMeta: () => _ls('hm_services_section', { eyebrow:'Services', title:'承っている引越し', lead:'単身・カップル・学生・当日引越しまで対応。' }),
     saveSvcMeta: (v) => wt('hm_services_section', v),
+
+    /* ── Blog (dedicated blog_posts table; Public Blog System Phase 1) ─────
+       Reads return from localStorage 'hm_blog_posts' (sync). Each write goes
+       to localStorage first, then upserts/deletes the blog_posts table. The
+       conflict target is reference_id (the stable client post id). */
+    getBlogPosts: () => _ls('hm_blog_posts', []),
+
+    saveBlogPost(post) {
+      if (!_checkCanWrite()) return;
+      const list = this.getBlogPosts();
+      const idx  = list.findIndex(p => p.id === post.id);
+      if (idx >= 0) list[idx] = post; else list.unshift(post);
+      _set('hm_blog_posts', list);
+      if (window.DataProvider) DataProvider.invalidate('blog_posts');
+      _upsert('blog_posts', blogToRow(post), 'reference_id');
+    },
+
+    deleteBlogPost(id) {
+      if (!_checkCanWrite()) return;
+      _set('hm_blog_posts', this.getBlogPosts().filter(p => p.id !== id));
+      if (window.DataProvider) DataProvider.invalidate('blog_posts');
+      _del('blog_posts', 'reference_id', id);
+    },
+
+    /* Pull the blog_posts table and refresh localStorage. Lighter than
+       syncFromApi() — call when the Blog view opens. */
+    async syncBlog() {
+      if (!_api) return false;
+      const { data, error } = await _api.from('blog_posts')
+        .select('*').order('created_at', { ascending: false });
+      if (error) { console.warn('[Adapter] syncBlog error:', error.message); return false; }
+      if (data) _set('hm_blog_posts', data.map(rowToBlog));
+      return true;
+    },
+
+    /* One-time migration: if the server has no posts but localStorage does,
+       push the local posts up (covers the pre-table localStorage-only era).
+       Safe to call repeatedly — it only uploads when the table is empty. */
+    async migrateBlogToApi() {
+      if (!_api) return false;
+      const local = this.getBlogPosts();
+      if (!local.length) return false;
+      const { data, error } = await _api.from('blog_posts').select('reference_id').limit(1);
+      if (error) { console.warn('[Adapter] migrateBlog probe error:', error.message); return false; }
+      if (data && data.length) return false;          // server already has posts
+      const { error: upErr } = await _api.from('blog_posts')
+        .upsert(local.map(blogToRow), { onConflict: 'reference_id' });
+      if (upErr) { console.warn('[Adapter] migrateBlog upload error:', upErr.message); return false; }
+      console.log('[Adapter] migrated', local.length, 'local blog posts to blog_posts table');
+      return true;
+    },
     getSvcHistory: () => { try { return JSON.parse(localStorage.getItem('hm_svc_history') || '[]'); } catch { return []; } },
     pushSvcHistory(snap) {
       const hist = this.getSvcHistory();

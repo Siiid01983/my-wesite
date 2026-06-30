@@ -12,13 +12,20 @@ const BlogStore = {
   getAll() { try { return JSON.parse(localStorage.getItem(_BLOG_KEY) || '[]'); } catch { return []; } },
   saveAll(posts) { try { localStorage.setItem(_BLOG_KEY, JSON.stringify(posts)); return true; } catch { return false; } },
   find(id) { return this.getAll().find(p => p.id === id) || null; },
+  /* Write-through: when the Adapter/API is available it owns persistence
+     (localStorage + blog_posts table). Falls back to localStorage-only when the
+     Adapter isn't loaded (e.g. offline). */
   save(post) {
+    if (typeof Adapter !== 'undefined' && Adapter.apiReady) { Adapter.saveBlogPost(post); return true; }
     const all = this.getAll();
     const idx = all.findIndex(p => p.id === post.id);
     if (idx >= 0) all[idx] = post; else all.unshift(post);
     return this.saveAll(all);
   },
-  delete(id) { return this.saveAll(this.getAll().filter(p => p.id !== id)); },
+  delete(id) {
+    if (typeof Adapter !== 'undefined' && Adapter.apiReady) { Adapter.deleteBlogPost(id); return true; }
+    return this.saveAll(this.getAll().filter(p => p.id !== id));
+  },
 };
 
 /* ── State ── */
@@ -40,20 +47,31 @@ function _checkScheduledPosts() {
       p.status      = 'published';
       p.publishedAt = p.scheduledAt;
       changed = true;
+      /* Write each transition through the Adapter so the publish reaches the
+         blog_posts table, not just localStorage. (Client-side fallback only —
+         the server-side scheduled publisher arrives in a later phase.) */
+      BlogStore.save(p);
     }
   });
-  if (changed) {
-    BlogStore.saveAll(posts);
-    if (document.getElementById('view-blog')?.classList.contains('active') && _blogView === 'list') {
-      renderBlog();
-    }
+  if (changed && document.getElementById('view-blog')?.classList.contains('active') && _blogView === 'list') {
+    renderBlog();
   }
 }
 
 /* ════ Main render ════ */
+let _blogSynced = false;
 function renderBlog() {
   const el = document.getElementById('blogContent');
   if (!el) return;
+  /* First open: pull authoritative posts from the blog_posts table (and migrate
+     any legacy localStorage-only posts up once), then re-render with live data. */
+  if (!_blogSynced && typeof Adapter !== 'undefined' && Adapter.apiReady) {
+    _blogSynced = true;
+    Promise.resolve(Adapter.migrateBlogToApi())
+      .then(() => Adapter.syncBlog())
+      .then(ok => { if (ok) renderBlog(); })
+      .catch(e => console.warn('[Blog] initial sync failed:', e && e.message));
+  }
   _checkScheduledPosts();
   el.innerHTML = _blogView === 'edit' ? _renderBlogEditor() : _renderBlogList();
 }
@@ -337,12 +355,26 @@ function _mdInline(text) {
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:underline">$1</a>');
 }
 
+/* Japanese-safe slug: keep Unicode letters/numbers (so Japanese titles produce a
+   non-empty slug) instead of stripping them as the old [^\w] rule did. Returns ''
+   only for a title with no letters/numbers at all — the caller then falls back to
+   an id-based slug. */
 function _blogSlugify(title) {
-  return title.toLowerCase()
-    .replace(/[^\w\s-]/g, '')
+  return (title || '').toString().trim().toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, '')
     .replace(/[\s_]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 60);
+}
+
+/* Enforce slug uniqueness across posts (DB has a UNIQUE slug index). Appends
+   -2, -3, … on collision with a DIFFERENT post. `slug` must be non-empty. */
+function _ensureUniqueBlogSlug(slug, selfId) {
+  const taken = new Set(BlogStore.getAll().filter(p => p.id !== selfId).map(p => p.slug));
+  if (!taken.has(slug)) return slug;
+  let n = 2, candidate;
+  do { candidate = slug + '-' + n; n++; } while (taken.has(candidate));
+  return candidate;
 }
 
 function _blogAutoSlug(title) {
@@ -398,7 +430,6 @@ function _blogImagePreview(url) {
 
 function _collectBlogFormData(status) {
   const title     = document.getElementById('blogTitleInput')?.value.trim() || '';
-  const slug      = document.getElementById('blogSlugInput')?.value.trim()  || _blogSlugify(title);
   const content   = document.getElementById('blogContentInput')?.value || '';
   const excerpt   = document.getElementById('blogExcerpt')?.value.trim() || '';
   const featImg   = document.getElementById('blogFeaturedImage')?.value.trim() || '';
@@ -413,11 +444,18 @@ function _collectBlogFormData(status) {
 
   const now = new Date().toISOString();
   const existing = _blogEditId ? BlogStore.find(_blogEditId) : null;
+  const id = existing?.id || genId();
+
+  /* Slug resolution: explicit slug → slugified title → id-based fallback, then
+     made unique against all other posts (DB enforces a UNIQUE slug index). */
+  let slug = document.getElementById('blogSlugInput')?.value.trim() || _blogSlugify(title);
+  if (!slug) slug = 'post-' + String(id).toLowerCase();
+  slug = _ensureUniqueBlogSlug(slug, id);
 
   return {
-    id:           existing?.id || genId(),
+    id,
     title,
-    slug:         slug || _blogSlugify(title) || 'article',
+    slug,
     content,
     excerpt,
     featuredImage: featImg,

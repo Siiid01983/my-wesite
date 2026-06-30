@@ -109,6 +109,34 @@ CREATE TABLE IF NOT EXISTS services (
   KEY services_order_idx (display_order)                   -- ORDER BY display_order
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ── blog_posts : public blog (admin-editable; Public Blog System Phase 1)
+--    Used by: blogManager, apiAdapter (blogToRow/rowToBlog), public blog renderer.
+--    reads public · writes staff-gated (rest.php $CONTENT_TABLES_FULL).
+CREATE TABLE IF NOT EXISTS blog_posts (
+  id             CHAR(36)     NOT NULL,
+  reference_id   VARCHAR(191) NOT NULL,
+  slug           VARCHAR(191) NOT NULL,
+  title          TEXT,
+  content        MEDIUMTEXT,
+  excerpt        TEXT,
+  featured_image TEXT,
+  categories     JSON,
+  tags           JSON,
+  status         VARCHAR(20)  NOT NULL DEFAULT 'draft',
+  featured       TINYINT(1)   NOT NULL DEFAULT 0,
+  author         VARCHAR(191),
+  author_bio     TEXT,
+  scheduled_at   DATETIME     NULL,
+  published_at   DATETIME     NULL,
+  created_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY blog_posts_reference_id_unique (reference_id),  -- upsert onConflict
+  UNIQUE KEY blog_posts_slug_unique (slug),                  -- public lookup + integrity
+  KEY blog_posts_status_pub_idx (status, published_at),
+  KEY blog_posts_scheduled_idx (status, scheduled_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- ── communications : admin ↔ customer message log (+ email delivery status)
 --    AUTO_INCREMENT BIGINT id (rest.php: uuid_pk=false, int id). Logical
 --    booking_id → bookings.id (no FK). Used by: communications.js, portalComms.
