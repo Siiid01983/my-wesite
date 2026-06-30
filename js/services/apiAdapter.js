@@ -901,6 +901,26 @@
       return true;
     },
 
+    /* Generic KV write/read for modules that store a single hm_data key
+       (siteSettings.js → 'hm_settings', seoCenter.js → 'hm_seo'). These were
+       being CALLED but never existed, so every such save threw and was swallowed
+       by the caller's try/catch — the value never reached the server. */
+    /* Returns a Promise: the caller (siteSettings.js) chains `.catch(...)`, so a
+       non-thenable return would itself throw and be swallowed — keeping the bug. */
+    saveData(key, value) { try { wt(key, value); return Promise.resolve(true); } catch (e) { return Promise.reject(e); } },
+
+    async syncData(apiKey, lsKey) {
+      if (!_api) return false;
+      const { data, error } = await _api
+        .from('hm_data')
+        .select('value')
+        .eq('key', apiKey)
+        .maybeSingle();
+      if (error) { console.warn('[Adapter] syncData error:', apiKey, error.message); return false; }
+      if (data?.value != null) _set(lsKey || apiKey, data.value);
+      return true;
+    },
+
     /* Pull hm_company_rows and hm_company_section from hm_data KV.
        Lighter than syncFromApi() — use when company view is opened. */
     async syncCompany() {
