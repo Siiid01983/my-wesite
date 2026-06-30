@@ -34,8 +34,6 @@ window.ContentLoader = (function () {
     _set('heroSubSecondary', h.sub_secondary);
     _set('heroCtaBookSup',   h.cta_book_sup);
     _set('heroCtaBookLbl',   h.cta_book_lbl);
-    _set('heroCtaQuoteSup',  h.cta_quote_sup);
-    _set('heroCtaQuoteLbl',  h.cta_quote_lbl);
     _set('heroCtaLine',      h.cta_line);
   }
 
@@ -124,6 +122,7 @@ window.ContentLoader = (function () {
     if (!f) return;
     _set('footerDescEl',      f.brand_desc);
     _set('footerCopyrightEl', f.copyright);
+    _set('footerLicenseEl',   f.license);
     if (!Array.isArray(f.cols)) return;
     f.cols.forEach((col, i) => {
       _set('footerCol' + i + 'TitleEl', col.title);
@@ -212,6 +211,67 @@ window.ContentLoader = (function () {
         a.href = telHref;
         if (/^[\d\s+()\-]+$/.test((a.textContent || '').trim())) a.textContent = contact.phone;
       });
+    }
+  }
+
+  /* ── SEO (single source: hm_data['hm_seo'] → SEO Center) ──────────────────
+     hm_seo is a page-map { home:{…}, services:{…}, … } keyed by SEO_PAGES id.
+     Only the 'home' entry maps to this real page (index.html). Applied by
+     UPDATING the existing <head> tags (or creating them when absent) — index.html
+     markup is never edited. Empty CMS fields fall back to the static <head>. */
+  function _metaByName(name) {
+    var m = document.querySelector('meta[name="' + name + '"]');
+    if (!m) { m = document.createElement('meta'); m.setAttribute('name', name); document.head.appendChild(m); }
+    return m;
+  }
+  function _metaByProp(prop) {
+    var m = document.querySelector('meta[property="' + prop + '"]');
+    if (!m) { m = document.createElement('meta'); m.setAttribute('property', prop); document.head.appendChild(m); }
+    return m;
+  }
+  function _applySeo(seoMap) {
+    if (!seoMap || typeof seoMap !== 'object') return;
+    var s = seoMap.home;
+    if (!s || typeof s !== 'object') return;
+
+    if (s.title)       document.title = s.title;
+    if (s.description) _metaByName('description').setAttribute('content', s.description);
+
+    /* Canonical */
+    if (s.canonical) {
+      var link = document.querySelector('link[rel="canonical"]');
+      if (!link) { link = document.createElement('link'); link.rel = 'canonical'; document.head.appendChild(link); }
+      link.href = s.canonical;
+    }
+
+    /* Open Graph — OG title/description fall back to the page title/description. */
+    var ogTitle = s.ogTitle || s.title;
+    var ogDesc  = s.ogDescription || s.description;
+    if (ogTitle) _metaByProp('og:title').setAttribute('content', ogTitle);
+    if (ogDesc)  _metaByProp('og:description').setAttribute('content', ogDesc);
+    if (s.ogImage) _metaByProp('og:image').setAttribute('content', s.ogImage);
+
+    /* Twitter Card */
+    if (s.twitterCard) _metaByName('twitter:card').setAttribute('content', s.twitterCard);
+    if (ogTitle)  _metaByName('twitter:title').setAttribute('content', ogTitle);
+    if (ogDesc)   _metaByName('twitter:description').setAttribute('content', ogDesc);
+    if (s.ogImage) _metaByName('twitter:image').setAttribute('content', s.ogImage);
+
+    /* JSON-LD schema — inject as a dedicated, CMS-owned <script> (id keeps it
+       idempotent so reloads replace rather than stack). Validated as JSON before
+       injection; invalid JSON is ignored so a typo never breaks the page. */
+    if (s.schema && String(s.schema).trim()) {
+      try {
+        JSON.parse(s.schema);
+        var tag = document.getElementById('hm-seo-jsonld');
+        if (!tag) {
+          tag = document.createElement('script');
+          tag.type = 'application/ld+json';
+          tag.id = 'hm-seo-jsonld';
+          document.head.appendChild(tag);
+        }
+        tag.textContent = String(s.schema);
+      } catch (_) { /* invalid JSON — leave static schema in place */ }
     }
   }
 
@@ -369,6 +429,10 @@ window.ContentLoader = (function () {
         /* Site Settings — single source of truth for brand identity (logo,
            favicon, main color). Applied AFTER the theme CSS so it wins. */
         _applySiteSettings(kv.hm_settings);
+
+        /* SEO — single source of truth for the home page's title/meta/OG/schema.
+           Applied after Site Settings (which may set theme-color from brand). */
+        _applySeo(kv.hm_seo);
 
         /* Reviews fallback if the dedicated table returned nothing.
            (Services render below via the unified _applyServicesToGrid.) */

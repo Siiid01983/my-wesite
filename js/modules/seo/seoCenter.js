@@ -276,6 +276,16 @@ function saveSEO() {
   };
 
   SeoStore.savePage(_seoPage, data);
+
+  /* Persist to API hm_data under key 'hm_seo' so every visitor gets the saved
+     SEO on the public site (ContentLoader._applySeo). Previously saveSEO only
+     wrote localStorage, so SEO never reached the server and was never rendered.
+     The stored value is the FULL page-map (same shape SeoStore.get() returns),
+     matching _syncSEOFromApi → Adapter.syncData('hm_seo', _SEO_DATA_KEY). */
+  if (typeof Adapter !== 'undefined' && Adapter.apiReady) {
+    try { Adapter.saveData('hm_seo', SeoStore.get()); } catch (_) {}
+  }
+
   toast('SEO設定を保存しました');
   renderSEO();
 }
