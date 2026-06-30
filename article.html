@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a1f44" />
+
+<title>記事 — Hello Moving ブログ</title>
+<meta name="description" content="Hello Moving のブログ記事。" />
+<meta name="robots" content="index, follow" />
+
+<meta property="og:type" content="article" />
+<meta property="og:image" content="https://hello-moving.com/icons/icon.svg" />
+<meta property="og:locale" content="ja_JP" />
+
+<link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Noto+Serif+JP:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="blog.css" />
+
+<!-- The article sets its own title/description from the post; suppress the home-page SEO applier -->
+<script>window.__HM_SUPPRESS_HOME_SEO__ = true;</script>
+<script>(function(){var c=localStorage.getItem('hm_custom_theme_css');if(!c)return;var s=document.createElement('style');s.id='hm-theme-override';s.textContent=c;document.head.appendChild(s);})();</script>
+</head>
+<body class="blog-page">
+
+<header class="blog-header">
+  <div class="blog-header__inner">
+    <a href="/" class="brand" aria-label="Hello Moving ホーム">
+      <img class="brand-mark" src="/icons/icon.svg" alt="Hello Moving" width="38" height="38" />
+      <span class="brand-text">
+        <span class="brand-name">Hello Moving</span>
+        <span class="brand-sub">14+ Years — Tokyo</span>
+      </span>
+    </a>
+    <nav class="blog-nav" aria-label="メインナビゲーション">
+      <a href="/">ホーム</a>
+      <a href="/#reviews">お客様の声</a>
+      <a href="/#faq">FAQ</a>
+      <a href="/blog.html">ブログ</a>
+      <a href="/#booking" class="btn btn-primary btn-sm">無料見積り</a>
+    </nav>
+  </div>
+</header>
+
+<main class="blog-main">
+  <div class="article-wrap">
+    <div id="articleEl">
+      <div class="blog-state"><p>記事を読み込んでいます…</p></div>
+    </div>
+  </div>
+</main>
+
+<footer class="blog-footer">
+  <div class="blog-footer__inner">
+    <div>
+      <a href="/" class="brand" aria-label="Hello Moving ホーム">
+        <img class="brand-mark" src="/icons/icon.svg" alt="Hello Moving" width="40" height="40" />
+        <span class="brand-name">Hello Moving</span>
+      </a>
+      <p class="blog-footer__desc" id="footerDescEl">東京を拠点に、丁寧で安心の引越しサービスを提供しています。日本語・英語対応。</p>
+    </div>
+    <nav class="blog-footer__links" aria-label="フッターナビゲーション">
+      <a href="/">ホーム</a>
+      <a href="/#booking">オンライン予約</a>
+      <a href="/#reviews">お客様の声</a>
+      <a href="/#faq">よくある質問</a>
+      <a href="/blog.html">ブログ</a>
+    </nav>
+  </div>
+  <div class="blog-footer__bottom">
+    <div class="blog-footer__bottom-inner">
+      <small id="footerCopyrightEl">© 2026 Hello Moving. All Rights Reserved.</small>
+      <small id="footerLicenseEl">国土交通省 認可運送事業者 第 431320058126 号 ／ Licensed Moving Company in Japan</small>
+    </div>
+  </div>
+</footer>
+
+<script src="js/core/bootstrap.js" defer></script>
+<script src="js/blog/blogPublic.js" defer></script>
+</body>
+</html>
