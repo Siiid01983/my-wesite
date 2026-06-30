@@ -218,7 +218,7 @@ function switchSettingsTab(tab) {
   renderSiteSettings();
 }
 
-function saveSettings() {
+async function saveSettings() {
   const color = document.getElementById('sBrandColorHex')?.value || document.getElementById('sBrandColor')?.value || '#0a1f44';
   // Update brand color preview
   const prev = document.getElementById('sBrandColorPreview');
@@ -226,36 +226,57 @@ function saveSettings() {
 
   const existing = SettingsStore.get();
 
+  /* Read a field by id. If the input is RENDERED (current tab) use its value —
+     INCLUDING an empty string, so a field can actually be CLEARED. Only fall back
+     to the existing value when the input is absent (a different tab is open). The
+     old `?.value || existing` form silently reverted any cleared field. */
+  const val = (id, fb) => { const el = document.getElementById(id); return el ? el.value.trim() : fb; };
+
   const data = {
     company: {
-      name:        document.getElementById('sCompanyName')?.value.trim()   || existing.company.name,
-      nameEn:      document.getElementById('sCompanyNameEn')?.value.trim() || existing.company.nameEn,
-      description: document.getElementById('sDescription')?.value.trim()   || existing.company.description,
-      industry:    document.getElementById('sIndustry')?.value.trim()       || existing.company.industry,
+      name:        val('sCompanyName',   existing.company.name),
+      nameEn:      val('sCompanyNameEn', existing.company.nameEn),
+      description: val('sDescription',   existing.company.description),
+      industry:    val('sIndustry',      existing.company.industry),
     },
     contact: {
-      phone:      document.getElementById('sPhone')?.value.trim()      || existing.contact.phone,
-      email:      document.getElementById('sEmail')?.value.trim()      || existing.contact.email,
-      address:    document.getElementById('sAddress')?.value.trim()    || existing.contact.address,
+      phone:      val('sPhone',      existing.contact.phone),
+      email:      val('sEmail',      existing.contact.email),
+      address:    val('sAddress',    existing.contact.address),
       address2:   existing.contact.address2,
-      city:       document.getElementById('sCity')?.value.trim()       || existing.contact.city,
-      prefecture: document.getElementById('sPrefecture')?.value.trim() || existing.contact.prefecture,
-      postal:     document.getElementById('sPostal')?.value.trim()     || existing.contact.postal,
+      city:       val('sCity',       existing.contact.city),
+      prefecture: val('sPrefecture', existing.contact.prefecture),
+      postal:     val('sPostal',     existing.contact.postal),
     },
     social: {
-      twitter:   document.getElementById('sSocTwitter')?.value.trim()   || existing.social.twitter,
-      facebook:  document.getElementById('sSocFacebook')?.value.trim()  || existing.social.facebook,
-      instagram: document.getElementById('sSocInstagram')?.value.trim() || existing.social.instagram,
-      line:      document.getElementById('sSocLine')?.value.trim()      || existing.social.line,
-      youtube:   document.getElementById('sSocYoutube')?.value.trim()   || existing.social.youtube,
+      twitter:   val('sSocTwitter',   existing.social.twitter),
+      facebook:  val('sSocFacebook',  existing.social.facebook),
+      instagram: val('sSocInstagram', existing.social.instagram),
+      line:      val('sSocLine',      existing.social.line),
+      youtube:   val('sSocYoutube',   existing.social.youtube),
     },
     brand: {
-      logo:     document.getElementById('sBrandLogo')?.value.trim()    || existing.brand.logo,
-      favicon:  document.getElementById('sBrandFavicon')?.value.trim() || existing.brand.favicon,
+      logo:     val('sBrandLogo',    existing.brand.logo),
+      favicon:  val('sBrandFavicon', existing.brand.favicon),
       color,
       logoSize: parseInt(document.getElementById('sBrandLogoSize')?.value, 10) || existing.brand.logoSize || 42,
     },
   };
+
+  /* Migrate an inline base64 data-URI logo to an uploaded storage URL so hm_data
+     stores a compact URL (not a ~400KB blob downloaded on every public page load).
+     Reuses the WMC media uploader; on any failure the base64 is kept so the logo
+     never disappears. Mirrors the service-image migration (PR #18). */
+  if (/^data:image\//i.test(data.brand.logo) &&
+      typeof _wmcSvcDataUrlToBlob === 'function' && typeof _wmcSvcUpload === 'function') {
+    try {
+      const parsed = _wmcSvcDataUrlToBlob(data.brand.logo);
+      if (parsed) {
+        const url = await _wmcSvcUpload(parsed.blob, 'site-logo', parsed.mime);
+        if (url) data.brand.logo = url;
+      }
+    } catch (_) {}
+  }
 
   SettingsStore.save(data);
   if (window.HM_applyLogoSize) HM_applyLogoSize(data.brand.logoSize);   // live-apply across this page
@@ -263,7 +284,7 @@ function saveSettings() {
 
   // Sync to API
   if (typeof Adapter !== 'undefined' && Adapter.apiReady) {
-    try { Adapter.saveData('hm_settings', data).catch(() => {}); } catch {}
+    try { await Adapter.saveData('hm_settings', data); } catch (_) {}
   }
 
   renderSiteSettings();
