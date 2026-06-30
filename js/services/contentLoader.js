@@ -139,6 +139,43 @@ window.ContentLoader = (function () {
     });
   }
 
+  /* ── Site Settings (single source of truth: hm_data['hm_settings']) ────────
+     Brand-identity overrides from the Website Management → Site Settings module.
+     Applied ONLY when the admin has set a value; otherwise the static defaults
+     (/icons/icon.svg, --navy) stand. Logo/favicon are set as element attributes
+     (safe); brand.color is hex-validated before being injected as CSS. */
+  function _applySiteSettings(s) {
+    if (!s || typeof s !== 'object') return;
+    var brand = s.brand || {};
+
+    /* Logo → swap the unified header/footer logo when a custom URL is provided;
+       revert to the canonical asset if that URL fails to load. */
+    if (brand.logo) {
+      document.querySelectorAll('img.brand-mark').forEach(function (img) {
+        img.onerror = function () { this.onerror = null; this.src = '/icons/icon.svg'; };
+        img.src = brand.logo;
+      });
+    }
+
+    /* Favicon */
+    if (brand.favicon) {
+      var link = document.querySelector('link[rel="icon"]');
+      if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+      link.href = brand.favicon;
+    }
+
+    /* Brand main color → override the navy brand vars (brand.color default IS
+       --navy). Hex-validated to prevent CSS injection. Injected last so this
+       single-source value wins over the Theme Customizer's hm_custom_theme_css. */
+    if (brand.color && /^#[0-9a-fA-F]{3,8}$/.test(brand.color)) {
+      var el = document.getElementById('hm-settings-style');
+      if (!el) { el = document.createElement('style'); el.id = 'hm-settings-style'; document.head.appendChild(el); }
+      el.textContent = ':root{--navy:' + brand.color + ';--navy-2:' + brand.color + ';--navy-3:' + brand.color + ';}';
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', brand.color);
+    }
+  }
+
   /* ── Calendar availability ────────────────────────────── */
   function _applyCalendar(rows) {
     if (!rows || !rows.length) return;
@@ -289,6 +326,10 @@ window.ContentLoader = (function () {
           }
           themeEl.textContent = css;
         }
+
+        /* Site Settings — single source of truth for brand identity (logo,
+           favicon, main color). Applied AFTER the theme CSS so it wins. */
+        _applySiteSettings(kv.hm_settings);
 
         /* Reviews fallback if the dedicated table returned nothing.
            (Services render below via the unified _applyServicesToGrid.) */
