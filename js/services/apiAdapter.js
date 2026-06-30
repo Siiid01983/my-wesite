@@ -493,18 +493,19 @@
 
     /* ── Hero ─────────────────────────────────────────── */
     getHero() {
+      /* Quote CTA, trust badges and bg_image were retired from the public hero
+         (single-CTA hero + static trust strip), so they are no longer part of
+         the editable hero model. */
       const defaults = {
         headline_ja: 'ていねいに、運びます。',  headline_en: 'Same-day moving. Careful, always.',
         sub_primary: 'オンライン予約・無料見積り対応', sub_secondary: '料金確認から予約までオンライン完結',
         cta_book_sup: 'オンライン予約', cta_book_lbl: '今すぐ予約する',
-        cta_quote_sup: '無料見積り',   cta_quote_lbl: '料金を確認する',
-        cta_line: 'LINE相談', trust_badges: ['最短2時間でご返信', 'オンライン予約対応'], bg_image: '',
+        cta_line: 'LINE相談',
       };
       const saved = _ls('hm_hero', defaults);
       if (saved.headline     && !saved.headline_ja)    saved.headline_ja   = saved.headline;
       if (saved.subtitle     && !saved.sub_primary)    saved.sub_primary   = saved.subtitle;
       if (saved.ctaPrimary   && !saved.cta_book_lbl)   saved.cta_book_lbl  = saved.ctaPrimary;
-      if (saved.ctaSecondary && !saved.cta_quote_lbl)  saved.cta_quote_lbl = saved.ctaSecondary;
       return Object.assign({}, defaults, saved);
     },
     saveHero: (v) => wt('hm_hero', v),
