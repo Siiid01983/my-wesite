@@ -230,6 +230,10 @@ window.ContentLoader = (function () {
     return m;
   }
   function _applySeo(seoMap) {
+    /* Home-page SEO only. Secondary pages (e.g. blog.html / article.html) set
+       window.__HM_SUPPRESS_HOME_SEO__ so this never overwrites their own
+       <title>/description with the home values. */
+    if (window.__HM_SUPPRESS_HOME_SEO__) return;
     if (!seoMap || typeof seoMap !== 'object') return;
     var s = seoMap.home;
     if (!s || typeof s !== 'object') return;
