@@ -174,6 +174,41 @@ window.ContentLoader = (function () {
       var meta = document.querySelector('meta[name="theme-color"]');
       if (meta) meta.setAttribute('content', brand.color);
     }
+
+    /* ── Company / contact / social (single source) ──────────────────────────
+       Mapped only to unambiguous public targets, applied when set. Twitter/FB/
+       IG/YouTube have no markup on the public site (skipped); address fields stay
+       with the Company section to avoid two sources for the same table. */
+    var company = s.company || {}, contact = s.contact || {}, social = s.social || {};
+
+    /* Wordmark → header + footer brand name (English wordmark preferred). */
+    var wordmark = company.nameEn || company.name;
+    if (wordmark) {
+      document.querySelectorAll('.brand-name').forEach(function (el) { el.textContent = wordmark; });
+    }
+
+    /* LINE → every line.me CTA on the page. */
+    if (social.line) {
+      document.querySelectorAll('a[href*="line.me"]').forEach(function (a) { a.href = social.line; });
+    }
+
+    /* Email → mailto links (href + visible address when the text is the address). */
+    if (contact.email) {
+      document.querySelectorAll('a[href^="mailto:"]').forEach(function (a) {
+        a.href = 'mailto:' + contact.email;
+        if ((a.textContent || '').indexOf('@') > -1) a.textContent = contact.email;
+      });
+    }
+
+    /* Phone → tel links (href normalised to digits/+; visible number updated when
+       the link text is itself a number, not a label). */
+    if (contact.phone) {
+      var telHref = 'tel:' + String(contact.phone).replace(/[^\d+]/g, '');
+      document.querySelectorAll('a[href^="tel:"]').forEach(function (a) {
+        a.href = telHref;
+        if (/^[\d\s+()\-]+$/.test((a.textContent || '').trim())) a.textContent = contact.phone;
+      });
+    }
   }
 
   /* ── Calendar availability ────────────────────────────── */
