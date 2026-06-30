@@ -175,6 +175,10 @@ window.ContentLoader = (function () {
       if (meta) meta.setAttribute('content', brand.color);
     }
 
+    /* Logo size → one CMS field drives every /icons/icon.svg mark (via
+       js/utils/brandSize.js). Absent value reverts to each mark's default size. */
+    if (typeof window.HM_applyLogoSize === 'function') window.HM_applyLogoSize(brand.logoSize);
+
     /* ── Company / contact / social (single source) ──────────────────────────
        Mapped only to unambiguous public targets, applied when set. Twitter/FB/
        IG/YouTube have no markup on the public site (skipped); address fields stay

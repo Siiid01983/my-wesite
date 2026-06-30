@@ -21,7 +21,7 @@ const _SETTINGS_DEFAULT = {
     twitter: '', facebook: '', instagram: '', line: '', youtube: '',
   },
   brand: {
-    logo: '', favicon: '', color: '#0a1f44',
+    logo: '', favicon: '', color: '#0a1f44', logoSize: 42,
   },
 };
 
@@ -180,6 +180,10 @@ function _renderSettingsTab(s) {
               <label class="m-label">ファビコン URL <span style="color:var(--gray-2);font-weight:400">（推奨: 32×32px ICO/PNG）</span></label>
               <input class="m-input" id="sBrandFavicon" type="url" value="${esc(s.brand.favicon)}" placeholder="https://..." />
             </div>
+            <div class="m-field">
+              <label class="m-label">ロゴサイズ (px) <span style="color:var(--gray-2);font-weight:400">（デフォルト: 42・全ページ共通）</span></label>
+              <input class="m-input" id="sBrandLogoSize" type="number" min="8" max="240" step="1" value="${esc(s.brand.logoSize || 42)}" placeholder="42" oninput="if(window.HM_applyLogoSize)HM_applyLogoSize(this.value)" />
+            </div>
           </div>
           <div>
             <div class="seo-section-head">ブランドカラー</div>
@@ -246,13 +250,15 @@ function saveSettings() {
       youtube:   document.getElementById('sSocYoutube')?.value.trim()   || existing.social.youtube,
     },
     brand: {
-      logo:    document.getElementById('sBrandLogo')?.value.trim()    || existing.brand.logo,
-      favicon: document.getElementById('sBrandFavicon')?.value.trim() || existing.brand.favicon,
+      logo:     document.getElementById('sBrandLogo')?.value.trim()    || existing.brand.logo,
+      favicon:  document.getElementById('sBrandFavicon')?.value.trim() || existing.brand.favicon,
       color,
+      logoSize: parseInt(document.getElementById('sBrandLogoSize')?.value, 10) || existing.brand.logoSize || 42,
     },
   };
 
   SettingsStore.save(data);
+  if (window.HM_applyLogoSize) HM_applyLogoSize(data.brand.logoSize);   // live-apply across this page
   toast('設定を保存しました');
 
   // Sync to API
