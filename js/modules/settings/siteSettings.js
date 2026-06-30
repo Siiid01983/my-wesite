@@ -213,26 +213,19 @@ function _settingsBrandPreview() {
   el.innerHTML = url ? `<img src="${esc(url)}" style="max-height:60px;max-width:200px;border:1px solid var(--line);border-radius:6px;padding:6px;background:#fff" onerror="this.style.display='none'" />` : '';
 }
 
-function switchSettingsTab(tab) {
-  _settingsTab = tab;
-  renderSiteSettings();
-}
-
-async function saveSettings() {
-  const color = document.getElementById('sBrandColorHex')?.value || document.getElementById('sBrandColor')?.value || '#0a1f44';
-  // Update brand color preview
-  const prev = document.getElementById('sBrandColorPreview');
-  if (prev) prev.style.background = color;
-
+/* Build the full settings object from the CURRENTLY-RENDERED tab, merged with the
+   stored values for the tabs that aren't mounted. Used by BOTH the tab switcher
+   (to preserve edits before re-render) and Save. */
+function _captureCurrentSettings() {
   const existing = SettingsStore.get();
-
-  /* Read a field by id. If the input is RENDERED (current tab) use its value —
-     INCLUDING an empty string, so a field can actually be CLEARED. Only fall back
-     to the existing value when the input is absent (a different tab is open). The
-     old `?.value || existing` form silently reverted any cleared field. */
+  /* Use a rendered input's value (incl. empty, so a field can be CLEARED); fall
+     back to the stored value only when the input is absent (another tab open). */
   const val = (id, fb) => { const el = document.getElementById(id); return el ? el.value.trim() : fb; };
-
-  const data = {
+  const colorEl  = document.getElementById('sBrandColorHex') || document.getElementById('sBrandColor');
+  const color    = colorEl && colorEl.value ? colorEl.value : existing.brand.color;
+  const sizeEl   = document.getElementById('sBrandLogoSize');
+  const logoSize = sizeEl ? (parseInt(sizeEl.value, 10) || existing.brand.logoSize || 42) : (existing.brand.logoSize || 42);
+  return {
     company: {
       name:        val('sCompanyName',   existing.company.name),
       nameEn:      val('sCompanyNameEn', existing.company.nameEn),
@@ -259,9 +252,25 @@ async function saveSettings() {
       logo:     val('sBrandLogo',    existing.brand.logo),
       favicon:  val('sBrandFavicon', existing.brand.favicon),
       color,
-      logoSize: parseInt(document.getElementById('sBrandLogoSize')?.value, 10) || existing.brand.logoSize || 42,
+      logoSize,
     },
   };
+}
+
+/* ROOT-CAUSE FIX: capture the current tab's edits into the store BEFORE
+   re-rendering. Previously switching tabs re-rendered from localStorage and
+   discarded everything typed since the last Save, so only the tab mounted at
+   Save time was ever persisted ("only phone saved"). */
+function switchSettingsTab(tab) {
+  SettingsStore.save(_captureCurrentSettings());
+  _settingsTab = tab;
+  renderSiteSettings();
+}
+
+async function saveSettings() {
+  const data = _captureCurrentSettings();
+  const prev = document.getElementById('sBrandColorPreview');
+  if (prev) prev.style.background = data.brand.color;
 
   /* Migrate an inline base64 data-URI logo to an uploaded storage URL so hm_data
      stores a compact URL (not a ~400KB blob downloaded on every public page load).
