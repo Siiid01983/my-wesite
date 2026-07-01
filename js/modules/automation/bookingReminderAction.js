@@ -6,12 +6,12 @@
    their move date. Replaces the placeholder send_move_reminder
    action registered in automationActions.js.
 
-   Sends to CUSTOMER (to_email = booking.email).
-   Includes move details + company contact info for moving day.
+   Sends to CUSTOMER via the send-email.php gateway (booking@hello-moving.com),
+   log_comm:true. EmailJS has been fully removed.
 
    Storage:
      hm_booking_reminders_sent  { version, sent:{}, log:[] }
-     hm_br_settings             { version, templateId, companyPhone, companyEmail }
+     hm_br_settings             { version, companyPhone, companyEmail }
 
    Audit action code: booking_reminder_sent
    ════════════════════════════════════════════════════════ */
@@ -28,7 +28,7 @@ window.BookingReminderAction = (function () {
       var d = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
       if (d && d.version === 1) return d;
     } catch (_) {}
-    return { version: 1, templateId: '', companyPhone: '', companyEmail: 'hellomoving1@gmail.com' };
+    return { version: 1, companyPhone: '', companyEmail: '' };
   }
 
   function saveSettings(cfg) {
@@ -68,36 +68,59 @@ window.BookingReminderAction = (function () {
     var d = _loadSent(); d.log = []; _persistSent(d);
   }
 
-  /* ── Build template params for this booking ── */
+  /* ── Message + gateway send (booking@) ── */
 
-  function _buildParams(bk, cfg) {
+  async function _gwSend(account, to, subject, message, refId) {
+    var base = (window.API_BASE || '').replace(/\/$/, '');
+    if (!base) return { ok: false, detail: 'API_BASE未設定' };
+    try {
+      var res = await fetch(base + '/send-email.php', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-KEY': window.API_KEY || '' },
+        body: JSON.stringify({ from_account: account, to: to, subject: subject, message: message, booking_id: refId || '', log_comm: true }),
+      });
+      var r = await res.json().catch(function () { return { ok: false, error: 'HTTP ' + res.status }; });
+      return { ok: !!r.ok, detail: r.ok ? (r.messageId || 'sent') : ((r.error && (r.error.message || r.error)) || ('HTTP ' + res.status)) };
+    } catch (err) {
+      return { ok: false, detail: (err && err.message) || 'ネットワークエラー' };
+    }
+  }
+
+  function _buildMessage(bk, cfg) {
     var moveDate = (typeof fmtD === 'function')
       ? fmtD(bk.date || bk.move_date || '')
       : (bk.date || bk.move_date || '');
-
-    return {
-      to_email:      bk.email,
-      customer_name: bk.name    || bk.customer_name || '',
-      reference_id:  bk.id      || bk.reference_id  || '',
-      move_date:     moveDate,
-      move_time:     bk.time    || '未定',
-      move_from:     bk.fromAddr|| bk.from_address  || '未定',
-      move_to:       bk.toAddr  || bk.to_address    || '未定',
-      service_type:  bk.service || '',
-      booking_notes: bk.notes   || '',
-      company_name:  'Hello Moving',
-      company_phone: cfg.companyPhone  || '',
-      company_email: cfg.companyEmail  || '',
-    };
+    return [
+      (bk.name || bk.customer_name || 'お客様') + '様',
+      '',
+      'いつも Hello Moving をご利用いただきありがとうございます。',
+      'ご予約いただいたお引越しが明日に迫っておりますので、内容をご確認ください。',
+      '',
+      '── お引越し内容 ──',
+      '受付番号　　: ' + (bk.id || bk.reference_id || '—'),
+      'サービス　　: ' + (bk.service || '—'),
+      '引越し日　　: ' + moveDate,
+      '希望時間帯　: ' + (bk.time || '未定'),
+      '引越し元　　: ' + (bk.fromAddr || bk.from_address || '未定'),
+      '引越し先　　: ' + (bk.toAddr || bk.to_address || '未定'),
+      (bk.notes ? '備考　　　　: ' + bk.notes : ''),
+      '',
+      '当日のご連絡・ご変更: ' + (cfg.companyPhone || '090-2489-3402'),
+      '',
+      '当日はどうぞよろしくお願いいたします。',
+      'Hello Moving',
+    ].filter(function (l) { return l !== ''; }).join('\n');
   }
 
-  /* ── EmailJS send ── */
-
   async function _sendEmail(bk) {
-    // EmailJS has been removed. This customer booking-reminder flow is DISABLED
-    // pending a rebuild on the send-email.php gateway; it no longer sends email.
-    void _buildParams;
-    return { ok: false, detail: 'この自動メールは無効です（EmailJS 廃止・送信ゲートウェイ移行待ち）' };
+    // Master email switch (preserves the prior emailCfg.enabled gate).
+    if (window.Adapter && Adapter.getEmailSettings && !Adapter.getEmailSettings().enabled) {
+      return { ok: false, detail: 'メール通知が無効です（メール通知設定で有効化してください）' };
+    }
+    if (!bk.email) return { ok: false, detail: 'お客様メールアドレスなし' };
+    var refId   = bk.id || bk.reference_id || '';
+    var subject = '[Hello Moving] お引越し前日のご確認（' + refId + '）';
+    return _gwSend('booking', bk.email, subject, _buildMessage(bk, getSettings()), refId);
   }
 
   /* ── Automation action (replaces placeholder in automationActions.js) ── */
@@ -172,21 +195,6 @@ window.BookingReminderAction = (function () {
 
   /* ── Settings panel ── */
 
-  var TEMPLATE_VARS = [
-    ['to_email',      '顧客メールアドレス'],
-    ['customer_name', '顧客名'],
-    ['reference_id',  '予約番号'],
-    ['move_date',     '引越し日（日本語形式）'],
-    ['move_time',     '希望時間帯'],
-    ['move_from',     '引越し元住所'],
-    ['move_to',       '引越し先住所'],
-    ['service_type',  'サービス種別'],
-    ['booking_notes', '備考'],
-    ['company_name',  '会社名（Hello Moving）'],
-    ['company_phone', '会社電話番号（設定値）'],
-    ['company_email', '会社メールアドレス（設定値）'],
-  ];
-
   function renderPanel() {
     var el = document.getElementById('brContent');
     if (!el) return;
@@ -222,47 +230,27 @@ window.BookingReminderAction = (function () {
         '</div>' +
         '<div class="panel-body">' +
           '<p style="font-size:12px;color:var(--gray-1);margin-bottom:14px;line-height:1.6">' +
-            '自動化ルール「引越し前リマインダー」が実行されると、引越し日の1日前に顧客へリマインダーメールを送信します。<br>' +
+            '自動化ルール「引越し前リマインダー」が実行されると、引越し日の1日前に顧客へ、送信ゲートウェイ経由（booking@hello-moving.com）でリマインダーメールを送信します。<br>' +
             '引越し日・住所・希望時間帯・会社連絡先を含む内容で顧客に安心感を提供します。' +
           '</p>' +
-
-          '<div class="m-field">' +
-            '<label class="m-label">リマインダー Template ID</label>' +
-            '<input class="input" id="brTemplateId" type="text" value="' + esc(cfg.templateId) + '" ' +
-              'placeholder="template_xxxxxxx" style="font-family:monospace;font-size:12px;max-width:300px" />' +
-            '<div style="font-size:11px;color:var(--gray-2);margin-top:4px">EmailJSで作成した顧客向けリマインダーテンプレートのID</div>' +
-          '</div>' +
 
           '<div class="m-row">' +
             '<div class="m-field">' +
               '<label class="m-label">会社電話番号</label>' +
               '<input class="input" id="brCompanyPhone" type="text" value="' + esc(cfg.companyPhone) + '" ' +
-                'placeholder="0120-000-000" />' +
-              '<div style="font-size:11px;color:var(--gray-2);margin-top:4px">テンプレート変数 {{company_phone}} に入ります</div>' +
+                'placeholder="090-2489-3402" />' +
+              '<div style="font-size:11px;color:var(--gray-2);margin-top:4px">メール本文の当日連絡先に使用されます</div>' +
             '</div>' +
             '<div class="m-field">' +
               '<label class="m-label">会社メールアドレス</label>' +
               '<input class="input" id="brCompanyEmail" type="email" value="' + esc(cfg.companyEmail) + '" ' +
-                'placeholder="hellomoving1@gmail.com" />' +
-              '<div style="font-size:11px;color:var(--gray-2);margin-top:4px">テンプレート変数 {{company_email}} に入ります</div>' +
+                'placeholder="support@hello-moving.com" />' +
             '</div>' +
           '</div>' +
 
           '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
             '<button class="btn btn-primary btn-sm" onclick="BookingReminderAction.savePanel()">保存</button>' +
             '<button class="btn btn-ghost btn-sm" id="brRunNowBtn" onclick="BookingReminderAction.runNow()">今すぐ確認 &amp; 送信</button>' +
-          '</div>' +
-
-          '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">' +
-            '<div style="font-size:11px;font-weight:700;color:var(--gray-1);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">テンプレート変数</div>' +
-            '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">' +
-              TEMPLATE_VARS.map(function (pair) {
-                return '<div style="background:var(--bg-soft-2);border:1px solid var(--line);border-radius:6px;padding:7px 10px">' +
-                  '<code style="font-size:11px;color:var(--blue)">{{' + pair[0] + '}}</code>' +
-                  '<div style="font-size:11px;color:var(--gray-2);margin-top:2px">' + esc(pair[1]) + '</div>' +
-                '</div>';
-              }).join('') +
-            '</div>' +
           '</div>' +
 
           '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">' +
@@ -278,7 +266,6 @@ window.BookingReminderAction = (function () {
 
   function savePanel() {
     saveSettings({
-      templateId:   (document.getElementById('brTemplateId')    || {}).value || '',
       companyPhone: (document.getElementById('brCompanyPhone')  || {}).value || '',
       companyEmail: (document.getElementById('brCompanyEmail')  || {}).value || '',
     });

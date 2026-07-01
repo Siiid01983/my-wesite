@@ -1,112 +1,97 @@
 # EmailJS → send-email.php Migration Report
 
 **Date:** 2026-07-01
-**Scope (as requested):** Migrate all **admin booking notification** emails from EmailJS to
-the `hm-api/send-email.php` gateway; remove the EmailJS dependency completely; add opt-in
-`communications` logging; clean up EmailJS config. **LINE notifications unchanged.**
+**Scope:** Remove EmailJS completely and route **all** former EmailJS email — admin
+notifications **and** the four customer flows — through the `hm-api/send-email.php`
+gateway (authenticated SMTP via `EmailService.php`). Every outbound email is logged in
+`communications`. **LINE notifications unchanged.**
 
 ---
 
-## 1. What changed
+## 1. Account routing (all via send-email.php)
 
-### Admin notifications now route through the gateway
-`js/modules/notifications/email.js` → `sendEmailNotif()` **no longer calls EmailJS**. It POSTs
-to `<API_BASE>/send-email.php` (`Content-Type` + `X-API-KEY`) with `log_comm:true`. Routing:
+| Flow | Trigger / schedule (preserved) | `from_account` | Recipient |
+|------|-------------------------------|----------------|-----------|
+| Admin: new booking | on create | `booking` | booking@hello-moving.com |
+| Admin: confirmed | status → 確定 | `booking` | booking@hello-moving.com |
+| Admin: completed | status → 完了 | `support` | support@hello-moving.com |
+| **Booking Reminder** (customer) | 1 day before move date, status 確定 | **`booking`** | customer |
+| **Quote Follow-up** (customer) | 3 days after quote, not converted | **`support`** | customer |
+| **Review Request** (customer) | 7 days after completion | **`support`** | customer |
+| **Customer Follow-up** (customer) | X days after move (完了) | **`support`** | customer |
 
-| Trigger | `from_account` | Recipient (admin) |
-|---|---|---|
-| New booking (`newBooking`) | `booking` | **booking@hello-moving.com** |
-| Confirmed (`statusConfirmed`) | `booking` | **booking@hello-moving.com** |
-| Completed (`statusComplete`) | `support` | **support@hello-moving.com** |
-| New quote (`newQuote`) | `booking` | booking@hello-moving.com |
+**Mapping rule applied:** booking-lifecycle sends → `booking@`; support/after-sales/**follow-up**
+sends → `support@`. (If you'd prefer Quote Follow-up from `booking@` since quotes are part of the
+booking funnel, it's a one-line change in `quoteFollowUpAction.js`.)
 
-Callers in `admin-bookings.js` (`saveBooking`) are **unchanged** — same `sendEmailNotif(...)`
-signature and trigger keys; only the transport underneath changed.
+All customer sends include `log_comm:true`; the master switch `getEmailSettings().enabled`
+gates every flow (preserves the prior `emailCfg.enabled` behavior). Per-flow schedules,
+dedup (`isSent`/`markSent`), and delay settings are unchanged — only the transport + message
+construction changed (message bodies are now built in-code and wrapped by the gateway's branded
+HTML template, since EmailJS server-side templates are gone).
 
-### `log_comm` logging (opt-in, no duplicates)
-`hm-api/send-email.php` accepts `log_comm` (default **false**). On a successful send it inserts
-one `communications` row (`sender_email`, `customer_email`=recipient, `subject`, `message`,
+---
+
+## 2. `log_comm` logging (opt-in, dedupe-safe)
+`hm-api/send-email.php` accepts `log_comm` (default **false**). On a successful send it inserts one
+`communications` row (`sender_email`, `customer_email`=recipient, `subject`, `message`,
 `direction='outbound'`, `created_by='system'`, `email_status='sent'`, `sent_at=NOW()`).
-- Admin notifications set `log_comm:true` → logged once.
-- `communications.js` **omits** `log_comm` (it already self-logs before calling `_deliver`) →
-  **no duplicate rows**; existing communications history behavior preserved.
+- Admin notifications + all four customer flows set `log_comm:true` → **every outbound email logged**.
+- `communications.js` **omits** `log_comm` (it self-logs before calling `_deliver`) → **no duplicates**;
+  existing communications history behavior preserved.
 - A logging failure never fails the send (email already delivered; the error is logged).
 
-### EmailJS config removed from admin settings
-- `js/services/apiAdapter.js` — `getEmailSettings()` default reduced to `{ enabled, triggers }`
-  (removed `adminEmail`, `serviceId`, `templateId`, `publicKey`).
-- `js/modules/notifications/email.js` — the settings page (`renderEmail`) no longer renders the
-  EmailJS credentials panel, the "EmailJS template variables" panel, or the EmailJS setup
-  instructions. It now shows the enable toggle, a gateway explainer, a **Test send** button, the
-  trigger toggles, and the send log. `saveEmailSettings()` / `testEmailNotif()` updated accordingly.
+---
 
-### LINE — unchanged
-`sendLineNotif()` and all LINE push paths are untouched.
+## 3. Every EmailJS source removed / rebuilt
+
+| # | File | Before | After |
+|---|------|--------|-------|
+| 1 | `js/modules/notifications/email.js` `sendEmailNotif` | `fetch api.emailjs.com` (admin) | POST `send-email.php` → booking@/support@ |
+| 2 | `js/modules/notifications/email.js` UI/`testEmailNotif`/`saveEmailSettings` | EmailJS creds UI + template-vars + setup steps | removed; gateway explainer + test button |
+| 3 | `js/services/apiAdapter.js` `getEmailSettings` | `adminEmail/serviceId/templateId/publicKey` | `{ enabled, triggers }` |
+| 4 | `js/services/apiAdapter.js` `getFollowUpSettings` | included `templateId` | `{ enabled, delayDays }` |
+| 5 | `js/modules/notifications/followUp.js` `_send` | `fetch api.emailjs.com` (customer) | **rebuilt** → `send-email.php` (support@) |
+| 6 | `js/modules/automation/quoteFollowUpAction.js` `_sendEmail` | `fetch api.emailjs.com` (customer) | **rebuilt** → `send-email.php` (support@) |
+| 7 | `js/modules/automation/bookingReminderAction.js` `_sendEmail` | `fetch api.emailjs.com` (customer) | **rebuilt** → `send-email.php` (booking@) |
+| 8 | `js/modules/automation/reviewRequestAction.js` `_sendEmail` | `fetch api.emailjs.com` (customer) | **rebuilt** → `send-email.php` (support@) |
+| 9 | `js/utils/i18n.js` | `EmailJSテンプレート変数` key | removed (dead) |
+
+**EmailJS UI cleanup:** removed the `templateId` inputs and the EmailJS "template variables"
+reference panels from all four customer-flow settings UIs (they configured EmailJS templates,
+now unnecessary). Kept each flow's schedule/enable/company-contact settings.
+
+**No EmailJS files/SDK existed to delete** — it was inline `fetch()` calls to `api.emailjs.com`
+(no `<script>` include in any HTML). All such calls removed.
 
 ---
 
-## 2. Every EmailJS email source removed
-
-| # | File | Function | Before | After |
-|---|------|----------|--------|-------|
-| 1 | `js/modules/notifications/email.js` | `sendEmailNotif` | `fetch api.emailjs.com` (admin notify) | POST `send-email.php` → booking@/support@ |
-| 2 | `js/modules/notifications/email.js` | `testEmailNotif` | required EmailJS creds | routes through gateway |
-| 3 | `js/modules/notifications/email.js` | `renderEmail`/`saveEmailSettings` | EmailJS credential UI | removed |
-| 4 | `js/services/apiAdapter.js` | `getEmailSettings` default | held EmailJS creds | `{enabled,triggers}` only |
-| 5 | `js/modules/notifications/followUp.js` | `_send` / `checkAndSend` | `fetch api.emailjs.com` (customer) | **disabled** (no send) |
-| 6 | `js/modules/automation/quoteFollowUpAction.js` | `_sendEmail` | `fetch api.emailjs.com` (customer) | **disabled** (no send) |
-| 7 | `js/modules/automation/bookingReminderAction.js` | `_sendEmail` | `fetch api.emailjs.com` (customer) | **disabled** (no send) |
-| 8 | `js/modules/automation/reviewRequestAction.js` | `_sendEmail` | `fetch api.emailjs.com` (customer) | **disabled** (no send) |
-
-**No EmailJS files were deleted** — EmailJS was never a file/SDK, only inline `fetch()` calls to
-`api.emailjs.com` (no `<script>` include existed in any HTML). All such calls were removed.
-
-### ⚠️ Consequence to note (items 5–8)
-Removing the shared EmailJS credentials (`serviceId`/`publicKey`) **inherently disables** the four
-**customer-facing** flows that reused them: post-move follow-up, quote follow-up, booking reminder,
-and review request. They were **not rebuilt** on the gateway (that is a separate, customer-email
-product decision) — their `_sendEmail`/`_send` now return a clear "disabled — gateway migration
-pending" result and dispatch nothing. **Recommend a follow-up** to rebuild them on `send-email.php`
-(booking@ for reminder/follow-up, support@ for review request) if those automations are still wanted.
-
----
-
-## 3. Verification checklist — no remaining EmailJS email paths
+## 4. Verification checklist — no remaining EmailJS email paths
 
 | Check | Result |
 |---|---|
-| `grep -rn "api.emailjs.com" js/` | **0 matches** ✓ |
-| `grep -rn "emailCfg.serviceId / .publicKey / cfg.serviceId / .publicKey" js/` (code reads) | **0 matches** ✓ |
-| `getEmailSettings` default contains no EmailJS creds | ✓ |
-| `sendEmailNotif` posts to `send-email.php` (not EmailJS) | ✓ |
-| PHP lint `send-email.php` | ✓ no errors |
-| `node --check` on all 6 edited JS files | ✓ all pass |
-| `npm run test:arch` | ✓ 20/20 pass |
+| `grep -rin "api.emailjs.com" js/` | **0 matches** ✓ |
+| `grep -rn "serviceId / publicKey / templateId"` (code reads) | **0 matches** ✓ |
+| All 4 customer flows POST to `send-email.php` | ✓ |
+| `sendEmailNotif` (admin) posts to `send-email.php` | ✓ |
+| Every outbound sets `log_comm:true` (admin + 4 customer flows) | ✓ |
+| PHP lint `send-email.php` | ✓ |
+| `node --check` on all edited JS (7 files) | ✓ |
+| `npm run test:arch` | ✓ 20/20 |
 | LINE notifications untouched | ✓ |
 
-**Residual textual references (non-functional — not send paths):**
-- Comments in the disabled `_sendEmail`/`_send` functions ("EmailJS has been removed…").
-- UI hint text for the disabled automation flows' own `templateId` fields (label them "EmailJS
-  template ID"). Harmless; will be removed when/if those flows are rebuilt.
-- `js/modules/changelog/changelog.js` — historical changelog entries (intentionally **not** edited;
-  they are a dated record).
-- `js/utils/i18n.js` — one now-unused translation key (`EmailJSテンプレート変数`). Harmless.
+**Residual "EmailJS" strings (non-functional):** doc comments noting the removal; two historical
+entries in `js/modules/changelog/changelog.js` (a dated record — intentionally not rewritten).
 
 ---
 
-## 4. Files changed
+## 5. Files changed
+`hm-api/send-email.php` · `js/modules/notifications/email.js` ·
+`js/modules/notifications/followUp.js` · `js/modules/automation/quoteFollowUpAction.js` ·
+`js/modules/automation/bookingReminderAction.js` · `js/modules/automation/reviewRequestAction.js` ·
+`js/services/apiAdapter.js` · `js/utils/i18n.js`
 
-| File | Change |
-|---|---|
-| `hm-api/send-email.php` | Added opt-in `log_comm` → `communications` insert (dedupe-safe) |
-| `js/modules/notifications/email.js` | Admin notify via gateway; EmailJS UI removed |
-| `js/services/apiAdapter.js` | `getEmailSettings` default trimmed to `{enabled,triggers}` |
-| `js/modules/notifications/followUp.js` | EmailJS send disabled |
-| `js/modules/automation/quoteFollowUpAction.js` | EmailJS send disabled |
-| `js/modules/automation/bookingReminderAction.js` | EmailJS send disabled |
-| `js/modules/automation/reviewRequestAction.js` | EmailJS send disabled |
-
-## 5. Server-side verification still recommended
-Trigger one admin notification (create a booking / change status) on the live site and confirm:
-(a) it arrives at booking@ / support@, (b) a `communications` row is written with
-`email_status='sent'`, and (c) no duplicate row for the customer-reply path.
+## 6. Server-side verification recommended
+Enable email notifications, then exercise each path (create booking / confirm / complete /
+run each automation "今すぐ確認 & 送信"): confirm delivery from the right mailbox, and that each
+send writes exactly one `communications` row (`email_status='sent'`) with no duplicates.

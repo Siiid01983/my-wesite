@@ -794,7 +794,7 @@
     saveGcalSettings: (v) => wt(K.gcal, v),
 
     /* ── Follow-up emails ────────────────────────────── */
-    getFollowUpSettings: () => _ls(K.followup, { enabled:false, delayDays:3, templateId:'' }),
+    getFollowUpSettings: () => _ls(K.followup, { enabled:false, delayDays:3 }),
     saveFollowUpSettings: (v) => wt(K.followup, v),
     getFollowUpSent: () => _ls(K.followupSent, {}),
     markFollowUpSent(refId, info) { const s = this.getFollowUpSent(); s[refId] = info; wt(K.followupSent, s); },
