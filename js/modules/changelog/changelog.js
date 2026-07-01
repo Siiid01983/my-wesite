@@ -6,7 +6,16 @@
 
 const CHANGELOG = [
   {
-    version: 'v4.6', date: '2026-06-08', label: '最新',
+    version: 'v4.7', date: '2026-07-01', label: '最新',
+    entries: [
+      { type:'improve', text:'LINE通知をサーバーサイドの LINE Messaging API に移行：チャネルアクセストークンを hm-api/_config.php にサーバー保管し、hm-api/line-push.php 経由でプッシュ送信。ブラウザにトークンを一切露出しない（2025年3月に廃止された LINE Notify を置き換え）' },
+      { type:'feat',    text:'LINE push エンドポイント（hm-api/line-push.php）新設：POST /v2/bot/message/push を呼び出し。APIキー＋スタッフ（admin/manager）認証・レート制限（60回/分）・selftest アクション・{ok,data,error} エンベロープに対応' },
+      { type:'improve', text:'LINE設定画面を刷新：クライアント側のアクセストークン・CORSプロキシ入力欄を削除し、設定手順を Messaging API フローに書き換え。パネル名を「LINE Notify」→「LINE Messaging API」に変更' },
+      { type:'fix',     text:'テスト送信ボタンのクライアント側トークンガードを撤去：トークンがサーバー保管になったため、ガードにより送信がブロックされる問題を解消' },
+    ]
+  },
+  {
+    version: 'v4.6', date: '2026-06-08',
     entries: [
       { type:'feat',    text:'メディアライブラリ v2：フォルダ管理（作成・名前変更・削除・画像の移動）を追加。フォルダピルで絞り込み表示' },
       { type:'feat',    text:'メディア検索：ファイル名によるリアルタイムフィルタリング。件数・合計サイズをステータスバーに表示' },
