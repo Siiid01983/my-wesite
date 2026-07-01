@@ -92,29 +92,10 @@ window.QuoteFollowUpAction = (function () {
   }
 
   async function _sendEmail(qt) {
-    var emailCfg = window.Adapter ? Adapter.getEmailSettings() : {};
-    if (!emailCfg.enabled || !emailCfg.serviceId || !emailCfg.publicKey) {
-      return { ok: false, detail: 'EmailJS未設定（メール通知設定を確認してください）' };
-    }
-    var cfg = getSettings();
-    if (!cfg.templateId) return { ok: false, detail: '見積もりフォローアップテンプレートIDが未設定' };
-    if (!qt.email)       return { ok: false, detail: 'お客様メールアドレスなし' };
-
-    try {
-      var res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          service_id:      emailCfg.serviceId,
-          template_id:     cfg.templateId,
-          user_id:         emailCfg.publicKey,
-          template_params: _buildParams(qt, cfg),
-        }),
-      });
-      return { ok: res.status === 200, detail: 'HTTP ' + res.status };
-    } catch (err) {
-      return { ok: false, detail: (err && err.message) || 'ネットワークエラー' };
-    }
+    // EmailJS has been removed. This customer quote-follow-up flow is DISABLED
+    // pending a rebuild on the send-email.php gateway; it no longer sends email.
+    void _buildParams;
+    return { ok: false, detail: 'この自動メールは無効です（EmailJS 廃止・送信ゲートウェイ移行待ち）' };
   }
 
   /* ── Automation action ── */

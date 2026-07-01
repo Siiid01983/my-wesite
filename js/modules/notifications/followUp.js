@@ -27,12 +27,14 @@ window.FollowUp = (function () {
   'use strict';
 
   /* ── Core: check bookings and send pending follow-ups ── */
+  //  EmailJS has been removed; _send() no longer dispatches email, so this flow
+  //  is inert until rebuilt on the send-email.php gateway.
   async function checkAndSend(silent) {
     const cfg      = Adapter.getFollowUpSettings();
     if (!cfg.enabled || !cfg.templateId) return 0;
 
     const emailCfg = Adapter.getEmailSettings();
-    if (!emailCfg.enabled || !emailCfg.serviceId || !emailCfg.publicKey) return 0;
+    if (!emailCfg.enabled) return 0;
 
     const bookings = Adapter.getBookings();
     const sent     = Adapter.getFollowUpSent();
@@ -63,32 +65,10 @@ window.FollowUp = (function () {
 
   async function _send(bk, emailCfg, cfg) {
     const ts = new Date().toLocaleString('ja-JP');
-    try {
-      const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          service_id:      emailCfg.serviceId,
-          template_id:     cfg.templateId,
-          user_id:         emailCfg.publicKey,
-          template_params: {
-            to_email:      bk.email,
-            customer_name: bk.name   || '',
-            reference_id:  bk.id     || '',
-            move_date:     fmtD(bk.date),
-            company_name:  'Hello Moving',
-          },
-        }),
-      });
-      const ok = res.status === 200;
-      const entry = { ts, refId: bk.id, name: bk.name, email: bk.email, ok, status: res.status };
-      Adapter.pushFollowUpLog(entry);
-      if (ok) Adapter.markFollowUpSent(bk.id, { sentAt: new Date().toISOString(), email: bk.email });
-      return ok;
-    } catch (err) {
-      Adapter.pushFollowUpLog({ ts, refId: bk.id, name: bk.name, email: bk.email, ok: false, status: err.message.slice(0, 40) });
-      return false;
-    }
+    // EmailJS has been removed. This customer follow-up flow is DISABLED pending
+    // a rebuild on the send-email.php gateway; it no longer sends any email.
+    Adapter.pushFollowUpLog({ ts, refId: bk.id, name: bk.name, email: bk.email, ok: false, status: 'disabled (EmailJS removed)' });
+    return false;
   }
 
   /* ── UI ─────────────────────────────────────────────── */

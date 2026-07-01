@@ -783,7 +783,7 @@
     clearLineLog() { wt(K.linelog, []); },
 
     /* ── Email Notify ─────────────────────────────────── */
-    getEmailSettings: () => _ls(K.email, { enabled:false, adminEmail:'', serviceId:'', templateId:'', publicKey:'', triggers:{ newBooking:true, statusConfirmed:true, statusComplete:true, newQuote:false } }),
+    getEmailSettings: () => _ls(K.email, { enabled:false, triggers:{ newBooking:true, statusConfirmed:true, statusComplete:true, newQuote:false } }),
     saveEmailSettings: (v) => wt(K.email, v),
     getEmailLog: () => _ls(K.emaillog, []),
     pushEmailLog(entry) { const log = this.getEmailLog(); log.unshift(entry); wt(K.emaillog, log.slice(0, 20)); },

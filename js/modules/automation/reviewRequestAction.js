@@ -77,44 +77,9 @@ window.ReviewRequestAction = (function () {
   /* ── EmailJS send ── */
 
   async function _sendEmail(bk) {
-    var emailCfg = window.Adapter ? Adapter.getEmailSettings() : {};
-    if (!emailCfg.enabled || !emailCfg.serviceId || !emailCfg.publicKey) {
-      return { ok: false, detail: 'EmailJS未設定（メール通知設定を確認してください）' };
-    }
-    var cfg = getSettings();
-    if (!cfg.templateId) {
-      return { ok: false, detail: 'レビュー依頼テンプレートIDが未設定' };
-    }
-    var email = bk.email || '';
-    if (!email) {
-      return { ok: false, detail: 'お客様メールアドレスなし' };
-    }
-
-    var moveDate = (typeof fmtD === 'function')
-      ? fmtD(bk.date || bk.move_date || '')
-      : (bk.date || bk.move_date || '');
-
-    try {
-      var res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          service_id:  emailCfg.serviceId,
-          template_id: cfg.templateId,
-          user_id:     emailCfg.publicKey,
-          template_params: {
-            to_email:      email,
-            customer_name: bk.name || bk.customer_name || '',
-            reference_id:  bk.id   || bk.reference_id  || '',
-            move_date:     moveDate,
-            company_name:  'Hello Moving',
-          },
-        }),
-      });
-      return { ok: res.status === 200, detail: 'HTTP ' + res.status };
-    } catch (err) {
-      return { ok: false, detail: (err && err.message) || 'ネットワークエラー' };
-    }
+    // EmailJS has been removed. This customer review-request flow is DISABLED
+    // pending a rebuild on the send-email.php gateway; it no longer sends email.
+    return { ok: false, detail: 'この自動メールは無効です（EmailJS 廃止・送信ゲートウェイ移行待ち）' };
   }
 
   /* ── Automation action (overrides the placeholder registered in automationActions.js) ── */

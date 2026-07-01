@@ -3,7 +3,11 @@
 //  send-email.php — admin → customer email
 //
 //  Reached at:  <API_BASE>/send-email.php
-//  Body (JSON): { communication_id?, from_account?, to, subject?, message, booking_id? }
+//  Body (JSON): { communication_id?, from_account?, to, subject?, message, booking_id?,
+//                 log_comm? }
+//    log_comm (bool, default false): when true, a successful send is recorded in the
+//    `communications` table. Callers that ALREADY log there (communications.js) MUST
+//    omit it to avoid duplicate rows; admin-notification / gateway callers set it true.
 //
 //  Transport is config-driven (_config.php → 'mail_mode'):
 //    'mail'  → PHP mail()              (default; out-of-the-box on cPanel)
@@ -148,6 +152,32 @@ $res = EmailService::deliver($cfg, [
 ]);
 
 if ($res['ok']) {
+  // Optional server-side logging into `communications`. Opt-in so the
+  // communications.js path (which self-logs before calling this endpoint) is
+  // never double-logged. Failure to log NEVER fails the response — the email
+  // is already sent; we just record the problem.
+  if (!empty($p['log_comm'])) {
+    try {
+      require_once __DIR__ . '/_db.php';
+      $st = hm_db()->prepare(
+        'INSERT INTO communications
+           (booking_id, customer_email, sender_email, subject, message, direction, created_by, email_status, sent_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+      );
+      $st->execute([
+        $bookingId !== '' ? $bookingId : null,
+        $to,
+        (string)$res['from'],
+        $subject,
+        $message,
+        'outbound',
+        'system',
+        'sent',
+      ]);
+    } catch (Throwable $e) {
+      hm_log_error('send-email log_comm failed', ['err' => $e->getMessage(), 'to' => $to]);
+    }
+  }
   email_ok(['from' => $res['from'], 'messageId' => $res['messageId'], 'transport' => $res['transport']]);
 }
 
