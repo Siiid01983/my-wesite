@@ -11,8 +11,8 @@
 
    Sends to CUSTOMER (to_email = quote.email).
 
-   Sends via the send-email.php gateway (support@hello-moving.com — follow-up),
-   log_comm:true. EmailJS has been fully removed.
+   Sends via the send-email.php gateway (booking@hello-moving.com — quote is
+   part of the booking funnel), log_comm:true. EmailJS has been fully removed.
 
    Storage:
      hm_quote_followups_sent  { version, sent:{}, log:[] }
@@ -69,7 +69,7 @@ window.QuoteFollowUpAction = (function () {
   function getSent() { return (_loadSent().sent || {}); }
   function _clearLog() { var d = _loadSent(); d.log = []; _persistSent(d); }
 
-  /* ── Message + gateway send (support@) ── */
+  /* ── Message + gateway send (booking@) ── */
 
   async function _gwSend(account, to, subject, message, refId) {
     var base = (window.API_BASE || '').replace(/\/$/, '');
@@ -121,7 +121,7 @@ window.QuoteFollowUpAction = (function () {
     }
     if (!qt.email) return { ok: false, detail: 'お客様メールアドレスなし' };
     var subject = '[Hello Moving] お見積もりのご検討状況について（' + (qt.id || '') + '）';
-    return _gwSend('support', qt.email, subject, _buildMessage(qt, getSettings()), qt.id || '');
+    return _gwSend('booking', qt.email, subject, _buildMessage(qt, getSettings()), qt.id || '');
   }
 
   /* ── Automation action ── */
@@ -211,7 +211,7 @@ window.QuoteFollowUpAction = (function () {
         '</div>' +
         '<div class="panel-body">' +
           '<p style="font-size:12px;color:var(--gray-1);margin-bottom:14px;line-height:1.6">' +
-            '自動化ルール「見積もりフォローアップ」が実行されると、見積もり受付から3日後に予約未確定のお客様へ、送信ゲートウェイ経由（support@hello-moving.com）でフォローアップメールを送信します。' +
+            '自動化ルール「見積もりフォローアップ」が実行されると、見積もり受付から3日後に予約未確定のお客様へ、送信ゲートウェイ経由（booking@hello-moving.com）でフォローアップメールを送信します。' +
           '</p>' +
           '<div class="m-row">' +
             '<div class="m-field">' +

@@ -16,13 +16,12 @@ gateway (authenticated SMTP via `EmailService.php`). Every outbound email is log
 | Admin: confirmed | status → 確定 | `booking` | booking@hello-moving.com |
 | Admin: completed | status → 完了 | `support` | support@hello-moving.com |
 | **Booking Reminder** (customer) | 1 day before move date, status 確定 | **`booking`** | customer |
-| **Quote Follow-up** (customer) | 3 days after quote, not converted | **`support`** | customer |
+| **Quote Follow-up** (customer) | 3 days after quote, not converted | **`booking`** | customer |
 | **Review Request** (customer) | 7 days after completion | **`support`** | customer |
 | **Customer Follow-up** (customer) | X days after move (完了) | **`support`** | customer |
 
-**Mapping rule applied:** booking-lifecycle sends → `booking@`; support/after-sales/**follow-up**
-sends → `support@`. (If you'd prefer Quote Follow-up from `booking@` since quotes are part of the
-booking funnel, it's a one-line change in `quoteFollowUpAction.js`.)
+**Mapping rule applied:** booking-funnel/lifecycle sends (reminder, quote follow-up) → `booking@`;
+after-sales/post-move follow-up (review request, customer follow-up) → `support@`.
 
 All customer sends include `log_comm:true`; the master switch `getEmailSettings().enabled`
 gates every flow (preserves the prior `emailCfg.enabled` behavior). Per-flow schedules,
@@ -52,7 +51,7 @@ HTML template, since EmailJS server-side templates are gone).
 | 3 | `js/services/apiAdapter.js` `getEmailSettings` | `adminEmail/serviceId/templateId/publicKey` | `{ enabled, triggers }` |
 | 4 | `js/services/apiAdapter.js` `getFollowUpSettings` | included `templateId` | `{ enabled, delayDays }` |
 | 5 | `js/modules/notifications/followUp.js` `_send` | `fetch api.emailjs.com` (customer) | **rebuilt** → `send-email.php` (support@) |
-| 6 | `js/modules/automation/quoteFollowUpAction.js` `_sendEmail` | `fetch api.emailjs.com` (customer) | **rebuilt** → `send-email.php` (support@) |
+| 6 | `js/modules/automation/quoteFollowUpAction.js` `_sendEmail` | `fetch api.emailjs.com` (customer) | **rebuilt** → `send-email.php` (booking@) |
 | 7 | `js/modules/automation/bookingReminderAction.js` `_sendEmail` | `fetch api.emailjs.com` (customer) | **rebuilt** → `send-email.php` (booking@) |
 | 8 | `js/modules/automation/reviewRequestAction.js` `_sendEmail` | `fetch api.emailjs.com` (customer) | **rebuilt** → `send-email.php` (support@) |
 | 9 | `js/utils/i18n.js` | `EmailJSテンプレート変数` key | removed (dead) |
