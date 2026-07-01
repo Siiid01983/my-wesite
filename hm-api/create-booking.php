@@ -91,7 +91,12 @@ try {
   http_response_code(200);
   header('Content-Type: application/json; charset=utf-8');
   echo json_encode($resp, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-  if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();   // flush to client first
+  // Flush the response to the client before the LINE round-trip. Handler-agnostic:
+  // fastcgi_finish_request() on PHP-FPM, litespeed_finish_request() on LiteSpeed
+  // (lsphp — common on cPanel). On other SAPIs (mod_php/suPHP) neither exists and
+  // the push runs inline (bounded by hm_line_push's 8s timeout).
+  if      (function_exists('fastcgi_finish_request'))  fastcgi_finish_request();
+  elseif  (function_exists('litespeed_finish_request')) litespeed_finish_request();
 
   // Server-side new-booking notification. Gated ONLY by line_enabled (server
   // config) — the admin UI's per-trigger toggles live in browser localStorage
