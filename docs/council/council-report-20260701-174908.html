@@ -1,0 +1,149 @@
+ل<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Council Report — Booking Architecture</title>
+<style>
+  :root{
+    --ink:#1c2118; --dark:#2C3626; --sage:#9AB57A; --paper:#F9F9F6;
+    --line:#e4e6df; --muted:#6b7268; --warn:#b4632a; --clash:#a23c3c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6;padding:32px 16px}
+  .wrap{max-width:820px;margin:0 auto}
+  header{border-bottom:3px solid var(--dark);padding-bottom:20px;margin-bottom:28px}
+  .kicker{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--sage);font-weight:700}
+  h1{font-size:26px;line-height:1.25;margin:8px 0 0}
+  .q{background:#fff;border:1px solid var(--line);border-left:4px solid var(--sage);
+    border-radius:8px;padding:16px 18px;margin-bottom:28px;color:#333;font-size:15px}
+  .verdict{background:var(--dark);color:#f4f6ef;border-radius:12px;padding:26px 24px;margin-bottom:28px;
+    box-shadow:0 6px 24px rgba(44,54,38,.18)}
+  .verdict h2{margin:0 0 6px;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--sage)}
+  .verdict .rec{font-size:19px;font-weight:600;line-height:1.45;margin:0 0 16px}
+  .verdict .first{background:rgba(154,181,122,.16);border:1px solid rgba(154,181,122,.4);
+    border-radius:8px;padding:12px 14px;font-size:15px}
+  .verdict .first b{color:var(--sage)}
+  h3.sec{font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+    margin:30px 0 12px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  .spectrum{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:6px}
+  .pos{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:center;
+    background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:14px}
+  .pos .name{font-weight:700;color:var(--dark)}
+  .pos .lens{font-size:11px;color:var(--muted);display:block;font-weight:400;letter-spacing:.03em}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;margin-right:6px}
+  .tag.keep{background:#e7efdc;color:#4a6127}
+  .tag.split{background:#f6e3d5;color:var(--warn)}
+  .agree li{margin-bottom:7px}
+  .clash{background:#fff;border:1px solid var(--line);border-left:4px solid var(--clash);
+    border-radius:8px;padding:14px 16px;margin-bottom:12px;font-size:14.5px}
+  .clash b{color:var(--clash)}
+  .blind{background:#fff8f1;border:1px solid #f0dcc6;border-radius:8px;padding:14px 16px;font-size:14.5px}
+  details{background:#fff;border:1px solid var(--line);border-radius:8px;margin-bottom:10px;overflow:hidden}
+  summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";color:var(--sage);font-size:20px;font-weight:700}
+  details[open] summary::after{content:"–"}
+  details .body{padding:0 16px 16px;font-size:14px;color:#333;border-top:1px solid var(--line)}
+  details .body p{margin:12px 0 0}
+  .lens-chip{font-size:11px;color:var(--muted);font-weight:400}
+  footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);
+    font-size:12px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="kicker">LLM Council · Verdict</span>
+    <h1>Keep the single booking overlay — fix mobile inside it, don't fork it</h1>
+  </header>
+
+  <div class="q">
+    <strong>The question:</strong> Should Hello Moving keep its deliberately LOCKED single booking system
+    (the BA overlay, guarded by a build-failing regression test), or add a second lightweight one-page
+    mobile booking form to capture mobile users who currently bounce?
+  </div>
+
+  <div class="verdict">
+    <h2>Chairman's Recommendation</h2>
+    <p class="rec">Keep the single BA overlay and do <em>not</em> touch the architecture lock. The
+    "second form" the market wants is a responsive mobile rendering of the one existing flow — same
+    <code>openBookingApp()</code>, same <code>createBooking()</code>, guard stays green. But first
+    diagnose <em>why</em> mobile bounces; nobody has that data yet, and it may be happening
+    <em>before</em> the overlay even opens.</p>
+    <div class="first">
+      <b>The one thing to do first:</b> Add funnel analytics with an event fired <em>before</em> the
+      overlay opens (booking-CTA tap) and one on overlay open — so tomorrow's data shows whether mobile
+      users bounce upstream (page/hero) or inside the flow. Everything else waits on that answer.
+    </div>
+  </div>
+
+  <h3 class="sec">Where the advisors landed</h3>
+  <div class="spectrum">
+    <div class="pos"><span class="name">The Executor<span class="lens">fastest path to done</span></span>
+      <span><span class="tag keep">KEEP</span>Instrument Monday, then make the one overlay thumb-friendly.</span></div>
+    <div class="pos"><span class="name">The Contrarian<span class="lens">what will fail</span></span>
+      <span><span class="tag keep">KEEP</span>Forking = two sources of truth = data-integrity incident. The lock is your last good decision.</span></div>
+    <div class="pos"><span class="name">First Principles<span class="lens">the real question</span></span>
+      <span><span class="tag keep">KEEP</span>It's a first-mobile-screen conversion problem, not an architecture one.</span></div>
+    <div class="pos"><span class="name">The Expansionist<span class="lens">hidden upside</span></span>
+      <span><span class="tag keep">KEEP</span>Responsive render + wire abandons to LINE → seed of a LINE-native booking bot.</span></div>
+    <div class="pos"><span class="name">The Outsider<span class="lens">fresh eyes</span></span>
+      <span><span class="tag split">“ADD”→</span>Opened pro-second-form, but lands on: one flow, two layouts. Watch 5 real people first.</span></div>
+  </div>
+  <p style="font-size:13px;color:var(--muted);margin-top:4px">Consensus: 5 of 5 converge on <b>no second pipeline</b> — a mobile-optimized rendering of the existing overlay instead.</p>
+
+  <h3 class="sec">Where the council agrees</h3>
+  <ul class="agree">
+    <li><b>No second booking path.</b> Two pipelines = two sources of truth for validation, availability and the double-booking guard; EN/JP means every bug ships twice.</li>
+    <li><b>"Second form vs. single overlay" is a false choice</b> — the lightweight experience is a responsive rendering of the same system.</li>
+    <li><b>Diagnose before building.</b> No one knows why mobile bounces yet.</li>
+    <li><b>The lock isn't the obstacle</b> — it forces the cheaper, safer answer.</li>
+  </ul>
+
+  <h3 class="sec">Where the council clashes</h3>
+  <div class="clash"><b>How much upside to chase.</b> The Expansionist wants to capture abandoned phone
+    numbers into LINE and build toward a LINE-native booking bot. Every reviewer flagged this as the
+    biggest blind spot: net-new surface on an undiagnosed problem, plus APPI/PII risk from
+    non-consenting captures. Verdict: strong <em>roadmap</em> item, wrong <em>sequence</em>.</div>
+  <div class="clash"><b>Respect vs. suspicion of the lock.</b> The Outsider calls the build guard "a door
+    welded shut"; the Contrarian calls it "your last completed good decision." Same action, opposite
+    trust. Peer round sides with the Contrarian.</div>
+
+  <h3 class="sec">Blind spot the peer review caught</h3>
+  <div class="blind"><b>All five assumed the bounce happens <em>inside</em> the overlay — it may not.</b>
+    Mobile users may leave before ever tapping a CTA (page-load/LCP, heavy hero, trust signals below the
+    fold, price uncertainty). Also: no baseline metric exists (conversion rate, traffic volume, bounce
+    definition), and a licensed Kanto mover's bookings often complete off-site via LINE/phone — so
+    overlay abandonment ≠ lost revenue. Segment by traffic source (Curama vs. organic vs. paid) before
+    trusting one blended number.</div>
+
+  <h3 class="sec">Full advisor responses</h3>
+
+  <details><summary>The Contrarian <span class="lens-chip">— what will fail</span></summary>
+    <div class="body"><p>Adding the second form is how this build guard was born. You already ran this experiment — hero quoteForm + standalone booking-app.html — and deliberately killed them and wrote a test to stop your future self from doing exactly this. Nothing says WHY mobile bounces; "second lightweight form" is a false solution to an undiagnosed problem.</p><p>Do you have funnel analytics proving users bounce at the overlay vs. before they tap a CTA? If they bounce before it opens, a second form fixes nothing — you've forked the pipeline, doubled the double-booking-guard surface, split calendar-sync, and added a second createBooking path for zero gain. EN/JP means every bug ships twice.</p><p>Two forms = two sources of truth for validation, availability, lead capture. Which does admin.html trust? When they diverge, which booking is real? That's a data-integrity incident waiting for a customer whose move date silently vanished. If the overlay is too heavy, make the ONE flow lighter. Pull the actual bounce data first. The lock isn't your obstacle — it's your last completed good decision.</p></div></details>
+
+  <details><summary>The First Principles Thinker <span class="lens-chip">— the real question</span></summary>
+    <div class="body"><p>Strip the framing away. "BA overlay vs. second mobile form" is the wrong question. You don't have a booking-architecture problem — you have a first-mobile-screen conversion problem that lives inside the overlay. The right question: "Why does the current overlay lose mobile users at first paint?"</p><p>The proposed second form is an admission your one system isn't lightweight on mobile. Honest move: make the overlay open in a lightweight one-page mobile mode. Same system, same createBooking single source of truth — a responsive presentation variant, not a second path. Captures 100% of the bounce revenue, breaks zero guards.</p><p>The lock isn't the obstacle — it's the constraint that forces the correct answer. If a locked decision is worth relaxing every time revenue is on the line, it was never a decision — it was a preference. Instrument first, find where mobile abandons, collapse the overlay's mobile first-step to a single high-intent field (date + service).</p></div></details>
+
+  <details><summary>The Expansionist <span class="lens-chip">— hidden upside</span></summary>
+    <div class="body"><p>Keep the overlay as the single system, but stop thinking "one flow vs. two." A lightweight one-page mobile form isn't a competing path — it's the mobile-optimized rendering of the same one. The lock protects the pipeline (createBooking as single source of truth), not the number of DOM presentations. Refactor to render as a single scroll-snap page on mobile. Guard stays green.</p><p>The upside everyone's missing: mobile bounce signals your highest-intent traffic wants speed. Capture partial submissions — every user who enters a phone number and drops should hit your LINE-notify pipeline. That's a callback list of warm Kanto leads competitors never see. "Book in 30 seconds" becomes your differentiator vs. Curama's clunky flow, plus a paid-ad landing surface.</p><p>Bigger play: this micro-flow is the seed of a LINE-native booking bot. You already have LINE. Japanese users book everything through LINE. Treat mobile as the front door, not the fallback.</p></div></details>
+
+  <details><summary>The Outsider <span class="lens-chip">— fresh eyes</span></summary>
+    <div class="body"><p>Add the second form — but not the way you framed it. You built one flow, decided it was The Way, and wrote a test that fails your build if anyone disagrees. That's not discipline — it's a door you welded shut and forgot why. Meanwhile mobile users bounce — real money walking away, and your reaction is "but the guard test."</p><p>What is an "overlay"? On my phone it's the thing that pops up, covers the screen, makes me hunt for the tiny X. If that's causing bounce, a second path just gives frustrated people two ways to get frustrated.</p><p>The real question nobody's asking: why do mobile users bounce? Nobody knows. You're debating building a second thing before diagnosing why the first fails. Don't add a second system — fix the overlay to render as a full-page single-column form on mobile. Same code path, same createBooking, responsive layout. Guard stays green. One flow, two layouts. Go watch five real people book on their phones first.</p></div></details>
+
+  <details><summary>The Executor <span class="lens-chip">— fastest path to done</span></summary>
+    <div class="body"><p>Don't add a second form — not because architecture is sacred, but because it's the slowest, most expensive way to fix mobile bounce, and you can get the same win by Monday. Build it and you fork the data pipeline, validation, and the double-booking guard, break architecture-lock.test.js, and every future change ships twice. Two weeks plus permanent maintenance tax to test an unvalidated hypothesis.</p><p>You don't know WHY mobile bounces — slow load, too many fields, janky calendar, or CTA below the fold. A second form fixes none of those.</p><p>Monday: (1) Add analytics on the existing overlay — events on open, each step, submit. Find the exact drop step. One afternoon. (2) Watch 5 session recordings (Clarity/Hotjar, free) on mobile. (3) Optimize the ONE overlay: cut fields, make step one a single thumb-tap. CSS/JS on the existing flow, no violation. Keep the lock. Instrument first, then make the existing overlay thumb-friendly.</p></div></details>
+
+  <details><summary>Peer review highlights</summary>
+    <div class="body"><p><b>Strongest (unanimous): The Executor.</b> Only response that turns "instrument first" into a concrete, time-boxed Monday plan with free tools named and the fork costs quantified.</p><p><b>Biggest blind spot (unanimous): The Expansionist.</b> Most creative but skips diagnosis and builds net-new surface (partial capture, LINE bot) on an unproven assumption; partial phone-number capture raises APPI/PII/consent issues no advisor flagged.</p><p><b>What ALL missed:</b> whether the bounce is even a booking-form problem — it could be upstream page-load/first-paint, trust, or price. No baseline metric (conversion rate, traffic volume, bounce definition). A licensed mover's bookings may complete off-site via LINE/phone, so abandonment ≠ lost revenue. Segment analytics by traffic source (Curama vs. organic vs. paid) before trusting one blended average.</p></div></details>
+
+  <footer>
+    LLM Council · 5 advisors → anonymized peer review → chairman synthesis · Generated 2026-07-01 17:49<br>
+    Counciled: "Keep single BA overlay booking system vs. add a second lightweight mobile booking form"
+  </footer>
+</div>
+</body>
+</html>
