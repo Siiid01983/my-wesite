@@ -70,8 +70,10 @@ $SCHEMA = [
     'uuid_pk' => false, 'unique' => ['id'],
   ],
   'inbox_messages' => [
-    'cols' => ['id','sender','email','subject','body','booking_id','created_at'],
-    'json' => [], 'bool' => [], 'int' => [],
+    'cols' => ['id','sender','email','subject','body','booking_id','created_at',
+               'mailbox','body_html','body_text','message_id','in_reply_to','thread_id',
+               'is_read','starred','archived','status','assignee','labels'],
+    'json' => ['labels'], 'bool' => ['is_read','starred','archived'], 'int' => [],
     'uuid_pk' => true, 'unique' => ['id'],
   ],
   'audit_log' => [

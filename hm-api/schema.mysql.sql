@@ -162,17 +162,37 @@ CREATE TABLE IF NOT EXISTS communications (
 -- ── inbox_messages : inbound email (receive-email.php webhook target)
 --    Used by: inbox.js, receive-email.php. Logical booking_id → bookings.id.
 CREATE TABLE IF NOT EXISTS inbox_messages (
-  id         CHAR(36)     NOT NULL,
-  sender     TEXT         NOT NULL,
-  email      VARCHAR(255) NOT NULL,
-  subject    TEXT         NOT NULL,
-  body       TEXT         NOT NULL,
-  booking_id VARCHAR(191),
-  created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  id          CHAR(36)     NOT NULL,
+  sender      TEXT         NOT NULL,
+  email       VARCHAR(255) NOT NULL,
+  subject     TEXT         NOT NULL,
+  body        TEXT         NOT NULL,
+  booking_id  VARCHAR(191),
+  created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- Email Center (Phase 1, additive). `body` is retained for backward compat;
+  -- body_text/body_html are the new canonical body columns. Populated by the
+  -- IMAP poller (Phase 2); nullable so existing rows + the JSON webhook still work.
+  mailbox     VARCHAR(255) DEFAULT NULL,        -- which company mailbox received it
+  body_html   MEDIUMTEXT   DEFAULT NULL,
+  body_text   MEDIUMTEXT   DEFAULT NULL,
+  message_id  VARCHAR(255) DEFAULT NULL,        -- RFC Message-ID of the inbound mail
+  in_reply_to VARCHAR(255) DEFAULT NULL,
+  thread_id   VARCHAR(191) DEFAULT NULL,        -- conversation grouping key
+  is_read     TINYINT(1)   NOT NULL DEFAULT 0,
+  starred     TINYINT(1)   NOT NULL DEFAULT 0,
+  archived    TINYINT(1)   NOT NULL DEFAULT 0,
+  status      VARCHAR(20)  NOT NULL DEFAULT 'open',   -- open|pending|waiting|resolved|closed
+  assignee    VARCHAR(191) DEFAULT NULL,
+  labels      JSON         DEFAULT NULL,
   PRIMARY KEY (id),
   KEY idx_inbox_created_at (created_at),
   KEY idx_inbox_booking_id (booking_id),
-  KEY idx_inbox_email (email)
+  KEY idx_inbox_email (email),
+  KEY idx_inbox_mailbox (mailbox),
+  KEY idx_inbox_thread_id (thread_id),
+  KEY idx_inbox_message_id (message_id),
+  KEY idx_inbox_status (status),
+  KEY idx_inbox_is_read (is_read)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ── audit_log : append-only action trail
