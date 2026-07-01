@@ -11,6 +11,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_db.php';
 require_once __DIR__ . '/_cache.php';
 require_once __DIR__ . '/_ratelimit.php';
+require_once __DIR__ . '/_line.php';
 hm_cors();
 hm_require_api_key();
 hm_rate_limit('booking', 5, 60);   // public submit: max 5 / IP / minute
@@ -83,8 +84,30 @@ try {
   $st->execute(array_values($data));
   hm_log_booking($data['id'], ['email' => (string)($data['customer_email'] ?? ''), 'date' => (string)($data['booking_date'] ?? '')]);
   hm_cache_invalidate_table('bookings');   // dashboard stats / lists pick this up
+
+  // ── Success: respond to the customer immediately, THEN fire the LINE alert ──
   // `id` kept top-level for back-compat; data/error added for the standard envelope.
-  hm_json(['ok' => true, 'id' => $data['id'], 'data' => ['id' => $data['id']], 'error' => null]);
+  $resp = ['ok' => true, 'id' => $data['id'], 'data' => ['id' => $data['id']], 'error' => null];
+  http_response_code(200);
+  header('Content-Type: application/json; charset=utf-8');
+  echo json_encode($resp, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+  if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();   // flush to client first
+
+  // Server-side new-booking notification. Gated ONLY by line_enabled (server
+  // config) — the admin UI's per-trigger toggles live in browser localStorage
+  // and are not visible to PHP. Fire-and-forget: hm_line_push never throws, so
+  // a LINE failure is logged and never affects the (already-sent) booking.
+  if (hm_line_enabled()) {
+    $msg = "📅 新規予約（ウェブ）\n"
+         . "お名前: {$name}\n"
+         . "日程: "   . (string)($data['booking_date'] ?? '未定') . "\n"
+         . "電話: {$phone}\n"
+         . "メール: {$email}\n"
+         . "受付ID: {$data['id']}";
+    if (!empty($data['notes'])) $msg .= "\n---\n" . mb_substr((string)$data['notes'], 0, 500);
+    hm_line_push($msg);
+  }
+  exit;
 } catch (Throwable $e) {
   hm_log_error('create-booking failed', ['err' => $e->getMessage()]);
   hm_json(['ok' => false, 'data' => null, 'error' => hm_safe_msg('Request failed', $e)], 500);
