@@ -6,7 +6,15 @@
 
 const CHANGELOG = [
   {
-    version: 'v4.7', date: '2026-07-01', label: '最新',
+    version: 'v4.8', date: '2026-07-01', label: '最新',
+    entries: [
+      { type:'fix',     text:'一般顧客のウェブ予約でLINE通知が届かない問題を修正：newBooking 通知は管理者の手動追加（クライアント側）にしか配線されておらず、BA予約フロー（create-booking.php）では未送信だった。DB挿入確定後にサーバー側で自動通知するよう修正' },
+      { type:'feat',    text:'サーバー側LINE共通ヘルパー（hm-api/_line.php）新設：hm_line_enabled() / hm_line_push()。_config.php のトークンを再利用し、fire-and-forget（例外を投げない・8秒タイムアウト）で送信' },
+      { type:'improve', text:'予約確定レスポンスを先に返してから通知送信（fastcgi_finish_request）：LINE APIの往復が顧客の予約完了表示を遅延させない。通知の可否はサーバーの line_enabled のみで判定' },
+    ]
+  },
+  {
+    version: 'v4.7', date: '2026-07-01',
     entries: [
       { type:'improve', text:'LINE通知をサーバーサイドの LINE Messaging API に移行：チャネルアクセストークンを hm-api/_config.php にサーバー保管し、hm-api/line-push.php 経由でプッシュ送信。ブラウザにトークンを一切露出しない（2025年3月に廃止された LINE Notify を置き換え）' },
       { type:'feat',    text:'LINE push エンドポイント（hm-api/line-push.php）新設：POST /v2/bot/message/push を呼び出し。APIキー＋スタッフ（admin/manager）認証・レート制限（60回/分）・selftest アクション・{ok,data,error} エンベロープに対応' },
