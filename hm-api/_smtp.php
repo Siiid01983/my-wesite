@@ -294,8 +294,13 @@ class HM_SMTP {
 // ── Build a multipart/alternative message (text + HTML), base64 bodies ───────
 // Base64 sidesteps line-length/dot-stuffing pitfalls and is safe for Japanese.
 // Returns [rawMessage, messageId].
+//   $opts (optional): ['sender' => authenticated-mailbox] — when a non-empty,
+//   valid address that DIFFERS from $fromEmail is supplied, a `Sender:` header is
+//   emitted (RFC 5322 §3.6.2) to disclose the authenticated agent. This is the
+//   RFC-clean fix for "AUTH as booking@ but send From support@/contact@".
 function hm_smtp_build_message(string $fromEmail, string $fromName, string $to,
-                               string $replyTo, string $subject, string $html, string $text): array {
+                               string $replyTo, string $subject, string $html, string $text,
+                               array $opts = []): array {
   $domain    = substr((string)strrchr($fromEmail, '@'), 1) ?: 'hello-moving.com';
   $messageId = '<' . bin2hex(random_bytes(16)) . '@' . $domain . '>';
   $boundary  = 'hm_' . bin2hex(random_bytes(8));
@@ -304,7 +309,17 @@ function hm_smtp_build_message(string $fromEmail, string $fromName, string $to,
   $h[] = 'Date: ' . date('r');
   $h[] = 'From: ' . hm_smtp_encode_name($fromName) . ' <' . $fromEmail . '>';
   $h[] = 'To: <' . $to . '>';
-  $h[] = 'Reply-To: ' . hm_smtp_encode_name($fromName) . ' <' . $replyTo . '>';
+  // Reply-To carries the sender's display name only when it points back at the
+  // From mailbox; a custom Reply-To (e.g. a contact-form submitter) is emitted bare.
+  $h[] = (strcasecmp($replyTo, $fromEmail) === 0)
+       ? 'Reply-To: ' . hm_smtp_encode_name($fromName) . ' <' . $replyTo . '>'
+       : 'Reply-To: <' . $replyTo . '>';
+  // Sender: disclose the authenticated mailbox when it differs from From.
+  $sender = trim((string)($opts['sender'] ?? ''));
+  if ($sender !== '' && strpbrk($sender, "\r\n") === false
+      && filter_var($sender, FILTER_VALIDATE_EMAIL) && strcasecmp($sender, $fromEmail) !== 0) {
+    $h[] = 'Sender: <' . $sender . '>';
+  }
   $h[] = 'Subject: ' . mb_encode_mimeheader($subject, 'UTF-8', 'B', "\r\n");
   $h[] = 'Message-ID: ' . $messageId;
   $h[] = 'MIME-Version: 1.0';
@@ -365,8 +380,10 @@ if (!defined('HM_SMTP_CONFIG_ERROR')) {
 }
 
 // ── One-shot authenticated send. Throws HM_SMTP_Exception on any failure. ────
+//   $opts (optional): ['replyTo' => addr, 'sender' => authenticated-mailbox].
+//   replyTo defaults to $fromEmail; an invalid/injecting value is ignored.
 function hm_smtp_send(array $cfg, string $fromEmail, string $fromName, string $to,
-                      string $subject, string $html, string $text): array {
+                      string $subject, string $html, string $text, array $opts = []): array {
   $opt = hm_smtp_opts($cfg);
   if (!hm_smtp_config_complete($opt)) {
     throw new HM_SMTP_Exception(HM_SMTP_CONFIG_ERROR, 'smtp_config');
@@ -376,7 +393,14 @@ function hm_smtp_send(array $cfg, string $fromEmail, string $fromName, string $t
   // regardless of any (weaker) checks they ran first.
   $to = hm_smtp_assert_recipient($to);
 
-  [$raw, $mid] = hm_smtp_build_message($fromEmail, $fromName, $to, $fromEmail, $subject, $html, $text);
+  // Reply-To: caller override, else the From mailbox. Reject CR/LF + non-address
+  // values (header-injection guard) by falling back to $fromEmail.
+  $replyTo = trim((string)($opts['replyTo'] ?? ''));
+  if ($replyTo === '' || strpbrk($replyTo, "\r\n") !== false || !filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+    $replyTo = $fromEmail;
+  }
+
+  [$raw, $mid] = hm_smtp_build_message($fromEmail, $fromName, $to, $replyTo, $subject, $html, $text, $opts);
 
   $smtp = new HM_SMTP($opt);
   try {
