@@ -38,6 +38,7 @@ hm_rate_limit('contact', 5, 60);   // max 5 contact submissions / IP / minute
 $p       = hm_body();
 $name    = trim((string)($p['name'] ?? ''));
 $email   = trim((string)($p['email'] ?? ''));
+$phone   = trim((string)($p['phone'] ?? ''));   // optional
 $message = trim((string)($p['message'] ?? ''));
 $subject = trim((string)($p['subject'] ?? '')) ?: 'お問い合わせ';
 
@@ -53,12 +54,13 @@ if (!$HM_EMAIL_READY) {
 }
 
 $acc  = EmailService::account($cfg, 'contact');
-$html = EmailService::notifyHtml('新しいお問い合わせ', [
-  'お名前' => $name,
-  'メール' => $email,
-  '件名'   => $subject,
-], $message);
-$text = "新しいお問い合わせ\n\nお名前: {$name}\nメール: {$email}\n件名: {$subject}\n\n{$message}";
+$rows = ['お名前' => $name, 'メール' => $email];
+if ($phone !== '') $rows['電話番号'] = $phone;
+$rows['件名'] = $subject;
+$html = EmailService::notifyHtml('新しいお問い合わせ', $rows, $message);
+$text = "新しいお問い合わせ\n\nお名前: {$name}\nメール: {$email}\n"
+      . ($phone !== '' ? "電話番号: {$phone}\n" : '')
+      . "件名: {$subject}\n\n{$message}";
 
 $res = EmailService::deliver($cfg, [
   'account' => 'contact',
