@@ -2,20 +2,15 @@
 
 /* ════════════════════════════════════════════════════════
    REVIEW REQUEST ACTION — Phase 24A
-   Sends a review request email to customers 7 days after
-   their booking completes. Replaces the placeholder action
-   registered in automationActions.js with a real EmailJS call.
+   Sends a review request email to customers 7 days after their booking
+   completes, via the send-email.php gateway (support@hello-moving.com),
+   log_comm:true. EmailJS has been fully removed.
 
-   Reuses EmailJS credentials from Adapter.getEmailSettings()
-   (serviceId, publicKey) but a separate templateId configured
-   here — keeping the review request template independent from
-   admin notifications and follow-up templates.
-
-   Sends to CUSTOMER (to_email = booking.email).
+   Sends to CUSTOMER (to = booking.email).
 
    Storage:
      hm_review_requests_sent  { version, sent:{}, log:[] }
-     hm_rr_settings           { version, templateId }
+     hm_rr_settings           { version }
 
    Audit action code: review_request_sent
    ════════════════════════════════════════════════════════ */
@@ -32,7 +27,7 @@ window.ReviewRequestAction = (function () {
       var d = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
       if (d && d.version === 1) return d;
     } catch (_) {}
-    return { version: 1, templateId: '' };
+    return { version: 1 };
   }
 
   function saveSettings(cfg) {
@@ -74,47 +69,50 @@ window.ReviewRequestAction = (function () {
     _persistSent(d);
   }
 
-  /* ── EmailJS send ── */
+  /* ── Message + gateway send (support@) ── */
 
-  async function _sendEmail(bk) {
-    var emailCfg = window.Adapter ? Adapter.getEmailSettings() : {};
-    if (!emailCfg.enabled || !emailCfg.serviceId || !emailCfg.publicKey) {
-      return { ok: false, detail: 'EmailJS未設定（メール通知設定を確認してください）' };
-    }
-    var cfg = getSettings();
-    if (!cfg.templateId) {
-      return { ok: false, detail: 'レビュー依頼テンプレートIDが未設定' };
-    }
-    var email = bk.email || '';
-    if (!email) {
-      return { ok: false, detail: 'お客様メールアドレスなし' };
-    }
-
-    var moveDate = (typeof fmtD === 'function')
-      ? fmtD(bk.date || bk.move_date || '')
-      : (bk.date || bk.move_date || '');
-
+  async function _gwSend(account, to, subject, message, refId) {
+    var base = (window.API_BASE || '').replace(/\/$/, '');
+    if (!base) return { ok: false, detail: 'API_BASE未設定' };
     try {
-      var res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      var res = await fetch(base + '/send-email.php', {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          service_id:  emailCfg.serviceId,
-          template_id: cfg.templateId,
-          user_id:     emailCfg.publicKey,
-          template_params: {
-            to_email:      email,
-            customer_name: bk.name || bk.customer_name || '',
-            reference_id:  bk.id   || bk.reference_id  || '',
-            move_date:     moveDate,
-            company_name:  'Hello Moving',
-          },
-        }),
+        headers: { 'Content-Type': 'application/json', 'X-API-KEY': window.API_KEY || '' },
+        body: JSON.stringify({ from_account: account, to: to, subject: subject, message: message, booking_id: refId || '', log_comm: true }),
       });
-      return { ok: res.status === 200, detail: 'HTTP ' + res.status };
+      var r = await res.json().catch(function () { return { ok: false, error: 'HTTP ' + res.status }; });
+      return { ok: !!r.ok, detail: r.ok ? (r.messageId || 'sent') : ((r.error && (r.error.message || r.error)) || ('HTTP ' + res.status)) };
     } catch (err) {
       return { ok: false, detail: (err && err.message) || 'ネットワークエラー' };
     }
+  }
+
+  function _buildMessage(bk) {
+    var refId = bk.id || bk.reference_id || '';
+    return [
+      (bk.name || bk.customer_name || 'お客様') + '様',
+      '',
+      'この度は Hello Moving をご利用いただき、誠にありがとうございました。',
+      'お引越しはいかがでしたでしょうか。今後のサービス向上のため、よろしければご感想をお聞かせください。',
+      '',
+      '受付番号: ' + (refId || '—'),
+      '',
+      'ご意見・ご感想は、このメールへのご返信で承ります。',
+      '皆さまの声が私たちの励みになります。ご協力をお願いいたします。',
+      '',
+      'Hello Moving',
+    ].join('\n');
+  }
+
+  async function _sendEmail(bk) {
+    // Master email switch (preserves the prior emailCfg.enabled gate).
+    if (window.Adapter && Adapter.getEmailSettings && !Adapter.getEmailSettings().enabled) {
+      return { ok: false, detail: 'メール通知が無効です（メール通知設定で有効化してください）' };
+    }
+    if (!bk.email) return { ok: false, detail: 'お客様メールアドレスなし' };
+    var refId   = bk.id || bk.reference_id || '';
+    var subject = '[Hello Moving] ご利用の感想をお聞かせください（' + refId + '）';
+    return _gwSend('support', bk.email, subject, _buildMessage(bk), refId);
   }
 
   /* ── Automation action (overrides the placeholder registered in automationActions.js) ── */
@@ -189,14 +187,6 @@ window.ReviewRequestAction = (function () {
 
   /* ── Settings panel ── */
 
-  var TEMPLATE_VARS = [
-    ['to_email',      '顧客メールアドレス'],
-    ['customer_name', '顧客名'],
-    ['reference_id',  '予約番号'],
-    ['move_date',     '引越し日（日本語形式）'],
-    ['company_name',  '会社名（Hello Moving）'],
-  ];
-
   function renderPanel() {
     var el = document.getElementById('rrContent');
     if (!el) return;
@@ -230,32 +220,10 @@ window.ReviewRequestAction = (function () {
         '</div>' +
         '<div class="panel-body">' +
           '<p style="font-size:12px;color:var(--gray-1);margin-bottom:14px;line-height:1.6">' +
-            '自動化ルール「レビュー依頼」が実行されると、引越し完了7日後に顧客へレビュー依頼メールを送信します。<br>' +
-            'メール通知設定のEmailJS認証情報（Service ID・Public Key）を共用します。テンプレートIDのみ別途設定します。' +
+            '自動化ルール「レビュー依頼」が実行されると、引越し完了7日後に顧客へ、送信ゲートウェイ経由（support@hello-moving.com）でレビュー依頼メールを送信します。' +
           '</p>' +
-          '<div class="m-field">' +
-            '<label class="m-label">レビュー依頼 Template ID</label>' +
-            '<input class="input" id="rrTemplateId" type="text" value="' + esc(cfg.templateId) + '" ' +
-              'placeholder="template_xxxxxxx" style="font-family:monospace;font-size:12px;max-width:300px" />' +
-            '<div style="font-size:11px;color:var(--gray-2);margin-top:4px">' +
-              'EmailJSで作成した顧客向けレビュー依頼テンプレートのID（管理者通知テンプレートとは別のもの）' +
-            '</div>' +
-          '</div>' +
           '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
-            '<button class="btn btn-primary btn-sm" onclick="ReviewRequestAction.savePanel()">保存</button>' +
             '<button class="btn btn-ghost btn-sm" id="rrRunNowBtn" onclick="ReviewRequestAction.runNow()">今すぐ確認 &amp; 送信</button>' +
-          '</div>' +
-
-          '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">' +
-            '<div style="font-size:11px;font-weight:700;color:var(--gray-1);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">テンプレート変数</div>' +
-            '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">' +
-              TEMPLATE_VARS.map(function (pair) {
-                return '<div style="background:var(--bg-soft-2);border:1px solid var(--line);border-radius:6px;padding:7px 10px">' +
-                  '<code style="font-size:11px;color:var(--blue)">{{' + pair[0] + '}}</code>' +
-                  '<div style="font-size:11px;color:var(--gray-2);margin-top:2px">' + esc(pair[1]) + '</div>' +
-                '</div>';
-              }).join('') +
-            '</div>' +
           '</div>' +
 
           '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">' +
@@ -270,9 +238,9 @@ window.ReviewRequestAction = (function () {
   }
 
   function savePanel() {
-    var inp = document.getElementById('rrTemplateId');
-    saveSettings({ templateId: inp ? inp.value.trim() : '' });
-    toast('レビュー依頼設定を保存しました');
+    // No configurable fields remain (EmailJS templateId removed); kept for API
+    // compatibility with the returned object.
+    toast('保存する設定はありません');
   }
 
   function clearLog() {

@@ -783,7 +783,7 @@
     clearLineLog() { wt(K.linelog, []); },
 
     /* ── Email Notify ─────────────────────────────────── */
-    getEmailSettings: () => _ls(K.email, { enabled:false, adminEmail:'', serviceId:'', templateId:'', publicKey:'', triggers:{ newBooking:true, statusConfirmed:true, statusComplete:true, newQuote:false } }),
+    getEmailSettings: () => _ls(K.email, { enabled:false, triggers:{ newBooking:true, statusConfirmed:true, statusComplete:true, newQuote:false } }),
     saveEmailSettings: (v) => wt(K.email, v),
     getEmailLog: () => _ls(K.emaillog, []),
     pushEmailLog(entry) { const log = this.getEmailLog(); log.unshift(entry); wt(K.emaillog, log.slice(0, 20)); },
@@ -794,7 +794,7 @@
     saveGcalSettings: (v) => wt(K.gcal, v),
 
     /* ── Follow-up emails ────────────────────────────── */
-    getFollowUpSettings: () => _ls(K.followup, { enabled:false, delayDays:3, templateId:'' }),
+    getFollowUpSettings: () => _ls(K.followup, { enabled:false, delayDays:3 }),
     saveFollowUpSettings: (v) => wt(K.followup, v),
     getFollowUpSent: () => _ls(K.followupSent, {}),
     markFollowUpSent(refId, info) { const s = this.getFollowUpSent(); s[refId] = info; wt(K.followupSent, s); },

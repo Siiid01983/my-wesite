@@ -200,7 +200,6 @@ window.I18n = (function () {
     '設定手順':           'Setup Guide',
     '送信済み':           'Sent',
     'テンプレート変数':   'Template Variables',
-    'EmailJSテンプレート変数': 'EmailJS Template Variables',
     'システム監視':       'System Monitor',
     'キャッシュ状態':     'Cache Status',
     'フォローアップメール': 'Follow-up Emails',

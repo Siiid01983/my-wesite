@@ -11,9 +11,12 @@
 
    Sends to CUSTOMER (to_email = quote.email).
 
+   Sends via the send-email.php gateway (booking@hello-moving.com — quote is
+   part of the booking funnel), log_comm:true. EmailJS has been fully removed.
+
    Storage:
      hm_quote_followups_sent  { version, sent:{}, log:[] }
-     hm_qf_settings           { version, templateId, companyPhone, companyEmail }
+     hm_qf_settings           { version, companyPhone, companyEmail }
 
    Audit action code: quote_followup_sent
    ════════════════════════════════════════════════════════ */
@@ -30,7 +33,7 @@ window.QuoteFollowUpAction = (function () {
       var d = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
       if (d && d.version === 1) return d;
     } catch (_) {}
-    return { version: 1, templateId: '', companyPhone: '', companyEmail: 'hellomoving1@gmail.com' };
+    return { version: 1, companyPhone: '', companyEmail: '' };
   }
 
   function saveSettings(cfg) {
@@ -66,55 +69,59 @@ window.QuoteFollowUpAction = (function () {
   function getSent() { return (_loadSent().sent || {}); }
   function _clearLog() { var d = _loadSent(); d.log = []; _persistSent(d); }
 
-  /* ── EmailJS send ── */
+  /* ── Message + gateway send (booking@) ── */
 
-  function _buildParams(qt, cfg) {
+  async function _gwSend(account, to, subject, message, refId) {
+    var base = (window.API_BASE || '').replace(/\/$/, '');
+    if (!base) return { ok: false, detail: 'API_BASE未設定' };
+    try {
+      var res = await fetch(base + '/send-email.php', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-KEY': window.API_KEY || '' },
+        body: JSON.stringify({ from_account: account, to: to, subject: subject, message: message, booking_id: refId || '', log_comm: true }),
+      });
+      var r = await res.json().catch(function () { return { ok: false, error: 'HTTP ' + res.status }; });
+      return { ok: !!r.ok, detail: r.ok ? (r.messageId || 'sent') : ((r.error && (r.error.message || r.error)) || ('HTTP ' + res.status)) };
+    } catch (err) {
+      return { ok: false, detail: (err && err.message) || 'ネットワークエラー' };
+    }
+  }
+
+  function _buildMessage(qt, cfg) {
     var quoteDate = (typeof fmtD === 'function' && qt.createdAt)
       ? fmtD(qt.createdAt.slice(0, 10))
       : (qt.createdAt || '').slice(0, 10);
     var moveDate = qt.moveDate
       ? ((typeof fmtD === 'function') ? fmtD(qt.moveDate) : qt.moveDate)
       : '未定';
-
-    return {
-      to_email:      qt.email,
-      customer_name: qt.name     || '',
-      reference_id:  qt.id       || '',
-      quote_date:    quoteDate,
-      service_type:  qt.service  || '',
-      move_date:     moveDate,
-      from_address:  qt.fromAddr || '未定',
-      to_address:    qt.toAddr   || '未定',
-      company_name:  'Hello Moving',
-      company_phone: cfg.companyPhone || '',
-      company_email: cfg.companyEmail || '',
-    };
+    return [
+      (qt.name || 'お客様') + '様',
+      '',
+      '先日は Hello Moving に引越しのお見積もりをご依頼いただき、誠にありがとうございます。',
+      'その後のご検討状況はいかがでしょうか。ご不明な点やご予算のご相談など、お気軽にこのメールへご返信ください。',
+      '',
+      '── お見積もり内容 ──',
+      '見積もり番号: ' + (qt.id || '—'),
+      'サービス　　: ' + (qt.service || '—'),
+      '引越し希望日: ' + moveDate,
+      '引越し元　　: ' + (qt.fromAddr || '未定'),
+      '引越し先　　: ' + (qt.toAddr || '未定'),
+      '受付日　　　: ' + quoteDate,
+      '',
+      'お電話でのご相談: ' + (cfg.companyPhone || '090-2489-3402'),
+      '',
+      'Hello Moving',
+    ].join('\n');
   }
 
   async function _sendEmail(qt) {
-    var emailCfg = window.Adapter ? Adapter.getEmailSettings() : {};
-    if (!emailCfg.enabled || !emailCfg.serviceId || !emailCfg.publicKey) {
-      return { ok: false, detail: 'EmailJS未設定（メール通知設定を確認してください）' };
+    // Master email switch (preserves the prior emailCfg.enabled gate).
+    if (window.Adapter && Adapter.getEmailSettings && !Adapter.getEmailSettings().enabled) {
+      return { ok: false, detail: 'メール通知が無効です（メール通知設定で有効化してください）' };
     }
-    var cfg = getSettings();
-    if (!cfg.templateId) return { ok: false, detail: '見積もりフォローアップテンプレートIDが未設定' };
-    if (!qt.email)       return { ok: false, detail: 'お客様メールアドレスなし' };
-
-    try {
-      var res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          service_id:      emailCfg.serviceId,
-          template_id:     cfg.templateId,
-          user_id:         emailCfg.publicKey,
-          template_params: _buildParams(qt, cfg),
-        }),
-      });
-      return { ok: res.status === 200, detail: 'HTTP ' + res.status };
-    } catch (err) {
-      return { ok: false, detail: (err && err.message) || 'ネットワークエラー' };
-    }
+    if (!qt.email) return { ok: false, detail: 'お客様メールアドレスなし' };
+    var subject = '[Hello Moving] お見積もりのご検討状況について（' + (qt.id || '') + '）';
+    return _gwSend('booking', qt.email, subject, _buildMessage(qt, getSettings()), qt.id || '');
   }
 
   /* ── Automation action ── */
@@ -172,20 +179,6 @@ window.QuoteFollowUpAction = (function () {
 
   /* ── Settings panel ── */
 
-  var TEMPLATE_VARS = [
-    ['to_email',      '顧客メールアドレス'],
-    ['customer_name', '顧客名'],
-    ['reference_id',  '見積もり番号'],
-    ['quote_date',    '見積もり受付日'],
-    ['service_type',  'サービス種別'],
-    ['move_date',     '希望引越し日'],
-    ['from_address',  '引越し元住所'],
-    ['to_address',    '引越し先住所'],
-    ['company_name',  '会社名（Hello Moving）'],
-    ['company_phone', '会社電話番号'],
-    ['company_email', '会社メールアドレス'],
-  ];
-
   function renderPanel() {
     var el = document.getElementById('qfContent');
     if (!el) return;
@@ -218,13 +211,8 @@ window.QuoteFollowUpAction = (function () {
         '</div>' +
         '<div class="panel-body">' +
           '<p style="font-size:12px;color:var(--gray-1);margin-bottom:14px;line-height:1.6">' +
-            '自動化ルール「見積もりフォローアップ」が実行されると、見積もり受付から3日後に予約未確定のお客様へフォローアップメールを送信します。' +
+            '自動化ルール「見積もりフォローアップ」が実行されると、見積もり受付から3日後に予約未確定のお客様へ、送信ゲートウェイ経由（booking@hello-moving.com）でフォローアップメールを送信します。' +
           '</p>' +
-          '<div class="m-field">' +
-            '<label class="m-label">フォローアップ Template ID</label>' +
-            '<input class="input" id="qfTemplateId" type="text" value="' + esc(cfg.templateId) + '" ' +
-              'placeholder="template_xxxxxxx" style="font-family:monospace;font-size:12px;max-width:300px" />' +
-          '</div>' +
           '<div class="m-row">' +
             '<div class="m-field">' +
               '<label class="m-label">会社電話番号</label>' +
@@ -240,16 +228,6 @@ window.QuoteFollowUpAction = (function () {
             '<button class="btn btn-ghost btn-sm" id="qfRunNowBtn" onclick="QuoteFollowUpAction.runNow()">今すぐ確認 &amp; 送信</button>' +
           '</div>' +
           '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">' +
-            '<div style="font-size:11px;font-weight:700;color:var(--gray-1);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">テンプレート変数</div>' +
-            '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">' +
-              TEMPLATE_VARS.map(function (pair) {
-                return '<div style="background:var(--bg-soft-2);border:1px solid var(--line);border-radius:6px;padding:7px 10px">' +
-                  '<code style="font-size:11px;color:var(--blue)">{{' + pair[0] + '}}</code>' +
-                  '<div style="font-size:11px;color:var(--gray-2);margin-top:2px">' + esc(pair[1]) + '</div></div>';
-              }).join('') +
-            '</div>' +
-          '</div>' +
-          '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">' +
             '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
               '<div style="font-size:11px;font-weight:700;color:var(--gray-1);text-transform:uppercase;letter-spacing:.05em">送信ログ</div>' +
               '<button class="btn btn-ghost btn-sm" style="font-size:11px" onclick="QuoteFollowUpAction.clearLog()">クリア</button>' +
@@ -261,7 +239,6 @@ window.QuoteFollowUpAction = (function () {
 
   function savePanel() {
     saveSettings({
-      templateId:   (document.getElementById('qfTemplateId')    || {}).value || '',
       companyPhone: (document.getElementById('qfCompanyPhone')  || {}).value || '',
       companyEmail: (document.getElementById('qfCompanyEmail')  || {}).value || '',
     });

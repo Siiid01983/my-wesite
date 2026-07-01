@@ -1,7 +1,12 @@
 'use strict';
 
 /* ════════════════════════════════════════════════════════
-   EMAIL NOTIFY  (EmailJS REST API — no SDK required)
+   EMAIL NOTIFY — admin booking notifications
+   Routed through the send-email.php gateway (authenticated SMTP via
+   hm-api/EmailService.php). EmailJS has been removed.
+     new booking / confirmed → booking@hello-moving.com
+     completed               → support@hello-moving.com
+   Server logs each send in the communications table (log_comm:true).
    ════════════════════════════════════════════════════════ */
 function bkEmailParams(b) {
   return {
@@ -17,28 +22,62 @@ function bkEmailParams(b) {
   };
 }
 
+/* trigger → gateway account + admin recipient mailbox */
+const NOTIF_ACCOUNT = { newBooking:'booking', statusConfirmed:'booking', statusComplete:'support', newQuote:'booking' };
+const NOTIF_MAILBOX = { booking:'booking@hello-moving.com', support:'support@hello-moving.com', contact:'contact@hello-moving.com' };
+
+/* Plain-text admin notification body built from the booking template params. */
+function _buildAdminMessage(p) {
+  return [
+    (p.trigger_type ? '【' + p.trigger_type + '】' : '') + '予約通知',
+    '',
+    '受付番号　：' + (p.booking_id      || '—'),
+    'お客様名　：' + (p.booking_name    || '—'),
+    'メール　　：' + (p.booking_email   || '—'),
+    'サービス　：' + (p.booking_service || '—'),
+    '引越し日　：' + (p.booking_date    || '未定'),
+    '希望時間帯：' + (p.booking_time    || '—'),
+    '引越し元　：' + (p.booking_from    || '—'),
+    '引越し先　：' + (p.booking_to      || '—'),
+    (p.booking_notes ? '備考　　　：' + p.booking_notes : ''),
+    '',
+    '管理パネル: ' + (window.location.origin + '/admin.html'),
+  ].filter(function (line) { return line !== ''; }).join('\n');
+}
+
 async function sendEmailNotif(templateParams, triggerKey) {
   const cfg = Adapter.getEmailSettings();
-  if (!cfg.enabled || !cfg.publicKey || !cfg.serviceId || !cfg.templateId) return;
-  if (triggerKey && !cfg.triggers[triggerKey]) return;
-  const ts = new Date().toLocaleString('ja-JP');
+  if (!cfg.enabled) return;
+  if (triggerKey && cfg.triggers && !cfg.triggers[triggerKey]) return;
+
+  const account = NOTIF_ACCOUNT[triggerKey] || 'booking';
+  const to      = NOTIF_MAILBOX[account];
+  const subject = templateParams.subject || '[Hello Moving] 予約通知';
+  const message = _buildAdminMessage(templateParams);
+  const ts      = new Date().toLocaleString('ja-JP');
+  const url     = (window.API_BASE || '').replace(/\/$/, '') + '/send-email.php';
+
   try {
-    const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch(url, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-KEY': window.API_KEY || '' },
       body: JSON.stringify({
-        service_id:      cfg.serviceId,
-        template_id:     cfg.templateId,
-        user_id:         cfg.publicKey,
-        template_params: { to_email: cfg.adminEmail, ...templateParams }
-      })
+        from_account: account,
+        to:           to,
+        subject:      subject,
+        message:      message,
+        booking_id:   templateParams.booking_id || '',
+        log_comm:     true,      /* record in communications (server-side) */
+      }),
     });
-    const ok = res.status === 200;
-    Adapter.pushEmailLog({ ts, ok, subject: templateParams.subject || '', status: res.status });
+    const result = await res.json().catch(() => ({ ok: false, error: 'HTTP ' + res.status }));
+    const ok  = !!result.ok;
+    const err = result.error && (result.error.message || result.error);
+    Adapter.pushEmailLog({ ts, ok, subject, status: ok ? 'sent' : (err || res.status) });
     if (ok) toast('メール通知を送信しました');
-    else    toast('メール送信エラー: HTTP ' + res.status);
-  } catch(err) {
-    Adapter.pushEmailLog({ ts, ok: false, subject: templateParams.subject || '', status: err.message.slice(0, 40) });
+    else    toast('メール送信エラー: ' + (err || ('HTTP ' + res.status)));
+  } catch (err) {
+    Adapter.pushEmailLog({ ts, ok: false, subject, status: (err.message || '').slice(0, 40) });
     toast('メール送信に失敗しました');
   }
   if (document.getElementById('view-email')?.classList.contains('active')) renderEmailLog();
@@ -58,7 +97,7 @@ function renderEmail() {
   el.innerHTML = `
   <div class="settings-grid" style="margin-bottom:16px">
 
-    <!-- Credentials panel -->
+    <!-- Notification settings panel -->
     <div class="panel">
       <div class="panel-head">
         <div style="display:flex;align-items:center;gap:8px">
@@ -71,31 +110,14 @@ function renderEmail() {
         </label>
       </div>
       <div class="panel-body">
-        <div class="m-field">
-          <label class="m-label">通知先メールアドレス</label>
-          <input class="input" id="emailAdmin" type="email" value="${esc(cfg.adminEmail)}" placeholder="admin@hello-moving.com" />
-        </div>
-        <div class="m-row">
-          <div class="m-field">
-            <label class="m-label">Service ID</label>
-            <input class="input" id="emailServiceId" type="text" value="${esc(cfg.serviceId)}" placeholder="service_xxxxxxx" style="font-family:monospace;font-size:12px" />
-          </div>
-          <div class="m-field">
-            <label class="m-label">Template ID</label>
-            <input class="input" id="emailTemplateId" type="text" value="${esc(cfg.templateId)}" placeholder="template_xxxxxxx" style="font-family:monospace;font-size:12px" />
-          </div>
-        </div>
-        <div class="m-field">
-          <label class="m-label">Public Key</label>
-          <div style="display:flex;gap:6px">
-            <input class="input" id="emailPublicKey" type="password" value="${esc(cfg.publicKey)}" placeholder="EmailJS Public Key" style="font-family:monospace;font-size:12px" />
-            <button class="btn btn-ghost btn-sm" style="flex-shrink:0" onclick="var i=document.getElementById('emailPublicKey');i.type=i.type==='password'?'text':'password'">表示</button>
-          </div>
-        </div>
+        <p style="font-size:12px;color:var(--gray-1);line-height:1.7;margin-bottom:14px">
+          予約通知は自社SMTPの送信ゲートウェイ（send-email.php）経由で送信されます。<br>
+          新規予約・予約確定 → <code style="background:var(--bg-soft-2);padding:1px 5px;border-radius:4px;font-size:11px">booking@hello-moving.com</code>、
+          引越し完了 → <code style="background:var(--bg-soft-2);padding:1px 5px;border-radius:4px;font-size:11px">support@hello-moving.com</code>。
+          追加の設定は不要です。
+        </p>
         <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">
-          <button class="btn btn-primary btn-sm" onclick="saveEmailSettings()">保存</button>
           <button class="btn btn-ghost btn-sm" onclick="testEmailNotif()">テスト送信</button>
-          <a class="btn btn-ghost btn-sm" href="https://www.emailjs.com/" target="_blank">EmailJSを開く ↗</a>
         </div>
       </div>
     </div>
@@ -118,56 +140,6 @@ function renderEmail() {
       </div>
     </div>
 
-  </div>
-
-  <!-- Template variables reference -->
-  <div class="panel" style="margin-bottom:16px">
-    <div class="panel-head"><span class="panel-title">EmailJSテンプレート変数</span></div>
-    <div class="panel-body">
-      <p style="font-size:12px;color:var(--gray-1);margin-bottom:12px">EmailJSのテンプレートで以下の変数が使えます。テンプレートに <code style="background:var(--bg-soft-2);padding:1px 5px;border-radius:4px;font-size:11px">{{変数名}}</code> の形式で記述してください。</p>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">
-        ${[
-          ['to_email',        '通知先メールアドレス'],
-          ['subject',         'メール件名'],
-          ['trigger_type',    'イベント種別'],
-          ['booking_id',      '予約番号'],
-          ['booking_name',    'お客様名'],
-          ['booking_email',   'お客様メール'],
-          ['booking_service', 'サービス'],
-          ['booking_date',    '引越し日'],
-          ['booking_time',    '希望時間帯'],
-          ['booking_from',    '引越し元住所'],
-          ['booking_to',      '引越し先住所'],
-          ['booking_notes',   '備考'],
-        ].map(([v, desc]) => `
-          <div style="background:var(--bg-soft-2);border:1px solid var(--line);border-radius:6px;padding:7px 10px">
-            <code style="font-size:11px;color:var(--blue)">{{${v}}}</code>
-            <div style="font-size:11px;color:var(--gray-2);margin-top:2px">${desc}</div>
-          </div>`).join('')}
-      </div>
-    </div>
-  </div>
-
-  <!-- Setup instructions -->
-  <div class="panel" style="margin-bottom:16px">
-    <div class="panel-head"><span class="panel-title">設定手順</span></div>
-    <div class="panel-body">
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
-        ${[
-          ['1', 'EmailJSに登録', 'emailjs.com にアクセスし、無料アカウントを作成します（月200通まで無料）'],
-          ['2', 'Email Serviceを追加', 'Email Services でGmailやOutlookなどを接続し、Service IDをメモします'],
-          ['3', 'Templateを作成', 'Email Templates で通知テンプレートを作成。左の変数一覧を参考に {{変数名}} を配置します'],
-          ['4', 'キーを設定', 'Account → General → Public Key をコピーし、上のフォームに Service ID・Template ID・Public Key を入力して保存します'],
-        ].map(([n, title, desc]) => `
-          <div style="display:flex;gap:12px;align-items:flex-start">
-            <div style="width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${n}</div>
-            <div>
-              <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:3px">${title}</div>
-              <div style="font-size:12px;color:var(--gray-2);line-height:1.55">${desc}</div>
-            </div>
-          </div>`).join('')}
-      </div>
-    </div>
   </div>
 
   <!-- Log -->
@@ -194,18 +166,15 @@ function renderEmailLog() {
       </span>
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.subject)}</div>
-        <div style="font-size:11px;color:var(--gray-2);margin-top:2px">${esc(e.ts)} · HTTP ${esc(String(e.status))}</div>
+        <div style="font-size:11px;color:var(--gray-2);margin-top:2px">${esc(e.ts)} · ${esc(String(e.status))}</div>
       </div>
     </div>`).join('');
 }
 
 function saveEmailSettings() {
-  const cfg      = Adapter.getEmailSettings();
-  cfg.adminEmail = document.getElementById('emailAdmin')?.value.trim()      || cfg.adminEmail;
-  cfg.serviceId  = document.getElementById('emailServiceId')?.value.trim()  || cfg.serviceId;
-  cfg.templateId = document.getElementById('emailTemplateId')?.value.trim() || cfg.templateId;
-  cfg.publicKey  = document.getElementById('emailPublicKey')?.value.trim()  || cfg.publicKey;
-  cfg.enabled    = document.getElementById('emailEnabled')?.checked ?? cfg.enabled;
+  const cfg   = Adapter.getEmailSettings();
+  cfg.enabled = document.getElementById('emailEnabled')?.checked ?? cfg.enabled;
+  cfg.triggers = cfg.triggers || {};
   document.querySelectorAll('[data-email-trigger]').forEach(cb => {
     cfg.triggers[cb.dataset.emailTrigger] = cb.checked;
   });
@@ -215,12 +184,12 @@ function saveEmailSettings() {
 
 async function testEmailNotif() {
   const cfg = Adapter.getEmailSettings();
-  if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId) { toast('Service ID・Template ID・Public Keyを入力してください'); return; }
-  if (!cfg.adminEmail) { toast('通知先メールアドレスを入力してください'); return; }
+  if (!cfg.enabled) { toast('メール通知が無効です。先に有効化してください'); return; }
+  /* triggerKey=null bypasses the per-trigger toggle; routes to booking@ */
   await sendEmailNotif({
     subject:      '[Hello Moving] テスト通知',
     trigger_type: 'テスト送信',
-    booking_id: 'TEST-001', booking_name: 'テスト 太郎', booking_email: cfg.adminEmail,
+    booking_id: 'TEST-001', booking_name: 'テスト 太郎', booking_email: 'booking@hello-moving.com',
     booking_service: '単身引越し', booking_date: new Date().toISOString().slice(0,10),
     booking_time: '午前 8:00〜12:00', booking_from: '東京都渋谷区', booking_to: '東京都新宿区', booking_notes: 'テスト送信です',
   }, null);

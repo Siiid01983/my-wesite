@@ -6,21 +6,14 @@
    Sends a customer follow-up email X days after a booking's
    move_date when status is 完了.
 
-   Uses the same EmailJS credentials as the admin notifications
-   (serviceId, publicKey from getEmailSettings()) but a
-   separate template configured here (templateId).
+   Sends via the send-email.php gateway (support@hello-moving.com — follow-up),
+   log_comm:true. EmailJS has been fully removed. Gated by the master email
+   switch (getEmailSettings().enabled).
 
    Emails go to the CUSTOMER, not the admin.
 
    checkAndSend() runs automatically after login (appBootstrap)
    and can be triggered manually from the settings panel.
-
-   Follow-up template variables:
-     {{to_email}}      customer email
-     {{customer_name}} customer name
-     {{reference_id}}  booking reference
-     {{move_date}}     formatted move date (e.g. 6月7日（日）)
-     {{company_name}}  Hello Moving
    ════════════════════════════════════════════════════════ */
 
 window.FollowUp = (function () {
@@ -29,10 +22,10 @@ window.FollowUp = (function () {
   /* ── Core: check bookings and send pending follow-ups ── */
   async function checkAndSend(silent) {
     const cfg      = Adapter.getFollowUpSettings();
-    if (!cfg.enabled || !cfg.templateId) return 0;
+    if (!cfg.enabled) return 0;
 
     const emailCfg = Adapter.getEmailSettings();
-    if (!emailCfg.enabled || !emailCfg.serviceId || !emailCfg.publicKey) return 0;
+    if (!emailCfg.enabled) return 0;   // master email switch
 
     const bookings = Adapter.getBookings();
     const sent     = Adapter.getFollowUpSent();
@@ -62,31 +55,46 @@ window.FollowUp = (function () {
   }
 
   async function _send(bk, emailCfg, cfg) {
-    const ts = new Date().toLocaleString('ja-JP');
+    const ts   = new Date().toLocaleString('ja-JP');
+    const base = (window.API_BASE || '').replace(/\/$/, '');
+    if (!base) {
+      Adapter.pushFollowUpLog({ ts, refId: bk.id, name: bk.name, email: bk.email, ok: false, status: 'API_BASE未設定' });
+      return false;
+    }
+    const moveDate = (typeof fmtD === 'function') ? fmtD(bk.date) : bk.date;
+    const message = [
+      (bk.name || 'お客様') + '様',
+      '',
+      'この度は Hello Moving をご利用いただき、誠にありがとうございました。',
+      'お引越し後のお住まいの状況はいかがでしょうか。お困りごとやお気づきの点がございましたら、お気軽にこのメールへご返信ください。',
+      '',
+      '受付番号: ' + (bk.id || '—'),
+      '引越し日: ' + (moveDate || '—'),
+      '',
+      'またのご利用を心よりお待ちしております。',
+      'Hello Moving',
+    ].join('\n');
     try {
-      const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      const res = await fetch(base + '/send-email.php', {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-API-KEY': window.API_KEY || '' },
         body: JSON.stringify({
-          service_id:      emailCfg.serviceId,
-          template_id:     cfg.templateId,
-          user_id:         emailCfg.publicKey,
-          template_params: {
-            to_email:      bk.email,
-            customer_name: bk.name   || '',
-            reference_id:  bk.id     || '',
-            move_date:     fmtD(bk.date),
-            company_name:  'Hello Moving',
-          },
+          from_account: 'support',
+          to:           bk.email,
+          subject:      '[Hello Moving] お引越し後のご状況について（' + (bk.id || '') + '）',
+          message:      message,
+          booking_id:   bk.id || '',
+          log_comm:     true,
         }),
       });
-      const ok = res.status === 200;
-      const entry = { ts, refId: bk.id, name: bk.name, email: bk.email, ok, status: res.status };
-      Adapter.pushFollowUpLog(entry);
+      const r  = await res.json().catch(() => ({ ok: false, error: 'HTTP ' + res.status }));
+      const ok = !!r.ok;
+      const st = ok ? 'sent' : ((r.error && (r.error.message || r.error)) || ('HTTP ' + res.status));
+      Adapter.pushFollowUpLog({ ts, refId: bk.id, name: bk.name, email: bk.email, ok, status: st });
       if (ok) Adapter.markFollowUpSent(bk.id, { sentAt: new Date().toISOString(), email: bk.email });
       return ok;
     } catch (err) {
-      Adapter.pushFollowUpLog({ ts, refId: bk.id, name: bk.name, email: bk.email, ok: false, status: err.message.slice(0, 40) });
+      Adapter.pushFollowUpLog({ ts, refId: bk.id, name: bk.name, email: bk.email, ok: false, status: (err.message || '').slice(0, 40) });
       return false;
     }
   }
@@ -115,6 +123,9 @@ window.FollowUp = (function () {
   </div>
   ${cfg.enabled ? `
   <div class="panel-body">
+    <p style="font-size:12px;color:var(--gray-1);line-height:1.6;margin-bottom:12px">
+      送信ゲートウェイ経由（support@hello-moving.com）で顧客へ自動送信します。
+    </p>
     <div class="m-row">
       <div class="m-field">
         <label class="m-label">送信タイミング</label>
@@ -122,36 +133,10 @@ window.FollowUp = (function () {
           ${[1,2,3,5,7,14].map(d => `<option value="${d}" ${cfg.delayDays===d?'selected':''}>引越し日から ${d}日後</option>`).join('')}
         </select>
       </div>
-      <div class="m-field">
-        <label class="m-label">フォローアップ Template ID</label>
-        <input class="input" id="fuTemplateId" type="text" value="${esc(cfg.templateId)}"
-          placeholder="template_xxxxxxx" style="font-family:monospace;font-size:12px" />
-        <div style="font-size:11px;color:var(--gray-2);margin-top:4px">
-          EmailJS で別途作成した顧客向けテンプレートの ID
-        </div>
-      </div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
       <button class="btn btn-primary btn-sm" onclick="saveFollowUpSettings()">保存</button>
       <button class="btn btn-ghost btn-sm" id="fuCheckBtn" onclick="triggerFollowUpCheck()">今すぐ確認 &amp; 送信</button>
-    </div>
-
-    <!-- Template variables -->
-    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">
-      <div style="font-size:11px;font-weight:700;color:var(--gray-1);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">テンプレート変数</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px">
-        ${[
-          ['to_email',      '顧客メールアドレス'],
-          ['customer_name', '顧客名'],
-          ['reference_id',  '予約番号'],
-          ['move_date',     '引越し日（日本語形式）'],
-          ['company_name',  '会社名（Hello Moving）'],
-        ].map(([v, desc]) => `
-          <div style="background:var(--bg-soft-2);border:1px solid var(--line);border-radius:6px;padding:7px 10px">
-            <code style="font-size:11px;color:var(--blue)">{{${v}}}</code>
-            <div style="font-size:11px;color:var(--gray-2);margin-top:2px">${desc}</div>
-          </div>`).join('')}
-      </div>
     </div>
 
     <!-- Sent log -->
@@ -165,8 +150,7 @@ window.FollowUp = (function () {
   </div>
   ` : `
   <div class="panel-body" style="color:var(--gray-1);font-size:12px;padding:12px 16px">
-    有効にすると、引越し完了後 X 日に顧客へ自動フォローアップメールを送信します。
-    EmailJS の顧客向けテンプレートが別途必要です。
+    有効にすると、引越し完了後 X 日に顧客へ、送信ゲートウェイ経由（support@hello-moving.com）で自動フォローアップメールを送信します。
   </div>
   `}
 </div>`;
@@ -186,7 +170,7 @@ window.FollowUp = (function () {
         <div style="flex:1;min-width:0">
           <div style="font-size:12px;color:var(--ink)">${esc(e.name || e.refId || '')}</div>
           <div style="font-size:11px;color:var(--gray-2);margin-top:2px">
-            ${esc(e.email || '')} · ${esc(e.ts)} · HTTP ${esc(String(e.status))}
+            ${esc(e.email || '')} · ${esc(e.ts)} · ${esc(String(e.status))}
           </div>
         </div>
       </div>`).join('');
@@ -196,8 +180,7 @@ window.FollowUp = (function () {
     const prev      = Adapter.getFollowUpSettings();
     const enabled   = document.getElementById('fuEnabled')?.checked ?? prev.enabled;
     const delayDays = parseInt(document.getElementById('fuDelayDays')?.value, 10) || prev.delayDays;
-    const templateId = document.getElementById('fuTemplateId')?.value.trim() || prev.templateId;
-    Adapter.saveFollowUpSettings({ ...prev, enabled, delayDays, templateId });
+    Adapter.saveFollowUpSettings({ ...prev, enabled, delayDays });
     toast('フォローアップ設定を保存しました');
     renderFollowUpPanel();
   }
