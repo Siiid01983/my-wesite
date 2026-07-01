@@ -146,4 +146,23 @@ return [
   //   Optional SMTP tuning (safe to omit — defaults shown):
   'smtp_timeout' => 15,        // socket connect/read timeout, seconds
   // 'smtp_helo'  => 'hello-moving.com',  // EHLO hostname (defaults to server name)
+
+  // ── LINE Messaging API (server-side push notifications) ───────────────────
+  //  Used by hm-api/line-push.php to call POST https://api.line.me/v2/bot/message/push.
+  //  Create a *Messaging API* channel in the LINE Developers console, then:
+  //    line_channel_token : long-lived Channel Access Token (SECRET — keep it
+  //                         here on the server only, NEVER in client JS or git).
+  //    line_channel_id    : the channel's Channel ID (reference/logging only).
+  //    line_push_to       : default recipient — a userId, or a group/room ID the
+  //                         bot belongs to. The recipient must have added the
+  //                         official account (you get the userId from a webhook
+  //                         event, or the group/room ID from a join event).
+  //    line_enabled       : master switch — leave false until the token + a
+  //                         recipient are set, then flip to true.
+  //  NOTE: replaces the retired LINE Notify path (notify-api.line.me was shut
+  //  down March 2025). The Channel Access Token is a server secret by design.
+  'line_channel_id'    => '',
+  'line_channel_token' => '',
+  'line_push_to'       => '',
+  'line_enabled'       => false,
 ];
