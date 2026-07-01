@@ -1843,11 +1843,41 @@ window.HM_renderServiceCards();
           <span class="cc-icon cc-icon-line" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.6 1.6 4.9 4 6.4-.1.5-.6 2.1-.7 2.5 0 0 0 .3.2.4.2.1.4 0 .4 0 .6-.1 3-2 3.6-2.4.8.1 1.6.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3Z"/></svg></span>
           <span class="cc-text"><em>LINEで</em><strong>友だち追加して相談</strong><small>24時間受付</small></span>
         </a>
-        <a href="mailto:hellomoving1@gmail.com" id="contactEmailLinkEl" class="cta-channel">
-          <span class="cc-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg></span>
-          <span class="cc-text"><em>Email</em><strong>メールで問い合わせ</strong><small>hellomoving1@gmail.com</small></span>
-        </a>
       </div>
+
+      <!-- Inline contact form → hm-api/contact.php (js/contact-form.js) -->
+      <form id="hmContactForm" class="cta-form" style="max-width:640px;margin:44px auto 0;text-align:left" novalidate>
+        <h3>メールでお問い合わせ</h3>
+        <p style="font-size:13px;color:var(--gray-2);line-height:1.9;margin-bottom:26px;letter-spacing:.03em">
+          下記フォームよりお気軽にご連絡ください。担当者より通常1営業日以内にご返信いたします。
+        </p>
+        <div class="form-row">
+          <label>
+            <span>お名前 <em>*</em></span>
+            <input type="text" name="name" id="cfName" required autocomplete="name" placeholder="山田 太郎" />
+          </label>
+          <label>
+            <span>メールアドレス <em>*</em></span>
+            <input type="email" name="email" id="cfEmail" required autocomplete="email" placeholder="you@example.com" />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            <span>電話番号（任意）</span>
+            <input type="tel" name="phone" id="cfPhone" autocomplete="tel" placeholder="090-1234-5678" />
+          </label>
+          <label>
+            <span>件名（任意）</span>
+            <input type="text" name="subject" id="cfSubject" placeholder="お問い合わせの件名" />
+          </label>
+        </div>
+        <label class="full" style="margin-bottom:24px">
+          <span>メッセージ <em>*</em></span>
+          <textarea name="message" id="cfMessage" required rows="5" placeholder="ご相談内容をご記入ください。"></textarea>
+        </label>
+        <button type="submit" id="cfSubmit" class="btn btn-primary btn-lg btn-block">送信する</button>
+        <p id="cfStatus" role="status" aria-live="polite" style="display:none;text-align:center;font-size:13.5px;line-height:1.8;margin-top:18px;letter-spacing:.03em"></p>
+      </form>
     </div>
   </div>
 </section>
@@ -3355,6 +3385,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 </script>
 
 <script src="js/customer-login.js"></script>
+<script src="js/contact-form.js" defer></script>
 
 <!-- Runtime protection layer: enforces BA overlay as the only booking execution path -->
 <script src="js/security/bookingRuntimeGuard.js"></script>
