@@ -77,7 +77,8 @@ class EmailService {
   }
 
   // ── Send. Returns a result array (never throws). ────────────────────────────
-  //  $p: ['account','to','subject','html','text','replyTo'?]
+  //  $p: ['account','to','subject','html','text','replyTo'?,'inReplyTo'?,'references'?]
+  //  inReplyTo/references thread a reply to an inbound message (In-Reply-To / References).
   public static function deliver(array $cfg, array $p): array {
     $account = (string)($p['account'] ?? 'booking');
     $acc     = self::account($cfg, $account);
@@ -86,6 +87,13 @@ class EmailService {
     $html    = (string)($p['html'] ?? '');
     $text    = (string)($p['text'] ?? '');
     $replyTo = trim((string)($p['replyTo'] ?? '')) ?: $acc['email'];
+    // Threading headers (CR/LF-guarded downstream in _smtp / here).
+    $inReplyTo  = trim((string)($p['inReplyTo']  ?? $p['in_reply_to'] ?? ''));
+    $references = trim((string)($p['references'] ?? ''));
+    if ($references === '' && $inReplyTo !== '') $references = $inReplyTo;
+    $hdrSafe = fn(string $v) => strpbrk($v, "\r\n") === false ? $v : '';
+    $inReplyTo  = $hdrSafe($inReplyTo);
+    $references = $hdrSafe($references);
 
     // The authenticated SMTP mailbox — used only to decide whether a Sender:
     // header is warranted (From ≠ auth mailbox).
@@ -101,9 +109,10 @@ class EmailService {
       }
       try {
         $res = $hasPhpmailer
-          ? self::viaPhpmailer($cfg, $acc, $to, $subject, $html, $text, $replyTo, $authMailbox)
+          ? self::viaPhpmailer($cfg, $acc, $to, $subject, $html, $text, $replyTo, $authMailbox, $inReplyTo, $references)
           : hm_smtp_send($cfg, $acc['email'], $acc['name'], $to, $subject, $html, $text,
-                         ['replyTo' => $replyTo, 'sender' => $authMailbox]);
+                         ['replyTo' => $replyTo, 'sender' => $authMailbox,
+                          'inReplyTo' => $inReplyTo, 'references' => $references]);
         return ['ok' => true, 'from' => $acc['email'],
                 'messageId' => $res['messageId'], 'transport' => $res['transport'] ?? 'smtp'];
       } catch (\Throwable $e) {
@@ -130,6 +139,8 @@ class EmailService {
         && strcasecmp($authMailbox, $acc['email']) !== 0) {
       $headers .= 'Sender: ' . $authMailbox . "\r\n";
     }
+    if ($inReplyTo  !== '') $headers .= 'In-Reply-To: ' . $inReplyTo . "\r\n";
+    if ($references !== '') $headers .= 'References: ' . $references . "\r\n";
     $encSubject = mb_encode_mimeheader($subject, 'UTF-8');
     // '-f' sets the envelope sender → Return-Path = the From mailbox.
     $ok = @mail($to, $encSubject, $html, $headers, '-f' . $acc['email']);
@@ -146,7 +157,8 @@ class EmailService {
 
   // ── PHPMailer adapter (used only when hm-api/vendor/autoload.php exists) ─────
   private static function viaPhpmailer(array $cfg, array $acc, string $to, string $subject,
-                                       string $html, string $text, string $replyTo, string $authMailbox): array {
+                                       string $html, string $text, string $replyTo, string $authMailbox,
+                                       string $inReplyTo = '', string $references = ''): array {
     require_once __DIR__ . '/vendor/autoload.php';
     $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
     $mail->isSMTP();
@@ -166,6 +178,8 @@ class EmailService {
     if ($authMailbox !== '' && strcasecmp($authMailbox, $acc['email']) !== 0) {
       $mail->addCustomHeader('Sender', $authMailbox);
     }
+    if ($inReplyTo  !== '') $mail->addCustomHeader('In-Reply-To', $inReplyTo);
+    if ($references !== '') $mail->addCustomHeader('References', $references);
     $mail->isHTML(true);
     $mail->Subject = $subject;
     $mail->Body    = $html;

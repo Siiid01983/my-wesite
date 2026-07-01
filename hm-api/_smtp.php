@@ -322,6 +322,16 @@ function hm_smtp_build_message(string $fromEmail, string $fromName, string $to,
   }
   $h[] = 'Subject: ' . mb_encode_mimeheader($subject, 'UTF-8', 'B', "\r\n");
   $h[] = 'Message-ID: ' . $messageId;
+  // Threading headers (reply): In-Reply-To / References carry the parent's
+  // Message-ID(s). CR/LF-guarded to prevent header injection.
+  $inReplyTo = trim((string)($opts['inReplyTo'] ?? ''));
+  if ($inReplyTo !== '' && strpbrk($inReplyTo, "\r\n") === false) {
+    $h[] = 'In-Reply-To: ' . $inReplyTo;
+  }
+  $references = trim((string)($opts['references'] ?? ''));
+  if ($references !== '' && strpbrk($references, "\r\n") === false) {
+    $h[] = 'References: ' . $references;
+  }
   $h[] = 'MIME-Version: 1.0';
   $h[] = 'Content-Type: multipart/alternative; boundary="' . $boundary . '"';
 

@@ -131,6 +131,8 @@ $message   = trim((string)($p['message'] ?? ''));
 $account   = (string)($p['from_account'] ?? 'booking');
 $subject   = trim((string)($p['subject'] ?? '')) ?: '[Hello Moving] ご連絡';
 $bookingId = trim((string)($p['booking_id'] ?? ''));
+$inReplyTo = trim((string)($p['in_reply_to'] ?? ''));   // reply threading (optional)
+$references = trim((string)($p['references'] ?? ''));
 
 if ($to === '' || strpos($to, '@') === false) email_err('Invalid recipient', 'bad_recipient', 400);
 if ($message === '') email_err('Empty message body', 'empty_message', 400);
@@ -144,11 +146,13 @@ $acc  = EmailService::account($cfg, $account);
 $html = EmailService::customerHtml($acc, $message, $bookingId);
 
 $res = EmailService::deliver($cfg, [
-  'account' => $account,     // Reply-To defaults to this account's mailbox
-  'to'      => $to,
-  'subject' => $subject,
-  'html'    => $html,
-  'text'    => $message,
+  'account'    => $account,     // Reply-To defaults to this account's mailbox
+  'to'         => $to,
+  'subject'    => $subject,
+  'html'       => $html,
+  'text'       => $message,
+  'inReplyTo'  => $inReplyTo,   // threading (optional)
+  'references' => $references,
 ]);
 
 if ($res['ok']) {
