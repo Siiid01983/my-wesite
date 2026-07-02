@@ -184,6 +184,8 @@ CREATE TABLE IF NOT EXISTS inbox_messages (
   status      VARCHAR(20)  NOT NULL DEFAULT 'open',   -- open|pending|waiting|resolved|closed
   assignee    VARCHAR(191) DEFAULT NULL,
   labels      JSON         DEFAULT NULL,
+  sender_name VARCHAR(255) DEFAULT NULL,        -- parsed From display name (Phase 2 IMAP)
+  received_at DATETIME     DEFAULT NULL,         -- mail Date header (≠ created_at insert time)
   PRIMARY KEY (id),
   KEY idx_inbox_created_at (created_at),
   KEY idx_inbox_booking_id (booking_id),
@@ -192,7 +194,8 @@ CREATE TABLE IF NOT EXISTS inbox_messages (
   KEY idx_inbox_thread_id (thread_id),
   KEY idx_inbox_message_id (message_id),
   KEY idx_inbox_status (status),
-  KEY idx_inbox_is_read (is_read)
+  KEY idx_inbox_is_read (is_read),
+  KEY idx_inbox_received_at (received_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ── audit_log : append-only action trail
