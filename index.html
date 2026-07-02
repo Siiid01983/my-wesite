@@ -1018,6 +1018,19 @@ body { padding-bottom: 76px; }
 .hm-ft__links a { display:flex; align-items:center; padding:8px 0; min-height:40px; font-size:13.5px; color:rgba(255,255,255,.65) !important; text-decoration:none; letter-spacing:.03em; transition:color .18s ease,padding-left .18s ease; line-height:1.5; }
 .hm-ft__links a:hover { color:#fff !important; padding-left:5px; }
 
+/* Email contact band */
+.hm-ft__email-band { border-top:1px solid rgba(255,255,255,.08); padding:40px 0; }
+.hm-ft__email-heading { font-family:var(--font-en); font-size:10px; font-weight:600; letter-spacing:.26em; text-transform:uppercase; color:rgba(255,255,255,.32); text-align:center; margin:0 0 22px; }
+.hm-ft__email-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.hm-ft__email-card { display:flex; align-items:center; gap:14px; padding:18px 20px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:12px; text-decoration:none; transition:background .18s ease,border-color .18s ease,transform .18s ease; min-height:64px; }
+.hm-ft__email-card:hover { background:rgba(255,255,255,.09); border-color:rgba(154,181,122,.45); transform:translateY(-2px); }
+.hm-ft__email-icon { width:40px; height:40px; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; background:rgba(154,181,122,.16); color:#9AB57A; }
+.hm-ft__email-icon svg { width:20px; height:20px; }
+.hm-ft__email-text { display:flex; flex-direction:column; min-width:0; }
+.hm-ft__email-label { font-size:11px; letter-spacing:.06em; color:rgba(255,255,255,.5); margin-bottom:4px; line-height:1.4; }
+.hm-ft__email-addr { font-size:14px; font-weight:600; color:#fff; word-break:break-all; letter-spacing:.02em; line-height:1.35; }
+@media (max-width:900px) { .hm-ft__email-grid { grid-template-columns:1fr; } }
+
 /* Trust bar */
 .hm-ft__trust { border-top:1px solid rgba(255,255,255,.08); padding:28px 0; }
 .hm-ft__trust-list { list-style:none; padding:0; margin:0; display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
@@ -1984,6 +1997,36 @@ window.HM_renderServiceCards();
       </ul>
     </div>
 
+  </div>
+
+  <!-- Email contact band -->
+  <div class="hm-ft__email-band">
+    <div class="container">
+      <h4 class="hm-ft__email-heading">Email Contact ・ メールでのお問い合わせ</h4>
+      <div class="hm-ft__email-grid">
+        <a class="hm-ft__email-card" href="mailto:booking@hello-moving.com">
+          <span class="hm-ft__email-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="16" height="11" rx="2"/><path d="M2 7l8 5 8-5"/></svg></span>
+          <span class="hm-ft__email-text">
+            <span class="hm-ft__email-label">ご予約・お見積り ・ Booking &amp; Reservations</span>
+            <span class="hm-ft__email-addr">booking@hello-moving.com</span>
+          </span>
+        </a>
+        <a class="hm-ft__email-card" href="mailto:support@hello-moving.com">
+          <span class="hm-ft__email-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="16" height="11" rx="2"/><path d="M2 7l8 5 8-5"/></svg></span>
+          <span class="hm-ft__email-text">
+            <span class="hm-ft__email-label">カスタマーサポート ・ Customer Support</span>
+            <span class="hm-ft__email-addr">support@hello-moving.com</span>
+          </span>
+        </a>
+        <a class="hm-ft__email-card" href="mailto:contact@hello-moving.com">
+          <span class="hm-ft__email-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="16" height="11" rx="2"/><path d="M2 7l8 5 8-5"/></svg></span>
+          <span class="hm-ft__email-text">
+            <span class="hm-ft__email-label">一般のお問い合わせ ・ General Inquiries</span>
+            <span class="hm-ft__email-addr">contact@hello-moving.com</span>
+          </span>
+        </a>
+      </div>
+    </div>
   </div>
 
   <!-- Trust bar -->
