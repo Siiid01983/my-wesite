@@ -59,6 +59,10 @@ $COLUMNS = [
   'status'      => "ADD COLUMN `status` VARCHAR(20) NOT NULL DEFAULT 'open'",
   'assignee'    => "ADD COLUMN `assignee` VARCHAR(191) DEFAULT NULL",
   'labels'      => "ADD COLUMN `labels` JSON DEFAULT NULL",
+  // Phase 2 (IMAP ingestion): the parsed sender display name and the mail's own
+  // Date header (distinct from created_at, which is the DB insert time).
+  'sender_name' => "ADD COLUMN `sender_name` VARCHAR(255) DEFAULT NULL",
+  'received_at' => "ADD COLUMN `received_at` DATETIME DEFAULT NULL",
 ];
 $INDEXES = [
   'idx_inbox_mailbox'    => "ADD KEY `idx_inbox_mailbox` (`mailbox`)",
@@ -66,6 +70,7 @@ $INDEXES = [
   'idx_inbox_message_id' => "ADD KEY `idx_inbox_message_id` (`message_id`)",
   'idx_inbox_status'     => "ADD KEY `idx_inbox_status` (`status`)",
   'idx_inbox_is_read'    => "ADD KEY `idx_inbox_is_read` (`is_read`)",
+  'idx_inbox_received_at'=> "ADD KEY `idx_inbox_received_at` (`received_at`)",
 ];
 
 try {

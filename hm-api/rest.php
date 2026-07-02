@@ -72,7 +72,8 @@ $SCHEMA = [
   'inbox_messages' => [
     'cols' => ['id','sender','email','subject','body','booking_id','created_at',
                'mailbox','body_html','body_text','message_id','in_reply_to','thread_id',
-               'is_read','starred','archived','status','assignee','labels'],
+               'is_read','starred','archived','status','assignee','labels',
+               'sender_name','received_at'],
     'json' => ['labels'], 'bool' => ['is_read','starred','archived'], 'int' => [],
     'uuid_pk' => true, 'unique' => ['id'],
   ],

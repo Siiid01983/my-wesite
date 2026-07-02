@@ -165,4 +165,31 @@ return [
   'line_channel_token' => '',
   'line_push_to'       => '',
   'line_enabled'       => false,
+
+  // ── IMAP inbound polling (Email Center Phase 2 — hm-api/inbox-poll.php) ────
+  //  Self-hosted IMAP only (no third-party inbound provider). A cron job runs
+  //  inbox-poll.php, which logs into each mailbox over IMAPS, imports new mail
+  //  into inbox_messages (dedup by Message-ID, incremental by UID watermark).
+  //  Requires the PHP `imap` extension on the server.
+  //    imap_host   : Dovecot host (same server as SMTP).
+  //    imap_port   : 993 (implicit SSL/TLS — recommended).
+  //    imap_secure : 'ssl' (implicit TLS, port 993) | 'tls' (STARTTLS, port 143).
+  //    imap_novalidate_cert : true only as a last resort if the TLS cert cannot
+  //                 be validated (default false — the Let's Encrypt cert validates).
+  //    imap_accounts: one entry PER company mailbox. `pass` is a SERVER SECRET —
+  //                 set it in _config.php (gitignored), never here / in client JS.
+  //    imap_enabled : master switch — leave false until passwords are set.
+  //    imap_poll_token : optional one-time token to allow triggering inbox-poll.php
+  //                 over HTTP when there is no cron/shell (CLI needs no token).
+  'imap_enabled'         => false,
+  'imap_host'            => 'mail.hello-moving.com',
+  'imap_port'            => 993,
+  'imap_secure'          => 'ssl',
+  'imap_novalidate_cert' => false,
+  'imap_poll_token'      => '',
+  'imap_accounts' => [
+    ['mailbox' => 'booking@hello-moving.com', 'user' => 'booking@hello-moving.com', 'pass' => ''],
+    ['mailbox' => 'support@hello-moving.com', 'user' => 'support@hello-moving.com', 'pass' => ''],
+    ['mailbox' => 'contact@hello-moving.com', 'user' => 'contact@hello-moving.com', 'pass' => ''],
+  ],
 ];

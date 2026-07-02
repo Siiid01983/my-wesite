@@ -75,6 +75,9 @@
         : '';
       // Prefer the plain-text body; fall back to legacy `body`.
       var bodyText = (m.body_text != null && m.body_text !== '') ? m.body_text : (m.body || '');
+      // Prefer IMAP-parsed sender name + mail Date; fall back to legacy fields.
+      var senderName = (m.sender_name != null && m.sender_name !== '') ? m.sender_name : m.sender;
+      var whenIso    = m.received_at || m.created_at;
       return '' +
         '<div class="panel" style="margin-bottom:12px;padding:18px 20px">' +
           '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">' +
@@ -83,10 +86,10 @@
                 '<span style="font-size:14px;font-weight:600;color:var(--ink)">' + _esc(m.subject || '(件名なし)') + '</span>' +
                 bookingTag + mailboxTag +
               '</div>' +
-              '<div style="font-size:12px;color:var(--gray-1)"><strong>' + _esc(m.sender) + '</strong> ' +
+              '<div style="font-size:12px;color:var(--gray-1)"><strong>' + _esc(senderName) + '</strong> ' +
                 '&lt;<a href="mailto:' + _esc(m.email) + '" style="color:var(--blue)">' + _esc(m.email) + '</a>&gt;</div>' +
             '</div>' +
-            '<time style="font-size:11px;color:var(--gray-2);white-space:nowrap;flex-shrink:0">' + _fmtDate(m.created_at) + '</time>' +
+            '<time style="font-size:11px;color:var(--gray-2);white-space:nowrap;flex-shrink:0">' + _fmtDate(whenIso) + '</time>' +
           '</div>' +
           '<div style="font-size:13px;color:var(--ink-2);line-height:1.7;white-space:pre-wrap;border-top:1px solid var(--line);padding-top:10px">' + _esc(bodyText) + '</div>' +
           '<div style="margin-top:12px;display:flex;gap:8px">' +
