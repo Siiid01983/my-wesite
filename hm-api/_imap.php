@@ -54,6 +54,14 @@ function hm_imap_open(array $cfg, string $user, string $pass) {
     // imap_last_error may include the server text but NEVER the password.
     $err = imap_last_error() ?: 'connection failed';
     @imap_errors(); @imap_alerts();                 // drain so later calls are clean
+    // Actionable hint for the classic shared-cPanel case: c-client sends no SNI,
+    // so the server returns its DEFAULT (own-hostname) certificate — connecting as
+    // mail.<domain> then fails TLS hostname verification. Production-safe fix: set
+    // imap_host to that certificate hostname (same mail server, cert validates).
+    // imap_novalidate_cert=true is a last-resort fallback (TLS stays encrypted).
+    if (stripos($err, 'certificate') !== false || stripos($err, 'hostname') !== false) {
+      $err .= ' — set imap_host to the certificate hostname (same mail server, keeps full TLS validation), or imap_novalidate_cert=true as a last resort';
+    }
     throw new RuntimeException('IMAP open failed: ' . $err);
   }
   return $imap;
