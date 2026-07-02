@@ -214,7 +214,20 @@ function hm_require_staff_write(): void {
 function hm_json($data, int $status = 200): void {
   http_response_code($status);
   header('Content-Type: application/json; charset=utf-8');
-  echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+  // JSON_INVALID_UTF8_SUBSTITUTE (PHP 7.2+) replaces malformed UTF-8 bytes with
+  // U+FFFD instead of making json_encode() return false — which would echo an
+  // EMPTY body and break the client's JSON.parse (see the inbox_messages incident:
+  // legacy inbound rows with non-UTF-8 body_text). Guarded with defined() so it
+  // degrades safely on older PHP; a false result still falls back to a structured
+  // error so an empty 200 can never be emitted again.
+  $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+  if (defined('JSON_INVALID_UTF8_SUBSTITUTE')) $flags |= JSON_INVALID_UTF8_SUBSTITUTE;
+  $out = json_encode($data, $flags);
+  if ($out === false) {
+    $out = json_encode(['ok' => false, 'data' => null,
+                        'error' => ['message' => 'Response encoding failed', 'code' => 'json_encode']]);
+  }
+  echo $out;
   exit;
 }
 
