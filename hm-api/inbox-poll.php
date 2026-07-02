@@ -141,55 +141,65 @@ function poll_mailbox(array $cfg, array $acct): array {
 
     $uids = hm_imap_new_uids($imap, $lastUid + 1, $status['uidnext']);
     $res['scanned'] = count($uids);
-    $maxUid = $lastUid;
+    $maxHandledUid = $lastUid;   // highest UID successfully imported OR confirmed duplicate
+    $firstFailUid  = 0;          // lowest UID that hit a hard error (0 = none)
 
     foreach ($uids as $uid) {
-      $maxUid = max($maxUid, $uid);
       try {
         $msg = hm_imap_parse($imap, $uid);
         // Synthesize a stable Message-ID when the mail lacks one (dedup key).
         $mid = $msg['message_id'] !== '' ? $msg['message_id']
              : '<imap-' . rawurlencode($mailbox) . '-' . $uid . '@hello-moving.com>';
 
-        if (inbox_has_message_id($mid)) { $res['skipped']++; continue; }
+        if (inbox_has_message_id($mid)) {
+          $res['skipped']++;
+        } else {
+          $parentIds   = array_merge($msg['in_reply_to'] !== '' ? [$msg['in_reply_to']] : [], $msg['references']);
+          $subjectNorm = hm_imap_norm_subject($msg['subject']);
+          $threadId    = inbox_resolve_thread($parentIds, $msg['from_email'], $subjectNorm, $mid);
 
-        $parentIds   = array_merge($msg['in_reply_to'] !== '' ? [$msg['in_reply_to']] : [], $msg['references']);
-        $subjectNorm = hm_imap_norm_subject($msg['subject']);
-        $threadId    = inbox_resolve_thread($parentIds, $msg['from_email'], $subjectNorm, $mid);
+          $bodyLegacy = $msg['body_text'] !== '' ? $msg['body_text']
+                      : (strip_tags($msg['body_html']) ?: '(本文なし)');
 
-        $bodyLegacy = $msg['body_text'] !== '' ? $msg['body_text']
-                    : (strip_tags($msg['body_html']) ?: '(本文なし)');
-
-        $ins = hm_db()->prepare(
-          'INSERT INTO inbox_messages
-             (id, sender, sender_name, email, subject, body, body_text, body_html,
-              mailbox, message_id, in_reply_to, thread_id, received_at, is_read, status)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,0,\'open\')'
-        );
-        $ins->execute([
-          hm_uuid4(),
-          $msg['from_name'] !== '' ? $msg['from_name'] : $msg['from_email'],
-          $msg['from_name'] !== '' ? $msg['from_name'] : null,
-          $msg['from_email'],
-          $msg['subject'],
-          $bodyLegacy,
-          $msg['body_text'] !== '' ? $msg['body_text'] : null,
-          $msg['body_html'] !== '' ? $msg['body_html'] : null,
-          $mailbox,
-          $mid,
-          $msg['in_reply_to'] !== '' ? $msg['in_reply_to'] : null,
-          $threadId,
-          $msg['received_at'],
-        ]);
-        $res['imported']++;
+          $ins = hm_db()->prepare(
+            'INSERT INTO inbox_messages
+               (id, sender, sender_name, email, subject, body, body_text, body_html,
+                mailbox, message_id, in_reply_to, thread_id, received_at, is_read, status)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,0,\'open\')'
+          );
+          $ins->execute([
+            hm_uuid4(),
+            $msg['from_name'] !== '' ? $msg['from_name'] : $msg['from_email'],
+            $msg['from_name'] !== '' ? $msg['from_name'] : null,
+            $msg['from_email'],
+            $msg['subject'],
+            $bodyLegacy,
+            $msg['body_text'] !== '' ? $msg['body_text'] : null,
+            $msg['body_html'] !== '' ? $msg['body_html'] : null,
+            $mailbox,
+            $mid,
+            $msg['in_reply_to'] !== '' ? $msg['in_reply_to'] : null,
+            $threadId,
+            $msg['received_at'],
+          ]);
+          $res['imported']++;
+        }
+        $maxHandledUid = max($maxHandledUid, $uid);   // committed (imported or duplicate)
       } catch (Throwable $e) {
-        // One bad message must not abort the mailbox; log and continue.
+        // One bad message must not abort the mailbox; log and continue. Record the
+        // lowest failing UID so the watermark does NOT advance past it (see below).
+        if ($firstFailUid === 0 || $uid < $firstFailUid) $firstFailUid = $uid;
         hm_log_error('inbox-poll message failed', ['mailbox' => $mailbox, 'uid' => $uid, 'err' => $e->getMessage()]);
       }
     }
 
-    // Advance the watermark (even if only skips happened) so we never rescan.
-    poll_state_set($mailbox, $status['uidvalidity'], $maxUid);
+    // Advance the watermark only up to just BEFORE the first failure, so any
+    // message that failed to insert (e.g. a missing column, or a transient DB
+    // error) is retried on the next run rather than skipped forever. Message-ID
+    // dedup makes re-processing already-imported messages safe. Never go backwards.
+    $newWatermark = $firstFailUid > 0 ? min($maxHandledUid, $firstFailUid - 1) : $maxHandledUid;
+    if ($newWatermark < $lastUid) $newWatermark = $lastUid;
+    poll_state_set($mailbox, $status['uidvalidity'], $newWatermark);
   } catch (Throwable $e) {
     $res['error'] = $e->getMessage();
     hm_log_error('inbox-poll mailbox failed', ['mailbox' => $mailbox, 'err' => $e->getMessage()]);
