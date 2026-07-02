@@ -195,9 +195,13 @@ window.ContentLoader = (function () {
       document.querySelectorAll('a[href*="line.me"]').forEach(function (a) { a.href = social.line; });
     }
 
-    /* Email → mailto links (href + visible address when the text is the address). */
+    /* Email → mailto links (href + visible address when the text is the address).
+       EXCLUDES the footer department cards (.hm-ft__email-card): those are fixed
+       per-department routes (booking@ / support@ / contact@), NOT the single CMS
+       "contact email", so the site-settings value must never overwrite them.
+       (Bug fix: a placeholder contact.email='test' was replacing all three.) */
     if (contact.email) {
-      document.querySelectorAll('a[href^="mailto:"]').forEach(function (a) {
+      document.querySelectorAll('a[href^="mailto:"]:not(.hm-ft__email-card)').forEach(function (a) {
         a.href = 'mailto:' + contact.email;
         if ((a.textContent || '').indexOf('@') > -1) a.textContent = contact.email;
       });
