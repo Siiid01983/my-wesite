@@ -171,17 +171,28 @@ return [
   //  inbox-poll.php, which logs into each mailbox over IMAPS, imports new mail
   //  into inbox_messages (dedup by Message-ID, incremental by UID watermark).
   //  Requires the PHP `imap` extension on the server.
-  //    imap_host   : Dovecot host (same server as SMTP).
+  //    imap_host   : Dovecot host. ⚠ On shared cPanel, php-imap (c-client) sends
+  //                 NO SNI, so the server returns its DEFAULT certificate — the
+  //                 server's own FQDN (e.g. CN=<server>.dzsecurity.net), NOT the
+  //                 mail.<domain> you dialed → TLS "hostname mismatch". PRODUCTION-
+  //                 SAFE FIX: set imap_host to that certificate hostname (the shared
+  //                 server FQDN). It is the SAME mail server (same IP + mailboxes),
+  //                 the cert then validates, and full TLS verification is preserved.
+  //                 Find it via:  openssl s_client -connect mail.<domain>:993 </dev/null | openssl x509 -noout -subject
   //    imap_port   : 993 (implicit SSL/TLS — recommended).
   //    imap_secure : 'ssl' (implicit TLS, port 993) | 'tls' (STARTTLS, port 143).
-  //    imap_novalidate_cert : true only as a last resort if the TLS cert cannot
-  //                 be validated (default false — the Let's Encrypt cert validates).
+  //    imap_novalidate_cert : LAST RESORT only — skips certificate validation
+  //                 (TLS stays ENCRYPTED, but no CA/hostname check → weaker). Prefer
+  //                 the imap_host fix above. Default false.
   //    imap_accounts: one entry PER company mailbox. `pass` is a SERVER SECRET —
   //                 set it in _config.php (gitignored), never here / in client JS.
+  //                 `user` stays the full email even when imap_host is the server FQDN.
   //    imap_enabled : master switch — leave false until passwords are set.
   //    imap_poll_token : optional one-time token to allow triggering inbox-poll.php
   //                 over HTTP when there is no cron/shell (CLI needs no token).
   'imap_enabled'         => false,
+  //  Set this to the server's certificate hostname if 'mail.<domain>' mismatches
+  //  (see the note above). On this host the cert CN is makemake-shared.dzsecurity.net.
   'imap_host'            => 'mail.hello-moving.com',
   'imap_port'            => 993,
   'imap_secure'          => 'ssl',
