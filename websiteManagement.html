@@ -761,6 +761,10 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
           会社情報
           <span class="wmc-phase-tag">Ph4</span>
         </button>
+        <button class="wmc-link" data-view="content">
+          <svg class="wmc-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M4 7V4h16v3"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+          コンテンツ &amp; アイコン
+        </button>
 
         <!-- ── メディア・ブログ ── -->
         <div class="wmc-section" style="margin-top:6px">メディア・ブログ</div>
@@ -1183,6 +1187,11 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
         <!-- ══ VIEW: Header ══ -->
         <div class="wmc-view" id="wmc-view-header">
           <div id="view-header"></div>
+        </div>
+
+        <!-- ══ VIEW: Global Content ══ -->
+        <div class="wmc-view" id="wmc-view-content">
+          <div id="view-content"></div>
         </div>
 
         <!-- ══ VIEW: Footer ══ -->
@@ -1692,6 +1701,7 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
 <script src="js/modules/reviews/reviewsEditor.js"></script>
 <script src="js/modules/faq/faq.js"></script>
 <script src="js/modules/header/header.js"></script>
+<script src="js/modules/content/contentRegistry.js"></script>
 <script src="js/modules/footer/footer.js"></script>
 <script src="js/modules/company/company.js"></script>
 <script src="js/modules/media/media.js"></script>
@@ -1711,6 +1721,7 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
     WMC_BREADCRUMBS.hero     = 'ヒーローセクション';
     WMC_BREADCRUMBS.faq      = 'FAQ 管理';
     WMC_BREADCRUMBS.header   = 'ヘッダー編集';
+    WMC_BREADCRUMBS.content  = 'コンテンツ & アイコン';
     WMC_BREADCRUMBS.footer   = 'フッター編集';
     WMC_BREADCRUMBS.company  = '会社情報';
     WMC_BREADCRUMBS.backup   = 'バックアップ';
@@ -1730,6 +1741,7 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
       if (view === 'reviews')  { if (typeof renderReviews      === 'function') renderReviews(); }
       if (view === 'faq')      { if (typeof renderFaq          === 'function') renderFaq(); }
       if (view === 'header')   { if (typeof renderHeader       === 'function') renderHeader(); }
+      if (view === 'content')  { if (typeof renderContent      === 'function') renderContent(); }
       if (view === 'footer')   { if (typeof renderFooter       === 'function') renderFooter(); }
       if (view === 'company')  { if (typeof renderCompany      === 'function') renderCompany(); }
       if (view === 'media')    { if (typeof renderMedia        === 'function') renderMedia(); }
