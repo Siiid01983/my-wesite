@@ -86,6 +86,25 @@ registered in `websiteManagement.html` (nav button + `#wmc-view-*` container +
   `booking:true` flag re-emits the `openBookingApp()` handler. Logo / brand name /
   brand color are NOT here — they live in Site Settings → Brand (`hm_settings`),
   applied via `_applySiteSettings`. Do not duplicate them into the Header module.
+- **Global Content Manager** — `js/modules/content/contentRegistry.js` (view
+  `content`, tab "コンテンツ & アイコン", KV key `hm_content`). A searchable
+  key/value editor for static site copy NOT owned by a dedicated module. Unlike
+  the id-based `_applyX` editors, this one is ATTRIBUTE-based: elements in
+  `index.html` carry `data-content-key="<key>"`, and `_applyGlobalContent`
+  (contentLoader.js) sets their `textContent` from the `{key:text}` map on public
+  load. `CONTENT_REGISTRY` in the module lists every key (group + label + code
+  default); it MUST stay 1:1 with the `data-content-key` attributes in index.html.
+  Rules that keep it non-destructive / conflict-free:
+    - `textContent` only (never innerHTML) — can't inject markup or disturb child
+      SVGs. For an element that contains an icon, wrap just the text in a
+      `<span data-content-key>` (see the trust-badge pills).
+    - Blank field = keep the built-in default (only non-empty overrides are stored).
+    - Tag ONLY pure-text elements that no other module owns. Never tag an element
+      that already has an `_applyX`-managed id (e.g. hero H1/sub-text/CTA are owned
+      by the Hero tab and must stay untagged).
+    - To add a key: tag the element in index.html + add a matching CONTENT_REGISTRY
+      row. Current coverage (~65 keys): hero extras, trust strip/badges, disposal,
+      commitments, process, booking band.
 - Sibling editors follow the same pattern: hero (`hm_hero`), footer (`hm_footer`),
   faq (`hm_faq`), company, services, reviews, seo (`hm_seo`), settings (`hm_settings`).
 
