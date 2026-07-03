@@ -25,6 +25,21 @@ window.ContentLoader = (function () {
   function _set(id, val) { const e = _el(id); if (e && val != null && val !== '') e.textContent = val; }
   function _ls(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
 
+  /* ── Conditional rendering (empty/hidden → collapse, no layout gap) ──────────
+     Sentinel written by the Content Manager when an element is EXPLICITLY hidden
+     (field cleared + saved). Kept in sync with contentRegistry.js HM_HIDDEN. */
+  const HM_HIDDEN = '__HM_HIDDEN__';
+  /* Resolve WHICH element to hide for a data-content-key node: the node itself by
+     default, or a specific wrapper via data-content-hide="closest:<selector>"
+     (e.g. a trust-badge pill that also holds an icon). Never a generic parent. */
+  function _hideTargetFor(el) {
+    const sel = el.getAttribute('data-content-hide');
+    if (sel && sel.indexOf('closest:') === 0) { const t = el.closest(sel.slice(8)); if (t) return t; }
+    return el;
+  }
+  function _collapse(el)   { if (el) el.style.display = 'none'; }
+  function _uncollapse(el) { if (el && el.style.display === 'none') el.style.display = ''; }
+
   /* ── Hero ─────────────────────────────────────────────── */
   function _applyHero(h) {
     if (!h) return;
@@ -60,11 +75,11 @@ window.ContentLoader = (function () {
   }
 
   function _applyRevCards(revs) {
-    if (!revs || !revs.length) return;
-    const published = revs.filter(r => r.status === 'approved' && r.published);
-    if (!published.length) return;
+    if (revs == null) return;                       // no CMS data → keep static fallback
     const grid = _el('revGridEl');
     if (!grid) return;
+    const published = revs.filter(r => r.status === 'approved' && r.published);
+    if (!published.length) { grid.innerHTML = ''; _collapse(grid); return; }  // emptied → collapse (no gap)
     grid.innerHTML = published.map(r => {
       const stars    = '★'.repeat(r.rating || 5) + '☆'.repeat(5 - (r.rating || 5));
       const headline = esc(r.headline || (r.text || '').substring(0, 30) + ((r.text || '').length > 30 ? '…' : ''));
@@ -81,6 +96,7 @@ window.ContentLoader = (function () {
         (loc ? `<em>${loc}</em>` : '') + `</span></footer>` +
         `</article>`;
     }).join('');
+    _uncollapse(grid);
   }
 
   /* ── FAQ ──────────────────────────────────────────────── */
@@ -92,13 +108,15 @@ window.ContentLoader = (function () {
   }
 
   function _applyFaqItems(items) {
-    if (!items || !items.length) return;
+    if (items == null) return;                      // no CMS data → keep static fallback
     const list = _el('faqListEl');
     if (!list) return;
+    if (!items.length) { list.innerHTML = ''; _collapse(list); return; }  // emptied → collapse (no gap)
     list.innerHTML = items.map(f =>
       `<details class="faq-item"><summary>${esc(f.question || '')}</summary>` +
       `<p>${esc(f.answer || '')}</p></details>`
     ).join('');
+    _uncollapse(list);
   }
 
   /* ── Company ──────────────────────────────────────────── */
@@ -109,12 +127,14 @@ window.ContentLoader = (function () {
   }
 
   function _applyCompanyRows(rows) {
-    if (!rows || !rows.length) return;
+    if (rows == null) return;                       // no CMS data → keep static fallback
     const tbl = _el('companyTableEl');
     if (!tbl) return;
+    if (!rows.length) { tbl.innerHTML = ''; _collapse(tbl); return; }  // emptied → collapse (no gap)
     tbl.innerHTML = rows.map(r =>
       `<div class="company-row"><dt>${esc(r.label)}</dt><dd>${esc(r.value)}</dd></div>`
     ).join('');
+    _uncollapse(tbl);
   }
 
   /* ── Global Content (generic data-content-key text overrides) ───────────────
@@ -131,8 +151,19 @@ window.ContentLoader = (function () {
     for (var i = 0; i < nodes.length; i++) {
       var el  = nodes[i];
       var key = el.getAttribute('data-content-key');
-      var val = key ? map[key] : null;
-      if (val != null && val !== '') el.textContent = val;
+      /* Untouched key (absent from the map) → keep the static default in
+         index.html. Only keys the admin explicitly saved are acted on. */
+      if (!key || !(key in map)) continue;
+      var val = map[key];
+      var target = _hideTargetFor(el);
+      if (val === HM_HIDDEN || val == null || String(val).trim() === '') {
+        /* Explicitly hidden / emptied → collapse the specific element (or its
+           designated wrapper) so the layout reflows with no empty gap. */
+        _collapse(target);
+      } else {
+        _uncollapse(target);            // reverse a previous hide if re-populated
+        el.textContent = val;           // text node only — non-destructive, XSS-safe
+      }
     }
   }
 
@@ -170,11 +201,13 @@ window.ContentLoader = (function () {
       if (!colEl || !Array.isArray(col.links)) return;
       const ul = colEl.querySelector('ul');
       if (!ul) return;
+      if (!col.links.length) { ul.innerHTML = ''; _collapse(colEl); return; }  // emptied column → collapse (no gap)
       ul.innerHTML = col.links.map(lk =>
         lk.href
           ? `<li><a href="${esc(lk.href)}">${esc(lk.text)}</a></li>`
           : `<li><span>${esc(lk.text)}</span></li>`
       ).join('');
+      _uncollapse(colEl);
     });
   }
 
