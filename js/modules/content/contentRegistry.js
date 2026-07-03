@@ -21,6 +21,32 @@
 
 const CONTENT_REGISTRY = [
   /* group, key, label, def(ault code copy shown as placeholder) */
+  /* Note: the hero H1 title, sub-text and CTA labels are managed by the Hero tab
+     (hm_hero); only the hero's UNMANAGED extras appear here to avoid two sources
+     writing one element. */
+  { group:'ヒーロー（補足）', key:'hero_eyebrow',       label:'アイキャッチ（上部ラベル）', def:'東京 14年の実績 — 国土交通省 認可' },
+  { group:'ヒーロー（補足）', key:'hero_badge1',        label:'サービスバッジ1', def:'🚚 当日対応' },
+  { group:'ヒーロー（補足）', key:'hero_badge2',        label:'サービスバッジ2', def:'📦 単身引越し' },
+  { group:'ヒーロー（補足）', key:'hero_badge3',        label:'サービスバッジ3', def:'👫 カップル引越し' },
+  { group:'ヒーロー（補足）', key:'hero_badge4',        label:'サービスバッジ4', def:'🎓 学生引越し' },
+  { group:'ヒーロー（補足）', key:'hero_badge5',        label:'サービスバッジ5', def:'♻️ 不用品回収' },
+  { group:'ヒーロー（補足）', key:'hero_urgency_label', label:'空き状況ラベル',   def:'本日の空き状況' },
+  { group:'ヒーロー（補足）', key:'hero_urgency_note',  label:'空き状況ノート',   def:'最短当日対応可能' },
+
+  { group:'安心バー', key:'trust_item1_key', label:'項目1 見出し', def:'14 Years of Experience' },
+  { group:'安心バー', key:'trust_item1_sub', label:'項目1 補足',   def:'14年の実績' },
+  { group:'安心バー', key:'trust_item2_key', label:'項目2 見出し', def:'国土交通省 認可' },
+  { group:'安心バー', key:'trust_item2_sub', label:'項目2 補足',   def:'第 431320058126 号' },
+  { group:'安心バー', key:'trust_item3_key', label:'項目3 見出し', def:'損害補償保険' },
+  { group:'安心バー', key:'trust_item3_sub', label:'項目3 補足',   def:'万一も全額補償' },
+  { group:'安心バー', key:'trust_item4_key', label:'項目4 見出し', def:'最短2時間で返信' },
+  { group:'安心バー', key:'trust_item4_sub', label:'項目4 補足',   def:'当日引越し対応' },
+
+  { group:'認定バッジ', key:'trust_badge1', label:'バッジ1', def:'国土交通省認可' },
+  { group:'認定バッジ', key:'trust_badge2', label:'バッジ2', def:'保険加入済' },
+  { group:'認定バッジ', key:'trust_badge3', label:'バッジ3', def:'古物商許可' },
+  { group:'認定バッジ', key:'trust_badge4', label:'バッジ4', def:'オンライン予約対応' },
+
   { group:'不用品回収セクション', key:'disposal_eyebrow', label:'ラベル（英）', def:'Disposal Service' },
   { group:'不用品回収セクション', key:'disposal_title',   label:'見出し',        def:'不用品回収・処分サービス' },
   { group:'不用品回収セクション', key:'disposal_lead',    label:'説明文',        def:'引越しと同時に不要家具・家電をまとめて処分できます。手続き不要、搬出から処分まで一括対応。' },
