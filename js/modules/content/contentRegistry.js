@@ -102,6 +102,12 @@ const CONTENT_REGISTRY = [
 
 /* Working state: current value per key (empty string = use the code default). */
 let _contentVals = {};
+/* Keys explicitly toggled to "hidden" — persisted as the HM_HIDDEN sentinel so
+   the public renderer (contentLoader.js _applyGlobalContent) sets display:none.
+   Distinct from a blank field (which keeps the built-in default). */
+let _contentHidden = {};
+/* MUST stay identical to HM_HIDDEN in js/services/contentLoader.js. */
+const HM_HIDDEN = '__HM_HIDDEN__';
 
 const _CONTENT_ICON = {
   save:   '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>',
@@ -114,7 +120,12 @@ function renderContent() {
   if (!host) return;
   const saved = Adapter.getContent() || {};
   _contentVals = {};
-  CONTENT_REGISTRY.forEach(r => { _contentVals[r.key] = (saved[r.key] != null ? saved[r.key] : ''); });
+  _contentHidden = {};
+  CONTENT_REGISTRY.forEach(r => {
+    const s = saved[r.key];
+    if (s === HM_HIDDEN) { _contentHidden[r.key] = true; _contentVals[r.key] = ''; }
+    else { _contentVals[r.key] = (s != null ? s : ''); }
+  });
 
   host.innerHTML =
     `<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
@@ -125,6 +136,7 @@ function renderContent() {
        <div class="panel-body">
          <div class="settings-sub" style="margin-bottom:10px">
            サイトの固定テキストを検索して編集できます。空欄のままにすると、サイトに元から入っている文言が表示されます。
+           要素をサイト上から消したい場合は「非表示にする」を押して保存してください（レイアウトは自動的に詰まります）。
            （各項目は index.html の <code>data-content-key</code> と対応。ロゴ・色・各セクション専用の項目は他のタブで管理します）
          </div>
          <div class="m-field" style="margin-bottom:0">
@@ -162,23 +174,43 @@ function _contentListHtml() {
 }
 
 function _contentRowHtml(r) {
-  const val   = _contentVals[r.key] || '';
-  const hay   = (r.key + ' ' + r.label + ' ' + r.def + ' ' + val).toLowerCase();
-  const multi = r.def.length > 42;
+  const hidden = !!_contentHidden[r.key];
+  const val    = hidden ? '' : (_contentVals[r.key] || '');
+  const hay    = (r.key + ' ' + r.label + ' ' + r.def + ' ' + val).toLowerCase();
+  const multi  = r.def.length > 42;
+  const dis    = hidden ? ' disabled' : '';
   const field = multi
-    ? `<textarea class="m-input content-inp" data-key="${esc(r.key)}" oninput="_contentEdit('${esc(r.key)}',this.value)" placeholder="${esc(r.def)}" style="height:64px">${esc(val)}</textarea>`
-    : `<input class="m-input content-inp" data-key="${esc(r.key)}" value="${esc(val)}" oninput="_contentEdit('${esc(r.key)}',this.value)" placeholder="${esc(r.def)}" />`;
-  return `<div class="content-row" data-search="${esc(hay)}" style="margin-bottom:12px">
+    ? `<textarea class="m-input content-inp" data-key="${esc(r.key)}" oninput="_contentEdit('${esc(r.key)}',this.value)" placeholder="${esc(r.def)}" style="height:64px"${dis}>${esc(val)}</textarea>`
+    : `<input class="m-input content-inp" data-key="${esc(r.key)}" value="${esc(val)}" oninput="_contentEdit('${esc(r.key)}',this.value)" placeholder="${esc(r.def)}"${dis} />`;
+  return `<div class="content-row" id="crow-${esc(r.key)}" data-search="${esc(hay)}" style="margin-bottom:12px${hidden ? ';opacity:.55' : ''}">
      <label class="m-label" style="display:flex;align-items:baseline;gap:8px">
        <span>${esc(r.label)}</span>
        <span style="font-size:11px;color:var(--gray-2);font-weight:400">${esc(r.key)}</span>
+       <button type="button" class="content-hide-btn" onclick="_contentToggleHide('${esc(r.key)}')" style="margin-left:auto;font-size:11px;background:none;border:1px solid var(--line,#ddd);border-radius:6px;padding:2px 8px;cursor:pointer;color:var(--gray-1,#555)">${hidden ? '表示する' : '非表示にする'}</button>
      </label>
      ${field}
+     <div class="content-hidden-note" style="font-size:11px;color:#c0392b;margin-top:4px${hidden ? '' : ';display:none'}">この項目はサイト上で非表示になります（保存後に反映）。</div>
    </div>`;
 }
 
 /* ── Edit / search ──────────────────────────────────────── */
 function _contentEdit(key, val) { _contentVals[key] = val; }
+
+/* Toggle a row's hidden state (persisted as HM_HIDDEN on save). Mutates the row
+   in place — no full re-render — so search/scroll position is preserved. */
+function _contentToggleHide(key) {
+  const on = !_contentHidden[key];
+  _contentHidden[key] = on;
+  const row = document.getElementById('crow-' + key);
+  if (!row) return;
+  row.style.opacity = on ? '.55' : '';
+  const inp = row.querySelector('.content-inp');
+  if (inp) { inp.disabled = on; if (on) { inp.value = ''; _contentVals[key] = ''; } }
+  const btn = row.querySelector('.content-hide-btn');
+  if (btn) btn.textContent = on ? '表示する' : '非表示にする';
+  const note = row.querySelector('.content-hidden-note');
+  if (note) note.style.display = on ? '' : 'none';
+}
 
 function _contentSearch(q) {
   const needle = (q || '').trim().toLowerCase();
@@ -197,6 +229,7 @@ function _contentSearch(q) {
 function saveContentAll() {
   const out = {};
   CONTENT_REGISTRY.forEach(r => {
+    if (_contentHidden[r.key]) { out[r.key] = HM_HIDDEN; return; }  // explicit hide → sentinel
     const v = (_contentVals[r.key] || '').trim();
     if (v) out[r.key] = v;               // store only real overrides; blank → default
   });

@@ -1376,19 +1376,19 @@ body { padding-bottom: 76px; }
     <div class="trust-badges-inner" role="list">
       <span class="trust-badge-pill" role="listitem">
         <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
-        <span data-content-key="trust_badge1">国土交通省認可</span>
+        <span data-content-key="trust_badge1" data-content-hide="closest:.trust-badge-pill">国土交通省認可</span>
       </span>
       <span class="trust-badge-pill" role="listitem">
         <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
-        <span data-content-key="trust_badge2">保険加入済</span>
+        <span data-content-key="trust_badge2" data-content-hide="closest:.trust-badge-pill">保険加入済</span>
       </span>
       <span class="trust-badge-pill" role="listitem">
         <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
-        <span data-content-key="trust_badge3">古物商許可</span>
+        <span data-content-key="trust_badge3" data-content-hide="closest:.trust-badge-pill">古物商許可</span>
       </span>
       <span class="trust-badge-pill" role="listitem">
         <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
-        <span data-content-key="trust_badge4">オンライン予約対応</span>
+        <span data-content-key="trust_badge4" data-content-hide="closest:.trust-badge-pill">オンライン予約対応</span>
       </span>
     </div>
     <div class="insurance-card" role="region" aria-label="損害賠償保険情報">
@@ -1465,9 +1465,12 @@ window.HM_renderServiceCards = function renderServiceCards(overrides) {
   }
   grid.innerHTML = SERVICE_CONFIG.map(function (svc) {
     var o     = ov[svc.id] || {};
-    var title = o.title != null && o.title !== '' ? o.title : svc.title;
-    var desc  = o.description != null ? o.description : (svc.description || '');
-    var image = o.image || svc.imagePath;
+    /* Conditional rendering: only accept a CMS override when it is non-empty
+       after trimming — otherwise fall back to the SERVICE_CONFIG default so a
+       card never renders a blank title/image. */
+    var title = (o.title != null && String(o.title).trim() !== '') ? o.title : svc.title;
+    var desc  = (o.description != null && String(o.description).trim() !== '') ? o.description : (svc.description || '');
+    var image = (o.image != null && String(o.image).trim() !== '') ? o.image : svc.imagePath;
     /* badge: CMS may override the text; keep the config's style class. An
        explicit empty CMS badge ('') hides it. */
     var badgeTxt  = (o.badge !== undefined && o.badge !== null) ? o.badge : svc.badge;
