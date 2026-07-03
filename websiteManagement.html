@@ -746,6 +746,11 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
           FAQ
           <span class="wmc-phase-tag">Ph4</span>
         </button>
+        <button class="wmc-link" data-view="header">
+          <svg class="wmc-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="4" width="18" height="5" rx="1"/><line x1="7" y1="6.5" x2="11" y2="6.5"/><line x1="14" y1="6.5" x2="17" y2="6.5"/></svg>
+          ヘッダー
+          <span class="wmc-phase-tag">Ph4</span>
+        </button>
         <button class="wmc-link" data-view="footer">
           <svg class="wmc-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           フッター
@@ -1173,6 +1178,11 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- ══ VIEW: Header ══ -->
+        <div class="wmc-view" id="wmc-view-header">
+          <div id="view-header"></div>
         </div>
 
         <!-- ══ VIEW: Footer ══ -->
@@ -1681,6 +1691,7 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
 <script src="js/modules/services/servicesEditor.js"></script>
 <script src="js/modules/reviews/reviewsEditor.js"></script>
 <script src="js/modules/faq/faq.js"></script>
+<script src="js/modules/header/header.js"></script>
 <script src="js/modules/footer/footer.js"></script>
 <script src="js/modules/company/company.js"></script>
 <script src="js/modules/media/media.js"></script>
@@ -1699,6 +1710,7 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
   if (typeof WMC_BREADCRUMBS !== 'undefined') {
     WMC_BREADCRUMBS.hero     = 'ヒーローセクション';
     WMC_BREADCRUMBS.faq      = 'FAQ 管理';
+    WMC_BREADCRUMBS.header   = 'ヘッダー編集';
     WMC_BREADCRUMBS.footer   = 'フッター編集';
     WMC_BREADCRUMBS.company  = '会社情報';
     WMC_BREADCRUMBS.backup   = 'バックアップ';
@@ -1717,6 +1729,7 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
       if (view === 'services') { if (typeof renderServices     === 'function') renderServices(); }
       if (view === 'reviews')  { if (typeof renderReviews      === 'function') renderReviews(); }
       if (view === 'faq')      { if (typeof renderFaq          === 'function') renderFaq(); }
+      if (view === 'header')   { if (typeof renderHeader       === 'function') renderHeader(); }
       if (view === 'footer')   { if (typeof renderFooter       === 'function') renderFooter(); }
       if (view === 'company')  { if (typeof renderCompany      === 'function') renderCompany(); }
       if (view === 'media')    { if (typeof renderMedia        === 'function') renderMedia(); }
