@@ -72,6 +72,23 @@ Prefer adding new files over modifying core files.
 - deploy.js — gated deployment
 - hm-api/rest.php — generic PostgREST-style endpoint (table/column allowlist)
 
+## CMS Content Modules (Website Management Center)
+CMS editors live in `js/modules/*` and persist through `Adapter` to `hm_data` KV
+(localStorage + MySQL). They do NOT rewrite HTML files — `index.html` holds the
+static fallback, and `js/services/contentLoader.js` `_applyX()` re-applies the
+saved KV onto the DOM (by element id) on every public page load. Each editor is
+registered in `websiteManagement.html` (nav button + `#wmc-view-*` container +
+`<script>` include + `wmcGo` render dispatch + `WMC_BREADCRUMBS` label).
+- **Header nav** — `js/modules/header/header.js` (view `header`, KV key `hm_header`).
+  Edits the DESKTOP header nav links only (add/remove/reorder); the mobile menu
+  (`#mobileNav`) is intentionally NOT managed (keeps its own list + close-on-tap
+  listeners). Applied by `_applyHeader` → `<ul id="headerNavEl">`; a per-link
+  `booking:true` flag re-emits the `openBookingApp()` handler. Logo / brand name /
+  brand color are NOT here — they live in Site Settings → Brand (`hm_settings`),
+  applied via `_applySiteSettings`. Do not duplicate them into the Header module.
+- Sibling editors follow the same pattern: hero (`hm_hero`), footer (`hm_footer`),
+  faq (`hm_faq`), company, services, reviews, seo (`hm_seo`), settings (`hm_settings`).
+
 ## Services Model
 6 services (order matters — Emergency is first, full-width featured card):
 1. 当日・お急ぎ引越しプラン — FEATURED
