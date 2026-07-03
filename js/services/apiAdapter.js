@@ -774,6 +774,21 @@
       try { localStorage.setItem('hm_header_history', JSON.stringify(hist.slice(0, 10))); } catch { /* no-op */ }
     },
 
+    /* ── Global Content (data-content-key text overrides) ──
+       A flat { key: text } map for static site copy not owned by a dedicated CMS
+       module. Managed by js/modules/content/contentRegistry.js; applied by
+       ContentLoader._applyGlobalContent onto [data-content-key] elements. Only
+       keys with a non-empty value override the static default (blank = fall back
+       to the hardcoded copy in index.html). */
+    getContent: () => _ls('hm_content', {}),
+    saveContent: (v) => wt('hm_content', v),
+    getContentHistory: () => { try { return JSON.parse(localStorage.getItem('hm_content_history') || '[]'); } catch { return []; } },
+    pushContentHistory(snap) {
+      const hist = this.getContentHistory();
+      hist.unshift({ ts: Date.now(), data: snap });
+      try { localStorage.setItem('hm_content_history', JSON.stringify(hist.slice(0, 10))); } catch { /* no-op */ }
+    },
+
     /* ── Disposal ─────────────────────────────────────── */
     getDisposal() {
       const DEFAULTS = { categories: [
@@ -1083,6 +1098,20 @@
         .maybeSingle();
       if (error) { console.warn('[Adapter] syncHeader error:', error.message); return false; }
       if (data?.value) _set('hm_header', data.value);
+      return true;
+    },
+
+    /* Pull hm_content from hm_data KV and refresh localStorage.
+       Lighter than syncFromApi() — use when the content view is opened. */
+    async syncContent() {
+      if (!_api) return false;
+      const { data, error } = await _api
+        .from('hm_data')
+        .select('value')
+        .eq('key', 'hm_content')
+        .maybeSingle();
+      if (error) { console.warn('[Adapter] syncContent error:', error.message); return false; }
+      if (data?.value) _set('hm_content', data.value);
       return true;
     },
 

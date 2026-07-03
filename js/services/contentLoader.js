@@ -117,6 +117,25 @@ window.ContentLoader = (function () {
     ).join('');
   }
 
+  /* ── Global Content (generic data-content-key text overrides) ───────────────
+     Single source: hm_data['hm_content'] → Website Management → Content & Icons.
+     A flat { key: text } map. Every element carrying data-content-key="<key>" has
+     its textContent replaced when a non-empty override exists — otherwise the
+     static copy in index.html stands. textContent (never innerHTML) makes this
+     inherently non-destructive and XSS-safe: it swaps the text node only and can
+     never inject markup or disturb child elements. Only tag pure-text elements
+     that no other CMS module owns, so the two systems never fight for one node. */
+  function _applyGlobalContent(map) {
+    if (!map || typeof map !== 'object') return;
+    var nodes = document.querySelectorAll('[data-content-key]');
+    for (var i = 0; i < nodes.length; i++) {
+      var el  = nodes[i];
+      var key = el.getAttribute('data-content-key');
+      var val = key ? map[key] : null;
+      if (val != null && val !== '') el.textContent = val;
+    }
+  }
+
   /* ── Header nav (desktop <ul id="headerNavEl">) ─────────
      Single source: hm_data['hm_header'] → Website Management → Header module.
      Rebuilds the desktop nav <li> list from the admin-ordered links. Each link
@@ -442,6 +461,7 @@ window.ContentLoader = (function () {
         _applyCompanyRows(kv.hm_company_rows);
         _applyHeader(kv.hm_header);
         _applyFooter(kv.hm_footer);
+        _applyGlobalContent(kv.hm_content);
 
         /* Theme CSS — overwrite localStorage and inject for all visitors */
         if (kv.hm_custom_theme_css) {

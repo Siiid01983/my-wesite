@@ -82,6 +82,7 @@ const PRECACHE = [
   '/js/modules/hero/hero.js',
   '/js/modules/reviews/reviewsEditor.js',
   '/js/modules/header/header.js',
+  '/js/modules/content/contentRegistry.js',
   '/js/modules/footer/footer.js',
   '/js/modules/company/company.js',
   '/js/modules/faq/faq.js',
