@@ -2671,6 +2671,11 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 .ba-zip-loading{color:var(--ba-muted)}
 .ba-zip-ok{color:#10b981;font-weight:600}
 .ba-zip-err{color:#c0392b}
+/* floor + elevator (per-address) */
+.ba-floor-row{display:flex;gap:12px;align-items:center}
+.ba-floor-input{flex:0 0 auto;max-width:140px}
+.ba-ev-check{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--ba-forest);white-space:nowrap;cursor:pointer}
+.ba-ev-check input{width:18px;height:18px;accent-color:var(--ba-forest)}
 .ba-addr-input:focus{border-color:var(--ba-olive)}
 .ba-pref-hd{font-size:12px;font-weight:700;color:var(--ba-muted);padding:8px 0 6px;letter-spacing:.06em;text-transform:uppercase}
 .ba-region-hd{padding-top:8px;font-size:12px;font-weight:700;color:var(--ba-muted);letter-spacing:.06em;margin-bottom:4px}
@@ -2799,6 +2804,10 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
             <input class="ba-addr-input" id="ba-phone" type="tel" placeholder="例：090-1234-5678" autocomplete="tel" inputmode="tel">
           </div>
           <div class="ba-field">
+            <label class="ba-field-label" for="ba-disposal">不用品回収のご希望（任意）</label>
+            <textarea class="ba-addr-input" id="ba-disposal" rows="2" placeholder="処分したい家具・家電など（例：古いソファ1点、冷蔵庫1点）"></textarea>
+          </div>
+          <div class="ba-field">
             <label class="ba-field-label" for="ba-notes">ご要望・備考（任意）</label>
             <textarea class="ba-addr-input" id="ba-notes" rows="3" placeholder="ご不明な点・ご要望などをご記入ください。"></textarea>
           </div>
@@ -2867,6 +2876,13 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
           <label class="ba-field-lbl" for="ba-input-from">市区町村・番地・建物名</label>
           <input class="ba-addr-input" id="ba-input-from" type="text" placeholder="例：渋谷区神南1-2-3 ○○マンション101">
         </div>
+        <div class="ba-field-row">
+          <label class="ba-field-lbl" for="ba-floor-from">階数・エレベーター</label>
+          <div class="ba-floor-row">
+            <input class="ba-addr-input ba-floor-input" id="ba-floor-from" type="text" inputmode="numeric" placeholder="階数（例：3）" maxlength="3">
+            <label class="ba-ev-check"><input type="checkbox" id="ba-ev-from"> エレベーター有</label>
+          </div>
+        </div>
       </div>
       <div class="ba-drawer-footer"><button class="ba-drawer-cta" onclick="baConfirmAddr('from')">確定する</button></div>
     </div>
@@ -2891,6 +2907,13 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
         <div class="ba-field-row">
           <label class="ba-field-lbl" for="ba-input-to">市区町村・番地・建物名</label>
           <input class="ba-addr-input" id="ba-input-to" type="text" placeholder="例：さいたま市大宮区...">
+        </div>
+        <div class="ba-field-row">
+          <label class="ba-field-lbl" for="ba-floor-to">階数・エレベーター</label>
+          <div class="ba-floor-row">
+            <input class="ba-addr-input ba-floor-input" id="ba-floor-to" type="text" inputmode="numeric" placeholder="階数（例：3）" maxlength="3">
+            <label class="ba-ev-check"><input type="checkbox" id="ba-ev-to"> エレベーター有</label>
+          </div>
         </div>
       </div>
       <div class="ba-drawer-footer"><button class="ba-drawer-cta" onclick="baConfirmAddr('to')">確定する</button></div>
@@ -3005,7 +3028,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 
   // Single source of truth for the booking the overlay is assembling.
   function baBlankState() {
-    return { serviceId:'', service:'', fromAddr:'', toAddr:'', dateISO:'', timeSlot:'', workers:2, filters:'', name:'', email:'', phone:'', notes:'' };
+    return { serviceId:'', service:'', fromAddr:'', toAddr:'', dateISO:'', timeSlot:'', fromFloor:'', toFloor:'', fromEv:'', toEv:'', disposal:'', workers:2, filters:'', name:'', email:'', phone:'', notes:'' };
   }
   var baState = baBlankState();
   var baCurrentScreen = 'services';
@@ -3103,8 +3126,12 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     scr.classList.add('active');
     baCurrentScreen = id;
     var isHome = id === 'services';
-    var hasBack = (id === 'booking' || id === 'contact' || id === 'review');
+    /* Always show a close/back control except on the success screen (which has its
+       own 閉じる). On the services (home) screen baGoBack() has no previous screen,
+       so it falls through to closeBookingApp() — i.e. the control acts as Close. */
+    var hasBack = (id !== 'success');
     document.getElementById('ba-back-btn').style.display = hasBack ? '' : 'none';
+    document.getElementById('ba-back-btn').setAttribute('aria-label', isHome ? '閉じる' : '戻る');
     document.getElementById('ba-hdr-logo').style.display = (isHome || id === 'success') ? '' : 'none';
     document.getElementById('ba-service-title').style.display = (isHome || id === 'success') ? 'none' : '';
     var body = scr.querySelector('.ba-body'); if (body) body.scrollTop = 0;
@@ -3210,9 +3237,12 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     var rest = document.getElementById('ba-input-' + dir).value.trim();
     if (!rest) return;                                                  // require the detailed address
     var v = (pref && rest.indexOf(pref) !== 0) ? (pref + rest) : rest;  // combine, avoid double prefecture
+    var floor = ((document.getElementById('ba-floor-' + dir) || {}).value || '').trim();
+    var ev = (document.getElementById('ba-ev-' + dir) || {}).checked ? 'あり' : 'なし';
     var el = document.getElementById('ba-val-' + dir);
-    el.textContent = v; el.classList.add('filled');
-    if (dir === 'from') baState.fromAddr = v; else if (dir === 'to') baState.toAddr = v;
+    el.textContent = v + (floor ? '（' + floor + '階）' : ''); el.classList.add('filled');
+    if (dir === 'from') { baState.fromAddr = v; baState.fromFloor = floor; baState.fromEv = ev; }
+    else if (dir === 'to') { baState.toAddr = v; baState.toFloor = floor; baState.toEv = ev; }
     baCloseDrawer(dir);
   };
 
@@ -3367,13 +3397,14 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     if (items === '荷物を選択') items = 'なし';
     var rows = [
       ['サービス',  baState.service || '—'],
-      ['現住所',    baState.fromAddr || '—'],
-      ['引越し先',  baState.toAddr || '—'],
+      ['現住所',    (baState.fromAddr || '—') + (baState.fromFloor ? '（' + baState.fromFloor + '階・EV' + (baState.fromEv || '-') + '）' : '')],
+      ['引越し先',  (baState.toAddr || '—') + (baState.toFloor ? '（' + baState.toFloor + '階・EV' + (baState.toEv || '-') + '）' : '')],
       ['希望日',    _baFmtDate(baState.dateISO)],
       ['希望時間',  baState.timeSlot || '—'],
       ['作業員',    baState.workers + '名'],
       ['荷物',      items]
     ];
+    if (baState.disposal) rows.push(['不用品回収', baState.disposal]);
     if (baState.filters) rows.push(['ご希望条件', baState.filters]);
     rows.push(['お名前', baState.name || '—']);
     rows.push(['メールアドレス', baState.email || '—']);
@@ -3396,6 +3427,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     }
     if (err) err.style.display = 'none';
     baState.name = name; baState.email = email; baState.phone = phone; baState.notes = notes;
+    baState.disposal = (document.getElementById('ba-disposal').value || '').trim();
     _baBuildReview('ba-review-table');
     baShowScreen('review');
   };
@@ -3420,6 +3452,9 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 
     var items = _baItemsSummary();
     var noteParts = [];
+    if (baState.fromFloor || baState.fromEv) noteParts.push('現住所 階数/EV: ' + (baState.fromFloor || '-') + '階・EV' + (baState.fromEv || '-'));
+    if (baState.toFloor || baState.toEv) noteParts.push('引越し先 階数/EV: ' + (baState.toFloor || '-') + '階・EV' + (baState.toEv || '-'));
+    if (baState.disposal) noteParts.push('不用品回収: ' + baState.disposal);
     if (items !== '荷物を選択') noteParts.push('荷物: ' + items);
     noteParts.push('作業員: ' + baState.workers + '名');
     if (baState.filters) noteParts.push('ご希望条件: ' + baState.filters);
@@ -3491,9 +3526,10 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     _baSetText('ba-val-time', '時間帯を選択');
     _baSetText('ba-val-filter', '条件を選択');
     var _t = document.querySelector('#ba-drawer-time input[name="ba-time"]:checked'); if (_t) _t.checked = false;
-    ['ba-input-from','ba-input-to','ba-input-date','ba-name','ba-email','ba-phone','ba-notes','ba-zip-from','ba-zip-to'].forEach(function (id) {
+    ['ba-input-from','ba-input-to','ba-input-date','ba-name','ba-email','ba-phone','ba-notes','ba-zip-from','ba-zip-to','ba-floor-from','ba-floor-to','ba-disposal'].forEach(function (id) {
       var e = document.getElementById(id); if (e) e.value = '';
     });
+    ['ba-ev-from','ba-ev-to'].forEach(function (id) { var c = document.getElementById(id); if (c) c.checked = false; });
     ['ba-pref-from','ba-pref-to'].forEach(function (id) { var s = document.getElementById(id); if (s) s.value = ''; });
     ['ba-zip-status-from','ba-zip-status-to'].forEach(function (id) { var s = document.getElementById(id); if (s) { s.textContent = ''; s.className = 'ba-zip-status'; } });
     var ce = document.getElementById('ba-contact-err'); if (ce) ce.style.display = 'none';
@@ -3507,6 +3543,13 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   _baBuildPrefSelect('ba-pref-from'); _baBuildPrefSelect('ba-pref-to');
   baWireZip('ba-zip-from', 'ba-pref-from', 'ba-input-from', 'ba-zip-status-from');
   baWireZip('ba-zip-to',   'ba-pref-to',   'ba-input-to',   'ba-zip-status-to');
+  // Escape closes an open drawer first, otherwise the whole overlay (restores scroll).
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (!document.getElementById('booking-app').classList.contains('open')) return;
+    var openDrawer = document.querySelector('.ba-overlay.open');
+    if (openDrawer) openDrawer.classList.remove('open'); else closeBookingApp();
+  });
   baRenderServices();
   baShowScreen('services');
 })();
