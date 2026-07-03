@@ -15,7 +15,7 @@
    Bump CACHE_VERSION to force cache replacement on next deploy.
    ════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'v11';
+const CACHE_VERSION = 'v12';
 const STATIC_CACHE  = 'hm-static-' + CACHE_VERSION;
 const FONT_CACHE    = 'hm-fonts-'  + CACHE_VERSION;
 const ALL_CACHES    = [STATIC_CACHE, FONT_CACHE];
@@ -81,6 +81,7 @@ const PRECACHE = [
   '/js/modules/services/servicesEditor.js',
   '/js/modules/hero/hero.js',
   '/js/modules/reviews/reviewsEditor.js',
+  '/js/modules/header/header.js',
   '/js/modules/footer/footer.js',
   '/js/modules/company/company.js',
   '/js/modules/faq/faq.js',

@@ -117,6 +117,27 @@ window.ContentLoader = (function () {
     ).join('');
   }
 
+  /* ── Header nav (desktop <ul id="headerNavEl">) ─────────
+     Single source: hm_data['hm_header'] → Website Management → Header module.
+     Rebuilds the desktop nav <li> list from the admin-ordered links. Each link
+     is HTML-escaped (stored-XSS guard). A link flagged booking:true re-emits the
+     inline openBookingApp() handler so the "料金見積り" behaviour survives the
+     rebuild (openBookingApp is a global). The mobile menu (#mobileNav) is left
+     untouched — it keeps its own list and the close-on-tap listeners bound in
+     script.js. Empty/absent value leaves the static markup in place. */
+  function _applyHeader(h) {
+    if (!h || !Array.isArray(h.links) || !h.links.length) return;
+    var ul = _el('headerNavEl');
+    if (!ul) return;
+    ul.innerHTML = h.links.map(function (l) {
+      var text    = esc(l.text || '');
+      if (!text) return '';
+      var href    = esc(l.href || '#');
+      var onclick = l.booking ? ' onclick="openBookingApp();return false;"' : '';
+      return '<li><a href="' + href + '"' + onclick + '>' + text + '</a></li>';
+    }).join('');
+  }
+
   /* ── Footer ───────────────────────────────────────────── */
   function _applyFooter(f) {
     if (!f) return;
@@ -419,6 +440,7 @@ window.ContentLoader = (function () {
         _applyFaqItems(kv.hm_faq);
         _applyCompanyMeta(kv.hm_company_section);
         _applyCompanyRows(kv.hm_company_rows);
+        _applyHeader(kv.hm_header);
         _applyFooter(kv.hm_footer);
 
         /* Theme CSS — overwrite localStorage and inject for all visitors */

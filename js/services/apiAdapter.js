@@ -749,6 +749,31 @@
       try { localStorage.setItem('hm_footer_history', JSON.stringify(hist.slice(0, 10))); } catch { /* no-op */ }
     },
 
+    /* ── Header nav (desktop <ul id="headerNavEl">) ───────
+       Managed by js/modules/header/header.js; applied to the public site by
+       ContentLoader._applyHeader. The `booking:true` flag marks the link that
+       opens the BA booking overlay (openBookingApp), mirroring the static markup.
+       The mobile menu (#mobileNav) is NOT driven by this — see header.js note. */
+    getHeader() {
+      return _ls('hm_header', {
+        links: [
+          { text:'予約',       href:'#booking',   booking:false },
+          { text:'料金見積り', href:'#booking',   booking:true  },
+          { text:'お客様の声', href:'#reviews',   booking:false },
+          { text:'FAQ',        href:'#faq',       booking:false },
+          { text:'会社情報',   href:'#company',   booking:false },
+          { text:'ブログ',     href:'/blog.html', booking:false },
+        ],
+      });
+    },
+    saveHeader: (v) => wt('hm_header', v),
+    getHeaderHistory: () => { try { return JSON.parse(localStorage.getItem('hm_header_history') || '[]'); } catch { return []; } },
+    pushHeaderHistory(snap) {
+      const hist = this.getHeaderHistory();
+      hist.unshift({ ts: Date.now(), data: snap });
+      try { localStorage.setItem('hm_header_history', JSON.stringify(hist.slice(0, 10))); } catch { /* no-op */ }
+    },
+
     /* ── Disposal ─────────────────────────────────────── */
     getDisposal() {
       const DEFAULTS = { categories: [
@@ -1044,6 +1069,20 @@
         .maybeSingle();
       if (error) { console.warn('[Adapter] syncFooter error:', error.message); return false; }
       if (data?.value) _set('hm_footer', data.value);
+      return true;
+    },
+
+    /* Pull hm_header from hm_data KV and refresh localStorage.
+       Lighter than syncFromApi() — use when header view is opened. */
+    async syncHeader() {
+      if (!_api) return false;
+      const { data, error } = await _api
+        .from('hm_data')
+        .select('value')
+        .eq('key', 'hm_header')
+        .maybeSingle();
+      if (error) { console.warn('[Adapter] syncHeader error:', error.message); return false; }
+      if (data?.value) _set('hm_header', data.value);
       return true;
     },
 
