@@ -2762,6 +2762,11 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
           <span class="ba-val" id="ba-val-date">引越し希望日を選択</span>
           <span class="ba-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
         </div>
+        <div class="ba-row" id="ba-row-time" onclick="baOpenDrawer('time')">
+          <span class="ba-label">希望時間：</span><div class="ba-sep"></div>
+          <span class="ba-val" id="ba-val-time">時間帯を選択</span>
+          <span class="ba-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        </div>
         <div class="ba-row" onclick="baOpenDrawer('filter')">
           <span class="ba-label">絞り込み：</span><div class="ba-sep"></div>
           <span class="ba-val" id="ba-val-filter">条件を選択</span>
@@ -2952,6 +2957,23 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     </div>
   </div>
 
+  <!-- Drawer: Time -->
+  <div class="ba-overlay" id="ba-drawer-time" onclick="baBgClose(event,'time')">
+    <div class="ba-drawer">
+      <div class="ba-drawer-top"><div class="ba-drawer-handle"></div><div class="ba-drawer-title">希望時間帯</div></div>
+      <div class="ba-drawer-scroll">
+        <div class="ba-filter-list">
+          <label class="ba-filter-label"><input type="radio" name="ba-time" value="午前（9:00〜12:00）"> 午前（9:00〜12:00）</label>
+          <label class="ba-filter-label"><input type="radio" name="ba-time" value="午後（12:00〜15:00）"> 午後（12:00〜15:00）</label>
+          <label class="ba-filter-label"><input type="radio" name="ba-time" value="夕方（15:00〜18:00）"> 夕方（15:00〜18:00）</label>
+          <label class="ba-filter-label"><input type="radio" name="ba-time" value="夜間（18:00〜21:00）"> 夜間（18:00〜21:00）</label>
+          <label class="ba-filter-label"><input type="radio" name="ba-time" value="時間指定なし"> 時間指定なし（当日調整）</label>
+        </div>
+      </div>
+      <div class="ba-drawer-footer"><button class="ba-drawer-cta" onclick="baConfirmTime()">確定する</button></div>
+    </div>
+  </div>
+
 </div><!-- /#booking-app -->
 
 <script>
@@ -2983,7 +3005,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 
   // Single source of truth for the booking the overlay is assembling.
   function baBlankState() {
-    return { serviceId:'', service:'', fromAddr:'', toAddr:'', dateISO:'', workers:2, filters:'', name:'', email:'', phone:'', notes:'' };
+    return { serviceId:'', service:'', fromAddr:'', toAddr:'', dateISO:'', timeSlot:'', workers:2, filters:'', name:'', email:'', phone:'', notes:'' };
   }
   var baState = baBlankState();
   var baCurrentScreen = 'services';
@@ -3015,20 +3037,64 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     disposal: '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ba-forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M40 12L52 32L28 32Z"/><path d="M28 32C20 32 14 40 18 50"/><path d="M18 50L10 56L22 60"/><path d="M52 32C60 32 66 40 62 50"/><path d="M62 50L70 44L66 56"/><rect x="26" y="44" width="28" height="24" rx="2"/><line x1="22" y1="44" x2="58" y2="44"/><line x1="34" y1="38" x2="46" y2="38"/><line x1="34" y1="50" x2="34" y2="62"/><line x1="40" y1="50" x2="40" y2="62"/><line x1="46" y1="50" x2="46" y2="62"/></svg>',
     assembly: '<svg viewBox="0 0 80 80" fill="none" stroke="var(--ba-forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 60L46 34C44 28 46 20 52 16C54 20 52 24 54 26C56 28 60 26 62 28C58 34 50 36 46 34"/><line x1="20" y1="60" x2="26" y2="66"/><circle cx="23" cy="63" r="5"/><rect x="42" y="38" width="26" height="30" rx="2" stroke-dasharray="4 2"/><line x1="42" y1="50" x2="68" y2="50"/></svg>',
   };
+  // ── CMS sync (RC-A parity with the homepage grid) ─────────
+  // The booking picker mirrors the SAME CMS source the homepage service cards
+  // use (window.HM_renderServiceCards): the `services` snapshot (hm_services,
+  // keyed by reference_id SVC-n) + image config (hm_service_images, keyed by
+  // canonical slug). ContentLoader writes both to localStorage on public load,
+  // so admin edits to a service name/image flow into this overlay too — instead
+  // of the previously hardcoded BA_SVC_CFG names/URLs going stale.
+  var BA_SLUG = { tansin:'single', couple:'couple', student:'student', sameday:'sameday', disposal:'disposal', assembly:'furniture' };
+  var _BA_REF_TO_SLUG = { 'SVC-1':'single','SVC-2':'couple','SVC-3':'student','SVC-4':'sameday','SVC-5':'disposal','SVC-6':'furniture' };
+  var _BA_SLUG_ALIAS = { emergency:'sameday' };  // legacy image-manager slug
+  function _baReadJSON(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) { return null; } }
+  // Build { canonicalSlug: { title?, img? } } from the CMS localStorage snapshots.
+  function _baCmsOverrides() {
+    var out = {};
+    var imgs = _baReadJSON('hm_service_images');
+    if (imgs && typeof imgs === 'object') {
+      Object.keys(imgs).forEach(function (k) {
+        var slug = _BA_SLUG_ALIAS[k] || k, cfg = imgs[k];
+        if (cfg && cfg.image_url) { out[slug] = out[slug] || {}; out[slug].img = cfg.image_url; }
+      });
+    }
+    var svcs = _baReadJSON('hm_services');
+    if (Array.isArray(svcs)) {
+      svcs.forEach(function (s) {
+        if (!s || s.active === false) return;
+        var slug = _BA_REF_TO_SLUG[s.id] || _BA_SLUG_ALIAS[s.slug] || s.slug;
+        if (slug && s.title) { out[slug] = out[slug] || {}; out[slug].title = s.title; }
+      });
+    }
+    return out;
+  }
   function baRenderServices() {
     var grid = document.getElementById('ba-svc-grid');
     if (!grid) return;
+    var ov = _baCmsOverrides();
+    var resolved = {};  // id → display name (used by the delegated click handler)
     grid.innerHTML = BA_SVC_CFG.map(function(s) {
-      var badge = s.badge ? '<span class="ba-svc-badge" style="background:' + s.bc + '">' + s.badge + '</span>' : '';
-      var media = s.img
-        ? '<img src="' + s.img + '" alt="' + s.name + '" loading="lazy">'
+      var o = ov[BA_SLUG[s.id] || s.id] || {};
+      var label = (o.title != null && o.title !== '') ? o.title : s.name;
+      var img   = o.img || s.img;
+      resolved[s.id] = label;
+      var badge = s.badge ? '<span class="ba-svc-badge" style="background:' + s.bc + '">' + _baEsc(s.badge) + '</span>' : '';
+      var media = img
+        ? '<img src="' + _baEsc(img) + '" alt="' + _baEsc(label) + '" loading="lazy" onerror="this.style.display=\'none\'">'
         : (BA_SVC_SVG[s.id] || '');
-      return '<button class="ba-svc-card" onclick="baGoBooking(\'' + s.id + '\',\'' + s.name + '\')">'
+      // data-attr + delegated listener (below) — never inline CMS text into onclick.
+      return '<button type="button" class="ba-svc-card" data-svc-id="' + s.id + '">'
         + '<div class="ba-svc-card__illus">' + media + '</div>'
         + badge
-        + '<div class="ba-svc-card__name">' + s.name + '</div>'
+        + '<div class="ba-svc-card__name">' + _baEsc(label) + '</div>'
         + '</button>';
     }).join('');
+    grid.querySelectorAll('.ba-svc-card').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-svc-id');
+        baGoBooking(id, resolved[id]);
+      });
+    });
   }
   function baShowScreen(id) {
     document.querySelectorAll('#booking-app .ba-screen').forEach(function(s) { s.classList.remove('active'); });
@@ -3064,6 +3130,9 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     document.body.style.overflow = 'hidden';
     // Pull the latest availability so the date step reflects real bookings.
     if (typeof window.refreshBookingCalendar === 'function') { try { window.refreshBookingCalendar(); } catch (_) {} }
+    // Re-render the picker so admin CMS name/image edits (localStorage snapshot)
+    // are reflected on every open, not just the initial page render.
+    baRenderServices();
     if (serviceName) {
       baState.service = serviceName;
       document.getElementById('ba-service-title').textContent = serviceName;
@@ -3077,7 +3146,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   window.closeBookingApp = function () {
     document.getElementById('booking-app').classList.remove('open');
     document.body.style.overflow = '';
-    ['from','to','furniture','date','filter'].forEach(function (id) {
+    ['from','to','furniture','date','filter','time'].forEach(function (id) {
       document.getElementById('ba-drawer-' + id).classList.remove('open');
     });
     baShowScreen('services');
@@ -3262,6 +3331,17 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     baCloseDrawer('filter');
   };
 
+  // ── Preferred time ──────────────────────────────────────
+  window.baConfirmTime = function () {
+    var checked = document.querySelector('#ba-drawer-time input[name="ba-time"]:checked');
+    var v = checked ? checked.value : '';
+    if (!v) return;                                                     // require a choice
+    baState.timeSlot = v;
+    var el = document.getElementById('ba-val-time');
+    el.textContent = v; el.classList.add('filled');
+    baCloseDrawer('time');
+  };
+
   // ── Workers ─────────────────────────────────────────────
   window.baSetWorker = function (n) {
     document.getElementById('ba-w1').classList.toggle('on', n === 1);
@@ -3274,6 +3354,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     if (!baState.fromAddr) { alert('現住所を入力してください。'); baOpenDrawer('from'); return; }
     if (!baState.toAddr)   { alert('引越し先を入力してください。'); baOpenDrawer('to'); return; }
     if (!baState.dateISO)  { alert('引越し希望日を選択してください。'); baOpenDrawer('date'); return; }
+    if (!baState.timeSlot) { alert('希望時間帯を選択してください。'); baOpenDrawer('time'); return; }
     baShowScreen('contact');
     setTimeout(function () { var n = document.getElementById('ba-name'); if (n) n.focus(); }, 80);
   };
@@ -3289,6 +3370,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
       ['現住所',    baState.fromAddr || '—'],
       ['引越し先',  baState.toAddr || '—'],
       ['希望日',    _baFmtDate(baState.dateISO)],
+      ['希望時間',  baState.timeSlot || '—'],
       ['作業員',    baState.workers + '名'],
       ['荷物',      items]
     ];
@@ -3349,7 +3431,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
       var booking = await BookingService.createBooking({
         service:  baState.service || '単身引越し',
         date:     baState.dateISO || '',
-        time:     '',
+        time:     baState.timeSlot || '',
         fromAddr: baState.fromAddr,
         toAddr:   baState.toAddr,
         name:     baState.name,
@@ -3375,6 +3457,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
       var fd = new FormData();
       fd.append('service_type',   baState.service);
       fd.append('booking_date',   baState.dateISO);
+      fd.append('booking_time',   baState.timeSlot);
       fd.append('address_from',   baState.fromAddr);
       fd.append('address_to',     baState.toAddr);
       fd.append('customer_name',  baState.name);
@@ -3398,14 +3481,16 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
       var n = document.getElementById('ba-n-' + k); if (n) n.textContent = '0';
       var c = document.getElementById('ba-card-' + k); if (c) c.classList.remove('has-count');
     });
-    ['from','to','items','date','filter'].forEach(function (id) {
+    ['from','to','items','date','time','filter'].forEach(function (id) {
       var el = document.getElementById('ba-val-' + id); if (el) el.classList.remove('filled');
     });
     _baSetText('ba-val-from', '現住所を選択');
     _baSetText('ba-val-to', '引越し先を選択');
     _baSetText('ba-val-items', '荷物を選択');
     _baSetText('ba-val-date', '引越し希望日を選択');
+    _baSetText('ba-val-time', '時間帯を選択');
     _baSetText('ba-val-filter', '条件を選択');
+    var _t = document.querySelector('#ba-drawer-time input[name="ba-time"]:checked'); if (_t) _t.checked = false;
     ['ba-input-from','ba-input-to','ba-input-date','ba-name','ba-email','ba-phone','ba-notes','ba-zip-from','ba-zip-to'].forEach(function (id) {
       var e = document.getElementById(id); if (e) e.value = '';
     });
