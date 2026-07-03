@@ -112,6 +112,41 @@ try {
     if (!empty($data['notes'])) $msg .= "\n---\n" . mb_substr((string)$data['notes'], 0, 500);
     hm_line_push($msg);
   }
+
+  // ── Admin Inbox row (replaces the old client-side Formspree email) ─────────
+  // Persistent, internal booking notification: appears in the admin Inbox
+  // (inbox_messages), linked to the booking via booking_id. `notes` already
+  // carries the packed details (service / from / to / 希望時間 / 階数・EV /
+  // 荷物 / 不用品回収). Fire-and-forget: the customer's response is already
+  // flushed, so a failure here is logged and never affects the booking.
+  try {
+    $bdateStr = (string)($data['booking_date'] ?? '未定');
+    $body = "新規予約（ウェブ予約フォーム）\n"
+          . "お名前: {$name}\n"
+          . "メール: {$email}\n"
+          . "電話: {$phone}\n"
+          . "日程: {$bdateStr}\n"
+          . "受付ID: {$data['id']}";
+    if (!empty($data['notes'])) $body .= "\n---\n" . (string)$data['notes'];
+    $st = hm_db()->prepare(
+      'INSERT INTO inbox_messages (id, sender, email, subject, body, body_text, booking_id, mailbox, sender_name, received_at)
+       VALUES (?,?,?,?,?,?,?,?,?,NOW())'
+    );
+    $st->execute([
+      hm_uuid4(),
+      $name,
+      $email,
+      "📅 新規予約: {$name}（{$bdateStr}）",
+      $body,
+      $body,
+      $data['id'],
+      'booking@hello-moving.com',
+      $name,
+    ]);
+    hm_cache_invalidate_table('inbox_messages');
+  } catch (Throwable $e) {
+    hm_log_error('create-booking inbox row failed', ['err' => $e->getMessage(), 'booking' => $data['id']]);
+  }
   exit;
 } catch (Throwable $e) {
   hm_log_error('create-booking failed', ['err' => $e->getMessage()]);

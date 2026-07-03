@@ -24,7 +24,10 @@ Prefer adding new files over modifying core files.
 - localStorage (fallback only)
 - `js/lib/apiClient.js` is the data seam: `window.ApiClient.createClient(API_BASE)`
   presents a query-builder/Realtime/Storage interface over `fetch()` to `hm-api/*.php`
-- Formspree endpoint: xdajqzlo (`https://formspree.io/f/xdajqzlo`)
+- Formspree: REMOVED (2026-07-03). Booking notifications are fully server-side in
+  `hm-api/create-booking.php`: LINE push + an `inbox_messages` row (admin Inbox,
+  linked via booking_id). No third-party form dependency remains; the arch-lock
+  test fails the build if formspree.io reappears.
 - `deploy.js` — gated deployment (reads `API_BASE` secret)
 
 > Note: the site was migrated OFF Supabase. Do not assume Supabase exists; config global
