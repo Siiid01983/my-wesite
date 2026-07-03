@@ -89,14 +89,14 @@ describe('Single booking pipeline', () => {
       'customer-login.js is auth only — no booking writes');
   });
 
-  it('no Formspree booking pipeline outside the BA overlay', () => {
-    // The BA overlay sends exactly ONE Formspree notification alongside its
-    // single createBooking() call — that is permitted. Any additional Formspree
-    // submission (a parallel booking pipeline) or any in script.js is banned.
-    assert.ok(count(indexHtml, /formspree\.io/g) <= 1,
-      'only the BA overlay notification may use Formspree (no second pipeline)');
+  it('no Formspree pipeline anywhere (dependency fully removed)', () => {
+    // Formspree was fully decoupled: booking notifications are server-side
+    // (create-booking.php → LINE push + inbox_messages row). Any formspree.io
+    // reference reappearing in production JS/HTML is a regression.
+    assert.equal(count(indexHtml, /formspree\.io/g), 0,
+      'index.html must not reference formspree.io (notifications are server-side)');
     assert.ok(!/formspree\.io/.test(scriptJs),
-      'the hero quoteForm (script.js) must NOT submit to Formspree');
+      'script.js must NOT submit to Formspree');
   });
 });
 

@@ -3490,21 +3490,9 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
       ref = 'HM-' + _d.getFullYear() + _p(_d.getMonth() + 1) + _p(_d.getDate()) + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
     }
 
-    // Email notification — non-blocking, mirrors the quote-form path.
-    try {
-      var fd = new FormData();
-      fd.append('service_type',   baState.service);
-      fd.append('booking_date',   baState.dateISO);
-      fd.append('booking_time',   baState.timeSlot);
-      fd.append('address_from',   baState.fromAddr);
-      fd.append('address_to',     baState.toAddr);
-      fd.append('customer_name',  baState.name);
-      fd.append('customer_email', baState.email);
-      fd.append('customer_phone', baState.phone);
-      fd.append('customer_notes', fullNotes);
-      fd.append('booking_ref',    ref);
-      fetch('https://formspree.io/f/xdajqzlo', { method: 'POST', body: fd, headers: { 'Accept': 'application/json' } }).catch(function () {});
-    } catch (_) {}
+    // Notifications are fully server-side (create-booking.php): LINE push +
+    // an inbox_messages row for the admin Inbox. No third-party (Formspree)
+    // dependency — the client sends nothing beyond the createBooking() call.
 
     document.getElementById('ba-ref-num').textContent = ref;
     _baBuildReview('ba-success-table');
