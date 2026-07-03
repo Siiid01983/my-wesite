@@ -105,6 +105,29 @@ registered in `websiteManagement.html` (nav button + `#wmc-view-*` container +
     - To add a key: tag the element in index.html + add a matching CONTENT_REGISTRY
       row. Current coverage (~65 keys): hero extras, trust strip/badges, disposal,
       commitments, process, booking band.
+  - **Conditional rendering / `HM_HIDDEN` sentinel** — three distinct states for a
+    `data-content-key` element, so an admin can intentionally REMOVE content (not
+    just edit it) without leaving an empty layout gap:
+      - key ABSENT from `hm_content` (never edited, or blank) → keep the built-in
+        default text in index.html. (The `blank = default` invariant is preserved —
+        clearing a field is NOT the same as hiding it.)
+      - value `= '__HM_HIDDEN__'` (the `HM_HIDDEN` sentinel) → `_applyGlobalContent`
+        sets the element to `display:none` and the layout reflows.
+      - value = non-empty text → override the `textContent` (and un-hide if it was
+        previously hidden).
+    The sentinel is written by the editor's per-row **「非表示にする」** toggle
+    (`_contentToggleHide` → `saveContentAll` stores `HM_HIDDEN`); it is a plain
+    string literal duplicated in BOTH `contentRegistry.js` (admin) and
+    `contentLoader.js` (public) — if you change it, change both.
+  - **Hide target (avoid stranded icons)** — by default the tagged element itself
+    is hidden. If it shares a wrapper with an icon (e.g. the trust-badge pills),
+    add `data-content-hide="closest:<selector>"` so the WRAPPER hides instead
+    (`_hideTargetFor` resolves it). The 4 trust badges use
+    `data-content-hide="closest:.trust-badge-pill"`. Never hide a generic parent.
+  - **Empty-container collapse** — the list/grid appliers (`_applyRevCards`,
+    `_applyFaqItems`, `_applyCompanyRows`, footer columns) distinguish `null`
+    (no CMS data → keep static fallback) from an explicitly EMPTY array (→ clear
+    innerHTML + `display:none` on the container), and un-collapse when repopulated.
 - Sibling editors follow the same pattern: hero (`hm_hero`), footer (`hm_footer`),
   faq (`hm_faq`), company, services, reviews, seo (`hm_seo`), settings (`hm_settings`).
 
