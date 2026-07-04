@@ -6,7 +6,9 @@
    Reads inbox_messages and renders them as cards inside
    #messages-container. Management actions (P3):
      • 既読/未読 toggle            → is_read (optimistic)
-     • 返信 (mailto:)              → default mail client, subject carries the ref
+     • 返信                        → copyable reply template modal (From: contact@,
+                                     booking ref + last quoted price) → clipboard,
+                                     pasted into Gmail signed in as contact@
      • 見積送信 modal              → price/expiry/terms → labels.quote (JSON col)
        + 「見積りをコピー」        → professional template → clipboard
      • 削除                        → rest.php delete (staff-gated) + confirm
@@ -16,20 +18,22 @@
    through window.api (rest.php); the client attaches X-ADMIN-TOKEN, and the
    server requires a staff token for inbox writes (hm_require_staff_write).
    Optimistic UI: the local cache mutates + re-renders instantly; failures
-   revert and toast. The legacy SMTP reply modal (inboxOpenReply/inboxSendReply)
-   is kept intact and callable — the visible 返信 button is mailto: per spec.
+   revert and toast. Reply is clipboard-only: mailto: cannot force the From
+   identity, so the operator copies the template and pastes it into Gmail while
+   signed in as contact@ (the mail-sending APIs were removed — see git history).
 
    Public API on window:
      renderInbox()                — called by go('inbox')
      inboxToggleRead(id)          — mark read/unread
      inboxDelete(id)              — delete a message
-     inboxMailReply(id)           — open default mail client (prefilled)
+     inboxOpenReplyCopy(id)       — open the copyable reply template modal
+     inboxCopyReplyText()         — copy the reply template to clipboard
+     inboxCloseReplyCopy()        — close the reply template modal
      inboxOpenQuote(id)           — open the quote modal (prefilled if quoted)
      inboxSaveQuote()             — persist labels.quote
      inboxCopyQuote()             — copy the formatted quote template
      inboxCloseQuote()            — close the quote modal
      inboxSetFilter(f)/inboxSearch(q)
-     inboxOpenReply(id)/inboxSendReply()/inboxCloseReply()   (legacy SMTP reply)
    ════════════════════════════════════════════════════════ */
 
 (function () {
@@ -38,7 +42,6 @@
   var _messages = [];                               // local cache (optimistic UI)
   var _filter = 'all';                              // all | unread | quoted | done
   var _search = '';
-  var MAILBOXES = ['booking@hello-moving.com', 'support@hello-moving.com', 'contact@hello-moving.com'];
 
   /* ── Helpers ─────────────────────────────────────────── */
   function _esc(s) {
@@ -52,12 +55,6 @@
   function _fmtYen(n) {
     var v = Number(n);
     return isNaN(v) ? String(n) : '¥' + v.toLocaleString('ja-JP');
-  }
-  // mailbox address → send-email.php from_account key
-  function _accountForMailbox(mailbox) {
-    var local = String(mailbox || '').toLowerCase().split('@')[0];
-    if (local === 'booking' || local === 'support' || local === 'contact') return local;
-    return 'support';   // safe default when the inbound mailbox is unknown (pre-IMAP rows)
   }
   // labels may arrive as object (cast_row) or null — always return an object copy.
   function _labelsOf(m) {
@@ -104,7 +101,7 @@
       '<div class="ibx-actions" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
         '<button class="btn btn-ghost btn-sm" onclick="inboxToggleRead(\'' + id + '\')" title="' + (m.is_read ? '未読にする' : '既読にする') + '">' +
           readIcon + '<span style="margin-left:4px">' + (m.is_read ? '未読に' : '既読に') + '</span></button>' +
-        '<button class="btn btn-ghost btn-sm" onclick="inboxMailReply(\'' + id + '\')" title="メールで返信">' +
+        '<button class="btn btn-ghost btn-sm" onclick="inboxOpenReplyCopy(\'' + id + '\')" title="返信テンプレートを作成（コピーして contact@ の Gmail に貼付）">' +
           '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg><span style="margin-left:4px">返信</span></button>' +
         '<button class="btn btn-ghost btn-sm" onclick="inboxOpenQuote(\'' + id + '\')" title="見積を作成・送信" style="color:var(--blue)">' +
           '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1H6.32c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg><span style="margin-left:4px">見積送信</span></button>' +
@@ -250,14 +247,114 @@
     }
   }
 
-  /* ── Reply via default mail client (mailto:) ──────────── */
-  function inboxMailReply(id) {
+  var REPLY_FROM = 'contact@hello-moving.com';   // the identity replies are sent from
+
+  /* ── Reply-as-copyable-template (PRIMARY 返信 flow) ────────
+     mailto: cannot force the From identity, so instead of launching the
+     operator's default Gmail we present a ready-to-paste template that leads
+     with an explicit "From: contact@hello-moving.com" header, the booking
+     details, and the last quoted price (labels.quote). The operator copies it
+     and pastes into Gmail while signed in as contact@. */
+  function _replyTemplateFull(m) {
+    var name = m.sender_name || m.sender || 'お客';
+    var ref  = m.booking_id || '—';
+    var lines = [
+      'From: ' + REPLY_FROM,
+      'To: ' + (m.email || ''),
+      '件名: Re: ' + (m.subject || 'お問い合わせ') + (m.booking_id ? '（予約番号: ' + m.booking_id + '）' : ''),
+      '────────────────────────',
+      '',
+      name + ' 様',
+      '',
+      'お問い合わせいただき誠にありがとうございます。',
+      'Hello Moving でございます。',
+      '',
+      '■ 予約番号　　：' + ref,
+    ];
+    // Quote injection — hard-code the last quoted price only when one exists.
+    var q = _quoteOf(m);
+    if (q && q.price != null && q.price !== '') {
+      var expiry = q.expiry
+        ? new Date(q.expiry + 'T00:00:00').toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric' })
+        : '—';
+      lines.push('■ お見積り金額：' + Number(q.price).toLocaleString('ja-JP') + ' 円（税込）');
+      lines.push('■ 有効期限　　：' + expiry);
+      if (q.terms) lines.push('■ 条件・備考　：' + q.terms);
+    }
+    lines.push('');
+    lines.push('（↑ こちらにご返信の本文をご記入ください）');
+    lines.push('');
+    lines.push('ご不明な点がございましたら、お気軽にご連絡ください。');
+    lines.push('引き続きどうぞよろしくお願いいたします。');
+    lines.push('');
+    lines.push('──────────────────');
+    lines.push('Hello Moving（ハロームービング）');
+    lines.push('Email: ' + REPLY_FROM);
+    lines.push('TEL: 090-2489-3402');
+    lines.push('https://hello-moving.com');
+    lines.push('──────────────────');
+    return lines.join('\n');
+  }
+
+  function _ensureReplyCopyModal() {
+    if (document.getElementById('inboxReplyCopyModal')) return;
+    var el = document.createElement('div');
+    el.id = 'inboxReplyCopyModal';
+    el.setAttribute('style', 'display:none;position:fixed;inset:0;z-index:9999;background:rgba(11,15,23,.45);align-items:center;justify-content:center;padding:20px');
+    el.innerHTML =
+      '<div class="panel" style="background:#fff;max-width:600px;width:100%;max-height:90vh;overflow:auto;padding:0">' +
+        '<div class="panel-head" style="padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between">' +
+          '<span class="panel-title">返信テンプレート</span>' +
+          '<button class="btn btn-ghost btn-sm" onclick="inboxCloseReplyCopy()" aria-label="閉じる">✕</button>' +
+        '</div>' +
+        '<div class="panel-body" style="padding:18px 20px">' +
+          '<div style="font-size:12px;color:var(--gray-1);background:var(--bg-soft-2);border-radius:8px;padding:8px 12px;margin-bottom:12px">' +
+            '下記をコピーし、<strong>contact@hello-moving.com</strong> でログイン中の Gmail に貼り付けて送信してください。（本文は自由に編集できます）' +
+          '</div>' +
+          '<textarea class="input" id="ircText" rows="15" spellcheck="false" style="resize:vertical;min-height:280px;font-size:12.5px;line-height:1.7;font-family:ui-monospace,Menlo,Consolas,monospace;white-space:pre"></textarea>' +
+          '<p id="ircStatus" style="display:none;font-size:12.5px;margin-top:10px"></p>' +
+          '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap">' +
+            '<button class="btn btn-ghost btn-sm" onclick="inboxCloseReplyCopy()">閉じる</button>' +
+            '<button class="btn btn-primary btn-sm" id="ircCopy" onclick="inboxCopyReplyText()">' +
+              '<svg viewBox="0 0 24 24" width="13" height="13" style="margin-right:4px"><path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>返信をコピー</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(el);
+  }
+
+  function inboxOpenReplyCopy(id) {
     var m = _byId[id];
-    if (!m || !m.email) return;
-    var subj = 'Re: ' + (m.subject || 'お問い合わせ') + (m.booking_id ? '（予約番号: ' + m.booking_id + '）' : '');
-    var body = (m.sender_name || m.sender || '') + ' 様\n\nお問い合わせいただきありがとうございます。\n\n\n──\nHello Moving（ハロームービング）\nTEL: 090-2489-3402\nhttps://hello-moving.com\n';
-    location.href = 'mailto:' + encodeURIComponent(m.email) +
-      '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(body);
+    if (!m) return;
+    _ensureReplyCopyModal();
+    document.getElementById('ircText').value = _replyTemplateFull(m);
+    var s = document.getElementById('ircStatus');
+    if (s) { s.textContent = ''; s.style.display = 'none'; }
+    document.getElementById('inboxReplyCopyModal').style.display = 'flex';
+  }
+
+  function inboxCloseReplyCopy() {
+    var el = document.getElementById('inboxReplyCopyModal');
+    if (el) el.style.display = 'none';
+  }
+
+  async function inboxCopyReplyText() {
+    var ta = document.getElementById('ircText');
+    if (!ta) return;
+    var s = document.getElementById('ircStatus');
+    function _ok() {
+      if (s) { s.textContent = 'コピーしました！contact@ の Gmail に貼り付けてください。'; s.style.color = '#0a7d33'; s.style.display = 'block'; }
+      _toast('コピーしました！');
+    }
+    try {
+      await navigator.clipboard.writeText(ta.value);   // copies live edits too
+      _ok();
+    } catch (e) {
+      // Clipboard API blocked (permissions/http) — fall back to execCommand.
+      ta.focus(); ta.select();
+      try { document.execCommand('copy'); _ok(); }
+      catch (_) { if (s) { s.textContent = 'コピーできませんでした。テキストを手動で選択してください。'; s.style.color = '#c23'; s.style.display = 'block'; } }
+    }
   }
 
   /* ── Quote modal ──────────────────────────────────────── */
@@ -375,15 +472,21 @@
     var details = bodyText.indexOf('---') >= 0 ? bodyText.split('---').slice(1).join('---').trim() : '';
     if (details.length > 600) details = details.slice(0, 600) + '…';
     var expiry = q.expiry ? new Date(q.expiry + 'T00:00:00').toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric' }) : '—';
+    var issued = new Date((q.quotedAt ? new Date(q.quotedAt) : new Date())).toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric' });
     var lines = [
       '━━━━━━━━━━━━━━━━━━━━━━━━',
-      'Hello Moving　お見積りのご案内',
+      '　　　　お 見 積 書 ／ QUOTATION',
       '━━━━━━━━━━━━━━━━━━━━━━━━',
+      '発行日：' + issued,
+      '発行者：Hello Moving（ハロームービング）',
+      '差出人：' + REPLY_FROM,
+      '',
       name + ' 様',
       '',
       'この度はお問い合わせいただき誠にありがとうございます。',
-      '以下の通りお見積りをご案内申し上げます。',
+      '下記の通りお見積りを申し上げます。ご検討のほどよろしくお願い申し上げます。',
       '',
+      '───────────────────────',
       '■ 予約番号　　：' + (m.booking_id || '—'),
     ];
     if (details) {
@@ -397,13 +500,16 @@
       lines.push('■ 条件・備考　：');
       lines.push(q.terms);
     }
+    lines.push('───────────────────────');
     lines.push('');
+    lines.push('※ 本見積りは有効期限内のご成約に適用されます。');
     lines.push('ご不明な点がございましたら、お気軽にご連絡ください。');
     lines.push('引き続きどうぞよろしくお願いいたします。');
     lines.push('');
     lines.push('──────────────────');
     lines.push('Hello Moving（ハロームービング）');
     lines.push('国土交通省認可　第 431320058126 号');
+    lines.push('Email: ' + REPLY_FROM);
     lines.push('TEL: 090-2489-3402');
     lines.push('https://hello-moving.com');
     lines.push('──────────────────');
@@ -431,121 +537,6 @@
     }
   }
 
-  /* ── Legacy SMTP reply modal (kept intact — Phase 1) ───── */
-  function _ensureModal() {
-    if (document.getElementById('inboxReplyModal')) return;
-    var opts = MAILBOXES.map(function (mb) { return '<option value="' + mb + '">' + mb + '</option>'; }).join('');
-    var el = document.createElement('div');
-    el.id = 'inboxReplyModal';
-    el.setAttribute('style', 'display:none;position:fixed;inset:0;z-index:9999;background:rgba(11,15,23,.45);align-items:center;justify-content:center;padding:20px');
-    el.innerHTML =
-      '<div class="panel" style="background:#fff;max-width:640px;width:100%;max-height:90vh;overflow:auto;padding:0">' +
-        '<div class="panel-head" style="padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between">' +
-          '<span class="panel-title">返信</span>' +
-          '<button class="btn btn-ghost btn-sm" onclick="inboxCloseReply()" aria-label="閉じる">✕</button>' +
-        '</div>' +
-        '<div class="panel-body" style="padding:18px 20px">' +
-          '<input type="hidden" id="irMsgId" />' +
-          '<div class="m-row">' +
-            '<div class="m-field"><label class="m-label">送信元（メールボックス）</label>' +
-              '<select class="input" id="irFrom">' + opts + '</select></div>' +
-            '<div class="m-field"><label class="m-label">宛先</label>' +
-              '<input class="input" id="irTo" type="email" readonly style="background:var(--bg-soft-2)" /></div>' +
-          '</div>' +
-          '<div class="m-field" style="margin-top:10px"><label class="m-label">件名</label>' +
-            '<input class="input" id="irSubject" type="text" /></div>' +
-          '<div class="m-field" style="margin-top:10px"><label class="m-label">本文</label>' +
-            '<textarea class="input" id="irBody" rows="9" style="resize:vertical;min-height:150px" placeholder="返信内容を入力してください…"></textarea></div>' +
-          '<p id="irStatus" style="display:none;font-size:12.5px;margin-top:10px"></p>' +
-          '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">' +
-            '<button class="btn btn-ghost btn-sm" onclick="inboxCloseReply()">キャンセル</button>' +
-            '<button class="btn btn-primary btn-sm" id="irSend" onclick="inboxSendReply()">送信する</button>' +
-          '</div>' +
-        '</div>' +
-      '</div>';
-    document.body.appendChild(el);
-  }
-
-  function _status(msg, kind) {
-    var s = document.getElementById('irStatus');
-    if (!s) return;
-    s.textContent = msg || '';
-    s.style.display = msg ? 'block' : 'none';
-    s.style.color = kind === 'error' ? '#c23' : (kind === 'success' ? '#0a7d33' : 'var(--gray-2)');
-  }
-
-  function inboxOpenReply(id) {
-    var m = _byId[id];
-    if (!m) return;
-    _ensureModal();
-    document.getElementById('irMsgId').value = id;
-    document.getElementById('irTo').value = m.email || '';
-    var subj = m.subject || '';
-    document.getElementById('irSubject').value = /^re:/i.test(subj) ? subj : ('Re: ' + subj);
-    document.getElementById('irBody').value = '';
-    document.getElementById('irFrom').value =
-      (_accountForMailbox(m.mailbox) === 'booking' ? MAILBOXES[0]
-        : _accountForMailbox(m.mailbox) === 'contact' ? MAILBOXES[2] : MAILBOXES[1]);
-    _status('', '');
-    document.getElementById('inboxReplyModal').style.display = 'flex';
-    document.getElementById('irBody').focus();
-  }
-
-  function inboxCloseReply() {
-    var el = document.getElementById('inboxReplyModal');
-    if (el) el.style.display = 'none';
-  }
-
-  async function inboxSendReply() {
-    var id      = document.getElementById('irMsgId').value;
-    var m       = _byId[id] || {};
-    var account = _accountForMailbox(document.getElementById('irFrom').value);
-    var to      = (document.getElementById('irTo').value || '').trim();
-    var subject = (document.getElementById('irSubject').value || '').trim();
-    var body    = (document.getElementById('irBody').value || '').trim();
-
-    if (!to)   { _status('宛先がありません。', 'error'); return; }
-    if (!body) { _status('本文を入力してください。', 'error'); return; }
-
-    var base = (window.API_BASE || '').replace(/\/$/, '');
-    if (!base) { _status('API_BASE未設定です。', 'error'); return; }
-
-    var payload = {
-      from_account: account,
-      to:           to,
-      subject:      subject || '[Hello Moving] ご返信',
-      message:      body,
-      booking_id:   m.booking_id || '',
-      log_comm:     true,                         // exactly one communications row
-    };
-    // Thread the reply to the inbound message when we have its Message-ID.
-    if (m.message_id) { payload.in_reply_to = m.message_id; payload.references = m.message_id; }
-
-    var btn = document.getElementById('irSend');
-    if (btn) { btn.disabled = true; btn.textContent = '送信中…'; }
-    _status('送信しています…', 'info');
-    try {
-      var res = await fetch(base + '/send-email.php', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json', 'X-API-KEY': window.API_KEY || '' },
-        body: JSON.stringify(payload),
-      });
-      var result = await res.json().catch(function () { return { ok: false, error: 'HTTP ' + res.status }; });
-      if (result.ok) {
-        _status('返信を送信しました。', 'success');
-        if (window.toast) toast('返信を送信しました');
-        setTimeout(inboxCloseReply, 900);
-      } else {
-        var err = result.error && (result.error.message || result.error);
-        _status('送信できませんでした：' + (err || ('HTTP ' + res.status)), 'error');
-      }
-    } catch (e) {
-      _status('通信エラーが発生しました。', 'error');
-    } finally {
-      if (btn) { btn.disabled = false; btn.textContent = '送信する'; }
-    }
-  }
-
   /* ── Public entry point ───────────────────────────────── */
   async function renderInbox() {
     if (!document.getElementById('view-inbox')) return;
@@ -557,15 +548,14 @@
   window.renderInbox      = renderInbox;
   window.inboxToggleRead  = inboxToggleRead;
   window.inboxDelete      = inboxDelete;
-  window.inboxMailReply   = inboxMailReply;
+  window.inboxOpenReplyCopy  = inboxOpenReplyCopy;
+  window.inboxCopyReplyText  = inboxCopyReplyText;
+  window.inboxCloseReplyCopy = inboxCloseReplyCopy;
   window.inboxOpenQuote   = inboxOpenQuote;
   window.inboxSaveQuote   = inboxSaveQuote;
   window.inboxCopyQuote   = inboxCopyQuote;
   window.inboxCloseQuote  = inboxCloseQuote;
   window.inboxSetFilter   = inboxSetFilter;
   window.inboxSearch      = inboxSearch;
-  window.inboxOpenReply   = inboxOpenReply;
-  window.inboxSendReply   = inboxSendReply;
-  window.inboxCloseReply  = inboxCloseReply;
 
 })();
