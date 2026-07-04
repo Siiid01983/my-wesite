@@ -782,6 +782,15 @@
        to the hardcoded copy in index.html). */
     getContent: () => _ls('hm_content', {}),
     saveContent: (v) => wt('hm_content', v),
+
+    /* ── Booking-form config (BA overlay) ──
+       Sectioned overrides for the booking overlay's item list / time slots /
+       filters / badges / drawer titles. Managed by
+       js/modules/booking-config/bookingConfig.js; consumed by the overlay's
+       _baCfg() in index.html via the ContentLoader localStorage snapshot.
+       null / missing sections = the overlay's built-in defaults. */
+    getBookingConfig: () => _ls('hm_booking_config', null),
+    saveBookingConfig: (v) => wt('hm_booking_config', v),
     getContentHistory: () => { try { return JSON.parse(localStorage.getItem('hm_content_history') || '[]'); } catch { return []; } },
     pushContentHistory(snap) {
       const hist = this.getContentHistory();

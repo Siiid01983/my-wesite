@@ -2923,37 +2923,13 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     </div>
   </div>
 
-  <!-- Drawer: Furniture -->
+  <!-- Drawer: Furniture — item cards render at runtime via baRenderItems()
+       from the hm_booking_config CMS snapshot (WMC → 予約フォーム設定); the
+       built-in defaults live in BA_DEFAULT_CFG below. -->
   <div class="ba-overlay" id="ba-drawer-furniture" onclick="baBgClose(event,'furniture')">
     <div class="ba-drawer">
       <div class="ba-drawer-top"><div class="ba-drawer-handle"></div><div class="ba-drawer-title">荷物を選択</div></div>
-      <div class="ba-drawer-scroll">
-        <div class="ba-cat-title">リビング・寝室</div>
-        <div class="ba-items-grid">
-          <div class="ba-item-card" id="ba-card-tv-s"><div class="ba-item-name">テレビ 40型未満</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="10" width="44" height="30" rx="3"/><line x1="20" y1="40" x2="16" y2="50"/><line x1="40" y1="40" x2="44" y2="50"/><line x1="14" y1="50" x2="46" y2="50"/></svg></div><div class="ba-counter"><button onclick="baDec('tv-s')">−</button><span id="ba-n-tv-s">0</span><button onclick="baInc('tv-s')">＋</button></div></div>
-          <div class="ba-item-card" id="ba-card-tv-l"><div class="ba-item-name">テレビ 40型以上</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="52" height="34" rx="3"/><line x1="18" y1="42" x2="14" y2="52"/><line x1="42" y1="42" x2="46" y2="52"/><line x1="12" y1="52" x2="48" y2="52"/></svg></div><div class="ba-counter"><button onclick="baDec('tv-l')">−</button><span id="ba-n-tv-l">0</span><button onclick="baInc('tv-l')">＋</button></div></div>
-          <div class="ba-item-card" id="ba-card-bed-s"><div class="ba-item-name">ベッド シングル</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="22" width="44" height="24" rx="2"/><rect x="8" y="14" width="16" height="12" rx="2"/><line x1="8" y1="46" x2="8" y2="52"/><line x1="52" y1="46" x2="52" y2="52"/></svg></div><div class="ba-counter"><button onclick="baDec('bed-s')">−</button><span id="ba-n-bed-s">0</span><button onclick="baInc('bed-s')">＋</button></div></div>
-          <div class="ba-item-card" id="ba-card-bed-d"><div class="ba-item-name">ベッド ダブル</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="22" width="52" height="24" rx="2"/><rect x="4" y="14" width="20" height="12" rx="2"/><line x1="4" y1="46" x2="4" y2="52"/><line x1="56" y1="46" x2="56" y2="52"/></svg></div><div class="ba-counter"><button onclick="baDec('bed-d')">−</button><span id="ba-n-bed-d">0</span><button onclick="baInc('bed-d')">＋</button></div></div>
-          <div class="ba-item-card" id="ba-card-sofa1"><div class="ba-item-name">ソファ 1人</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="24" width="40" height="18" rx="4"/><rect x="6" y="18" width="8" height="24" rx="3"/><rect x="46" y="18" width="8" height="24" rx="3"/><rect x="10" y="14" width="40" height="12" rx="3"/><line x1="12" y1="42" x2="12" y2="48"/><line x1="48" y1="42" x2="48" y2="48"/></svg></div><div class="ba-counter"><button onclick="baDec('sofa1')">−</button><span id="ba-n-sofa1">0</span><button onclick="baInc('sofa1')">＋</button></div></div>
-          <div class="ba-item-card" id="ba-card-sofa3"><div class="ba-item-name">ソファ 3人</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="26" width="52" height="16" rx="4"/><rect x="2" y="20" width="8" height="22" rx="3"/><rect x="50" y="20" width="8" height="22" rx="3"/><rect x="4" y="16" width="52" height="12" rx="3"/><line x1="8" y1="42" x2="8" y2="48"/><line x1="52" y1="42" x2="52" y2="48"/></svg></div><div class="ba-counter"><button onclick="baDec('sofa3')">−</button><span id="ba-n-sofa3">0</span><button onclick="baInc('sofa3')">＋</button></div></div>
-        </div>
-        <div class="ba-cat-title">水回り</div>
-        <div class="ba-items-grid">
-          <div class="ba-item-card" id="ba-card-fridge-s"><div class="ba-item-name">冷蔵庫 2ドア</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="4" width="32" height="52" rx="3"/><line x1="14" y1="22" x2="46" y2="22"/><line x1="22" y1="13" x2="22" y2="19"/><line x1="22" y1="31" x2="22" y2="46"/></svg></div><div class="ba-counter"><button onclick="baDec('fridge-s')">−</button><span id="ba-n-fridge-s">0</span><button onclick="baInc('fridge-s')">＋</button></div></div>
-          <div class="ba-item-card" id="ba-card-fridge-l"><div class="ba-item-name">冷蔵庫 3ドア</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="4" width="40" height="52" rx="3"/><line x1="10" y1="18" x2="50" y2="18"/><line x1="10" y1="34" x2="50" y2="34"/><line x1="18" y1="10" x2="18" y2="16"/><line x1="18" y1="24" x2="18" y2="30"/><line x1="18" y1="40" x2="18" y2="52"/></svg></div><div class="ba-counter"><button onclick="baDec('fridge-l')">−</button><span id="ba-n-fridge-l">0</span><button onclick="baInc('fridge-l')">＋</button></div></div>
-          <div class="ba-item-card" id="ba-card-wash-v"><div class="ba-item-name">洗濯機 縦型</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="6" width="44" height="48" rx="3"/><circle cx="30" cy="34" r="12"/><circle cx="30" cy="34" r="6"/><circle cx="18" cy="14" r="3"/></svg></div><div class="ba-counter"><button onclick="baDec('wash-v')">−</button><span id="ba-n-wash-v">0</span><button onclick="baInc('wash-v')">＋</button></div></div>
-          <div class="ba-item-card" id="ba-card-wash-d"><div class="ba-item-name">洗濯機 ドラム</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="8" width="48" height="44" rx="4"/><circle cx="30" cy="32" r="14"/><circle cx="30" cy="32" r="7"/><rect x="10" y="12" width="16" height="8" rx="2"/></svg></div><div class="ba-counter"><button onclick="baDec('wash-d')">−</button><span id="ba-n-wash-d">0</span><button onclick="baInc('wash-d')">＋</button></div></div>
-        </div>
-        <div class="ba-cat-title">収納・家具</div>
-        <div class="ba-items-grid">
-          <div class="ba-item-card" id="ba-card-shelf-s"><div class="ba-item-name">棚 小</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="8" width="32" height="46" rx="2"/><line x1="14" y1="22" x2="46" y2="22"/><line x1="14" y1="36" x2="46" y2="36"/></svg></div><div class="ba-counter"><button onclick="baDec('shelf-s')">−</button><span id="ba-n-shelf-s">0</span><button onclick="baInc('shelf-s')">＋</button></div></div>
-          <div class="ba-item-card" id="ba-card-shelf-l"><div class="ba-item-name">棚 大</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="6" width="44" height="48" rx="2"/><line x1="8" y1="18" x2="52" y2="18"/><line x1="8" y1="32" x2="52" y2="32"/><line x1="8" y1="46" x2="52" y2="46"/></svg></div><div class="ba-counter"><button onclick="baDec('shelf-l')">−</button><span id="ba-n-shelf-l">0</span><button onclick="baInc('shelf-l')">＋</button></div></div>
-          <div class="ba-item-card" id="ba-card-table"><div class="ba-item-name">ダイニングテーブル</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="20" width="48" height="8" rx="2"/><line x1="14" y1="28" x2="14" y2="50"/><line x1="46" y1="28" x2="46" y2="50"/></svg></div><div class="ba-counter"><button onclick="baDec('table')">−</button><span id="ba-n-table">0</span><button onclick="baInc('table')">＋</button></div></div>
-          <div class="ba-item-card" id="ba-card-chest"><div class="ba-item-name">チェスト</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="12" y="6" width="36" height="48" rx="2"/><line x1="12" y1="18" x2="48" y2="18"/><line x1="12" y1="30" x2="48" y2="30"/><line x1="12" y1="42" x2="48" y2="42"/><circle cx="30" cy="12" r="2"/><circle cx="30" cy="24" r="2"/><circle cx="30" cy="36" r="2"/></svg></div><div class="ba-counter"><button onclick="baDec('chest')">−</button><span id="ba-n-chest">0</span><button onclick="baInc('chest')">＋</button></div></div>
-          <div class="ba-item-card" id="ba-card-bike"><div class="ba-item-name">自転車</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="42" r="10"/><circle cx="46" cy="42" r="10"/><path d="M14 42L30 18L46 42"/><line x1="24" y1="18" x2="36" y2="18"/></svg></div><div class="ba-counter"><button onclick="baDec('bike')">−</button><span id="ba-n-bike">0</span><button onclick="baInc('bike')">＋</button></div></div>
-          <div class="ba-item-card" id="ba-card-box"><div class="ba-item-name">ダンボール</div><div class="ba-item-img"><svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 20L30 10L50 20L50 46L30 56L10 46Z"/><path d="M10 20L30 30L50 20"/><line x1="30" y1="30" x2="30" y2="56"/></svg></div><div class="ba-counter"><button onclick="baDec('box')">−</button><span id="ba-n-box">0</span><button onclick="baInc('box')">＋</button></div></div>
-        </div>
-      </div>
+      <div class="ba-drawer-scroll" id="ba-items-host"></div>
       <div class="ba-drawer-footer"><button class="ba-drawer-cta" onclick="baConfirmFurniture()">選択完了</button></div>
     </div>
   </div>
@@ -2967,67 +2943,102 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     </div>
   </div>
 
-  <!-- Drawer: Filter -->
+  <!-- Drawer: Filter — options render via baRenderFilters() (CMS-managed) -->
   <div class="ba-overlay" id="ba-drawer-filter" onclick="baBgClose(event,'filter')">
     <div class="ba-drawer">
       <div class="ba-drawer-top"><div class="ba-drawer-handle"></div><div class="ba-drawer-title">絞り込み条件</div></div>
       <div class="ba-drawer-scroll">
-        <div class="ba-filter-list">
-          <label class="ba-filter-label"><input type="checkbox" id="ba-f-same-day"> 当日・翌日対応可</label>
-          <label class="ba-filter-label"><input type="checkbox" id="ba-f-english"> 英語対応可</label>
-          <label class="ba-filter-label"><input type="checkbox" id="ba-f-insurance"> 保険加入済</label>
-          <label class="ba-filter-label"><input type="checkbox" id="ba-f-disposal"> 不用品回収対応</label>
-        </div>
+        <div class="ba-filter-list" id="ba-filter-host"></div>
       </div>
       <div class="ba-drawer-footer"><button class="ba-drawer-cta" onclick="baConfirmFilter()">確定する</button></div>
     </div>
   </div>
 
-  <!-- Drawer: Time -->
+  <!-- Drawer: Time — slots render via baRenderTimeSlots() (CMS-managed) -->
   <div class="ba-overlay" id="ba-drawer-time" onclick="baBgClose(event,'time')">
     <div class="ba-drawer">
       <div class="ba-drawer-top"><div class="ba-drawer-handle"></div><div class="ba-drawer-title">希望時間帯</div></div>
       <div class="ba-drawer-scroll">
-        <div class="ba-filter-list">
-          <label class="ba-filter-label"><input type="radio" name="ba-time" value="午前（9:00〜12:00）"> 午前（9:00〜12:00）</label>
-          <label class="ba-filter-label"><input type="radio" name="ba-time" value="午後（12:00〜15:00）"> 午後（12:00〜15:00）</label>
-          <label class="ba-filter-label"><input type="radio" name="ba-time" value="夕方（15:00〜18:00）"> 夕方（15:00〜18:00）</label>
-          <label class="ba-filter-label"><input type="radio" name="ba-time" value="夜間（18:00〜21:00）"> 夜間（18:00〜21:00）</label>
-          <label class="ba-filter-label"><input type="radio" name="ba-time" value="時間指定なし"> 時間指定なし（当日調整）</label>
-        </div>
+        <div class="ba-filter-list" id="ba-time-host"></div>
       </div>
       <div class="ba-drawer-footer"><button class="ba-drawer-cta" onclick="baConfirmTime()">確定する</button></div>
     </div>
   </div>
-
 </div><!-- /#booking-app -->
 
 <script>
 (function () {
-  var BA_ITEMS = ['tv-s','tv-l','bed-s','bed-d','sofa1','sofa3','fridge-s','fridge-l','wash-v','wash-d','shelf-s','shelf-l','table','chest','bike','box'];
-
-  // Short display names used in the booking-panel summary row
-  var BA_ITEM_NAMES = {
-    'tv-s':     'テレビ 小',
-    'tv-l':     'テレビ 大',
-    'bed-s':    'ベッド S',
-    'bed-d':    'ベッド D',
-    'sofa1':    'ソファ 1人',
-    'sofa3':    'ソファ 3人',
-    'fridge-s': '冷蔵庫 2ドア',
-    'fridge-l': '冷蔵庫 3ドア',
-    'wash-v':   '洗濯機 縦型',
-    'wash-d':   '洗濯機 ドラム',
-    'shelf-s':  '棚 小',
-    'shelf-l':  '棚 大',
-    'table':    'テーブル',
-    'chest':    'チェスト',
-    'bike':     '自転車',
-    'box':      'ダンボール'
+  // ── Booking-form config (CMS-manageable) ─────────────────
+  // Section overrides come from the hm_booking_config KV snapshot (hm_data),
+  // written to localStorage by ContentLoader on every public load and edited
+  // in WMC → 予約フォーム設定 (js/modules/booking-config/bookingConfig.js).
+  // Absent / empty sections ⇒ the defaults below render unchanged, so a
+  // blank or missing config is always safe (blank = default invariant).
+  var BA_DEFAULT_CFG = {
+    cats: [{"id":"living","label":"リビング・寝室"},{"id":"water","label":"水回り"},{"id":"storage","label":"収納・家具"}],
+    items: [
+      {"id":"tv-s","name":"テレビ 40型未満","short":"テレビ 小","cat":"living"},
+      {"id":"tv-l","name":"テレビ 40型以上","short":"テレビ 大","cat":"living"},
+      {"id":"bed-s","name":"ベッド シングル","short":"ベッド S","cat":"living"},
+      {"id":"bed-d","name":"ベッド ダブル","short":"ベッド D","cat":"living"},
+      {"id":"sofa1","name":"ソファ 1人","short":"ソファ 1人","cat":"living"},
+      {"id":"sofa3","name":"ソファ 3人","short":"ソファ 3人","cat":"living"},
+      {"id":"fridge-s","name":"冷蔵庫 2ドア","short":"冷蔵庫 2ドア","cat":"water"},
+      {"id":"fridge-l","name":"冷蔵庫 3ドア","short":"冷蔵庫 3ドア","cat":"water"},
+      {"id":"wash-v","name":"洗濯機 縦型","short":"洗濯機 縦型","cat":"water"},
+      {"id":"wash-d","name":"洗濯機 ドラム","short":"洗濯機 ドラム","cat":"water"},
+      {"id":"shelf-s","name":"棚 小","short":"棚 小","cat":"storage"},
+      {"id":"shelf-l","name":"棚 大","short":"棚 大","cat":"storage"},
+      {"id":"table","name":"ダイニングテーブル","short":"テーブル","cat":"storage"},
+      {"id":"chest","name":"チェスト","short":"チェスト","cat":"storage"},
+      {"id":"bike","name":"自転車","short":"自転車","cat":"storage"},
+      {"id":"box","name":"ダンボール","short":"ダンボール","cat":"storage"}
+    ],
+    timeSlots: [{"label":"午前（9:00〜12:00）","value":"午前（9:00〜12:00）"},{"label":"午後（12:00〜15:00）","value":"午後（12:00〜15:00）"},{"label":"夕方（15:00〜18:00）","value":"夕方（15:00〜18:00）"},{"label":"夜間（18:00〜21:00）","value":"夜間（18:00〜21:00）"},{"label":"時間指定なし（当日調整）","value":"時間指定なし"}],
+    filters: [{"id":"same-day","label":"当日・翌日対応可","short":"当日対応"},{"id":"english","label":"英語対応可","short":"英語対応"},{"id":"insurance","label":"保険加入済","short":"保険加入"},{"id":"disposal","label":"不用品回収対応","short":"不用品回収"}],
+    badges: {"tansin":{"text":"人気","color":"#9AB57A"},"couple":{"text":"人気","color":"#9AB57A"},"student":{"text":"人気","color":"#9AB57A"},"sameday":{"text":"当日対応","color":"#c0392b"}},
+    labels: {"furnitureTitle":"荷物を選択","filterTitle":"絞り込み条件","timeTitle":"希望時間帯","dateTitle":"引越し希望日"}
   };
 
+  // Item icons stay code-owned (inline SVG keyed by item id); CMS-added
+  // items without a matching icon fall back to the generic box (_default).
+  var BA_ITEM_SVG = {
+    "tv-s": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="10" width="44" height="30" rx="3"/><line x1="20" y1="40" x2="16" y2="50"/><line x1="40" y1="40" x2="44" y2="50"/><line x1="14" y1="50" x2="46" y2="50"/></svg>',
+    "tv-l": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="52" height="34" rx="3"/><line x1="18" y1="42" x2="14" y2="52"/><line x1="42" y1="42" x2="46" y2="52"/><line x1="12" y1="52" x2="48" y2="52"/></svg>',
+    "bed-s": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="22" width="44" height="24" rx="2"/><rect x="8" y="14" width="16" height="12" rx="2"/><line x1="8" y1="46" x2="8" y2="52"/><line x1="52" y1="46" x2="52" y2="52"/></svg>',
+    "bed-d": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="22" width="52" height="24" rx="2"/><rect x="4" y="14" width="20" height="12" rx="2"/><line x1="4" y1="46" x2="4" y2="52"/><line x1="56" y1="46" x2="56" y2="52"/></svg>',
+    "sofa1": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="24" width="40" height="18" rx="4"/><rect x="6" y="18" width="8" height="24" rx="3"/><rect x="46" y="18" width="8" height="24" rx="3"/><rect x="10" y="14" width="40" height="12" rx="3"/><line x1="12" y1="42" x2="12" y2="48"/><line x1="48" y1="42" x2="48" y2="48"/></svg>',
+    "sofa3": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="26" width="52" height="16" rx="4"/><rect x="2" y="20" width="8" height="22" rx="3"/><rect x="50" y="20" width="8" height="22" rx="3"/><rect x="4" y="16" width="52" height="12" rx="3"/><line x1="8" y1="42" x2="8" y2="48"/><line x1="52" y1="42" x2="52" y2="48"/></svg>',
+    "fridge-s": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="4" width="32" height="52" rx="3"/><line x1="14" y1="22" x2="46" y2="22"/><line x1="22" y1="13" x2="22" y2="19"/><line x1="22" y1="31" x2="22" y2="46"/></svg>',
+    "fridge-l": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="4" width="40" height="52" rx="3"/><line x1="10" y1="18" x2="50" y2="18"/><line x1="10" y1="34" x2="50" y2="34"/><line x1="18" y1="10" x2="18" y2="16"/><line x1="18" y1="24" x2="18" y2="30"/><line x1="18" y1="40" x2="18" y2="52"/></svg>',
+    "wash-v": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="6" width="44" height="48" rx="3"/><circle cx="30" cy="34" r="12"/><circle cx="30" cy="34" r="6"/><circle cx="18" cy="14" r="3"/></svg>',
+    "wash-d": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="8" width="48" height="44" rx="4"/><circle cx="30" cy="32" r="14"/><circle cx="30" cy="32" r="7"/><rect x="10" y="12" width="16" height="8" rx="2"/></svg>',
+    "shelf-s": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="8" width="32" height="46" rx="2"/><line x1="14" y1="22" x2="46" y2="22"/><line x1="14" y1="36" x2="46" y2="36"/></svg>',
+    "shelf-l": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="6" width="44" height="48" rx="2"/><line x1="8" y1="18" x2="52" y2="18"/><line x1="8" y1="32" x2="52" y2="32"/><line x1="8" y1="46" x2="52" y2="46"/></svg>',
+    "table": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="20" width="48" height="8" rx="2"/><line x1="14" y1="28" x2="14" y2="50"/><line x1="46" y1="28" x2="46" y2="50"/></svg>',
+    "chest": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="12" y="6" width="36" height="48" rx="2"/><line x1="12" y1="18" x2="48" y2="18"/><line x1="12" y1="30" x2="48" y2="30"/><line x1="12" y1="42" x2="48" y2="42"/><circle cx="30" cy="12" r="2"/><circle cx="30" cy="24" r="2"/><circle cx="30" cy="36" r="2"/></svg>',
+    "bike": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="42" r="10"/><circle cx="46" cy="42" r="10"/><path d="M14 42L30 18L46 42"/><line x1="24" y1="18" x2="36" y2="18"/></svg>',
+    "box": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 20L30 10L50 20L50 46L30 56L10 46Z"/><path d="M10 20L30 30L50 20"/><line x1="30" y1="30" x2="30" y2="56"/></svg>',
+    _default: '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 20L30 10L50 20L50 46L30 56L10 46Z"/><path d="M10 20L30 30L50 20"/><line x1="30" y1="30" x2="30" y2="56"/></svg>'
+  };
+
+  // Merged view: saved config sections override the defaults; blank keeps them.
+  function _baCfg() {
+    var raw = _baReadJSON('hm_booking_config');
+    var cfg = (raw && typeof raw === 'object') ? raw : {};
+    var out = {};
+    ['cats', 'items', 'timeSlots', 'filters'].forEach(function (k) {
+      out[k] = (Array.isArray(cfg[k]) && cfg[k].length) ? cfg[k] : BA_DEFAULT_CFG[k];
+    });
+    out.badges = (cfg.badges && typeof cfg.badges === 'object') ? cfg.badges : null;
+    out.labels = (cfg.labels && typeof cfg.labels === 'object') ? cfg.labels : {};
+    return out;
+  }
+
+  // Derived from the active config by baRenderItems() (defaults until then).
+  var BA_ITEMS = [];
+  var BA_ITEM_NAMES = {};
   var baCounts = {};
-  BA_ITEMS.forEach(function (k) { baCounts[k] = 0; });
 
   // Single source of truth for the booking the overlay is assembling.
   function baBlankState() {
@@ -3149,13 +3160,15 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     var grid = document.getElementById('ba-svc-grid');
     if (!grid) return;
     var ov = _baCmsOverrides();
+    var cfgBadges = _baCfg().badges;   // null ⇒ keep the code defaults per service
     var resolved = {};  // id → display name (used by the delegated click handler)
     grid.innerHTML = BA_SVC_CFG.map(function(s) {
       var o = ov[BA_SLUG[s.id] || s.id] || {};
       var label = (o.title != null && o.title !== '') ? o.title : s.name;
       var img   = o.img || s.img;
       resolved[s.id] = label;
-      var badge = s.badge ? '<span class="ba-svc-badge" style="background:' + s.bc + '">' + _baEsc(s.badge) + '</span>' : '';
+      var bd = (cfgBadges && Object.prototype.hasOwnProperty.call(cfgBadges, s.id)) ? (cfgBadges[s.id] || {}) : { text: s.badge, color: s.bc };
+      var badge = bd.text ? '<span class="ba-svc-badge" style="background:' + _baEsc(bd.color || '#9AB57A') + '">' + _baEsc(bd.text) + '</span>' : '';
       var media = img
         ? '<img src="' + _baEsc(img) + '" alt="' + _baEsc(label) + '" loading="lazy" onerror="this.style.display=\'none\'">'
         : (BA_SVC_SVG[s.id] || '');
@@ -3215,6 +3228,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     // Re-render the picker so admin CMS name/image edits (localStorage snapshot)
     // are reflected on every open, not just the initial page render.
     baRenderServices();
+    baRenderBookingConfig();
     if (serviceName) {
       baState.service = serviceName;
       baState.serviceId = baResolveServiceId(serviceName);
@@ -3247,8 +3261,8 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   window.baBgClose = function (e, id) { if (e.target === e.currentTarget) baCloseDrawer(id); };
 
   // ── Item counters ────────────────────────────────────────
-  window.baInc = function (k) { baCounts[k]++; _baSync(k); };
-  window.baDec = function (k) { if (baCounts[k] > 0) { baCounts[k]--; _baSync(k); } };
+  window.baInc = function (k) { if (!(k in baCounts)) return; baCounts[k]++; _baSync(k); };
+  window.baDec = function (k) { if (!(k in baCounts) || baCounts[k] <= 0) return; baCounts[k]--; _baSync(k); };
   function _baSync(k) {
     document.getElementById('ba-n-' + k).textContent = baCounts[k];
     document.getElementById('ba-card-' + k).classList.toggle('has-count', baCounts[k] > 0);
@@ -3409,8 +3423,11 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 
   // ── Filter ──────────────────────────────────────────────
   window.baConfirmFilter = function () {
-    var pairs = [['ba-f-same-day','当日対応'],['ba-f-english','英語対応'],['ba-f-insurance','保険加入'],['ba-f-disposal','不用品回収']];
-    var on = pairs.filter(function (p) { return document.getElementById(p[0]).checked; }).map(function (p) { return p[1]; });
+    var on = [];
+    _baCfg().filters.forEach(function (f) {
+      var el = f && f.id ? document.getElementById('ba-f-' + f.id) : null;
+      if (el && el.checked) on.push(f.short || f.label);
+    });
     baState.filters = on.length ? on.join('・') : '';
     var el = document.getElementById('ba-val-filter');
     el.textContent = on.length ? on.join('・') : '条件を選択';
@@ -3594,6 +3611,95 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     closeBookingApp();
   };
 
+  // ── CMS-driven form parts (items / time slots / filters / titles) ──
+  function _baItemCard(it) {
+    var id = _baEsc(String(it.id));
+    var svg = BA_ITEM_SVG[it.id] || BA_ITEM_SVG._default;
+    var n = baCounts[it.id] || 0;
+    return '<div class="ba-item-card' + (n > 0 ? ' has-count' : '') + '" id="ba-card-' + id + '">'
+      + '<div class="ba-item-name">' + _baEsc(it.name || it.short || it.id) + '</div>'
+      + '<div class="ba-item-img">' + svg + '</div>'
+      + '<div class="ba-counter"><button type="button" data-ba-act="dec" data-ba-id="' + id + '">−</button>'
+      + '<span id="ba-n-' + id + '">' + n + '</span>'
+      + '<button type="button" data-ba-act="inc" data-ba-id="' + id + '">＋</button></div>'
+      + '</div>';
+  }
+  function baRenderItems() {
+    var host = document.getElementById('ba-items-host');
+    if (!host) return;
+    var cfg = _baCfg();
+    var items = cfg.items.filter(function (it) { return it && it.id && (it.name || it.short) && it.active !== false; });
+    var prev = baCounts;
+    BA_ITEMS = []; BA_ITEM_NAMES = {}; baCounts = {};
+    items.forEach(function (it) {
+      var id = String(it.id);
+      BA_ITEMS.push(id);
+      BA_ITEM_NAMES[id] = it.short || it.name;
+      baCounts[id] = prev[id] || 0;
+    });
+    var byCat = {};
+    items.forEach(function (it) { var c = it.cat || 'other'; (byCat[c] = byCat[c] || []).push(it); });
+    var html = '', seen = {};
+    cfg.cats.forEach(function (c) {
+      if (!c || !c.id || !byCat[c.id]) return;
+      seen[c.id] = 1;
+      html += '<div class="ba-cat-title">' + _baEsc(c.label || '') + '</div><div class="ba-items-grid">' + byCat[c.id].map(_baItemCard).join('') + '</div>';
+    });
+    Object.keys(byCat).forEach(function (cid) {
+      if (seen[cid]) return;
+      html += '<div class="ba-cat-title">その他</div><div class="ba-items-grid">' + byCat[cid].map(_baItemCard).join('') + '</div>';
+    });
+    host.innerHTML = html;
+  }
+  function baRenderTimeSlots() {
+    var host = document.getElementById('ba-time-host');
+    if (!host) return;
+    host.innerHTML = _baCfg().timeSlots.map(function (s) {
+      var label = (s && typeof s === 'object') ? String(s.label || '') : String(s || '');
+      var value = (s && typeof s === 'object' && s.value) ? String(s.value) : label;
+      if (!label) return '';
+      return '<label class="ba-filter-label"><input type="radio" name="ba-time" value="' + _baEsc(value) + '"> ' + _baEsc(label) + '</label>';
+    }).join('');
+    if (baState.timeSlot) {
+      host.querySelectorAll('input[name="ba-time"]').forEach(function (r) { if (r.value === baState.timeSlot) r.checked = true; });
+    }
+  }
+  function baRenderFilters() {
+    var host = document.getElementById('ba-filter-host');
+    if (!host) return;
+    var picked = String(baState.filters || '').split('・');
+    host.innerHTML = _baCfg().filters.map(function (f) {
+      if (!f || !f.id || !f.label) return '';
+      var on = picked.indexOf(f.short || f.label) >= 0;
+      return '<label class="ba-filter-label"><input type="checkbox" id="ba-f-' + _baEsc(String(f.id)) + '"' + (on ? ' checked' : '') + '> ' + _baEsc(f.label) + '</label>';
+    }).join('');
+  }
+  function baRenderBookingConfig() {
+    baRenderItems(); baRenderTimeSlots(); baRenderFilters();
+    var labels = _baCfg().labels;
+    var defs = {
+      furnitureTitle: ['#ba-drawer-furniture', "荷物を選択"],
+      dateTitle:      ['#ba-drawer-date', "引越し希望日"],
+      timeTitle:      ['#ba-drawer-time', "希望時間帯"],
+      filterTitle:    ['#ba-drawer-filter', "絞り込み条件"]
+    };
+    Object.keys(defs).forEach(function (k) {
+      var el = document.querySelector(defs[k][0] + ' .ba-drawer-title');
+      if (el) el.textContent = (labels[k] && String(labels[k]).trim()) ? String(labels[k]) : defs[k][1];
+    });
+  }
+  // Item counter clicks — delegated (cards re-render from CMS config).
+  (function () {
+    var host = document.getElementById('ba-items-host');
+    if (!host) return;
+    host.addEventListener('click', function (e) {
+      var btn = e.target && e.target.closest ? e.target.closest('[data-ba-act]') : null;
+      if (!btn) return;
+      var k = btn.getAttribute('data-ba-id');
+      if (!(k in baCounts)) return;
+      if (btn.getAttribute('data-ba-act') === 'inc') window.baInc(k); else window.baDec(k);
+    });
+  }());
   // ── Init ────────────────────────────────────────────────
   document.getElementById('ba-input-date').min = new Date().toISOString().split('T')[0];
   _baBuildPrefSelect('ba-pref-from'); _baBuildPrefSelect('ba-pref-to');
@@ -3606,6 +3712,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     var openDrawer = document.querySelector('.ba-overlay.open');
     if (openDrawer) openDrawer.classList.remove('open'); else closeBookingApp();
   });
+  baRenderBookingConfig();
   baRenderServices();
   baShowScreen('services');
 })();
