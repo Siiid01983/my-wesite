@@ -1,39 +1,64 @@
 'use strict';
 
 /* ════════════════════════════════════════════════════════
-   INBOX MODULE — Email Center Phase 1 + Management/Quoting (P3)
+   INBOX MODULE — Email Center: management, quoting & direct SMTP reply
 
    Reads inbox_messages and renders them as cards inside
-   #messages-container. Management actions (P3):
+   #messages-container.
+
+   ── Recipient channels (Workstream 2) ─────────────────────
+   Every message is classified by the company mailbox that RECEIVED it — the
+   existing `mailbox` column (this IS the recipient email; set by the IMAP
+   poller, create-booking.php and receive-email.php):
+       booking@hello-moving.com   予約 (blue)
+       support@hello-moving.com   サポート (amber)
+       contact@hello-moving.com   お問い合わせ (green) ← default for legacy /
+                                  unclassified rows (inbox-migrate.php backfill)
+   The UI adds a channel tab bar (すべて / booking@ / support@ / contact@) and
+   a colored recipient badge on every card.
+
+   ── Direct server-side reply (Workstream 1) ───────────────
+     • 返信 → reply modal (To / From / 件名 / 本文) → inboxSendReply() POSTs to
+       hm-api/send-email.php, which routes through EmailService::deliver():
+       transport is _config.php 'mail_mode' ('smtp' → _smtp.php native client
+       with the smtp_host/port/user/pass/secure credentials; 'mail' → PHP mail()).
+     • The From account is chosen AUTOMATICALLY from the message's channel:
+       booking@ msg → from_account 'booking', support@ → 'support',
+       contact@ → 'contact'. (SMTP AUTH stays smtp_user; when From differs,
+       EmailService discloses it via a Sender: header — RFC 5322 §3.6.2.)
+     • Replies are threaded (in_reply_to / references = inbound Message-ID)
+       and logged into `communications` (log_comm:true).
+     • UX: the send button shows 送信中… while in flight; failures surface the
+       server's error + code verbatim PLUS a _config.php troubleshooting hint
+       (e.g. smtp_auth → check smtp_user/smtp_pass). A コピー fallback keeps
+       the old clipboard path available if SMTP is down.
+
+   ── Management / quoting ──────────────────────────────────
      • 既読/未読 toggle            → is_read (optimistic)
-     • 返信                        → copyable reply template modal (From: contact@,
-                                     booking ref + last quoted price) → clipboard,
-                                     pasted into Gmail signed in as contact@
      • 見積送信 modal              → price/expiry/terms → labels.quote (JSON col)
        + 「見積りをコピー」        → professional template → clipboard
      • 削除                        → rest.php delete (staff-gated) + confirm
-     • Filter pills                → すべて / 未読 / 見積済 / 対応済 (+ text search)
+     • Status pills                → すべて / 未読 / 見積済 / 対応済 (+ text search)
    Quote history lives in the EXISTING labels JSON column (labels.quote =
-   {price, expiry, terms, quotedAt}) — no schema migration. All writes go
-   through window.api (rest.php); the client attaches X-ADMIN-TOKEN, and the
-   server requires a staff token for inbox writes (hm_require_staff_write).
+   {price, expiry, terms, quotedAt}) — no schema migration. DB writes go
+   through window.api (rest.php; staff token required for inbox writes);
+   the email send goes to send-email.php with X-API-KEY (rate-limited).
    Optimistic UI: the local cache mutates + re-renders instantly; failures
-   revert and toast. Reply is clipboard-only: mailto: cannot force the From
-   identity, so the operator copies the template and pastes it into Gmail while
-   signed in as contact@ (the mail-sending APIs were removed — see git history).
+   revert and toast.
 
    Public API on window:
      renderInbox()                — called by go('inbox')
      inboxToggleRead(id)          — mark read/unread
      inboxDelete(id)              — delete a message
-     inboxOpenReplyCopy(id)       — open the copyable reply template modal
-     inboxCopyReplyText()         — copy the reply template to clipboard
-     inboxCloseReplyCopy()        — close the reply template modal
+     inboxOpenReply(id)           — open the reply modal (channel-aware From)
+     inboxSendReply()             — send via send-email.php (SMTP/mail())
+     inboxCopyReply()             — clipboard fallback for the reply text
+     inboxCloseReply()            — close the reply modal
      inboxOpenQuote(id)           — open the quote modal (prefilled if quoted)
      inboxSaveQuote()             — persist labels.quote
      inboxCopyQuote()             — copy the formatted quote template
      inboxCloseQuote()            — close the quote modal
-     inboxSetFilter(f)/inboxSearch(q)
+     inboxSetFilter(f)/inboxSetChannel(c)/inboxSearch(q)
    ════════════════════════════════════════════════════════ */
 
 (function () {
@@ -41,7 +66,27 @@
   var _byId = {};                                   // id → message (lookup)
   var _messages = [];                               // local cache (optimistic UI)
   var _filter = 'all';                              // all | unread | quoted | done
+  var _channel = 'all';                             // all | <recipient mailbox>
   var _search = '';
+
+  /* ── Recipient channels (WS2) ─────────────────────────────
+     Keyed by the FULL recipient address stored in inbox_messages.mailbox.
+     `key` is the send-email.php from_account that replies from the SAME
+     channel (Integration Goal: reply From matches the received mailbox). */
+  var DEFAULT_CHANNEL = 'contact@hello-moving.com';
+  var CHANNELS = ['booking@hello-moving.com', 'support@hello-moving.com', 'contact@hello-moving.com'];
+  var CHANNEL_META = {
+    'booking@hello-moving.com': { key: 'booking', label: 'booking@', bg: 'rgba(37,99,235,.10)',  fg: '#1d4ed8' },
+    'support@hello-moving.com': { key: 'support', label: 'support@', bg: 'rgba(245,158,11,.14)', fg: '#b45309' },
+    'contact@hello-moving.com': { key: 'contact', label: 'contact@', bg: 'rgba(16,185,129,.12)', fg: '#0a7d33' }
+  };
+  // Recipient email of a message. Unknown/missing mailbox → contact@ (the same
+  // default inbox-migrate.php backfills, so UI and DB never disagree).
+  function _recipientOf(m) {
+    var v = String((m && m.mailbox) || '').trim().toLowerCase();
+    return CHANNEL_META[v] ? v : DEFAULT_CHANNEL;
+  }
+  function _channelMeta(m) { return CHANNEL_META[_recipientOf(m)]; }
 
   /* ── Helpers ─────────────────────────────────────────── */
   function _esc(s) {
@@ -79,6 +124,7 @@
 
   /* ── Filtering ────────────────────────────────────────── */
   function _matchesFilter(m) {
+    if (_channel !== 'all' && _recipientOf(m) !== _channel) return false;
     if (_filter === 'unread' && m.is_read) return false;
     if (_filter === 'quoted' && !_quoteOf(m)) return false;
     if (_filter === 'done'   && !m.is_read) return false;
@@ -101,7 +147,7 @@
       '<div class="ibx-actions" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
         '<button class="btn btn-ghost btn-sm" onclick="inboxToggleRead(\'' + id + '\')" title="' + (m.is_read ? '未読にする' : '既読にする') + '">' +
           readIcon + '<span style="margin-left:4px">' + (m.is_read ? '未読に' : '既読に') + '</span></button>' +
-        '<button class="btn btn-ghost btn-sm" onclick="inboxOpenReplyCopy(\'' + id + '\')" title="返信テンプレートを作成（コピーして contact@ の Gmail に貼付）">' +
+        '<button class="btn btn-ghost btn-sm" onclick="inboxOpenReply(\'' + id + '\')" title="返信を作成・送信（差出人は受信チャンネル ' + _esc(_channelMeta(m).label) + ' に自動一致）">' +
           '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg><span style="margin-left:4px">返信</span></button>' +
         '<button class="btn btn-ghost btn-sm" onclick="inboxOpenQuote(\'' + id + '\')" title="見積を作成・送信" style="color:var(--blue)">' +
           '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1H6.32c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg><span style="margin-left:4px">見積送信</span></button>' +
@@ -135,12 +181,37 @@
         label + ' <span style="opacity:.75">' + counts[key] + '</span></button>';
     };
 
+    // Channel tab bar (WS2): counts per recipient mailbox over the WHOLE cache
+    // (channel is the outer dimension; status pills/search filter within it).
+    var chCounts = { all: _messages.length };
+    CHANNELS.forEach(function (c) { chCounts[c] = 0; });
+    _messages.forEach(function (m) { chCounts[_recipientOf(m)]++; });
+
+    var chTab = function (key, label, meta) {
+      var on = _channel === key;
+      var style = on
+        ? (meta ? 'background:' + meta.fg + ';color:#fff;border:1px solid ' + meta.fg
+                : 'background:var(--ink);color:#fff;border:1px solid var(--ink)')
+        : 'background:var(--bg);color:var(--gray-1);border:1px solid var(--line)';
+      return '<button class="btn btn-sm ibx-ch-tab" data-channel="' + _esc(key) + '" onclick="inboxSetChannel(\'' + _esc(key) + '\')" ' +
+        'title="' + (key === 'all' ? '全チャンネル' : '宛先: ' + _esc(key)) + '" style="' + style +
+        ';border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600">' +
+        label + ' <span style="opacity:.75;font-weight:400">' + chCounts[key] + '</span></button>';
+    };
+    var channelBar =
+      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px">' +
+        '<span style="font-size:11px;color:var(--gray-2);margin-right:2px">宛先チャンネル:</span>' +
+        chTab('all', 'すべて', null) +
+        CHANNELS.map(function (c) { return chTab(c, CHANNEL_META[c].label, CHANNEL_META[c]); }).join('') +
+      '</div>';
+
     var header =
       '<div class="panel-hd" style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">' +
         '<h2 style="font-size:16px;font-weight:700;color:var(--ink)">受信トレイ <span style="font-size:12px;font-weight:400;color:var(--gray-2);margin-left:6px">' + shown.length + ' / ' + _messages.length + '件</span></h2>' +
         '<button class="btn btn-ghost btn-sm" onclick="renderInbox()">' +
           '<svg viewBox="0 0 24 24" width="14" height="14" style="margin-right:4px"><path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>更新</button>' +
       '</div>' +
+      channelBar +
       '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">' +
         pill('all', 'すべて') + pill('unread', '未読') + pill('quoted', '見積済') + pill('done', '対応済') +
         '<input class="input" id="ibxSearch" type="text" placeholder="検索（名前・件名・予約番号）" value="' + _esc(_search) + '" ' +
@@ -160,9 +231,12 @@
       var bookingTag = m.booking_id
         ? '<span style="display:inline-block;padding:2px 8px;background:rgba(37,99,235,.1);color:var(--blue);font-size:11px;font-weight:600;border-radius:4px;margin-left:8px">' + _esc(m.booking_id) + '</span>'
         : '';
-      var mailboxTag = m.mailbox
-        ? '<span style="display:inline-block;padding:2px 8px;background:var(--bg-soft-2);color:var(--gray-1);font-size:11px;border-radius:4px;margin-left:8px">→ ' + _esc(m.mailbox) + '</span>'
-        : '';
+      // Recipient badge (WS2): ALWAYS shown — unclassified rows read as contact@
+      // so every card instantly identifies its inquiry channel.
+      var chMeta = _channelMeta(m);
+      var mailboxTag =
+        '<span class="ibx-ch-badge" title="宛先: ' + _esc(_recipientOf(m)) + '" style="display:inline-block;padding:2px 8px;background:' +
+        chMeta.bg + ';color:' + chMeta.fg + ';font-size:11px;font-weight:600;border-radius:4px;margin-left:8px">→ ' + _esc(chMeta.label) + '</span>';
       var quoteTag = q
         ? '<span style="display:inline-block;padding:2px 8px;background:rgba(16,185,129,.12);color:#0a7d33;font-size:11px;font-weight:700;border-radius:4px;margin-left:8px" title="見積済（' + _esc(q.quotedAt ? _fmtDate(q.quotedAt) : '') + '）">見積 ' + _esc(_fmtYen(q.price)) + '</span>'
         : '';
@@ -211,8 +285,9 @@
   }
 
   /* ── Filter / search (client-side over the cache) ─────── */
-  function inboxSetFilter(f) { _filter = f; _renderMessages(); }
-  function inboxSearch(q)    { _search = q || ''; _renderMessages(); }
+  function inboxSetFilter(f)  { _filter = f; _renderMessages(); }
+  function inboxSetChannel(c) { _channel = (c === 'all' || CHANNEL_META[c]) ? c : 'all'; _renderMessages(); }
+  function inboxSearch(q)     { _search = q || ''; _renderMessages(); }
 
   /* ── Mark read/unread (optimistic) ────────────────────── */
   async function inboxToggleRead(id) {
@@ -247,29 +322,25 @@
     }
   }
 
-  var REPLY_FROM = 'contact@hello-moving.com';   // the identity replies are sent from
+  /* ── Reply modal — direct server-side send (WS1 / PRIMARY 返信 flow) ──────
+     The From identity is NOT chosen by the operator: it is derived from the
+     message's recipient channel (mailbox column) so a booking@ inquiry is
+     answered from booking@, support@ from support@, contact@ from contact@.
+     The send goes through hm-api/send-email.php → EmailService::deliver(),
+     which reads the SMTP credentials (smtp_host/port/user/pass/secure) from
+     hm-api/_config.php when mail_mode='smtp'. */
 
-  /* ── Reply-as-copyable-template (PRIMARY 返信 flow) ────────
-     mailto: cannot force the From identity, so instead of launching the
-     operator's default Gmail we present a ready-to-paste template that leads
-     with an explicit "From: contact@hello-moving.com" header, the booking
-     details, and the last quoted price (labels.quote). The operator copies it
-     and pastes into Gmail while signed in as contact@. */
-  function _replyTemplateFull(m) {
+  // Editable reply BODY (no pseudo-headers — those are real SMTP headers now).
+  function _replyBodyTemplate(m) {
     var name = m.sender_name || m.sender || 'お客';
-    var ref  = m.booking_id || '—';
+    var from = _recipientOf(m);
     var lines = [
-      'From: ' + REPLY_FROM,
-      'To: ' + (m.email || ''),
-      '件名: Re: ' + (m.subject || 'お問い合わせ') + (m.booking_id ? '（予約番号: ' + m.booking_id + '）' : ''),
-      '────────────────────────',
-      '',
       name + ' 様',
       '',
       'お問い合わせいただき誠にありがとうございます。',
       'Hello Moving でございます。',
       '',
-      '■ 予約番号　　：' + ref,
+      '■ 予約番号　　：' + (m.booking_id || '—'),
     ];
     // Quote injection — hard-code the last quoted price only when one exists.
     var q = _quoteOf(m);
@@ -289,71 +360,200 @@
     lines.push('');
     lines.push('──────────────────');
     lines.push('Hello Moving（ハロームービング）');
-    lines.push('Email: ' + REPLY_FROM);
+    lines.push('Email: ' + from);
     lines.push('TEL: 090-2489-3402');
     lines.push('https://hello-moving.com');
     lines.push('──────────────────');
     return lines.join('\n');
   }
 
-  function _ensureReplyCopyModal() {
-    if (document.getElementById('inboxReplyCopyModal')) return;
+  function _ensureReplyModal() {
+    if (document.getElementById('inboxReplyModal')) return;
     var el = document.createElement('div');
-    el.id = 'inboxReplyCopyModal';
+    el.id = 'inboxReplyModal';
     el.setAttribute('style', 'display:none;position:fixed;inset:0;z-index:9999;background:rgba(11,15,23,.45);align-items:center;justify-content:center;padding:20px');
     el.innerHTML =
-      '<div class="panel" style="background:#fff;max-width:600px;width:100%;max-height:90vh;overflow:auto;padding:0">' +
+      '<div class="panel" style="background:#fff;max-width:640px;width:100%;max-height:90vh;overflow:auto;padding:0">' +
         '<div class="panel-head" style="padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between">' +
-          '<span class="panel-title">返信テンプレート</span>' +
-          '<button class="btn btn-ghost btn-sm" onclick="inboxCloseReplyCopy()" aria-label="閉じる">✕</button>' +
+          '<span class="panel-title">返信を送信</span>' +
+          '<button class="btn btn-ghost btn-sm" onclick="inboxCloseReply()" aria-label="閉じる">✕</button>' +
         '</div>' +
         '<div class="panel-body" style="padding:18px 20px">' +
-          '<div style="font-size:12px;color:var(--gray-1);background:var(--bg-soft-2);border-radius:8px;padding:8px 12px;margin-bottom:12px">' +
-            '下記をコピーし、<strong>contact@hello-moving.com</strong> でログイン中の Gmail に貼り付けて送信してください。（本文は自由に編集できます）' +
+          '<input type="hidden" id="ircMsgId" />' +
+          '<div style="display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:12.5px;background:var(--bg-soft-2);border-radius:8px;padding:10px 12px;margin-bottom:12px">' +
+            '<span style="color:var(--gray-2)">宛先</span><strong id="ircTo" style="word-break:break-all"></strong>' +
+            '<span style="color:var(--gray-2)">差出人</span><span><span id="ircFrom" style="display:inline-block;padding:1px 8px;border-radius:4px;font-weight:600"></span>' +
+              '<span style="color:var(--gray-2);margin-left:6px">（受信チャンネルに自動一致）</span></span>' +
           '</div>' +
-          '<textarea class="input" id="ircText" rows="15" spellcheck="false" style="resize:vertical;min-height:280px;font-size:12.5px;line-height:1.7;font-family:ui-monospace,Menlo,Consolas,monospace;white-space:pre"></textarea>' +
-          '<p id="ircStatus" style="display:none;font-size:12.5px;margin-top:10px"></p>' +
+          '<div class="m-field"><label class="m-label">件名</label>' +
+            '<input class="input" id="ircSubject" type="text" /></div>' +
+          '<div class="m-field" style="margin-top:10px"><label class="m-label">本文</label>' +
+            '<textarea class="input" id="ircText" rows="13" spellcheck="false" style="resize:vertical;min-height:240px;font-size:12.5px;line-height:1.7;font-family:ui-monospace,Menlo,Consolas,monospace;white-space:pre"></textarea></div>' +
+          '<p id="ircStatus" style="display:none;font-size:12.5px;margin-top:10px;white-space:pre-wrap"></p>' +
           '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap">' +
-            '<button class="btn btn-ghost btn-sm" onclick="inboxCloseReplyCopy()">閉じる</button>' +
-            '<button class="btn btn-primary btn-sm" id="ircCopy" onclick="inboxCopyReplyText()">' +
-              '<svg viewBox="0 0 24 24" width="13" height="13" style="margin-right:4px"><path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>返信をコピー</button>' +
+            '<button class="btn btn-ghost btn-sm" onclick="inboxCloseReply()">閉じる</button>' +
+            '<button class="btn btn-ghost btn-sm" id="ircCopy" onclick="inboxCopyReply()" title="SMTP が使えない場合の予備手段：本文をコピーして Gmail から手動送信">' +
+              '<svg viewBox="0 0 24 24" width="13" height="13" style="margin-right:4px"><path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>コピー</button>' +
+            '<button class="btn btn-primary btn-sm" id="ircSend" onclick="inboxSendReply()">' +
+              '<svg viewBox="0 0 24 24" width="13" height="13" style="margin-right:4px"><path fill="currentColor" d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>送信する</button>' +
           '</div>' +
         '</div>' +
       '</div>';
     document.body.appendChild(el);
   }
 
-  function inboxOpenReplyCopy(id) {
-    var m = _byId[id];
-    if (!m) return;
-    _ensureReplyCopyModal();
-    document.getElementById('ircText').value = _replyTemplateFull(m);
+  function _ircStatus(msg, kind) {
     var s = document.getElementById('ircStatus');
-    if (s) { s.textContent = ''; s.style.display = 'none'; }
-    document.getElementById('inboxReplyCopyModal').style.display = 'flex';
+    if (!s) return;
+    s.textContent = msg || '';
+    s.style.display = msg ? 'block' : 'none';
+    s.style.color = kind === 'error' ? '#c23' : (kind === 'success' ? '#0a7d33' : 'var(--gray-2)');
   }
 
-  function inboxCloseReplyCopy() {
-    var el = document.getElementById('inboxReplyCopyModal');
+  function inboxOpenReply(id) {
+    var m = _byId[id];
+    if (!m) return;
+    _ensureReplyModal();
+    var from = _recipientOf(m);
+    var meta = CHANNEL_META[from];
+    document.getElementById('ircMsgId').value = id;
+    document.getElementById('ircTo').textContent = m.email || '';
+    var fromEl = document.getElementById('ircFrom');
+    fromEl.textContent = from;
+    fromEl.style.background = meta.bg;
+    fromEl.style.color = meta.fg;
+    document.getElementById('ircSubject').value =
+      'Re: ' + (m.subject || 'お問い合わせ') + (m.booking_id ? '（予約番号: ' + m.booking_id + '）' : '');
+    document.getElementById('ircText').value = _replyBodyTemplate(m);
+    var send = document.getElementById('ircSend');
+    if (send) { send.disabled = false; send.innerHTML = _IRC_SEND_LABEL; }
+    _ircStatus('', '');
+    document.getElementById('inboxReplyModal').style.display = 'flex';
+  }
+
+  function inboxCloseReply() {
+    var el = document.getElementById('inboxReplyModal');
     if (el) el.style.display = 'none';
   }
 
-  async function inboxCopyReplyText() {
-    var ta = document.getElementById('ircText');
-    if (!ta) return;
-    var s = document.getElementById('ircStatus');
-    function _ok() {
-      if (s) { s.textContent = 'コピーしました！contact@ の Gmail に貼り付けてください。'; s.style.color = '#0a7d33'; s.style.display = 'block'; }
-      _toast('コピーしました！');
+  var _IRC_SEND_LABEL =
+    '<svg viewBox="0 0 24 24" width="13" height="13" style="margin-right:4px"><path fill="currentColor" d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>送信する';
+
+  // Troubleshooting hints per send-email.php error code — points the admin
+  // straight at the _config.php key that most likely needs fixing.
+  function _smtpHint(code) {
+    switch (code) {
+      case 'smtp_auth':    return 'ヒント: _config.php の smtp_user / smtp_pass（SMTPパスワード）を確認してください。';
+      case 'smtp_config':  return 'ヒント: _config.php の smtp_host / smtp_user / smtp_pass が未設定です。';
+      case 'smtp_connect':
+      case 'smtp_dns':     return 'ヒント: _config.php の smtp_host / smtp_port を確認してください。';
+      case 'smtp_tls':     return 'ヒント: _config.php の smtp_secure（"tls"=587 / "ssl"=465）と smtp_port の組み合わせを確認してください。';
+      case 'smtp_unavailable': return 'ヒント: サーバーに _smtp.php / EmailService.php がデプロイされているか確認してください。';
+      case 'mail_send':    return 'ヒント: mail_mode="mail" の送信に失敗。cPanel のメール設定 / SPF を確認するか、mail_mode="smtp" への切替を検討してください。';
+      case 'invalid_recipient':
+      case 'bad_recipient': return 'ヒント: 宛先メールアドレスの形式が不正です。';
+      default: return '';
     }
+  }
+
+  /* ── Send the reply (server-side SMTP via send-email.php) ─────────────── */
+  async function inboxSendReply() {
+    var id = document.getElementById('ircMsgId').value;
+    var m = _byId[id];
+    if (!m) return;
+    var to      = String(m.email || '').trim();
+    var subject = (document.getElementById('ircSubject').value || '').trim();
+    var body    = (document.getElementById('ircText').value || '').trim();
+    if (!to || to.indexOf('@') < 0) { _ircStatus('宛先メールアドレスが不正です。', 'error'); return; }
+    if (!subject) { _ircStatus('件名を入力してください。', 'error'); return; }
+    if (!body)    { _ircStatus('本文を入力してください。', 'error'); return; }
+
+    var from    = _recipientOf(m);                 // channel = From identity
+    var account = CHANNEL_META[from].key;          // send-email.php from_account
+    var btn = document.getElementById('ircSend');
+
+    // Loading state — clear feedback while the SMTP round-trip runs.
+    if (btn) { btn.disabled = true; btn.textContent = '送信中…'; }
+    _ircStatus('送信中…（' + from + ' から送信しています）', '');
+
+    var json;
     try {
-      await navigator.clipboard.writeText(ta.value);   // copies live edits too
+      var base = (window.API_BASE || '').replace(/\/$/, '');
+      var res = await fetch(base + '/send-email.php', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-KEY': window.API_KEY || '' },
+        body: JSON.stringify({
+          to:           to,
+          subject:      subject,
+          message:      body,
+          booking_id:   m.booking_id || '',
+          from_account: account,                   // From matches the channel
+          in_reply_to:  m.message_id || '',        // thread onto the inbound mail
+          references:   m.message_id || '',
+          log_comm:     true,                      // record in `communications`
+        }),
+      });
+      json = await res.json().catch(function () {
+        return { ok: false, error: 'サーバーが不正な応答を返しました（HTTP ' + res.status + '）' };
+      });
+    } catch (e) {
+      json = { ok: false, error: (e && e.message) || 'ネットワークエラー（APIに接続できません）' };
+    }
+
+    if (btn) { btn.disabled = false; btn.innerHTML = _IRC_SEND_LABEL; }
+
+    if (json && json.ok) {
+      _ircStatus('送信しました！ 差出人: ' + (json.from || from) +
+                 (json.transport ? '（経路: ' + json.transport + '）' : ''), 'success');
+      _toast('返信を送信しました');
+      // Replying implies the message is handled — mark read (best-effort).
+      if (!m.is_read) {
+        m.is_read = true;
+        _renderMessages();
+        if (window.api) {
+          window.api.from('inbox_messages').update({ is_read: true }).eq('id', id)
+            .then(function (r) { if (r && r.error) console.warn('[INBOX] mark-read after send failed:', r.error.message); });
+        }
+      }
+      setTimeout(inboxCloseReply, 1600);
+      return;
+    }
+
+    // Explicit failure surface: server error string + code + _config.php hint,
+    // so an SMTP auth/config problem is diagnosable without opening the logs.
+    var code = (json && json.error_detail && json.error_detail.code) || '';
+    var msg  = '送信に失敗しました：' + ((json && json.error) || '不明なエラー') +
+               (code ? '（コード: ' + code + '）' : '');
+    var hint = _smtpHint(code);
+    if (hint) msg += '\n' + hint;
+    _ircStatus(msg, 'error');
+  }
+
+  /* ── Clipboard fallback (kept for SMTP outages) ───────────────────────── */
+  async function inboxCopyReply() {
+    var id = document.getElementById('ircMsgId').value;
+    var m = _byId[id];
+    if (!m) return;
+    var from = _recipientOf(m);
+    var text = [
+      'From: ' + from,
+      'To: ' + (m.email || ''),
+      '件名: ' + (document.getElementById('ircSubject').value || ''),
+      '────────────────────────',
+      '',
+      document.getElementById('ircText').value || '',
+    ].join('\n');
+    function _ok() { _ircStatus('コピーしました！' + from + ' の Gmail に貼り付けて送信できます。', 'success'); _toast('コピーしました！'); }
+    try {
+      await navigator.clipboard.writeText(text);   // copies live edits too
       _ok();
     } catch (e) {
-      // Clipboard API blocked (permissions/http) — fall back to execCommand.
-      ta.focus(); ta.select();
+      // Clipboard API blocked (permissions/http) — fallback via hidden textarea.
+      var ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
       try { document.execCommand('copy'); _ok(); }
-      catch (_) { if (s) { s.textContent = 'コピーできませんでした。テキストを手動で選択してください。'; s.style.color = '#c23'; s.style.display = 'block'; } }
+      catch (_) { _ircStatus('コピーできませんでした。テキストを手動で選択してください。', 'error'); }
+      document.body.removeChild(ta);
     }
   }
 
@@ -467,6 +667,7 @@
   /* ── Professional quote template → clipboard ──────────── */
   function _quoteTemplate(m, q) {
     var name = m.sender_name || m.sender || 'お客';
+    var from = _recipientOf(m);          // quote is issued from the same channel
     // Service details: the packed notes section (after ---) of the inbox body.
     var bodyText = (m.body_text || m.body || '');
     var details = bodyText.indexOf('---') >= 0 ? bodyText.split('---').slice(1).join('---').trim() : '';
@@ -479,7 +680,7 @@
       '━━━━━━━━━━━━━━━━━━━━━━━━',
       '発行日：' + issued,
       '発行者：Hello Moving（ハロームービング）',
-      '差出人：' + REPLY_FROM,
+      '差出人：' + from,
       '',
       name + ' 様',
       '',
@@ -509,7 +710,7 @@
     lines.push('──────────────────');
     lines.push('Hello Moving（ハロームービング）');
     lines.push('国土交通省認可　第 431320058126 号');
-    lines.push('Email: ' + REPLY_FROM);
+    lines.push('Email: ' + from);
     lines.push('TEL: 090-2489-3402');
     lines.push('https://hello-moving.com');
     lines.push('──────────────────');
@@ -548,14 +749,16 @@
   window.renderInbox      = renderInbox;
   window.inboxToggleRead  = inboxToggleRead;
   window.inboxDelete      = inboxDelete;
-  window.inboxOpenReplyCopy  = inboxOpenReplyCopy;
-  window.inboxCopyReplyText  = inboxCopyReplyText;
-  window.inboxCloseReplyCopy = inboxCloseReplyCopy;
+  window.inboxOpenReply   = inboxOpenReply;
+  window.inboxSendReply   = inboxSendReply;
+  window.inboxCopyReply   = inboxCopyReply;
+  window.inboxCloseReply  = inboxCloseReply;
   window.inboxOpenQuote   = inboxOpenQuote;
   window.inboxSaveQuote   = inboxSaveQuote;
   window.inboxCopyQuote   = inboxCopyQuote;
   window.inboxCloseQuote  = inboxCloseQuote;
   window.inboxSetFilter   = inboxSetFilter;
+  window.inboxSetChannel  = inboxSetChannel;
   window.inboxSearch      = inboxSearch;
 
 })();

@@ -105,13 +105,25 @@ try {
     $applied = array_merge($applied, array_keys($addIdx));
   }
 
+  // ── Recipient-channel backfill (Inbox categorization) ──────────────────────
+  // Retroactively classify rows that predate recipient tracking (or arrived via
+  // the generic webhook without one): mailbox = the receiving company address.
+  // Default = contact@hello-moving.com, matching receive-email.php and the
+  // admin Inbox UI fallback. Idempotent — only NULL/'' rows are touched; rows
+  // classified by the IMAP poller / create-booking.php are never overwritten.
+  $backfilled = $db->exec(
+    "UPDATE `inbox_messages` SET `mailbox` = 'contact@hello-moving.com'
+      WHERE `mailbox` IS NULL OR `mailbox` = ''"
+  );
+
   inbox_mig_out([
-    'ok'       => true,
-    'status'   => $applied ? 'migrated' : 'already_current',
-    'added'    => $applied,
-    'columns'  => array_keys($COLUMNS),
-    'message'  => $applied
-      ? 'inbox_messages upgraded for the Email Center (Phase 1).'
+    'ok'         => true,
+    'status'     => ($applied || $backfilled) ? 'migrated' : 'already_current',
+    'added'      => $applied,
+    'backfilled' => (int)$backfilled,   // rows classified as contact@ (default channel)
+    'columns'    => array_keys($COLUMNS),
+    'message'    => ($applied || $backfilled)
+      ? 'inbox_messages upgraded (Email Center columns + recipient-channel backfill).'
       : 'inbox_messages already has all Email Center columns — nothing to do.',
   ], $isCli);
 
