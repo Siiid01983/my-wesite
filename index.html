@@ -794,45 +794,20 @@ section#home-hero .hero-license {
 @media (max-width: 768px) {
   .svc-img-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
 }
-/* Cell = the white card box. It holds two SIBLING interactive elements
-   (valid HTML — no nested <a>): the full-bleed booking link (image + text)
-   and the Login / My Booking pill. */
-.svc-img-cell {
-  display: flex;
-  flex-direction: column;
+.svc-img-card {
+  display: block;
+  text-decoration: none;
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0,0,0,.06);
   overflow: hidden;
   transition: transform .15s, box-shadow .15s;
 }
-.svc-img-cell:hover {
+.svc-img-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 6px 18px rgba(0,0,0,.1);
 }
-.svc-img-cell:active { transform: scale(.98); }
-.svc-img-card {
-  display: block;
-  text-decoration: none;
-  flex: 1 1 auto;
-}
-.svc-img-card__login {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin: 0 12px 12px;
-  padding: 8px 10px;
-  border: 1.5px solid #9AB57A;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #2C3626;
-  text-decoration: none;
-  transition: background .15s, color .15s;
-}
-.svc-img-cell:hover .svc-img-card__login { border-color: #2C3626; }
-.svc-img-card__login:hover { background: #9AB57A; border-color: #9AB57A; color: #fff; }
+.svc-img-card:active { transform: scale(.98); }
 .svc-img-card__photo {
   width: 100%;
   aspect-ratio: 3 / 2;
@@ -845,7 +820,7 @@ section#home-hero .hero-license {
   display: block;
   transition: transform .3s;
 }
-.svc-img-cell:hover .svc-img-card__photo img { transform: scale(1.04); }
+.svc-img-card:hover .svc-img-card__photo img { transform: scale(1.04); }
 .svc-img-card__badge {
   position: absolute;
   top: 8px; left: 8px;
@@ -1507,13 +1482,9 @@ window.HM_renderServiceCards = function renderServiceCards(overrides) {
       ? '<p class="svc-img-card__desc" style="margin:4px 0 0;font-size:12px;line-height:1.5;color:var(--gray-1,#6b7280)">' + esc(desc) + '</p>'
       : '';
     /* data-service / href come ONLY from SERVICE_CONFIG → booking deep-links
-       are never affected by CMS content edits.
-       Cell layout: the whole image+text area is ONE booking link (tap
-       anywhere on the card = book that service); the Login / My Booking
-       pill is a SIBLING link (never nested inside the booking <a>) that
-       opens the customer-login modal (js/customer-login.js). */
-    return '<div class="svc-img-cell">'
-      + '<a class="svc-img-card" href="#booking" data-service="' + esc(svc.serviceValue) + '" aria-label="' + esc(title) + '">'
+       are never affected by CMS content edits. The whole card (image + text)
+       is ONE booking link — tap anywhere = book that service. */
+    return '<a class="svc-img-card" href="#booking" data-service="' + esc(svc.serviceValue) + '" aria-label="' + esc(title) + '">'
       + '<div class="svc-img-card__photo" style="background:' + svc.fallback + '">'
       + '<img src="' + esc(image) + '" alt="' + esc(title) + '" loading="lazy" onerror="this.style.display=\'none\'">'
       + badgeHtml
@@ -1522,9 +1493,7 @@ window.HM_renderServiceCards = function renderServiceCards(overrides) {
       + '<h3 class="svc-img-card__title">' + esc(title) + '</h3>'
       + descHtml
       + '</div>'
-      + '</a>'
-      + '<a class="svc-img-card__login" href="#customer-login" aria-label="Login / My Booking（予約確認）">Login / My Booking</a>'
-      + '</div>';
+      + '</a>';
   }).join('');
 };
 
@@ -1532,22 +1501,14 @@ window.HM_renderServiceCards = function renderServiceCards(overrides) {
 window.HM_renderServiceCards();
 
 /* Delegated grid clicks — survive ContentLoader's CMS re-render (which wipes
-   the per-element [data-service] handlers script.js bound at load):
-   - Login / My Booking pill → customer-login modal (openCustomerLogin)
-   - anywhere else on a card → booking overlay for that service.
+   the per-element [data-service] handlers script.js bound at load): a click
+   anywhere on a card opens the booking overlay for that service.
    `e.defaultPrevented` guards against double-firing when script.js's own
    per-element handler (still bound on the initial render) already ran. */
 (function () {
   var grid = document.getElementById('serviceCardsGrid');
   if (!grid) return;
   grid.addEventListener('click', function (e) {
-    var login = e.target.closest ? e.target.closest('.svc-img-card__login') : null;
-    if (login) {
-      e.preventDefault();
-      if (typeof window.openCustomerLogin === 'function') window.openCustomerLogin();
-      else window.location.href = 'login.html';
-      return;
-    }
     if (e.defaultPrevented) return;
     var card = e.target.closest ? e.target.closest('[data-service]') : null;
     if (card && typeof window.openBookingApp === 'function') {
