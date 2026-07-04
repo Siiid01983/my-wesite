@@ -138,10 +138,17 @@ return [
   //   smtp_secure:  'tls' → STARTTLS on port 587 (recommended)
   //                 'ssl' → implicit TLS on port 465
   //                 ''    → no encryption on port 25 (not recommended)
+  //   ⚠ GOTCHA: smtp_pass MUST be filled before switching mail_mode → 'smtp'.
+  //     While mail_mode is 'mail' these SMTP creds are never read, so a blank
+  //     smtp_pass is harmless. Flip to 'smtp' with a blank password and every
+  //     send (incl. admin Inbox 返信 replies) fails auth → 'smtp_error'.
+  //     Also note smtp_user (booking@) may differ from the From account chosen
+  //     per-send (e.g. contact@ for Inbox replies); deliver() discloses that via
+  //     a Sender: header, but the smtp_user mailbox's password is what auths.
   'smtp_host'  => 'mail.dzsecurity.com',
   'smtp_port'  => 587,
   'smtp_user'  => 'booking@hello-moving.com',
-  'smtp_pass'  => '',
+  'smtp_pass'  => '',        // ← fill this BEFORE setting mail_mode => 'smtp'
   'smtp_secure'=> 'tls',
   //   Optional SMTP tuning (safe to omit — defaults shown):
   'smtp_timeout' => 15,        // socket connect/read timeout, seconds
