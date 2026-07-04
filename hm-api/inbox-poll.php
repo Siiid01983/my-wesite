@@ -11,8 +11,13 @@
 //      */5 * * * * php /home/<user>/public_html/hm-api/inbox-poll.php >/dev/null 2>&1
 //  RUN — CLI once:
 //      php hm-api/inbox-poll.php
-//  RUN — HTTP (no cron/shell): set 'imap_poll_token' in _config.php, then hit
-//      https://<host>/hm-api/inbox-poll.php?token=<imap_poll_token>
+//  RUN — HTTP (cron with curl, same server only): set 'imap_poll_token' in
+//  _config.php, then:
+//      curl -s -H "X-Poll-Token: <imap_poll_token>" https://<host>/hm-api/inbox-poll.php
+//  The HTTP path is restricted to requests FROM this server (loopback or the
+//  server's own IP) — browsers/external callers get 403 even with the token.
+//  (?token= in the query string still works for back-compat but is logged in
+//  the access log; prefer the header.)
 //
 //  Safety: single-flight file lock (no overlapping runs); read-only IMAP (server
 //  \Seen untouched); each mailbox isolated in try/catch; credentials never logged.
@@ -35,14 +40,31 @@ function poll_out(array $payload, bool $isCli, int $status = 200): void {
   exit;
 }
 
-// ── Access control (HTTP path): token + rate limit. CLI is trusted (shell). ───
+// ── Access control (HTTP path): same-server + token + rate limit. CLI trusted. ─
 if (!$isCli) {
   require_once __DIR__ . '/_ratelimit.php';
   hm_rate_limit('inbox_poll', 6, 60);
+
+  // Same-server only: the sole legitimate HTTP caller is this box's own cron
+  // (curl). Reject anything not from loopback or the server's own address, so
+  // even a leaked token is useless from anywhere else. NOTE: this also blocks
+  // triggering from a browser — that is intentional. If the site ever sits
+  // behind a proxy/CDN, point the cron's curl at the local vhost instead.
+  $remote  = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+  $allowed = ['127.0.0.1', '::1'];
+  $self    = (string)($_SERVER['SERVER_ADDR'] ?? '');
+  if ($self !== '') $allowed[] = $self;
+  if ($remote === '' || !in_array($remote, $allowed, true)) {
+    poll_out(['ok' => false, 'error' => 'forbidden — inbox-poll.php accepts same-server requests only'], false, 403);
+  }
+
+  // Token: prefer the X-Poll-Token HEADER (never written to access logs). The
+  // legacy ?token= query form still works but lands in the server access log —
+  // migrate the cron to the header form, then rotate the token.
   $token = (string)(hm_config()['imap_poll_token'] ?? '');
-  $sent  = (string)($_GET['token'] ?? '');
+  $sent  = (string)($_SERVER['HTTP_X_POLL_TOKEN'] ?? ($_GET['token'] ?? ''));
   if ($token === '' || !hash_equals($token, $sent)) {
-    poll_out(['ok' => false, 'error' => 'forbidden — set imap_poll_token in _config.php and pass ?token='], false, 403);
+    poll_out(['ok' => false, 'error' => 'forbidden — set imap_poll_token in _config.php and send X-Poll-Token'], false, 403);
   }
 }
 
