@@ -182,6 +182,46 @@ if ($res['ok']) {
       hm_log_error('send-email log_comm failed', ['err' => $e->getMessage(), 'to' => $to]);
     }
   }
+  // Optional thread persistence into `inbox_messages` (admin Inbox 返信 flow).
+  // Opt-in like log_comm; the row is marked labels.outbound so the Inbox UI can
+  // render it as a sent reply inside the conversation. Never fails the response.
+  if (!empty($p['log_inbox'])) {
+    try {
+      require_once __DIR__ . '/_db.php';
+      // Thread resolution: caller-supplied thread_id → the replied-to message's
+      // thread → this mail starts its own (its Message-ID).
+      $threadId = trim((string)($p['thread_id'] ?? ''));
+      if ($threadId === '' && $inReplyTo !== '') {
+        $st = hm_db()->prepare('SELECT thread_id FROM inbox_messages WHERE message_id = ? LIMIT 1');
+        $st->execute([$inReplyTo]);
+        $r = $st->fetch();
+        if ($r && (string)$r['thread_id'] !== '') $threadId = (string)$r['thread_id'];
+      }
+      if ($threadId === '') $threadId = (string)($res['messageId'] ?? '');
+      $st = hm_db()->prepare(
+        'INSERT INTO inbox_messages
+           (id, sender, sender_name, email, subject, body, body_text, booking_id,
+            mailbox, message_id, in_reply_to, thread_id, received_at, is_read, status, labels)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW(),1,\'open\',\'{"outbound":true}\')'
+      );
+      $st->execute([
+        hm_uuid4(),
+        (string)$res['from'],
+        $acc['name'] ?? 'Hello Moving',
+        $to,
+        $subject,
+        $message,
+        $message,
+        $bookingId !== '' ? $bookingId : null,
+        $acc['email'] ?? (string)$res['from'],
+        (string)($res['messageId'] ?? '') ?: null,
+        $inReplyTo !== '' ? $inReplyTo : null,
+        $threadId !== '' ? $threadId : null,
+      ]);
+    } catch (Throwable $e) {
+      hm_log_error('send-email log_inbox failed', ['err' => $e->getMessage(), 'to' => $to]);
+    }
+  }
   email_ok(['from' => $res['from'], 'messageId' => $res['messageId'], 'transport' => $res['transport']]);
 }
 

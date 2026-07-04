@@ -153,6 +153,9 @@ function harness(sendResult) {
       req.body.in_reply_to === FAKE_MSG.message_id && req.body.references === FAKE_MSG.message_id);
     check('payload.booking_id carried', req.body.booking_id === 'HM-2026-0042');
     check('payload.log_comm = true (recorded in communications)', req.body.log_comm === true);
+    check('payload.log_inbox = true (persisted into inbox_messages thread)', req.body.log_inbox === true);
+    check('payload.thread_id falls back to the inbound Message-ID',
+      req.body.thread_id === FAKE_MSG.message_id);
 
     // 4) Success feedback + message marked read.
     await page.waitForFunction(() =>

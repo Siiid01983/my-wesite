@@ -27,7 +27,9 @@
        contact@ → 'contact'. (SMTP AUTH stays smtp_user; when From differs,
        EmailService discloses it via a Sender: header — RFC 5322 §3.6.2.)
      • Replies are threaded (in_reply_to / references = inbound Message-ID)
-       and logged into `communications` (log_comm:true).
+       and logged into `communications` (log_comm:true). They are ALSO persisted
+       into inbox_messages (log_inbox:true → send-email.php inserts a
+       labels.outbound row, same thread_id) and rendered as ↩ 送信済み cards.
      • UX: the send button shows 送信中… while in flight; failures surface the
        server's error + code verbatim PLUS a _config.php troubleshooting hint
        (e.g. smtp_auth → check smtp_user/smtp_pass). A コピー fallback keeps
@@ -137,9 +139,22 @@
     return true;
   }
 
+  // Outbound = a reply we sent (send-email.php log_inbox row, labels.outbound).
+  function _isOutbound(m) { return !!_labelsOf(m).outbound; }
+
   /* ── Action buttons (per card) ────────────────────────── */
   function _actionBtns(m) {
     var id = _esc(m.id);
+    if (_isOutbound(m)) {
+      // A sent reply: follow-up + delete only (read/quote don't apply to own mail).
+      return '' +
+        '<div class="ibx-actions" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
+          '<button class="btn btn-ghost btn-sm" onclick="inboxOpenReply(\'' + id + '\')" title="このお客様にもう一度送信する">' +
+            '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg><span style="margin-left:4px">再送・追伸</span></button>' +
+          '<button class="btn btn-ghost btn-sm" onclick="inboxDelete(\'' + id + '\')" title="削除" style="color:#c0392b">' +
+            '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg><span style="margin-left:4px">削除</span></button>' +
+        '</div>';
+    }
     var readIcon = m.is_read
       ? '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M21.99 8c0-.72-.37-1.35-.94-1.7L12 1 2.95 6.3C2.38 6.65 2 7.28 2 8v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2l-.01-10zM12 13 3.74 7.84 12 3l8.26 4.84L12 13z"/></svg>'
       : '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>';
@@ -240,6 +255,10 @@
       var quoteTag = q
         ? '<span style="display:inline-block;padding:2px 8px;background:rgba(16,185,129,.12);color:#0a7d33;font-size:11px;font-weight:700;border-radius:4px;margin-left:8px" title="見積済（' + _esc(q.quotedAt ? _fmtDate(q.quotedAt) : '') + '）">見積 ' + _esc(_fmtYen(q.price)) + '</span>'
         : '';
+      var isOut = _isOutbound(m);
+      var sentTag = isOut
+        ? '<span style="display:inline-block;padding:2px 8px;background:rgba(44,54,38,.08);color:var(--ink);font-size:11px;font-weight:700;border-radius:4px;margin-left:8px" title="このInboxから送信した返信">↩ 送信済み</span>'
+        : '';
       var unreadDot = !m.is_read
         ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--blue);margin-right:8px;flex-shrink:0" title="未読"></span>'
         : '';
@@ -255,10 +274,14 @@
               '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px">' +
                 unreadDot +
                 '<span style="font-size:14px;font-weight:' + (m.is_read ? '500' : '700') + ';color:var(--ink)">' + _esc(m.subject || '(件名なし)') + '</span>' +
-                bookingTag + mailboxTag + quoteTag +
+                bookingTag + mailboxTag + quoteTag + sentTag +
               '</div>' +
-              '<div style="font-size:12px;color:var(--gray-1)"><strong>' + _esc(senderName) + '</strong> ' +
-                '&lt;<a href="mailto:' + _esc(m.email) + '" style="color:var(--blue)">' + _esc(m.email) + '</a>&gt;</div>' +
+              // Outbound rows: `email` is the RECIPIENT (the customer we replied to).
+              (isOut
+                ? '<div style="font-size:12px;color:var(--gray-1)"><strong>' + _esc(senderName) + '</strong> → ' +
+                  '<a href="mailto:' + _esc(m.email) + '" style="color:var(--blue)">' + _esc(m.email) + '</a></div>'
+                : '<div style="font-size:12px;color:var(--gray-1)"><strong>' + _esc(senderName) + '</strong> ' +
+                  '&lt;<a href="mailto:' + _esc(m.email) + '" style="color:var(--blue)">' + _esc(m.email) + '</a>&gt;</div>') +
             '</div>' +
             '<time style="font-size:11px;color:var(--gray-2);white-space:nowrap;flex-shrink:0">' + _fmtDate(whenIso) + '</time>' +
           '</div>' +
@@ -491,6 +514,8 @@
           in_reply_to:  m.message_id || '',        // thread onto the inbound mail
           references:   m.message_id || '',
           log_comm:     true,                      // record in `communications`
+          log_inbox:    true,                      // persist into inbox_messages (labels.outbound)
+          thread_id:    m.thread_id || m.message_id || '',
         }),
       });
       json = await res.json().catch(function () {
@@ -515,7 +540,8 @@
             .then(function (r) { if (r && r.error) console.warn('[INBOX] mark-read after send failed:', r.error.message); });
         }
       }
-      setTimeout(inboxCloseReply, 1600);
+      // Close, then refetch so the just-sent reply (log_inbox row) shows up.
+      setTimeout(function () { inboxCloseReply(); renderInbox(); }, 1600);
       return;
     }
 
