@@ -61,6 +61,15 @@
      inboxCopyQuote()             — copy the formatted quote template
      inboxCloseQuote()            — close the quote modal
      inboxSetFilter(f)/inboxSetChannel(c)/inboxSearch(q)
+     inboxToggleThread(k)         — expand/collapse a conversation's history
+
+   ── Conversation thread view ──────────────────────────────
+   Messages are GROUPED BY thread_id into one card per conversation: the newest
+   message renders in full (same layout as before), and threads with 2+ messages
+   add a 「過去のやり取り」 toggle that expands the older messages chronologically
+   (outbound replies tinted + ↩). Filters/search/counts operate at THREAD level:
+   a thread matches when ANY of its messages matches (未読 = any unread;
+   対応済 = every message read). Legacy rows without thread_id stay single-card.
    ════════════════════════════════════════════════════════ */
 
 (function () {
@@ -70,6 +79,7 @@
   var _filter = 'all';                              // all | unread | quoted | done
   var _channel = 'all';                             // all | <recipient mailbox>
   var _search = '';
+  var _openThreads = {};                            // thread key → true (history expanded)
 
   /* ── Recipient channels (WS2) ─────────────────────────────
      Keyed by the FULL recipient address stored in inbox_messages.mailbox.
@@ -124,17 +134,53 @@
     return res.data || [];
   }
 
-  /* ── Filtering ────────────────────────────────────────── */
-  function _matchesFilter(m) {
-    if (_channel !== 'all' && _recipientOf(m) !== _channel) return false;
-    if (_filter === 'unread' && m.is_read) return false;
-    if (_filter === 'quoted' && !_quoteOf(m)) return false;
-    if (_filter === 'done'   && !m.is_read) return false;
+  /* ── Conversation threads ─────────────────────────────────
+     Messages sharing a thread_id (IMAP threading + send-email.php log_inbox
+     replies) render as ONE card: the latest message shown in full, older
+     messages behind a 「過去のやり取り」 toggle, chronological, with outbound
+     (labels.outbound) bubbles visually distinct. Rows without a thread_id
+     (pre-migration legacy) each form their own single-message thread. */
+  function _threadKeyOf(m) { return String(m.thread_id || m.message_id || m.id || ''); }
+  function _msgTime(m) {
+    var t = new Date(m.received_at || m.created_at || 0).getTime();
+    return isNaN(t) ? 0 : t;
+  }
+  function _buildThreads() {
+    var byKey = {}, list = [];
+    _messages.forEach(function (m) {
+      var k = _threadKeyOf(m);
+      if (!byKey[k]) { byKey[k] = { key: k, msgs: [], channels: {}, unread: 0, quote: null }; list.push(byKey[k]); }
+      byKey[k].msgs.push(m);
+    });
+    list.forEach(function (t) {
+      t.msgs.sort(function (a, b) { return _msgTime(a) - _msgTime(b); });   // oldest → newest
+      t.latest = t.msgs[t.msgs.length - 1];
+      t.msgs.forEach(function (m) {
+        t.channels[_recipientOf(m)] = true;
+        if (!m.is_read) t.unread++;
+        var q = _quoteOf(m);
+        if (q) t.quote = q;                          // latest quote in the thread wins
+      });
+    });
+    list.sort(function (a, b) { return _msgTime(b.latest) - _msgTime(a.latest); });
+    return list;
+  }
+
+  /* ── Filtering (thread-level; a thread shows if ANY message matches) ── */
+  function _msgMatchesSearch(m, q) {
+    var hay = ((m.sender_name || m.sender || '') + ' ' + (m.email || '') + ' ' +
+               (m.subject || '') + ' ' + (m.body_text || m.body || '') + ' ' +
+               (m.booking_id || '')).toLowerCase();
+    return hay.indexOf(q) >= 0;
+  }
+  function _threadMatchesFilter(t) {
+    if (_channel !== 'all' && !t.channels[_channel]) return false;
+    if (_filter === 'unread' && t.unread === 0) return false;      // any unread
+    if (_filter === 'done'   && t.unread > 0)  return false;      // fully handled
+    if (_filter === 'quoted' && !t.quote)      return false;
     if (_search) {
-      var hay = ((m.sender_name || m.sender || '') + ' ' + (m.email || '') + ' ' +
-                 (m.subject || '') + ' ' + (m.body_text || m.body || '') + ' ' +
-                 (m.booking_id || '')).toLowerCase();
-      if (hay.indexOf(_search.toLowerCase()) < 0) return false;
+      var q = _search.toLowerCase();
+      if (!t.msgs.some(function (m) { return _msgMatchesSearch(m, q); })) return false;
     }
     return true;
   }
@@ -171,6 +217,53 @@
       '</div>';
   }
 
+  /* ── Thread history (older messages inside an expanded card) ──────────── */
+  function _historyBubble(m) {
+    var out  = _isOutbound(m);
+    var body = (m.body_text != null && m.body_text !== '') ? m.body_text : (m.body || '');
+    var name = out
+      ? (m.sender_name || 'Hello Moving') + ' → ' + (m.email || '')
+      : (m.sender_name || m.sender || '') + (m.email ? ' <' + m.email + '>' : '');
+    var unreadMark = (!out && !m.is_read)
+      ? '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--blue);margin-right:5px" title="未読"></span>'
+      : '';
+    var readLink = (!out && !m.is_read)
+      ? ' <button onclick="inboxToggleRead(\'' + _esc(m.id) + '\')" style="border:0;background:none;color:var(--blue);font-size:11px;cursor:pointer;padding:0 0 0 6px">既読にする</button>'
+      : '';
+    return '' +
+      '<div class="ibx-thread-msg" style="margin:8px 0 0;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:' +
+        (out ? 'rgba(16,185,129,.07);border-left:3px solid #0a7d33' : 'var(--bg-soft-2)') + '">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:11.5px;color:var(--gray-1);margin-bottom:6px">' +
+          '<span style="min-width:0">' + (out ? '↩ ' : '') + unreadMark + '<strong>' + _esc(name) + '</strong>' + readLink + '</span>' +
+          '<time style="color:var(--gray-2);white-space:nowrap;font-size:11px">' + _fmtDate(m.received_at || m.created_at) + '</time>' +
+        '</div>' +
+        '<div style="font-size:12.5px;line-height:1.65;white-space:pre-wrap;color:var(--ink-2)">' + _esc(body) + '</div>' +
+      '</div>';
+  }
+
+  // Toggle bar + (when open) the older messages, oldest first. Rendered between
+  // the card header and the latest message body — Gmail-style collapsed history.
+  function _threadHistory(t) {
+    if (t.msgs.length < 2) return '';
+    var open  = !!_openThreads[t.key];
+    var older = t.msgs.slice(0, -1);
+    var html  =
+      '<div class="ibx-thread-history" style="margin-top:8px">' +
+        '<button class="ibx-thread-toggle" onclick="inboxToggleThread(\'' + encodeURIComponent(t.key) + '\')" ' +
+          'style="border:0;background:none;color:var(--blue);font-size:12px;font-weight:600;cursor:pointer;padding:2px 0">' +
+          (open ? '▾ 過去のやり取りを隠す' : '▸ 過去のやり取りを表示（' + older.length + '件）') +
+        '</button>' +
+        (open ? older.map(_historyBubble).join('') : '') +
+      '</div>';
+    return html;
+  }
+
+  function inboxToggleThread(encKey) {
+    var k = decodeURIComponent(encKey);
+    if (_openThreads[k]) delete _openThreads[k]; else _openThreads[k] = true;
+    _renderMessages();
+  }
+
   /* ── Render ───────────────────────────────────────────── */
   function _renderMessages() {
     var container = document.getElementById('messages-container');
@@ -179,12 +272,13 @@
     _byId = {};
     _messages.forEach(function (m) { _byId[m.id] = m; });
 
-    var shown = _messages.filter(_matchesFilter);
+    var threads = _buildThreads();
+    var shown = threads.filter(_threadMatchesFilter);
     var counts = {
-      all:    _messages.length,
-      unread: _messages.filter(function (m) { return !m.is_read; }).length,
-      quoted: _messages.filter(function (m) { return !!_quoteOf(m); }).length,
-      done:   _messages.filter(function (m) { return !!m.is_read; }).length,
+      all:    threads.length,
+      unread: threads.filter(function (t) { return t.unread > 0; }).length,
+      quoted: threads.filter(function (t) { return !!t.quote; }).length,
+      done:   threads.filter(function (t) { return t.unread === 0; }).length,
     };
 
     var pill = function (key, label) {
@@ -196,11 +290,13 @@
         label + ' <span style="opacity:.75">' + counts[key] + '</span></button>';
     };
 
-    // Channel tab bar (WS2): counts per recipient mailbox over the WHOLE cache
-    // (channel is the outer dimension; status pills/search filter within it).
-    var chCounts = { all: _messages.length };
+    // Channel tab bar (WS2): thread counts per recipient mailbox over the WHOLE
+    // cache (channel is the outer dimension; status pills/search filter within).
+    var chCounts = { all: threads.length };
     CHANNELS.forEach(function (c) { chCounts[c] = 0; });
-    _messages.forEach(function (m) { chCounts[_recipientOf(m)]++; });
+    threads.forEach(function (t) {
+      CHANNELS.forEach(function (c) { if (t.channels[c]) chCounts[c]++; });
+    });
 
     var chTab = function (key, label, meta) {
       var on = _channel === key;
@@ -222,7 +318,7 @@
 
     var header =
       '<div class="panel-hd" style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">' +
-        '<h2 style="font-size:16px;font-weight:700;color:var(--ink)">受信トレイ <span style="font-size:12px;font-weight:400;color:var(--gray-2);margin-left:6px">' + shown.length + ' / ' + _messages.length + '件</span></h2>' +
+        '<h2 style="font-size:16px;font-weight:700;color:var(--ink)">受信トレイ <span style="font-size:12px;font-weight:400;color:var(--gray-2);margin-left:6px">' + shown.length + ' / ' + threads.length + ' スレッド・' + _messages.length + '件</span></h2>' +
         '<button class="btn btn-ghost btn-sm" onclick="renderInbox()">' +
           '<svg viewBox="0 0 24 24" width="14" height="14" style="margin-right:4px"><path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>更新</button>' +
       '</div>' +
@@ -241,8 +337,9 @@
       return;
     }
 
-    var cards = shown.map(function (m) {
-      var q = _quoteOf(m);
+    var cards = shown.map(function (t) {
+      var m = t.latest;                    // the card face = newest message
+      var q = t.quote;                     // latest quote anywhere in the thread
       var bookingTag = m.booking_id
         ? '<span style="display:inline-block;padding:2px 8px;background:rgba(37,99,235,.1);color:var(--blue);font-size:11px;font-weight:600;border-radius:4px;margin-left:8px">' + _esc(m.booking_id) + '</span>'
         : '';
@@ -259,8 +356,11 @@
       var sentTag = isOut
         ? '<span style="display:inline-block;padding:2px 8px;background:rgba(44,54,38,.08);color:var(--ink);font-size:11px;font-weight:700;border-radius:4px;margin-left:8px" title="このInboxから送信した返信">↩ 送信済み</span>'
         : '';
-      var unreadDot = !m.is_read
-        ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--blue);margin-right:8px;flex-shrink:0" title="未読"></span>'
+      var threadTag = t.msgs.length > 1
+        ? '<span class="ibx-thread-count" style="display:inline-block;padding:2px 8px;background:var(--bg-soft-2);color:var(--gray-1);font-size:11px;font-weight:600;border-radius:4px;margin-left:8px" title="この会話のメッセージ数">全' + t.msgs.length + '通</span>'
+        : '';
+      var unreadDot = t.unread > 0
+        ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--blue);margin-right:8px;flex-shrink:0" title="未読 ' + t.unread + '件"></span>'
         : '';
       // Prefer the plain-text body; fall back to legacy `body`.
       var bodyText = (m.body_text != null && m.body_text !== '') ? m.body_text : (m.body || '');
@@ -268,13 +368,13 @@
       var senderName = (m.sender_name != null && m.sender_name !== '') ? m.sender_name : m.sender;
       var whenIso    = m.received_at || m.created_at;
       return '' +
-        '<div class="panel ibx-card" style="margin-bottom:12px;padding:18px 20px' + (m.is_read ? ';opacity:.86' : '') + '">' +
+        '<div class="panel ibx-card" style="margin-bottom:12px;padding:18px 20px' + (t.unread === 0 ? ';opacity:.86' : '') + '">' +
           '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">' +
             '<div style="flex:1;min-width:0">' +
               '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px">' +
                 unreadDot +
-                '<span style="font-size:14px;font-weight:' + (m.is_read ? '500' : '700') + ';color:var(--ink)">' + _esc(m.subject || '(件名なし)') + '</span>' +
-                bookingTag + mailboxTag + quoteTag + sentTag +
+                '<span style="font-size:14px;font-weight:' + (t.unread === 0 ? '500' : '700') + ';color:var(--ink)">' + _esc(m.subject || '(件名なし)') + '</span>' +
+                bookingTag + mailboxTag + quoteTag + sentTag + threadTag +
               '</div>' +
               // Outbound rows: `email` is the RECIPIENT (the customer we replied to).
               (isOut
@@ -285,6 +385,7 @@
             '</div>' +
             '<time style="font-size:11px;color:var(--gray-2);white-space:nowrap;flex-shrink:0">' + _fmtDate(whenIso) + '</time>' +
           '</div>' +
+          _threadHistory(t) +
           '<div style="font-size:13px;color:var(--ink-2);line-height:1.7;white-space:pre-wrap;border-top:1px solid var(--line);padding-top:10px">' + _esc(bodyText) + '</div>' +
           '<div style="margin-top:12px;display:flex;justify-content:flex-end;border-top:1px dashed var(--line);padding-top:10px">' + _actionBtns(m) + '</div>' +
         '</div>';
@@ -786,5 +887,6 @@
   window.inboxSetFilter   = inboxSetFilter;
   window.inboxSetChannel  = inboxSetChannel;
   window.inboxSearch      = inboxSearch;
+  window.inboxToggleThread = inboxToggleThread;
 
 })();
