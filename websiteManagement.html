@@ -766,6 +766,13 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
           コンテンツ &amp; アイコン
         </button>
 
+        <!-- ── 予約 ── -->
+        <div class="wmc-section" style="margin-top:6px">予約</div>
+        <button class="wmc-link" data-view="bookings">
+          <svg class="wmc-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          予約管理
+        </button>
+
         <!-- ── メディア・ブログ ── -->
         <div class="wmc-section" style="margin-top:6px">メディア・ブログ</div>
         <button class="wmc-link" data-view="media">
@@ -1192,6 +1199,11 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
         <!-- ══ VIEW: Global Content ══ -->
         <div class="wmc-view" id="wmc-view-content">
           <div id="view-content"></div>
+        </div>
+
+        <!-- ══ VIEW: Bookings Manager ══ -->
+        <div class="wmc-view" id="wmc-view-bookings">
+          <div id="view-bookings-manager"></div>
         </div>
 
         <!-- ══ VIEW: Footer ══ -->
@@ -1710,6 +1722,7 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
 <script src="js/modules/seo/seoCenter.js"></script>
 <script src="js/modules/blog/blogManager.js"></script>
 <script src="js/modules/settings/siteSettings.js"></script>
+<script src="js/modules/bookings/bookingsManager.js"></script>
 
 <script src="js/modules/website/wmcBootstrap.js"></script>
 
@@ -1727,6 +1740,7 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
     WMC_BREADCRUMBS.backup   = 'バックアップ';
     WMC_BREADCRUMBS.media    = 'メディアライブラリ';
     WMC_BREADCRUMBS.settings = 'サイト設定';
+    WMC_BREADCRUMBS.bookings = '予約管理';
   }
 
   /* Navigation glue — wraps wmcGo() to call CMS module render functions.
@@ -1749,6 +1763,7 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
       if (view === 'seo')      { if (typeof renderSEO          === 'function') renderSEO(); }
       if (view === 'blog')     { if (typeof renderBlog         === 'function') renderBlog(); }
       if (view === 'settings') { if (typeof renderSiteSettings === 'function') renderSiteSettings(); }
+      if (view === 'bookings') { if (typeof renderBookingsManager === 'function') renderBookingsManager(); }
     };
   }
 }());
