@@ -2695,6 +2695,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 .ba-item-name{font-size:13px;font-weight:600;color:var(--ba-forest);line-height:1.3}
 .ba-item-img{width:100%;height:70px;display:flex;align-items:center;justify-content:center}
 .ba-item-img svg{width:52px;height:52px;opacity:.7}
+.ba-item-img img{width:52px;height:52px;object-fit:contain;opacity:.8}
 .ba-counter{display:flex;align-items:center;width:100%;border:1.5px solid var(--ba-olive);border-radius:22px;overflow:hidden;background:#fff}
 .ba-counter button{flex-shrink:0;width:38px;height:34px;border:none;background:transparent;font-size:18px;font-weight:700;color:var(--ba-olive);cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center}
 .ba-counter span{flex:1;text-align:center;font-size:15px;font-weight:700;color:var(--ba-forest)}
@@ -2975,24 +2976,45 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   // Absent / empty sections ⇒ the defaults below render unchanged, so a
   // blank or missing config is always safe (blank = default invariant).
   var BA_DEFAULT_CFG = {
-    cats: [{"id":"living","label":"リビング・寝室"},{"id":"water","label":"水回り"},{"id":"storage","label":"収納・家具"}],
+    cats: [{"id":"living","label":"リビング・寝室"},{"id":"water","label":"水回り・キッチン"},{"id":"outdoor","label":"屋外・その他"}],
     items: [
       {"id":"tv-s","name":"テレビ 40型未満","short":"テレビ 小","cat":"living"},
       {"id":"tv-l","name":"テレビ 40型以上","short":"テレビ 大","cat":"living"},
       {"id":"bed-s","name":"ベッド シングル","short":"ベッド S","cat":"living"},
+      {"id":"bed-sd","name":"ベッド セミダブル","short":"ベッド SD","cat":"living"},
       {"id":"bed-d","name":"ベッド ダブル","short":"ベッド D","cat":"living"},
-      {"id":"sofa1","name":"ソファ 1人","short":"ソファ 1人","cat":"living"},
-      {"id":"sofa3","name":"ソファ 3人","short":"ソファ 3人","cat":"living"},
+      {"id":"futon","name":"布団","short":"布団","cat":"living"},
+      {"id":"sofa1","name":"ソファ 1人掛け","short":"ソファ 1人","cat":"living"},
+      {"id":"sofa2","name":"ソファ 2人掛け","short":"ソファ 2人","cat":"living"},
+      {"id":"sofa3","name":"ソファ 3人掛け","short":"ソファ 3人","cat":"living"},
+      {"id":"lowtable","name":"ローテーブル","short":"ローテーブル","cat":"living"},
+      {"id":"kotatsu","name":"こたつ","short":"こたつ","cat":"living"},
+      {"id":"colorbox","name":"カラーボックス","short":"カラーボックス","cat":"living"},
+      {"id":"case3","name":"3段ケース","short":"3段ケース","cat":"living"},
+      {"id":"shelf-s","name":"棚 小","short":"棚 小","cat":"living"},
+      {"id":"shelf-l","name":"棚 大","short":"棚 大","cat":"living"},
+      {"id":"bookshelf","name":"本棚","short":"本棚","cat":"living"},
+      {"id":"chest","name":"チェスト","short":"チェスト","cat":"living"},
+      {"id":"dresser-s","name":"ドレッサー 小","short":"ドレッサー 小","cat":"living"},
+      {"id":"dresser-l","name":"ドレッサー 大","short":"ドレッサー 大","cat":"living"},
+      {"id":"pc","name":"パソコン","short":"PC","cat":"living"},
+      {"id":"pcdesk","name":"PCデスク","short":"PCデスク","cat":"living"},
+      {"id":"printer","name":"プリンター","short":"プリンター","cat":"water"},
       {"id":"fridge-s","name":"冷蔵庫 2ドア","short":"冷蔵庫 2ドア","cat":"water"},
       {"id":"fridge-l","name":"冷蔵庫 3ドア","short":"冷蔵庫 3ドア","cat":"water"},
       {"id":"wash-v","name":"洗濯機 縦型","short":"洗濯機 縦型","cat":"water"},
       {"id":"wash-d","name":"洗濯機 ドラム","short":"洗濯機 ドラム","cat":"water"},
-      {"id":"shelf-s","name":"棚 小","short":"棚 小","cat":"storage"},
-      {"id":"shelf-l","name":"棚 大","short":"棚 大","cat":"storage"},
-      {"id":"table","name":"ダイニングテーブル","short":"テーブル","cat":"storage"},
-      {"id":"chest","name":"チェスト","short":"チェスト","cat":"storage"},
-      {"id":"bike","name":"自転車","short":"自転車","cat":"storage"},
-      {"id":"box","name":"ダンボール","short":"ダンボール","cat":"storage"}
+      {"id":"table","name":"ダイニングテーブル","short":"テーブル","cat":"water"},
+      {"id":"chair","name":"椅子","short":"椅子","cat":"water"},
+      {"id":"vacuum","name":"掃除機","short":"掃除機","cat":"outdoor"},
+      {"id":"fan","name":"扇風機","short":"扇風機","cat":"outdoor"},
+      {"id":"bike","name":"自転車","short":"自転車","cat":"outdoor"},
+      {"id":"airpurifier","name":"空気清浄機","short":"空気清浄機","cat":"outdoor"},
+      {"id":"mirror","name":"スタンドミラー","short":"ミラー","cat":"outdoor"},
+      {"id":"kitchenboard","name":"食器棚","short":"食器棚","cat":"outdoor"},
+      {"id":"microwave","name":"電子レンジ・オーブン","short":"レンジ","cat":"outdoor"},
+      {"id":"ac","name":"エアコン","short":"エアコン","cat":"outdoor"},
+      {"id":"heater","name":"ヒーター","short":"ヒーター","cat":"outdoor"}
     ],
     timeSlots: [{"label":"午前（9:00〜12:00）","value":"午前（9:00〜12:00）"},{"label":"午後（12:00〜15:00）","value":"午後（12:00〜15:00）"},{"label":"夕方（15:00〜18:00）","value":"夕方（15:00〜18:00）"},{"label":"夜間（18:00〜21:00）","value":"夜間（18:00〜21:00）"},{"label":"時間指定なし（当日調整）","value":"時間指定なし"}],
     filters: [{"id":"same-day","label":"当日・翌日対応可","short":"当日対応"},{"id":"english","label":"英語対応可","short":"英語対応"},{"id":"insurance","label":"保険加入済","short":"保険加入"},{"id":"disposal","label":"不用品回収対応","short":"不用品回収"}],
@@ -3000,8 +3022,10 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     labels: {"furnitureTitle":"荷物を選択","filterTitle":"絞り込み条件","timeTitle":"希望時間帯","dateTitle":"引越し希望日"}
   };
 
-  // Item icons stay code-owned (inline SVG keyed by item id); CMS-added
-  // items without a matching icon fall back to the generic box (_default).
+  // Built-in line-art icons (inline SVG keyed by item id). Per-item override:
+  // an item's CMS `icon_svg` field may name one of these keys OR point to an
+  // SVG file (path / URL / data URL from the WMC media library) — resolved by
+  // _baItemIcon(). No match ⇒ id-keyed icon ⇒ generic box (_default).
   var BA_ITEM_SVG = {
     "tv-s": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="10" width="44" height="30" rx="3"/><line x1="20" y1="40" x2="16" y2="50"/><line x1="40" y1="40" x2="44" y2="50"/><line x1="14" y1="50" x2="46" y2="50"/></svg>',
     "tv-l": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="52" height="34" rx="3"/><line x1="18" y1="42" x2="14" y2="52"/><line x1="42" y1="42" x2="46" y2="52"/><line x1="12" y1="52" x2="48" y2="52"/></svg>',
@@ -3019,6 +3043,28 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     "chest": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="12" y="6" width="36" height="48" rx="2"/><line x1="12" y1="18" x2="48" y2="18"/><line x1="12" y1="30" x2="48" y2="30"/><line x1="12" y1="42" x2="48" y2="42"/><circle cx="30" cy="12" r="2"/><circle cx="30" cy="24" r="2"/><circle cx="30" cy="36" r="2"/></svg>',
     "bike": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="42" r="10"/><circle cx="46" cy="42" r="10"/><path d="M14 42L30 18L46 42"/><line x1="24" y1="18" x2="36" y2="18"/></svg>',
     "box": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 20L30 10L50 20L50 46L30 56L10 46Z"/><path d="M10 20L30 30L50 20"/><line x1="30" y1="30" x2="30" y2="56"/></svg>',
+    "bed-sd": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="22" width="48" height="24" rx="2"/><rect x="6" y="14" width="18" height="12" rx="2"/><line x1="6" y1="46" x2="6" y2="52"/><line x1="54" y1="46" x2="54" y2="52"/></svg>',
+    "futon": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="34" width="44" height="12" rx="6"/><rect x="12" y="22" width="36" height="12" rx="6"/><line x1="20" y1="28" x2="40" y2="28"/></svg>',
+    "sofa2": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="26" width="44" height="16" rx="4"/><rect x="4" y="20" width="8" height="22" rx="3"/><rect x="48" y="20" width="8" height="22" rx="3"/><rect x="8" y="16" width="44" height="12" rx="3"/><line x1="10" y1="42" x2="10" y2="48"/><line x1="50" y1="42" x2="50" y2="48"/></svg>',
+    "lowtable": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="30" width="48" height="8" rx="2"/><line x1="14" y1="38" x2="14" y2="48"/><line x1="46" y1="38" x2="46" y2="48"/></svg>',
+    "kotatsu": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="24" width="44" height="7" rx="2"/><path d="M12 31L6 50"/><path d="M48 31L54 50"/><line x1="6" y1="50" x2="54" y2="50"/></svg>',
+    "colorbox": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="8" width="24" height="44" rx="2"/><line x1="18" y1="23" x2="42" y2="23"/><line x1="18" y1="38" x2="42" y2="38"/></svg>',
+    "case3": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="10" width="32" height="42" rx="2"/><line x1="14" y1="24" x2="46" y2="24"/><line x1="14" y1="38" x2="46" y2="38"/><line x1="26" y1="17" x2="34" y2="17"/><line x1="26" y1="31" x2="34" y2="31"/><line x1="26" y1="45" x2="34" y2="45"/></svg>',
+    "bookshelf": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="12" y="6" width="36" height="48" rx="2"/><line x1="12" y1="22" x2="48" y2="22"/><line x1="12" y1="38" x2="48" y2="38"/><line x1="18" y1="10" x2="18" y2="22"/><line x1="23" y1="10" x2="23" y2="22"/><line x1="28" y1="12" x2="28" y2="22"/></svg>',
+    "dresser-s": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="30" cy="17" rx="10" ry="12"/><rect x="14" y="32" width="32" height="20" rx="2"/><line x1="14" y1="42" x2="46" y2="42"/></svg>',
+    "dresser-l": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="19" y="4" width="22" height="24" rx="11"/><rect x="10" y="32" width="40" height="20" rx="2"/><line x1="10" y1="42" x2="50" y2="42"/><line x1="26" y1="37" x2="34" y2="37"/><line x1="26" y1="47" x2="34" y2="47"/></svg>',
+    "pc": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="12" y="14" width="36" height="24" rx="2"/><path d="M8 44L52 44L48 38L12 38Z"/></svg>',
+    "pcdesk": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="22" y="10" width="16" height="11" rx="1"/><line x1="30" y1="21" x2="30" y2="26"/><rect x="6" y="26" width="48" height="6" rx="2"/><line x1="12" y1="32" x2="12" y2="50"/><line x1="48" y1="32" x2="48" y2="50"/></svg>',
+    "printer": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 26V12H42V26"/><rect x="10" y="26" width="40" height="16" rx="3"/><rect x="18" y="38" width="24" height="12"/><circle cx="44" cy="32" r="1.5"/></svg>',
+    "chair": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="20" y1="8" x2="20" y2="52"/><line x1="40" y1="8" x2="40" y2="52"/><line x1="20" y1="8" x2="40" y2="8"/><line x1="20" y1="16" x2="40" y2="16"/><rect x="17" y="30" width="26" height="6" rx="2"/></svg>',
+    "vacuum": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="38" cy="40" r="11"/><circle cx="38" cy="40" r="4"/><path d="M38 29C38 16 20 14 18 28L14 50"/><line x1="9" y1="50" x2="19" y2="50"/></svg>',
+    "fan": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="30" cy="22" r="14"/><circle cx="30" cy="22" r="3"/><line x1="30" y1="19" x2="30" y2="10"/><line x1="27" y1="24" x2="19" y2="29"/><line x1="33" y1="24" x2="41" y2="29"/><line x1="30" y1="36" x2="30" y2="50"/><line x1="20" y1="50" x2="40" y2="50"/></svg>',
+    "airpurifier": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="8" width="24" height="44" rx="6"/><line x1="24" y1="16" x2="36" y2="16"/><line x1="24" y1="21" x2="36" y2="21"/><circle cx="30" cy="38" r="6"/></svg>',
+    "mirror": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="20" y="6" width="20" height="40" rx="10"/><line x1="30" y1="46" x2="30" y2="52"/><line x1="22" y1="52" x2="38" y2="52"/></svg>',
+    "kitchenboard": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="12" y="4" width="36" height="52" rx="2"/><line x1="12" y1="30" x2="48" y2="30"/><line x1="30" y1="4" x2="30" y2="30"/><line x1="12" y1="42" x2="48" y2="42"/><circle cx="26" cy="18" r="1.5"/><circle cx="34" cy="18" r="1.5"/></svg>',
+    "microwave": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="16" width="48" height="30" rx="3"/><rect x="12" y="22" width="26" height="18" rx="2"/><line x1="43" y1="24" x2="48" y2="24"/><circle cx="45" cy="34" r="2"/></svg>',
+    "ac": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="12" width="48" height="18" rx="4"/><line x1="6" y1="24" x2="54" y2="24"/><path d="M18 36C16 40 20 42 18 46"/><path d="M30 36C28 40 32 42 30 46"/><path d="M42 36C40 40 44 42 42 46"/></svg>',
+    "heater": '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="12" width="40" height="36" rx="4"/><line x1="18" y1="18" x2="18" y2="42"/><line x1="24" y1="18" x2="24" y2="42"/><line x1="30" y1="18" x2="30" y2="42"/><line x1="36" y1="18" x2="36" y2="42"/><line x1="42" y1="18" x2="42" y2="42"/><line x1="16" y1="48" x2="16" y2="52"/><line x1="44" y1="48" x2="44" y2="52"/></svg>',
     _default: '<svg viewBox="0 0 60 60" fill="none" stroke="#2C3626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 20L30 10L50 20L50 46L30 56L10 46Z"/><path d="M10 20L30 30L50 20"/><line x1="30" y1="30" x2="30" y2="56"/></svg>'
   };
 
@@ -3612,9 +3658,23 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   };
 
   // ── CMS-driven form parts (items / time slots / filters / titles) ──
+  // Icon resolution for an item's CMS icon_svg field (WMC → 予約フォーム設定):
+  //   built-in icon name → its inline SVG; file path / URL / data URL (media
+  //   library) → <img>; blank or unknown → id-keyed icon → generic box.
+  // Raw <svg> markup is intentionally NOT accepted from config (no injection).
+  function _baItemIcon(it) {
+    var v = String(it.icon_svg || '').trim();
+    if (v) {
+      if (v.charAt(0) !== '_' && BA_ITEM_SVG[v]) return BA_ITEM_SVG[v];
+      if (/^(data:image\/|https?:\/\/|\/|\.\.?\/)/.test(v) || /\.(svg|png|webp|jpe?g|gif)([?#]|$)/i.test(v)) {
+        return '<img src="' + _baEsc(v) + '" alt="" loading="lazy">';
+      }
+    }
+    return BA_ITEM_SVG[it.id] || BA_ITEM_SVG._default;
+  }
   function _baItemCard(it) {
     var id = _baEsc(String(it.id));
-    var svg = BA_ITEM_SVG[it.id] || BA_ITEM_SVG._default;
+    var svg = _baItemIcon(it);
     var n = baCounts[it.id] || 0;
     return '<div class="ba-item-card' + (n > 0 ? ' has-count' : '') + '" id="ba-card-' + id + '">'
       + '<div class="ba-item-name">' + _baEsc(it.name || it.short || it.id) + '</div>'

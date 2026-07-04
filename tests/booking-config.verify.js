@@ -66,16 +66,35 @@ function idsFrom(src, blockStart, blockEnd, re) {
 // items arrays only — both literals list items between `items: [` and `timeSlots:`
 const idxItemIds = idsFrom(indexHtml, 'var BA_DEFAULT_CFG = {', 'timeSlots:', /\{"id":"([\w-]+)","name"/g);
 const modItemIds = idsFrom(moduleJs, 'var BC_DEFAULTS = {', 'timeSlots:', /\{ id: '([\w-]+)',\s*name:/g);
-check('16 default items in index.html', idxItemIds && idxItemIds.length === 16, 'got ' + (idxItemIds || []).length);
+check('37 default items in index.html', idxItemIds && idxItemIds.length === 37, 'got ' + (idxItemIds || []).length);
 check('item ids identical in editor defaults',
   JSON.stringify(idxItemIds) === JSON.stringify(modItemIds),
   (modItemIds || []).join(','));
-['living', 'water', 'storage'].forEach((c) =>
+['living', 'water', 'outdoor'].forEach((c) =>
   check("category '" + c + "' in both", indexHtml.includes('"id":"' + c + '"') && moduleJs.includes("id: '" + c + "'")));
 ['same-day', 'english', 'insurance', 'disposal'].forEach((f) =>
   check("filter '" + f + "' in both", indexHtml.includes('"id":"' + f + '"') && moduleJs.includes("id: '" + f + "'")));
 const idxSlots = (indexHtml.match(/\{"label":"[^"]+","value":"[^"]+"\}/g) || []).length;
 check('5 default time slots in index.html', idxSlots === 5, 'got ' + idxSlots);
+
+console.log('── item icons (icon_svg pipeline)');
+check('_baItemIcon resolver defined + used by item cards',
+  indexHtml.includes('function _baItemIcon(') && indexHtml.includes('_baItemIcon(it)'));
+check('icon_svg never injected as raw markup (name → code-owned SVG, file → <img>)',
+  indexHtml.includes("'<img src=\"' + _baEsc(v)"));
+check('.ba-item-img img sized like inline SVG icons', indexHtml.includes('.ba-item-img img{'));
+check('every default item id has a built-in icon',
+  (idxItemIds || []).every((id) => indexHtml.includes('"' + id + '": \'<svg')),
+  (idxItemIds || []).filter((id) => !indexHtml.includes('"' + id + '": \'<svg')).join(','));
+check('editor has icon_svg column + media picker + clear',
+  moduleJs.includes(".icon_svg\"") && moduleJs.includes('_bcOpenIconPicker')
+  && moduleJs.includes("act === 'item-icon-clear'"));
+check('editor drops blank icon_svg on save', moduleJs.includes('delete it.icon_svg'));
+// BC_ICON_NAMES (editor datalist) must only offer names BA_ITEM_SVG can render
+const svgKeys = idsFrom(indexHtml, 'var BA_ITEM_SVG = {', '_default:', /"([\w-]+)": '<svg/g) || [];
+const nameList = idsFrom(moduleJs, 'var BC_ICON_NAMES = [', '];', /'([\w-]+)'/g) || [];
+check('BC_ICON_NAMES ⊆ BA_ITEM_SVG keys', nameList.length > 0 && nameList.every((n) => svgKeys.includes(n)),
+  nameList.filter((n) => !svgKeys.includes(n)).join(','));
 
 console.log('── wiring (Adapter / WMC / ContentLoader)');
 check('Adapter.getBookingConfig / saveBookingConfig exist',

@@ -20,26 +20,47 @@
   var BC_DEFAULTS = {
     cats: [
       { id: 'living',  label: 'リビング・寝室' },
-      { id: 'water',   label: '水回り' },
-      { id: 'storage', label: '収納・家具' },
+      { id: 'water',   label: '水回り・キッチン' },
+      { id: 'outdoor', label: '屋外・その他' },
     ],
     items: [
-      { id: 'tv-s',     name: 'テレビ 40型未満',   short: 'テレビ 小',     cat: 'living' },
-      { id: 'tv-l',     name: 'テレビ 40型以上',   short: 'テレビ 大',     cat: 'living' },
-      { id: 'bed-s',    name: 'ベッド シングル',   short: 'ベッド S',      cat: 'living' },
-      { id: 'bed-d',    name: 'ベッド ダブル',     short: 'ベッド D',      cat: 'living' },
-      { id: 'sofa1',    name: 'ソファ 1人',        short: 'ソファ 1人',    cat: 'living' },
-      { id: 'sofa3',    name: 'ソファ 3人',        short: 'ソファ 3人',    cat: 'living' },
-      { id: 'fridge-s', name: '冷蔵庫 2ドア',      short: '冷蔵庫 2ドア',  cat: 'water' },
-      { id: 'fridge-l', name: '冷蔵庫 3ドア',      short: '冷蔵庫 3ドア',  cat: 'water' },
-      { id: 'wash-v',   name: '洗濯機 縦型',       short: '洗濯機 縦型',   cat: 'water' },
-      { id: 'wash-d',   name: '洗濯機 ドラム',     short: '洗濯機 ドラム', cat: 'water' },
-      { id: 'shelf-s',  name: '棚 小',             short: '棚 小',         cat: 'storage' },
-      { id: 'shelf-l',  name: '棚 大',             short: '棚 大',         cat: 'storage' },
-      { id: 'table',    name: 'ダイニングテーブル', short: 'テーブル',     cat: 'storage' },
-      { id: 'chest',    name: 'チェスト',          short: 'チェスト',      cat: 'storage' },
-      { id: 'bike',     name: '自転車',            short: '自転車',        cat: 'storage' },
-      { id: 'box',      name: 'ダンボール',        short: 'ダンボール',    cat: 'storage' },
+      { id: 'tv-s',         name: 'テレビ 40型未満',     short: 'テレビ 小',       cat: 'living' },
+      { id: 'tv-l',         name: 'テレビ 40型以上',     short: 'テレビ 大',       cat: 'living' },
+      { id: 'bed-s',        name: 'ベッド シングル',     short: 'ベッド S',        cat: 'living' },
+      { id: 'bed-sd',       name: 'ベッド セミダブル',   short: 'ベッド SD',       cat: 'living' },
+      { id: 'bed-d',        name: 'ベッド ダブル',       short: 'ベッド D',        cat: 'living' },
+      { id: 'futon',        name: '布団',                short: '布団',            cat: 'living' },
+      { id: 'sofa1',        name: 'ソファ 1人掛け',      short: 'ソファ 1人',      cat: 'living' },
+      { id: 'sofa2',        name: 'ソファ 2人掛け',      short: 'ソファ 2人',      cat: 'living' },
+      { id: 'sofa3',        name: 'ソファ 3人掛け',      short: 'ソファ 3人',      cat: 'living' },
+      { id: 'lowtable',     name: 'ローテーブル',        short: 'ローテーブル',    cat: 'living' },
+      { id: 'kotatsu',      name: 'こたつ',              short: 'こたつ',          cat: 'living' },
+      { id: 'colorbox',     name: 'カラーボックス',      short: 'カラーボックス',  cat: 'living' },
+      { id: 'case3',        name: '3段ケース',           short: '3段ケース',       cat: 'living' },
+      { id: 'shelf-s',      name: '棚 小',               short: '棚 小',           cat: 'living' },
+      { id: 'shelf-l',      name: '棚 大',               short: '棚 大',           cat: 'living' },
+      { id: 'bookshelf',    name: '本棚',                short: '本棚',            cat: 'living' },
+      { id: 'chest',        name: 'チェスト',            short: 'チェスト',        cat: 'living' },
+      { id: 'dresser-s',    name: 'ドレッサー 小',       short: 'ドレッサー 小',   cat: 'living' },
+      { id: 'dresser-l',    name: 'ドレッサー 大',       short: 'ドレッサー 大',   cat: 'living' },
+      { id: 'pc',           name: 'パソコン',            short: 'PC',              cat: 'living' },
+      { id: 'pcdesk',       name: 'PCデスク',            short: 'PCデスク',        cat: 'living' },
+      { id: 'printer',      name: 'プリンター',          short: 'プリンター',      cat: 'water' },
+      { id: 'fridge-s',     name: '冷蔵庫 2ドア',        short: '冷蔵庫 2ドア',    cat: 'water' },
+      { id: 'fridge-l',     name: '冷蔵庫 3ドア',        short: '冷蔵庫 3ドア',    cat: 'water' },
+      { id: 'wash-v',       name: '洗濯機 縦型',         short: '洗濯機 縦型',     cat: 'water' },
+      { id: 'wash-d',       name: '洗濯機 ドラム',       short: '洗濯機 ドラム',   cat: 'water' },
+      { id: 'table',        name: 'ダイニングテーブル',  short: 'テーブル',        cat: 'water' },
+      { id: 'chair',        name: '椅子',                short: '椅子',            cat: 'water' },
+      { id: 'vacuum',       name: '掃除機',              short: '掃除機',          cat: 'outdoor' },
+      { id: 'fan',          name: '扇風機',              short: '扇風機',          cat: 'outdoor' },
+      { id: 'bike',         name: '自転車',              short: '自転車',          cat: 'outdoor' },
+      { id: 'airpurifier',  name: '空気清浄機',          short: '空気清浄機',      cat: 'outdoor' },
+      { id: 'mirror',       name: 'スタンドミラー',      short: 'ミラー',          cat: 'outdoor' },
+      { id: 'kitchenboard', name: '食器棚',              short: '食器棚',          cat: 'outdoor' },
+      { id: 'microwave',    name: '電子レンジ・オーブン', short: 'レンジ',         cat: 'outdoor' },
+      { id: 'ac',           name: 'エアコン',            short: 'エアコン',        cat: 'outdoor' },
+      { id: 'heater',       name: 'ヒーター',            short: 'ヒーター',        cat: 'outdoor' },
     ],
     timeSlots: [
       { label: '午前（9:00〜12:00）',  value: '午前（9:00〜12:00）' },
@@ -74,6 +95,17 @@
     { id: 'assembly', name: '家具組立・分解' },
   ];
 
+  /* Built-in icon names an item's icon_svg field may reference — MUST stay a
+     subset of BA_ITEM_SVG keys in index.html (tests/booking-config.verify.js
+     enforces it). Anything else in the field is treated as a file path/URL. */
+  var BC_ICON_NAMES = [
+    'tv-s', 'tv-l', 'bed-s', 'bed-sd', 'bed-d', 'futon', 'sofa1', 'sofa2', 'sofa3',
+    'lowtable', 'kotatsu', 'colorbox', 'case3', 'shelf-s', 'shelf-l', 'bookshelf',
+    'chest', 'dresser-s', 'dresser-l', 'pc', 'pcdesk', 'printer', 'fridge-s',
+    'fridge-l', 'wash-v', 'wash-d', 'table', 'chair', 'vacuum', 'fan', 'bike',
+    'airpurifier', 'mirror', 'kitchenboard', 'microwave', 'ac', 'heater', 'box',
+  ];
+
   var BC_LABEL_FIELDS = [
     ['furnitureTitle', '荷物ドロワーのタイトル', '荷物を選択'],
     ['dateTitle',      '日付ドロワーのタイトル', '引越し希望日'],
@@ -84,6 +116,23 @@
   var _bc = null;   // working copy
 
   function _deep(v) { return JSON.parse(JSON.stringify(v)); }
+
+  /* Same value classes as _baItemIcon in index.html: path/URL/data URL renders
+     as <img>; a built-in icon name (or blank = id-keyed default) shows a chip —
+     the actual inline SVGs are code-owned in index.html, not duplicated here. */
+  function _bcIconIsFile(v) {
+    return /^(data:image\/|https?:\/\/|\/|\.\.?\/)/.test(v) || /\.(svg|png|webp|jpe?g|gif)([?#]|$)/i.test(v);
+  }
+  function _bcIconPreview(it) {
+    var v = String(it.icon_svg || '').trim();
+    var box = 'width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:var(--bg-soft);border:1px solid var(--line);border-radius:8px;overflow:hidden';
+    if (v && _bcIconIsFile(v)) {
+      return '<div style="' + box + '"><img src="' + esc(v) + '" alt="" style="width:26px;height:26px;object-fit:contain"></div>';
+    }
+    var label = v && BC_ICON_NAMES.indexOf(v) >= 0 ? '内蔵' : (v ? '?' : '既定');
+    return '<div style="' + box + ';font-size:9px;color:var(--gray-2)" title="'
+      + (v ? esc(v) : '既定アイコン（品目IDで自動選択）') + '">' + label + '</div>';
+  }
 
   function _bcLoad() {
     var saved = (window.Adapter && Adapter.getBookingConfig) ? Adapter.getBookingConfig() : null;
@@ -125,14 +174,26 @@
 
     var itemRows = _bc.items.map(function (it, i) {
       return '<tr style="border-bottom:1px solid var(--line)' + (it.active === false ? ';opacity:.45' : '') + '">'
+        + '<td style="padding:7px 6px">' + _bcIconPreview(it, i) + '</td>'
         + '<td style="padding:7px 6px"><input data-bc="items.' + i + '.name" style="' + inp + ';width:100%" value="' + esc(it.name || '') + '"></td>'
         + '<td style="padding:7px 6px"><input data-bc="items.' + i + '.short" style="' + inp + ';width:100%" value="' + esc(it.short || '') + '" placeholder="一覧・予約データ用"></td>'
         + '<td style="padding:7px 6px"><select data-bc="items.' + i + '.cat" style="' + inp + '">' + catOptions(it.cat) + '</select></td>'
+        + '<td style="padding:7px 6px;min-width:200px">'
+        +   '<div style="display:flex;gap:5px;align-items:center">'
+        +   '<input data-bc="items.' + i + '.icon_svg" list="bc-icon-names" style="' + inp + ';flex:1;min-width:90px;font-size:11px" value="' + esc(it.icon_svg || '') + '" placeholder="内蔵アイコン名 / SVGパス">'
+        +   '<button class="btn btn-ghost btn-sm" data-bc-act="item-icon-pick" data-i="' + i + '" title="メディアライブラリから選択">📁</button>'
+        +   ((it.icon_svg || '').trim() ? '<button class="btn btn-ghost btn-sm" data-bc-act="item-icon-clear" data-i="' + i + '" title="既定アイコンに戻す">×</button>' : '')
+        +   '</div>'
+        + '</td>'
         + '<td style="padding:7px 6px;white-space:nowrap;text-align:right">'
         +   '<button class="btn btn-ghost btn-sm" data-bc-act="item-toggle" data-i="' + i + '">' + (it.active === false ? '表示する' : '非表示') + '</button> '
         +   '<button class="btn btn-ghost btn-sm" style="color:var(--red)" data-bc-act="item-del" data-i="' + i + '">削除</button>'
         + '</td></tr>';
     }).join('');
+
+    var iconDatalist = '<datalist id="bc-icon-names">'
+      + BC_ICON_NAMES.map(function (n) { return '<option value="' + esc(n) + '">'; }).join('')
+      + '</datalist>';
 
     var catRows = _bc.cats.map(function (c, i) {
       return '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">'
@@ -185,11 +246,12 @@
       + '<span style="font-size:12px;color:var(--gray-1)">空欄・削除済みセクションは公開ページの既定値に戻ります。保存後、公開ページは再読み込みで反映されます。</span>'
       + '</div>'
       + panel('荷物リスト（' + _bc.items.filter(function (i) { return i.active !== false; }).length + ' 点表示中）',
-          '<div class="table-wrap" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'
+          iconDatalist
+          + '<div class="table-wrap" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'
           + '<thead><tr style="border-bottom:2px solid var(--line)">'
-          + ['表示名', '短縮名', 'カテゴリ', ''].map(function (h) { return '<th style="text-align:left;padding:6px;font-size:11px;color:var(--gray-1)">' + h + '</th>'; }).join('')
+          + ['', '表示名', '短縮名', 'カテゴリ', 'アイコン（SVG）', ''].map(function (h) { return '<th style="text-align:left;padding:6px;font-size:11px;color:var(--gray-1)">' + h + '</th>'; }).join('')
           + '</tr></thead><tbody>' + itemRows + '</tbody></table></div>'
-          + '<p style="font-size:12px;color:var(--gray-1);margin:10px 0 0">追加した荷物には汎用アイコン（ダンボール）が使われます。</p>',
+          + '<p style="font-size:12px;color:var(--gray-1);margin:10px 0 0">アイコン欄には内蔵アイコン名（例: sofa1）または SVG ファイルのパス・URLを指定できます。📁 でメディアライブラリの画像（SVG推奨）を割り当て。空欄 = 品目IDに対応する既定アイコン（一致しない場合はダンボール）。</p>',
           '<button class="btn btn-ghost btn-sm" data-bc-act="item-add">＋ 荷物を追加</button>')
       + panel('カテゴリ名', catRows)
       + panel('希望時間帯', slotRows, '<button class="btn btn-ghost btn-sm" data-bc-act="slot-add">＋ 時間帯を追加</button>')
@@ -222,6 +284,12 @@
       if (m) _bc.timeSlots[+m[1]].value = e.target.value;
     });
 
+    // Icon fields: refresh the row preview once editing finishes (blur/change)
+    host.addEventListener('change', function (e) {
+      var path = e.target && e.target.getAttribute && e.target.getAttribute('data-bc');
+      if (path && /\.icon_svg$/.test(path)) renderBookingConfig();
+    });
+
     host.addEventListener('click', function (e) {
       var btn = e.target && e.target.closest ? e.target.closest('[data-bc-act]') : null;
       if (!btn) return;
@@ -238,6 +306,10 @@
       }
       if (act === 'item-add') {
         _bc.items.push({ id: 'item-' + Date.now().toString(36), name: '', short: '', cat: _bc.cats[0] ? _bc.cats[0].id : 'living' });
+      } else if (act === 'item-icon-pick' && i >= 0) {
+        _bcOpenIconPicker(i); return;
+      } else if (act === 'item-icon-clear' && i >= 0) {
+        delete _bc.items[i].icon_svg;
       } else if (act === 'item-del' && i >= 0) {
         if (!confirm('この荷物を削除しますか？')) return;
         _bc.items.splice(i, 1);
@@ -260,11 +332,76 @@
     });
   }
 
+  /* ── Media-library icon picker ───────────────────────────────
+     Media items live in localStorage as data URLs (hm_media_images), so
+     "assigning" one copies its data URL into the item's icon_svg — that is
+     what syncs to the public site through the hm_booking_config KV. Raster
+     files bloat the KV payload, hence the SVG-first sort + size cap. */
+  var BC_ICON_MAX_BYTES = 100 * 1024;
+
+  function _bcOpenIconPicker(itemIdx) {
+    if (!window.MediaLib || typeof MediaLib.get !== 'function') {
+      if (typeof toast === 'function') toast('メディアライブラリが利用できません');
+      return;
+    }
+    var imgs = MediaLib.get('images').slice();
+    imgs.sort(function (a, b) {
+      var as = /^data:image\/svg/.test(a.data || '') ? 0 : 1;
+      var bs = /^data:image\/svg/.test(b.data || '') ? 0 : 1;
+      return as - bs;
+    });
+
+    var old = document.getElementById('bc-icon-picker');
+    if (old) old.remove();
+
+    var wrap = document.createElement('div');
+    wrap.id = 'bc-icon-picker';
+    wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2100;display:flex;align-items:center;justify-content:center;padding:20px';
+
+    var cards = imgs.length ? imgs.map(function (m) {
+      var isSvg = /^data:image\/svg/.test(m.data || '');
+      var tooBig = (m.size || 0) > BC_ICON_MAX_BYTES;
+      return '<button type="button" data-bc-pick="' + esc(m.id) + '"' + (tooBig ? ' disabled' : '')
+        + ' style="border:1px solid var(--line);border-radius:10px;background:var(--bg-soft);padding:8px;cursor:' + (tooBig ? 'not-allowed' : 'pointer') + ';text-align:center' + (tooBig ? ';opacity:.4' : '') + '"'
+        + ' title="' + esc(m.name) + (tooBig ? '（100KB超のため選択不可 — SVGを推奨）' : '') + '">'
+        + '<img src="' + esc(m.data) + '" alt="" style="width:44px;height:44px;object-fit:contain;display:block;margin:0 auto 6px">'
+        + '<span style="font-size:10px;color:var(--gray-1);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:76px">'
+        + (isSvg ? 'SVG · ' : '') + esc(m.name) + '</span></button>';
+    }).join('')
+      : '<p style="font-size:13px;color:var(--gray-1);grid-column:1/-1">メディアライブラリに画像がありません。「メディア」タブで SVG をアップロードしてください。</p>';
+
+    wrap.innerHTML = '<div style="background:var(--bg,#fff);border-radius:14px;max-width:560px;width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line)">'
+      + '<strong style="font-size:14px">アイコンを選択（SVG推奨・100KBまで）</strong>'
+      + '<button type="button" class="btn btn-ghost btn-sm" data-bc-pick-close>閉じる</button></div>'
+      + '<div style="padding:14px 16px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px">' + cards + '</div></div>';
+
+    wrap.addEventListener('click', function (e) {
+      if (e.target === wrap || (e.target.closest && e.target.closest('[data-bc-pick-close]'))) { wrap.remove(); return; }
+      var btn = e.target.closest ? e.target.closest('[data-bc-pick]') : null;
+      if (!btn || btn.disabled) return;
+      var m = MediaLib.find('images', btn.getAttribute('data-bc-pick'));
+      if (!m) return;
+      if ((m.size || 0) > BC_ICON_MAX_BYTES) {
+        if (typeof toast === 'function') toast('ファイルが大きすぎます（100KBまで・SVG推奨）');
+        return;
+      }
+      if (_bc.items[itemIdx]) _bc.items[itemIdx].icon_svg = m.data;
+      wrap.remove();
+      renderBookingConfig();
+      if (typeof toast === 'function') toast('アイコンを割り当てました（保存を忘れずに）');
+    });
+
+    document.body.appendChild(wrap);
+  }
+
   function _bcSave() {
     var cfg = _deep(_bc);
     cfg.items = cfg.items.filter(function (it) { return it && ((it.name || '').trim() || (it.short || '').trim()); });
     cfg.items.forEach(function (it) {
       it.name = (it.name || '').trim(); it.short = (it.short || '').trim() || it.name;
+      it.icon_svg = (it.icon_svg || '').trim();
+      if (!it.icon_svg) delete it.icon_svg;   // blank = built-in default (keeps the KV lean)
     });
     cfg.timeSlots = cfg.timeSlots.filter(function (s) { return (s.label || '').trim(); });
     cfg.timeSlots.forEach(function (s) { s.label = s.label.trim(); s.value = (s.value || '').trim() || s.label; });
