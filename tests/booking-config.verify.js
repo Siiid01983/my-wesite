@@ -80,7 +80,15 @@ check('5 default time slots in index.html', idxSlots === 5, 'got ' + idxSlots);
 console.log('── wiring (Adapter / WMC / ContentLoader)');
 check('Adapter.getBookingConfig / saveBookingConfig exist',
   adapterJs.includes("getBookingConfig: () => _ls('hm_booking_config', null)")
-  && adapterJs.includes("saveBookingConfig: (v) => wt('hm_booking_config', v)"));
+  && adapterJs.includes('saveBookingConfig(v)')
+  && adapterJs.includes("upsert({ key: 'hm_booking_config'"));
+// WAF regression: an authenticated body containing "value":null gets 403'd by
+// the host's mod_security before reaching rest.php — resets must send {}.
+check('reset never sends a null value over the wire',
+  !moduleJs.includes('saveBookingConfig(null)')
+  && adapterJs.includes("(v && typeof v === 'object') ? v : {}"));
+check('editor reports true save status (awaits API result)',
+  moduleJs.includes('_bcPersist') && moduleJs.includes('保存に失敗しました'));
 check('WMC nav + view + script + dispatch registered',
   wmcHtml.includes('data-view="booking-config"')
   && wmcHtml.includes('id="wmc-view-booking-config"')

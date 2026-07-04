@@ -231,9 +231,9 @@
       if (act === 'save') { _bcSave(); return; }
       if (act === 'reset') {
         if (!confirm('予約フォーム設定をすべて既定値に戻しますか？（保存済みのカスタマイズは削除されます）')) return;
-        if (window.Adapter && Adapter.saveBookingConfig) Adapter.saveBookingConfig(null);
-        _bc = null; _bcLoad(); renderBookingConfig();
-        if (typeof toast === 'function') toast('既定値に戻しました');
+        // {} = "no overrides" → the overlay's built-in defaults. Never send
+        // null: the host WAF rejects authenticated "value":null bodies (403).
+        _bcPersist({}, '既定値に戻しました', function () { _bc = null; _bcLoad(); renderBookingConfig(); });
         return;
       }
       if (act === 'item-add') {
@@ -278,13 +278,35 @@
     if (!cfg.items.length) { if (typeof toast === 'function') toast('荷物リストが空です — 最低1点は必要です'); return; }
     if (!cfg.timeSlots.length) { if (typeof toast === 'function') toast('時間帯が空です — 最低1件は必要です'); return; }
 
-    if (window.Adapter && Adapter.saveBookingConfig) {
-      Adapter.saveBookingConfig(cfg);
-      _bc = null; _bcLoad(); renderBookingConfig();
-      if (typeof toast === 'function') toast('予約フォーム設定を保存しました');
-    } else if (typeof toast === 'function') {
-      toast('保存できません（Adapter 未接続）');
+    _bcPersist(cfg, '予約フォーム設定を保存しました', function () { _bc = null; _bcLoad(); renderBookingConfig(); });
+  }
+
+  /* Await the API result and report the TRUE outcome — a rejected write
+     (expired session, WAF block, offline) must not toast success. */
+  var _bcBusy = false;
+  function _bcPersist(cfg, okMsg, onOk) {
+    if (_bcBusy) return;
+    if (!window.Adapter || !Adapter.saveBookingConfig) {
+      if (typeof toast === 'function') toast('保存できません（Adapter 未接続）');
+      return;
     }
+    _bcBusy = true;
+    Promise.resolve(Adapter.saveBookingConfig(cfg))
+      .then(function (r) {
+        _bcBusy = false;
+        if (r && r.error) {
+          console.error('[BookingConfig] save failed:', r.error.message || r.error);
+          if (typeof toast === 'function') toast('⚠ 保存に失敗しました: ' + (r.error.message || 'サーバーエラー'), 5000);
+          return;
+        }
+        if (onOk) onOk();
+        if (typeof toast === 'function') toast(okMsg);
+      })
+      .catch(function (e) {
+        _bcBusy = false;
+        console.error('[BookingConfig] save threw:', e);
+        if (typeof toast === 'function') toast('⚠ 保存に失敗しました（通信エラー）', 5000);
+      });
   }
 
   window.renderBookingConfig = renderBookingConfig;

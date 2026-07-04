@@ -788,9 +788,25 @@
        filters / badges / drawer titles. Managed by
        js/modules/booking-config/bookingConfig.js; consumed by the overlay's
        _baCfg() in index.html via the ContentLoader localStorage snapshot.
-       null / missing sections = the overlay's built-in defaults. */
+       Missing sections = the overlay's built-in defaults; "reset" saves {}
+       (never a JSON null — the host WAF 403s authenticated bodies carrying
+       "value":null before they reach rest.php).
+       Unlike the fire-and-forget wt() editors, this returns the API result
+       ({ error }) so the editor can report the TRUE save status. */
     getBookingConfig: () => _ls('hm_booking_config', null),
-    saveBookingConfig: (v) => wt('hm_booking_config', v),
+    saveBookingConfig(v) {
+      if (!_checkCanWrite()) return Promise.resolve({ error: { message: '読み取り専用モードです' } });
+      const val = (v && typeof v === 'object') ? v : {};
+      _set('hm_booking_config', val);
+      if (window.DataProvider) DataProvider.invalidate('hm_data');
+      if (!_api) return Promise.resolve({ error: { message: 'ApiClient is null — write dropped' } });
+      return _api.from('hm_data')
+        .upsert({ key: 'hm_booking_config', value: val, updated_at: new Date().toISOString() })
+        .then(({ error }) => {
+          if (error) console.error('[API ERROR] hm_booking_config upsert failed:', error.message);
+          return { error: error || null };
+        });
+    },
     getContentHistory: () => { try { return JSON.parse(localStorage.getItem('hm_content_history') || '[]'); } catch { return []; } },
     pushContentHistory(snap) {
       const hist = this.getContentHistory();
