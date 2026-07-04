@@ -44,6 +44,31 @@ if ($bdate === '' || $bts === false)                         $errs[] = 'valid bo
 // Reject clearly-past dates (anti-tampering). 1-day grace avoids timezone
 // false-positives for legitimate same-day bookings (server TZ vs client JST).
 elseif ($bts < strtotime('today') - 86400)                   $errs[] = 'booking_date must not be in the past';
+
+// ── Service-aware address validation ─────────────────────────────────────────
+//  Addresses are packed into `notes` by the client (bookingService._packNotes):
+//    from:<loc> / to:<dest> / locmode:single|dual  (in the [HM_EXTRAS] block).
+//  Single-location services (junk removal / furniture assembly) need only a
+//  service location; moving jobs need both current + destination. We enforce
+//  this ONLY when the packed block is positively identified (locmode or ref:
+//  present) so any non-BA / future caller passes through untouched.
+$notes = (string)($data['notes'] ?? '');
+$sep   = "\n[HM_EXTRAS]\n";
+$spos  = strpos($notes, $sep);
+$block = $spos !== false ? substr($notes, $spos + strlen($sep)) : $notes;
+$mode  = '';
+if (preg_match('/^locmode:\s*(\w+)/m', $block, $mm)) $mode = strtolower($mm[1]);
+$isPacked = ($mode !== '') || (strpos($block, 'ref:') !== false);
+if ($isPacked) {
+  $hasFrom = (bool)preg_match('/^from:\s*\S/m', $block);
+  $hasTo   = (bool)preg_match('/^to:\s*\S/m', $block);
+  if ($mode === 'single') {
+    if (!$hasFrom) $errs[] = 'service location required';
+  } else {                       // dual / moving (default)
+    if (!$hasFrom) $errs[] = 'current address required';
+    if (!$hasTo)   $errs[] = 'destination address required';
+  }
+}
 if ($errs) {
   hm_log_write('error.log', ['type' => 'invalid_request', 'endpoint' => 'create-booking',
     'errors' => $errs, 'fp' => hm_client_fingerprint()]);

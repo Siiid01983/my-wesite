@@ -539,6 +539,14 @@ function saveBooking() {
 /* ════════════════════════════════════════════════════════
    DETAIL MODAL
    ════════════════════════════════════════════════════════ */
+// Single-location services (disposal / assembly) use a single 作業場所 rather
+// than 引越し元 + 引越し先. Prefer the packed locMode (surfaced by _rowToBooking);
+// fall back to service-name keywords for bookings created before it was stored.
+function bkIsSingleLoc(b) {
+  if (b && b.locMode) return b.locMode === 'single';
+  return /不用品|回収|処分|組立|分解|組み立て/.test(String((b && b.service) || ''));
+}
+
 function openDetail(id) {
   const b = BookingService.getBookings().find(b => b.id === id); if (!b) return;
   document.getElementById('detailRef').textContent = b.id;
@@ -552,11 +560,16 @@ function openDetail(id) {
         </span>
       </div>`
     : '';
+  // Single-location services (junk removal / furniture assembly) collect one
+  // 作業場所 instead of dual addresses — relabel + drop the empty destination row.
+  const addrRows = bkIsSingleLoc(b)
+    ? r('作業場所', b.fromAddr)
+    : r('引越し元', b.fromAddr) + r('引越し先', b.toAddr);
   document.getElementById('detailBody').innerHTML =
     `<div style="margin-bottom:12px">${badge(b.status||'新規')}</div>` +
     r('サービス',b.service) + r('引越し日',fmtD(b.date)) + r('希望時間帯',b.time) +
     r('お客様名',b.name) + r('メール',b.email) +
-    r('引越し元',b.fromAddr) + r('引越し先',b.toAddr) +
+    addrRows +
     itemsRow +
     r('備考',b.notes) + r('受付日時',fmtDT(b.createdAt));
   document.getElementById('detailPdfBtn').onclick   = () => downloadPDFBooking(id);
@@ -641,8 +654,9 @@ body{font-family:-apple-system,'Hiragino Sans','Meiryo','Yu Gothic',sans-serif;f
   ${row('希望時間帯',  b.time)}
   ${row('お客様名',    b.name)}
   ${row('メールアドレス', b.email)}
-  ${row('引越し元住所', b.fromAddr)}
-  ${row('引越し先住所', b.toAddr)}
+  ${bkIsSingleLoc(b)
+      ? row('作業場所',     b.fromAddr)
+      : row('引越し元住所', b.fromAddr) + row('引越し先住所', b.toAddr)}
   ${(b.items && b.items.length) ? row('お荷物', b.items.join(' ／ ') + (b.workers ? `　作業員 ${e(b.workers)}` : '')) : ''}
   ${row('備考・ご要望', b.notes)}
   ${row('受付日時',    fmtDT(b.createdAt))}
