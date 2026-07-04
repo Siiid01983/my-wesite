@@ -11,6 +11,19 @@ const _BK_TO_LOCAL = {
   pending: '新規', checking: '確認中', confirmed: '確定', completed: '完了', cancelled: 'キャンセル',
 };
 
+// ── Service-location model ────────────────────────────────────────────────────
+// Junk removal (disposal) & furniture assembly (assembly) collect a SINGLE
+// service location (作業場所) instead of a current-address + destination pair.
+// Kept in sync with the BA overlay's BA_SINGLE_LOC_IDS in index.html. The single
+// location maps to the generic primary address field (fromAddr) so admin/CRM/
+// invoices/inbox surface it exactly like any other booking address.
+const SINGLE_LOCATION_SERVICES = new Set(['disposal', 'assembly']);
+function _isSingleLocation(fields) {
+  if (fields.locMode) return fields.locMode === 'single';
+  if (fields.serviceId) return SINGLE_LOCATION_SERVICES.has(fields.serviceId);
+  return /不用品|回収|処分|組立|分解|組み立て/.test(String(fields.service || ''));
+}
+
 // ── Notes encoding — fields not in DB schema are packed into notes ────────────
 // Format: {user notes}\n[HM_EXTRAS]\nref:…\nfrom:…\nto:…\nservice:…\ntime:…
 
@@ -22,6 +35,7 @@ function _packNotes(b) {
   if (b.fromAddr) extras.push(`from:${b.fromAddr}`);
   if (b.toAddr)   extras.push(`to:${b.toAddr}`);
   if (b.service)  extras.push(`service:${b.service}`);
+  if (b.locMode)  extras.push(`locmode:${b.locMode}`);
   if (b.time)     extras.push(`time:${b.time}`);
   if (b.items && b.items.length) extras.push(`items:${b.items.join('|')}`);
   if (b.workers)  extras.push(`workers:${b.workers}`);
@@ -91,6 +105,7 @@ function _rowToBooking(r) {
     date:      r.booking_date   || '',
     fromAddr:  extra.from    || '',
     toAddr:    extra.to      || '',
+    locMode:   extra.locmode || '',
     service:   r.service_id   || extra.service || '',
     status:    _BK_TO_LOCAL[r.status] || '新規',
     notes:     cleanNotes,
@@ -144,17 +159,27 @@ const BookingService = (() => {
     const move_date = fields.date   || '';
     const status    = fields.status || '新規';
 
+    // Service-aware address requirement (the app's booking-API gate): single-
+    // location services need only the 作業場所 (mapped to fromAddr); moving jobs
+    // require both current + destination. Guards all callers, not just the UI.
+    const single = _isSingleLocation(fields);
+    const fromA  = (fields.fromAddr || '').trim();
+    const toA    = (fields.toAddr   || '').trim();
+    if (!fromA)            throw new Error(single ? '作業場所を入力してください' : '現住所を入力してください');
+    if (!single && !toA)   throw new Error('引越し先を入力してください');
+
     const booking = {
       id:        bookingId,
       name:      fields.name     || '',
       email:     fields.email    || '',
       phone:     fields.phone    || '',
       service:   fields.service  || '単身引越し',
+      locMode:   single ? 'single' : 'dual',
       status,
       date:      move_date,
       time:      fields.time     || '',
-      fromAddr:  fields.fromAddr || '',
-      toAddr:    fields.toAddr   || '',
+      fromAddr:  fromA,
+      toAddr:    single ? '' : toA,
       notes:     fields.notes    || '',
       createdAt: new Date().toISOString(),
     };

@@ -2743,12 +2743,12 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     <div class="ba-screen" id="ba-screen-booking">
     <div class="ba-body">
       <div class="ba-card">
-        <div class="ba-row" onclick="baOpenDrawer('from')">
-          <span class="ba-label">現住所：</span><div class="ba-sep"></div>
+        <div class="ba-row" id="ba-row-from" onclick="baOpenDrawer('from')">
+          <span class="ba-label" id="ba-label-from">現住所：</span><div class="ba-sep"></div>
           <span class="ba-val" id="ba-val-from">現住所を選択</span>
           <span class="ba-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
         </div>
-        <div class="ba-row" onclick="baOpenDrawer('to')">
+        <div class="ba-row" id="ba-row-to" onclick="baOpenDrawer('to')">
           <span class="ba-label">引越し先：</span><div class="ba-sep"></div>
           <span class="ba-val" id="ba-val-to">引越し先を選択</span>
           <span class="ba-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
@@ -3046,6 +3046,57 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   function _baSetText(id, txt){ var el = document.getElementById(id); if (el) el.textContent = txt; }
   function _baFmtDate(iso){ if (!iso) return '未選択'; var d = new Date(iso + 'T00:00:00'); return isNaN(d) ? iso : d.toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric' }); }
 
+  // ── Single-location services (作業場所 only — no destination) ─────────────
+  // Junk removal (disposal) & furniture assembly (assembly) happen at ONE place,
+  // so they collect a single 'Service Location' (作業場所) instead of the
+  // current-address + destination pair used for moving jobs.
+  var BA_SINGLE_LOC_IDS = { disposal: 1, assembly: 1 };
+  // Classify by the stable serviceId first; fall back to display-name keywords so
+  // homepage deep-links (which pass a CMS name, not an id) and CMS renames still
+  // resolve correctly.
+  function baIsSingleLoc() {
+    if (baState.serviceId) return !!BA_SINGLE_LOC_IDS[baState.serviceId];
+    return /不用品|回収|処分|組立|分解|組み立て/.test(String(baState.service || ''));
+  }
+  // Resolve a display name → stable serviceId (for deep-links). Exact CMS/label
+  // match first, then keyword fallback for the two single-location services.
+  function baResolveServiceId(name) {
+    if (!name) return '';
+    var ov = _baCmsOverrides();
+    for (var i = 0; i < BA_SVC_CFG.length; i++) {
+      var s = BA_SVC_CFG[i];
+      var label = (ov[BA_SLUG[s.id] || s.id] || {}).title || s.name;
+      if (name === label || name === s.name) return s.id;
+    }
+    if (/不用品|回収|処分/.test(name)) return 'disposal';
+    if (/組立|分解|組み立て/.test(name)) return 'assembly';
+    return '';
+  }
+  // Reconfigure the address rows for the active service: a single 作業場所 row for
+  // single-location services, or the 現住所 + 引越し先 pair for moving jobs.
+  function baApplyServiceMode() {
+    var single  = baIsSingleLoc();
+    var rowTo   = document.getElementById('ba-row-to');
+    var lblFrom = document.getElementById('ba-label-from');
+    var valFrom = document.getElementById('ba-val-from');
+    var drawerTitleFrom = document.querySelector('#ba-drawer-from .ba-drawer-title');
+    var inputLblFrom    = document.querySelector('#ba-drawer-from label[for="ba-input-from"]');
+    if (single) {
+      if (lblFrom) lblFrom.textContent = '作業場所：';
+      if (valFrom && !valFrom.classList.contains('filled')) valFrom.textContent = '作業場所を選択';
+      if (rowTo) rowTo.style.display = 'none';
+      if (drawerTitleFrom) drawerTitleFrom.textContent = '作業場所を入力';
+      if (inputLblFrom) inputLblFrom.textContent = '市区町村・番地・建物名（作業場所）';
+    } else {
+      if (lblFrom) lblFrom.textContent = '現住所：';
+      if (valFrom && !valFrom.classList.contains('filled')) valFrom.textContent = '現住所を選択';
+      if (rowTo) rowTo.style.display = '';
+      if (drawerTitleFrom) drawerTitleFrom.textContent = '現住所を入力';
+      if (inputLblFrom) inputLblFrom.textContent = '市区町村・番地・建物名';
+    }
+  }
+  window.baApplyServiceMode = baApplyServiceMode;
+
   // ── Service selection ────────────────────────────────────
   var BA_SVC_CFG = [
     {id:'tansin',  name:'単身引越し',             badge:'人気',    bc:'#9AB57A', img:'https://images.unsplash.com/photo-1616432043562-3671ea2e5242?auto=format&fit=crop&w=600&q=80'},
@@ -3143,6 +3194,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     baState.serviceId = serviceId || '';
     baState.service = serviceName || '';
     document.getElementById('ba-service-title').textContent = serviceName;
+    baApplyServiceMode();
     baShowScreen('booking');
   }
   function baGoBack() {
@@ -3165,7 +3217,9 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     baRenderServices();
     if (serviceName) {
       baState.service = serviceName;
+      baState.serviceId = baResolveServiceId(serviceName);
       document.getElementById('ba-service-title').textContent = serviceName;
+      baApplyServiceMode();
       baShowScreen('booking');
       setTimeout(function () { baOpenDrawer('furniture'); }, 80);
     } else {
@@ -3384,9 +3438,10 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 
   // ── Booking details → Contact ───────────────────────────
   window.baGoContact = function () {
-    if (!baState.fromAddr) { alert('現住所を入力してください。'); baOpenDrawer('from'); return; }
-    if (!baState.toAddr)   { alert('引越し先を入力してください。'); baOpenDrawer('to'); return; }
-    if (!baState.dateISO)  { alert('引越し希望日を選択してください。'); baOpenDrawer('date'); return; }
+    var single = baIsSingleLoc();
+    if (!baState.fromAddr) { alert(single ? '作業場所を入力してください。' : '現住所を入力してください。'); baOpenDrawer('from'); return; }
+    if (!single && !baState.toAddr) { alert('引越し先を入力してください。'); baOpenDrawer('to'); return; }
+    if (!baState.dateISO)  { alert('希望日を選択してください。'); baOpenDrawer('date'); return; }
     if (!baState.timeSlot) { alert('希望時間帯を選択してください。'); baOpenDrawer('time'); return; }
     baShowScreen('contact');
     setTimeout(function () { var n = document.getElementById('ba-name'); if (n) n.focus(); }, 80);
@@ -3398,15 +3453,18 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     if (!t) return;
     var items = _baItemsSummary();
     if (items === '荷物を選択') items = 'なし';
-    var rows = [
-      ['サービス',  baState.service || '—'],
-      ['現住所',    (baState.fromAddr || '—') + (baState.fromFloor ? '（' + baState.fromFloor + '階・EV' + (baState.fromEv || '-') + '）' : '')],
-      ['引越し先',  (baState.toAddr || '—') + (baState.toFloor ? '（' + baState.toFloor + '階・EV' + (baState.toEv || '-') + '）' : '')],
-      ['希望日',    _baFmtDate(baState.dateISO)],
-      ['希望時間',  baState.timeSlot || '—'],
-      ['作業員',    baState.workers + '名'],
-      ['荷物',      items]
-    ];
+    var fromCell = (baState.fromAddr || '—') + (baState.fromFloor ? '（' + baState.fromFloor + '階・EV' + (baState.fromEv || '-') + '）' : '');
+    var rows = [ ['サービス', baState.service || '—'] ];
+    if (baIsSingleLoc()) {
+      rows.push(['作業場所', fromCell]);
+    } else {
+      rows.push(['現住所', fromCell]);
+      rows.push(['引越し先', (baState.toAddr || '—') + (baState.toFloor ? '（' + baState.toFloor + '階・EV' + (baState.toEv || '-') + '）' : '')]);
+    }
+    rows.push(['希望日',   _baFmtDate(baState.dateISO)]);
+    rows.push(['希望時間', baState.timeSlot || '—']);
+    rows.push(['作業員',   baState.workers + '名']);
+    rows.push(['荷物',     items]);
     if (baState.disposal) rows.push(['不用品回収', baState.disposal]);
     if (baState.filters) rows.push(['ご希望条件', baState.filters]);
     rows.push(['お名前', baState.name || '—']);
@@ -3453,10 +3511,15 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     btn.disabled = true; btn.textContent = '送信中...';
     if (err) err.style.display = 'none';
 
+    var single = baIsSingleLoc();
     var items = _baItemsSummary();
     var noteParts = [];
-    if (baState.fromFloor || baState.fromEv) noteParts.push('現住所 階数/EV: ' + (baState.fromFloor || '-') + '階・EV' + (baState.fromEv || '-'));
-    if (baState.toFloor || baState.toEv) noteParts.push('引越し先 階数/EV: ' + (baState.toFloor || '-') + '階・EV' + (baState.toEv || '-'));
+    if (single) {
+      if (baState.fromFloor || baState.fromEv) noteParts.push('作業場所 階数/EV: ' + (baState.fromFloor || '-') + '階・EV' + (baState.fromEv || '-'));
+    } else {
+      if (baState.fromFloor || baState.fromEv) noteParts.push('現住所 階数/EV: ' + (baState.fromFloor || '-') + '階・EV' + (baState.fromEv || '-'));
+      if (baState.toFloor || baState.toEv) noteParts.push('引越し先 階数/EV: ' + (baState.toFloor || '-') + '階・EV' + (baState.toEv || '-'));
+    }
     if (baState.disposal) noteParts.push('不用品回収: ' + baState.disposal);
     if (items !== '荷物を選択') noteParts.push('荷物: ' + items);
     noteParts.push('作業員: ' + baState.workers + '名');
@@ -3467,16 +3530,18 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     var ref;
     try {
       var booking = await BookingService.createBooking({
-        service:  baState.service || '単身引越し',
-        date:     baState.dateISO || '',
-        time:     baState.timeSlot || '',
-        fromAddr: baState.fromAddr,
-        toAddr:   baState.toAddr,
-        name:     baState.name,
-        email:    baState.email,
-        phone:    baState.phone,
-        notes:    fullNotes,
-        status:   '新規'
+        service:   baState.service || '単身引越し',
+        serviceId: baState.serviceId || '',
+        locMode:   single ? 'single' : 'dual',
+        date:      baState.dateISO || '',
+        time:      baState.timeSlot || '',
+        fromAddr:  baState.fromAddr,
+        toAddr:    single ? '' : baState.toAddr,
+        name:      baState.name,
+        email:     baState.email,
+        phone:     baState.phone,
+        notes:     fullNotes,
+        status:    '新規'
       });
       ref = booking && booking.id;
     } catch (e) {
