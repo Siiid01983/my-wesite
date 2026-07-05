@@ -15,7 +15,7 @@
    Bump CACHE_VERSION to force cache replacement on next deploy.
    ════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'v14';
+const CACHE_VERSION = 'v15';
 const STATIC_CACHE  = 'hm-static-' + CACHE_VERSION;
 const FONT_CACHE    = 'hm-fonts-'  + CACHE_VERSION;
 const ALL_CACHES    = [STATIC_CACHE, FONT_CACHE];
@@ -119,7 +119,6 @@ const PRECACHE = [
   '/js/modules/website/wmcPages.js',
   '/js/modules/website/wmcBlog.js',
   '/js/modules/website/wmcSeo.js',
-  '/js/modules/website/wmcTheme.js',
   '/js/modules/website/wmcDeploy.js',
   '/js/modules/website/wmcAnalytics.js',
   '/js/modules/wmc/pageManager.js',

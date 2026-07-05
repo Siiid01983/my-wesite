@@ -7,7 +7,7 @@
 
 var _DC_EXPORT_KEYS = [
   'hm_hero', 'hm_footer', 'hm_faq', 'hm_company_rows', 'hm_prices',
-  'hm_blog_posts', 'hm_theme_config', 'hm_custom_theme_css',
+  'hm_blog_posts',
   'hm_version', 'hm_git_commit',
 ];
 
@@ -141,7 +141,6 @@ function _wmcRenderDeploy() {
   }
   var backups = [];
   try { backups = JSON.parse(localStorage.getItem('hm_dc_backups') || '[]'); } catch (_) {}
-  var themeApplied = !!localStorage.getItem('hm_custom_theme_css');
 
   /* Info cards */
   var infoCards = [
@@ -150,7 +149,6 @@ function _wmcRenderDeploy() {
     { icon: '🚀', label: 'ビルド状態', value: '本番環境', meta: 'Production', badge: { cls: 'green', text: '稼働中' } },
     { icon: '📅', label: '最終デプロイ', value: deployText, meta: deployTs ? new Date(deployTs).toLocaleDateString('ja-JP') : '—', badge: deployTs ? { cls: 'green', text: '記録済み' } : { cls: 'yellow', text: '未記録' } },
     { icon: '💾', label: 'データ使用量', value: (totalBytes / 1024).toFixed(1) + ' KB', meta: 'localStorage (hm_*)', badge: { cls: totalBytes > 500000 ? 'yellow' : 'green', text: totalBytes > 500000 ? '容量注意' : '正常' } },
-    { icon: '🗄', label: 'テーマ状態', value: themeApplied ? '適用済み' : '未適用', meta: 'カスタムテーマ', badge: { cls: themeApplied ? 'green' : 'yellow', text: themeApplied ? '有効' : 'デフォルト' } },
   ];
 
   var gridEl = document.getElementById('dcInfoGrid');
@@ -217,7 +215,6 @@ function _wmcRenderDeploy() {
     var sys = [];
     if (localStorage.getItem('hm_last_deploy'))           sys.push({ ts: localStorage.getItem('hm_last_deploy'),           msg: 'サイト起動を初回記録', level: 'ok' });
     if (localStorage.getItem('hm_last_content_update'))   sys.push({ ts: localStorage.getItem('hm_last_content_update'),   msg: 'コンテンツ更新',       level: 'ok' });
-    if (localStorage.getItem('hm_theme_applied_at'))      sys.push({ ts: localStorage.getItem('hm_theme_applied_at'),      msg: 'カスタムテーマを適用', level: 'ok' });
     var all = logs.concat(sys).sort(function (a, b) { return b.ts > a.ts ? 1 : -1; }).slice(0, 30);
     if (all.length === 0) { logEl.innerHTML = '<div style="color:var(--gray-2);padding:6px 0">ログがありません</div>'; }
     else {

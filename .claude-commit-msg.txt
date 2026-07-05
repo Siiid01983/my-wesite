@@ -1,0 +1,26 @@
+feat(inbox): complete inbox upgrade (SMTP direct reply + multi-channel routing)
+
+Summary:
+- Enabled server-side SMTP email delivery for inbox replies (replaces
+  clipboard-copy flow): reply modal POSTs send-email.php with 送信中…
+  loading state and explicit per-code error messages + _config.php hints
+  (smtp_auth/smtp_config/smtp_tls/...); コピー kept as outage fallback.
+- Implemented channel-based inbox filtering (booking@/support@/contact@)
+  with automated recipient detection: the existing inbox_messages.mailbox
+  column is the recipient_email; replies auto-route from_account to match
+  the receiving channel (From = channel; Sender: discloses smtp_user).
+- Added UI badges for channel identification (colored → booking@ / →
+  support@ / → contact@ on every card) and a channel tab bar with counts.
+- receive-email.php now stores the recipient mailbox (allowlisted,
+  default contact@); replies thread via in_reply_to/references and log
+  to communications (log_comm).
+- Includes idempotent migration for channel classification:
+  inbox-migrate.php backfills NULL/'' mailbox → contact@hello-moving.com
+  (re-run post-deploy).
+- tests/inbox-reply-flow.verify.js rewritten: send-payload asserts,
+  smtp_auth error path, clipboard fallback.
+
+Status: logic validated by manual review; automated checks (node --check,
+Playwright reply-flow test, test:arch) to confirm build integrity.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>

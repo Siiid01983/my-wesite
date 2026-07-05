@@ -238,7 +238,7 @@ window.ContentLoader = (function () {
 
     /* Brand main color → override the navy brand vars (brand.color default IS
        --navy). Hex-validated to prevent CSS injection. Injected last so this
-       single-source value wins over the Theme Customizer's hm_custom_theme_css. */
+       single-source value wins over any other injected style. */
     if (brand.color && /^#[0-9a-fA-F]{3,8}$/.test(brand.color)) {
       var el = document.getElementById('hm-settings-style');
       if (!el) { el = document.createElement('style'); el.id = 'hm-settings-style'; document.head.appendChild(el); }
@@ -496,29 +496,14 @@ window.ContentLoader = (function () {
         _applyFooter(kv.hm_footer);
         _applyGlobalContent(kv.hm_content);
 
-        /* Theme CSS — sync localStorage and the injected style for all visitors.
-           Stored RAW (setItem, not _ls/JSON.stringify): the <head> injector in
-           index/blog/article.html reads it raw at parse time, so a JSON-encoded
-           copy arrives as quoted garbage the browser discards — the theme then
-           only landed at CMS-pass time, reflowing the whole page mid-view. */
+        /* Theme Customizer REMOVED (2026-07-05). Its global !important CSS
+           caused whole-page reflows mid-load. Purge any legacy copy still
+           cached in a visitor's localStorage (and any style a stale cached
+           page injected) so leftover theme data can never style the site. */
+        try { localStorage.removeItem('hm_custom_theme_css'); } catch {}
         {
-          const css = kv.hm_custom_theme_css ? String(kv.hm_custom_theme_css) : '';
-          let themeEl = document.getElementById('hm-theme-override');
-          if (css) {
-            try { localStorage.setItem('hm_custom_theme_css', css); } catch {}
-            if (!themeEl) {
-              themeEl = document.createElement('style');
-              themeEl.id = 'hm-theme-override';
-              document.head.appendChild(themeEl);
-            }
-            themeEl.textContent = css;
-          } else {
-            /* KV empty/absent (Theme Customizer reset) — purge the stale local
-               copy and the injected style, or a visitor who ever cached a theme
-               keeps re-applying it forever. */
-            try { localStorage.removeItem('hm_custom_theme_css'); } catch {}
-            if (themeEl) themeEl.remove();
-          }
+          const themeEl = document.getElementById('hm-theme-override');
+          if (themeEl) themeEl.remove();
         }
 
         /* Site Settings — single source of truth for brand identity (logo,

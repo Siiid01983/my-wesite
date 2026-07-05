@@ -8,11 +8,6 @@
      hm_wmc_role      — sessionStorage, current simulated role
      hm_dc_log        — [{ts,msg,level}]  deployment log (max 50)
      hm_dc_backups    — [{id,name,ts,data{}}]  snapshots (max 10)
-     hm_theme_config  — {colorNavy,colorCta,colorAccent,colorBg,colorText,
-                          fontHeading,fontBody,fontSize,btnRadius,btnStyle,
-                          cardRadius,sectionPad,componentGap}
-     hm_custom_theme_css — CSS override string applied to index.html
-     hm_theme_applied_at — ISO timestamp
      hm_version       — "v4.0"
      hm_git_commit    — "abc1234..."
    ══════════════════════════════════════════════════════ */

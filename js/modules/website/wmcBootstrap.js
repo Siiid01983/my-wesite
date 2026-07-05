@@ -90,7 +90,6 @@ function wmcGo(view) {
   if (view === 'blog')        _wmcRenderBlog();
   if (view === 'services')    _wmcRenderServices();
   if (view === 'seo')         _wmcRenderSeoSettings();
-  if (view === 'theme')       _wmcRenderTheme();
   if (view === 'deploy')      _wmcRenderDeploy();
   if (view === 'permissions') _wmcRenderPermissions();
 }
