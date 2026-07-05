@@ -13,12 +13,20 @@
 //
 //  Response envelope: standard { ok, data, error } (hm_ok / hm_err).
 //
-//  NOTE: no frontend is wired to this yet — the public contact links in the
-//  locked index.html are still mailto:. Wiring a real form to this endpoint is a
-//  separate, sign-off-gated step.
+//  Frontend: the index.html「メールでお問い合わせ」form (js/contact-form.js).
+//
+//  Intake is DUAL, with the WMC Inbox row as the authoritative copy:
+//    1. inbox_messages row (mailbox = contact@) → appears instantly in the
+//       admin Inbox on the contact@ channel; staff reply from the card.
+//    2. Notification email to contact@ (best-effort; submission still succeeds
+//       if SMTP is down as long as the Inbox row was written).
+//  The row reuses the email's Message-ID, so when inbox-poll.php later imports
+//  contact@'s INBOX the self-sent copy is skipped as a duplicate.
 // ════════════════════════════════════════════════════════════════════════════
 declare(strict_types=1);
 require_once __DIR__ . '/_lib.php';
+require_once __DIR__ . '/_db.php';
+require_once __DIR__ . '/_cache.php';
 require_once __DIR__ . '/_ratelimit.php';
 
 // Guarded load so a missing EmailService.php degrades to a structured error
@@ -48,34 +56,75 @@ if ($email === '' || strpbrk($email, "\r\n") !== false || !filter_var($email, FI
 }
 if ($message === '') hm_err('メッセージを入力してください', 400, 'empty_message');
 
-if (!$HM_EMAIL_READY) {
-  hm_log_error('contact unavailable', ['reason' => 'EmailService.php missing or invalid']);
-  hm_err('メール送信サービスを利用できません', 500, 'smtp_unavailable');
-}
-
-$acc  = EmailService::account($cfg, 'contact');
-$rows = ['お名前' => $name, 'メール' => $email];
-if ($phone !== '') $rows['電話番号'] = $phone;
-$rows['件名'] = $subject;
-$html = EmailService::notifyHtml('新しいお問い合わせ', $rows, $message);
-$text = "新しいお問い合わせ\n\nお名前: {$name}\nメール: {$email}\n"
+$text = "新しいお問い合わせ（ウェブフォーム）\n\nお名前: {$name}\nメール: {$email}\n"
       . ($phone !== '' ? "電話番号: {$phone}\n" : '')
       . "件名: {$subject}\n\n{$message}";
 
-$res = EmailService::deliver($cfg, [
-  'account' => 'contact',
-  'to'      => $acc['admin'],                 // contact@ (admin recipient)
-  'subject' => '[お問い合わせ] ' . $subject,
-  'html'    => $html,
-  'text'    => $text,
-  'replyTo' => $email,                        // reply straight to the submitter
-]);
+// ── 1. Notification email to contact@ (best-effort) ─────────────────────────
+$res = null;
+if ($HM_EMAIL_READY) {
+  $acc  = EmailService::account($cfg, 'contact');
+  $rows = ['お名前' => $name, 'メール' => $email];
+  if ($phone !== '') $rows['電話番号'] = $phone;
+  $rows['件名'] = $subject;
+  $html = EmailService::notifyHtml('新しいお問い合わせ', $rows, $message);
 
-if ($res['ok']) {
-  hm_ok(['from' => $res['from'], 'messageId' => $res['messageId'], 'transport' => $res['transport']]);
+  $res = EmailService::deliver($cfg, [
+    'account' => 'contact',
+    'to'      => $acc['admin'],                 // contact@ (admin recipient)
+    'subject' => '[お問い合わせ] ' . $subject,
+    'html'    => $html,
+    'text'    => $text,
+    'replyTo' => $email,                        // reply straight to the submitter
+  ]);
+  if (!$res['ok']) {
+    hm_log_error('contact send failed', [
+      'code' => $res['code'], 'err' => $res['error_raw'] ?? $res['error'], 'to' => $acc['admin'],
+    ]);
+  }
+} else {
+  hm_log_error('contact email unavailable', ['reason' => 'EmailService.php missing or invalid']);
+}
+$emailed = (bool)($res['ok'] ?? false);
+
+// ── 2. WMC Inbox row (authoritative intake) ──────────────────────────────────
+// Shares the email's Message-ID so inbox-poll.php skips the self-sent copy in
+// contact@'s INBOX (dedup is by message_id). If the email failed, a synthetic
+// Message-ID keeps the row insertable and threadable.
+$mid = ($emailed && !empty($res['messageId']))
+     ? (string)$res['messageId']
+     : '<contact-' . hm_uuid4() . '@hello-moving.com>';
+$inboxOk = false;
+try {
+  $st = hm_db()->prepare(
+    'INSERT INTO inbox_messages
+       (id, sender, sender_name, email, subject, body, body_text,
+        mailbox, message_id, thread_id, received_at, is_read, status)
+     VALUES (?,?,?,?,?,?,?,?,?,?,NOW(),0,\'open\')'
+  );
+  $st->execute([
+    hm_uuid4(),
+    $name,
+    $name,
+    $email,
+    '[お問い合わせ] ' . $subject,
+    $text,
+    $text,
+    'contact@hello-moving.com',   // recipient channel → contact@ tab, reply From
+    $mid,
+    $mid,                         // new thread rooted at this message
+  ]);
+  hm_cache_invalidate_table('inbox_messages');
+  $inboxOk = true;
+} catch (Throwable $e) {
+  hm_log_error('contact inbox row failed', ['err' => $e->getMessage()]);
 }
 
-hm_log_error('contact send failed', [
-  'code' => $res['code'], 'err' => $res['error_raw'] ?? $res['error'], 'to' => $acc['admin'],
-]);
-hm_err(hm_debug() ? ($res['error_raw'] ?? $res['error']) : $res['error'], $res['status'] ?? 502, $res['code']);
+// Success if the message reached EITHER channel; error only when both failed.
+if ($inboxOk || $emailed) {
+  hm_ok(['inbox' => $inboxOk, 'emailed' => $emailed, 'messageId' => $mid]);
+}
+if ($res) {
+  hm_err(hm_debug() ? ($res['error_raw'] ?? $res['error']) : $res['error'], $res['status'] ?? 502, $res['code']);
+}
+hm_err('お問い合わせを送信できませんでした。時間をおいて再度お試しください', 500, 'contact_failed');
