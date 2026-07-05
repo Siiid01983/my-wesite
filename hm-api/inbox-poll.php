@@ -26,6 +26,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_lib.php';
 require_once __DIR__ . '/_db.php';
 require_once __DIR__ . '/_imap.php';
+require_once __DIR__ . '/_line.php';
 
 $isCli = (PHP_SAPI === 'cli');
 
@@ -148,7 +149,7 @@ function poll_mailbox(array $cfg, array $acct): array {
   $mailbox = (string)($acct['mailbox'] ?? '');
   $user    = (string)($acct['user'] ?? $mailbox);
   $pass    = (string)($acct['pass'] ?? '');
-  $res = ['mailbox' => $mailbox, 'imported' => 0, 'skipped' => 0, 'scanned' => 0, 'error' => null];
+  $res = ['mailbox' => $mailbox, 'imported' => 0, 'skipped' => 0, 'scanned' => 0, 'error' => null, 'notify' => []];
   if ($mailbox === '' || $pass === '') { $res['error'] = 'missing mailbox or password'; return $res; }
 
   $imap = null;
@@ -222,6 +223,10 @@ function poll_mailbox(array $cfg, array $acct): array {
             $msg['received_at'],
           ]);
           $res['imported']++;
+          // LINE alert candidate — genuine inbound only (never our own mailboxes).
+          if (!isset($own[strtolower($senderEmail)])) {
+            $res['notify'][] = ['name' => $senderName, 'email' => $senderEmail, 'subject' => $msg['subject']];
+          }
         }
         $maxHandledUid = max($maxHandledUid, $uid);   // committed (imported or duplicate)
       } catch (Throwable $e) {
@@ -262,6 +267,33 @@ try {
 } finally {
   @flock($lock, LOCK_UN);
   @fclose($lock);
+}
+
+// ── LINE alert for newly imported inbound mail (one push per run) ────────────
+// Dedup by construction: a message is imported exactly ONCE (Message-ID dedup
+// + UID watermark), so a notification can never repeat for the same mail, and
+// own-mailbox senders are excluded upstream. Aggregating into a single push
+// per run means a first-time backlog import can never flood LINE.
+// Fire-and-forget — hm_line_push never throws.
+$notify = [];
+foreach ($results as $r) { foreach (($r['notify'] ?? []) as $n) $notify[] = $n; }
+if ($notify && hm_line_enabled()) {
+  $url = 'https://hello-moving.com/websiteManagement.html#inbox';
+  $who = function (array $n): string {
+    return ($n['name'] !== '' && strcasecmp($n['name'], $n['email']) !== 0)
+      ? "{$n['name']}（{$n['email']}）" : $n['email'];
+  };
+  if (count($notify) === 1) {
+    $n   = $notify[0];
+    $msg = "📩 新着メッセージ: {$who($n)}\n件名: " . ($n['subject'] !== '' ? $n['subject'] : '（件名なし）') . "\n▶ {$url}";
+  } else {
+    $lines = [];
+    foreach (array_slice($notify, 0, 5) as $n) $lines[] = '• ' . $who($n);
+    $more = count($notify) - 5;
+    $msg  = '📩 新着メッセージ ' . count($notify) . "件\n" . implode("\n", $lines)
+          . ($more > 0 ? "\n…他{$more}件" : '') . "\n▶ {$url}";
+  }
+  hm_line_push($msg);
 }
 
 poll_out([
