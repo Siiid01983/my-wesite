@@ -757,8 +757,9 @@
     getHeader() {
       return _ls('hm_header', {
         links: [
-          { text:'予約',       href:'#booking',   booking:false },
+          { text:'無料見積り', href:'#booking',   booking:true  },
           { text:'料金見積り', href:'#booking',   booking:true  },
+          { text:'引越しの流れ', href:'#flow',    booking:false },
           { text:'お客様の声', href:'#reviews',   booking:false },
           { text:'FAQ',        href:'#faq',       booking:false },
           { text:'会社情報',   href:'#company',   booking:false },
