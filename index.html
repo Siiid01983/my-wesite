@@ -1457,6 +1457,18 @@ var SERVICE_CONFIG = [
 window.HM_renderServiceCards = function renderServiceCards(overrides) {
   var grid = document.getElementById('serviceCardsGrid');
   if (!grid) return;
+  /* TEMP DIAGNOSTIC (2026-07-05 double-render report) — remove once resolved.
+     Logs the grid state at the moment of each render so a duplicate view can
+     be traced to a specific render pass (fallback vs CMS) or ruled out. */
+  console.log('[HM_renderServiceCards]',
+    'pre-render children:', grid.children.length,
+    '| .svc-img-card in document:', document.querySelectorAll('.svc-img-card').length,
+    '| .svc-img-grid containers:', document.querySelectorAll('.svc-img-grid').length,
+    '| pass:', overrides ? 'CMS overrides (' + Object.keys(overrides).join(',') + ')' : 'fallback');
+  /* Defensive explicit clear. NOTE: the innerHTML assignment at the end of
+     this function already fully replaces the container — this line exists to
+     make the clear unmissable while the double-render report is investigated. */
+  grid.innerHTML = '';
   var ov = overrides || {};
   function esc(s) {
     return String(s == null ? '' : s).replace(/[<>&"']/g, function (c) {
