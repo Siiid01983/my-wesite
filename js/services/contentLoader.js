@@ -171,7 +171,7 @@ window.ContentLoader = (function () {
      Single source: hm_data['hm_header'] → Website Management → Header module.
      Rebuilds the desktop nav <li> list from the admin-ordered links. Each link
      is HTML-escaped (stored-XSS guard). A link flagged booking:true re-emits the
-     inline openBookingApp() handler so the "料金見積り" behaviour survives the
+     inline openBookingApp() handler so the "無料見積り" behaviour survives the
      rebuild (openBookingApp is a global). The mobile menu (#mobileNav) is left
      untouched — it keeps its own list and the close-on-tap listeners bound in
      script.js. Empty/absent value leaves the static markup in place. */

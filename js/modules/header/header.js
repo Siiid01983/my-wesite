@@ -15,7 +15,7 @@
    behaviour. Keeping scope to the desktop nav respects the existing structure.
 
    The `booking` flag marks the link that opens the BA booking overlay
-   (openBookingApp) — preserving the "料金見積り" behaviour through the rebuild.
+   (openBookingApp) — preserving the "無料見積り" behaviour through the rebuild.
    ════════════════════════════════════════════════════════ */
 
 /* Working state — the currently-edited link list. Seeded from Adapter on
