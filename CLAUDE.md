@@ -39,7 +39,7 @@ Prefer adding new files over modifying core files.
   `BookingService.createBooking()` (single source of truth) → success screen.
 - All booking CTAs route to `openBookingApp()`; `#booking` is only a no-JS fallback anchor.
 - The hero is a single-column marketing block (H1/badges/trust/license) with one prominent
-  `今すぐ予約する` CTA → `openBookingApp()`. Service cards deep-link via `[data-service]` → `openBookingApp(service)`.
+  `今すぐ無料見積り` CTA → `openBookingApp()`. Service cards deep-link via `[data-service]` → `openBookingApp(service)`.
 - DEPRECATED / REMOVED FROM PRODUCTION:
   - Hero `quoteForm` (multi-step hero form) — **removed entirely** (markup + CSS + JS). The hero
     no longer renders any form; the BA overlay is the sole booking entry.

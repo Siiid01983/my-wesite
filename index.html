@@ -966,15 +966,13 @@ body { padding-bottom: 76px; }
   cursor: pointer;
 }
 .sticky-btn:hover { background: #e8e8e4 !important; }
-.sticky-book {
+.sticky-quote {
   background: #2C3626 !important;
   color: #fff !important;
   border-color: #2C3626 !important;
   flex: 1.4 !important;
 }
-.sticky-book:hover { background: #1a2018 !important; }
-.sticky-quote { background: #fff !important; color: #2C3626 !important; border-color: #ddd !important; }
-.sticky-quote:hover { background: #f7f7f4 !important; }
+.sticky-quote:hover { background: #1a2018 !important; }
 .sticky-line {
   background: #06C755 !important;
   color: #fff !important;
@@ -1234,7 +1232,7 @@ body { padding-bottom: 76px; }
           Email
         </a>
       </li>
-      <li class="mobile-cta"><a href="#booking" class="btn btn-primary btn-block">今すぐ予約する</a></li>
+      <li class="mobile-cta"><a href="#booking" class="btn btn-primary btn-block">無料見積り</a></li>
     </ul>
   </div>
 </header>
@@ -1275,7 +1273,7 @@ body { padding-bottom: 76px; }
       <div class="hero-cta">
         <a href="#booking" onclick="openBookingApp();return false;" class="btn-hero-book">
           <span class="btn-sup" id="heroCtaBookSup">オンライン予約</span>
-          <span class="btn-lbl" id="heroCtaBookLbl">今すぐ予約する</span>
+          <span class="btn-lbl" id="heroCtaBookLbl">今すぐ無料見積り</span>
         </a>
         <a href="https://line.me/R/ti/p/~hellomoving" class="btn-hero-line" target="_blank" rel="noopener noreferrer">
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.6 1.6 4.9 4 6.4-.1.5-.6 2.1-.7 2.5 0 0 0 .3.2.4.2.1.4 0 .4 0 .6-.1 3-2 3.6-2.4.8.1 1.6.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3Z"/></svg>
@@ -1424,7 +1422,7 @@ body { padding-bottom: 76px; }
         <p data-content-key="booking_band_text">日時・住所を入力してかんたん予約リクエスト。</p>
       </div>
       <button class="booking-cta-btn" onclick="openBookingApp()">
-        今すぐ予約する
+        今すぐ無料見積り
         <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M5 12h14M12 5l7 7-7 7"/></svg>
       </button>
     </div>
@@ -1775,7 +1773,7 @@ setTimeout(window.HM_revealServiceCards, 2500);
         <span class="midpage-panel-who">引越し日が決まっている方</span>
         <p class="midpage-panel-title">オンライン予約</p>
         <p class="midpage-panel-desc">日時・住所を入力して予約リクエストを送信。</p>
-        <a href="#booking" class="btn btn-light">今すぐ予約する →</a>
+        <a href="#booking" onclick="openBookingApp();return false;" class="btn btn-light">今すぐ無料見積り →</a>
       </div>
       <div class="midpage-divider" aria-hidden="true"></div>
       <div class="midpage-panel">
@@ -2065,7 +2063,7 @@ setTimeout(window.HM_revealServiceCards, 2500);
     <div class="hm-ft__col" id="footerCol2El">
       <h4 class="hm-ft__heading" id="footerCol2TitleEl">サポート</h4>
       <ul class="hm-ft__links" id="footerCol2LinksEl">
-        <li><a href="#booking">お問い合わせ</a></li>
+        <li><a href="#contact">お問い合わせ</a></li>
         <li><a href="#booking" onclick="openBookingApp();return false;">無料見積り</a></li>
         <li><a href="https://line.me/R/ti/p/~hellomoving" target="_blank" rel="noopener noreferrer">LINE相談</a></li>
         <li><a href="#company">対応エリア</a></li>
@@ -2171,12 +2169,9 @@ setTimeout(window.HM_revealServiceCards, 2500);
 </script>
 
 <!-- ============== STICKY MOBILE CTA ============== -->
-<div class="sticky-cta" aria-label="予約・見積り">
-  <a href="#booking" class="sticky-btn sticky-book">
-    <span>今すぐ予約</span>
-  </a>
+<div class="sticky-cta" aria-label="無料見積り・お問い合わせ">
   <a href="#booking" onclick="openBookingApp();return false;" class="sticky-btn sticky-quote">
-    <span>無料見積り</span>
+    <span>今すぐ無料見積り</span>
   </a>
   <a href="https://line.me/R/ti/p/~hellomoving" class="sticky-btn sticky-line" target="_blank" rel="noopener noreferrer">
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.6 1.6 4.9 4 6.4-.1.5-.6 2.1-.7 2.5 0 0 0 .3.2.4.2.1.4 0 .4 0 .6-.1 3-2 3.6-2.4.8.1 1.6.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3Z"/></svg>

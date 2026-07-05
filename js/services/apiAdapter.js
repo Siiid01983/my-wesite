@@ -597,7 +597,7 @@
       const defaults = {
         headline_ja: 'ていねいに、運びます。',  headline_en: 'Same-day moving. Careful, always.',
         sub_primary: 'オンライン予約・無料見積り対応', sub_secondary: '料金確認から予約までオンライン完結',
-        cta_book_sup: 'オンライン予約', cta_book_lbl: '今すぐ予約する',
+        cta_book_sup: 'オンライン予約', cta_book_lbl: '今すぐ無料見積り',
         cta_line: 'LINE相談',
       };
       const saved = _ls('hm_hero', defaults);
