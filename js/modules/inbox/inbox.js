@@ -100,6 +100,19 @@
   }
   function _channelMeta(m) { return CHANNEL_META[_recipientOf(m)]; }
 
+  /* Reply address for a message: normally the stored sender email. For LEGACY
+     self-sent notification rows (email = one of our own mailboxes — e.g.
+     contact-form mail imported before Reply-To handling in inbox-poll.php),
+     fall back to the first customer address in the body (the「メール:」line),
+     so 宛先 targets the customer instead of our own mailbox. */
+  function _replyAddrOf(m) {
+    var e = String((m && m.email) || '').trim();
+    if (CHANNELS.indexOf(e.toLowerCase()) < 0) return e;
+    var src = String((m && (m.body_text || m.body)) || '');
+    var hit = src.match(/メール[:：]\s*([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/);
+    return hit ? hit[1] : e;
+  }
+
   /* ── Helpers ─────────────────────────────────────────── */
   function _esc(s) {
     return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -541,7 +554,7 @@
     var from = _recipientOf(m);
     var meta = CHANNEL_META[from];
     document.getElementById('ircMsgId').value = id;
-    document.getElementById('ircTo').textContent = m.email || '';
+    document.getElementById('ircTo').textContent = _replyAddrOf(m);
     var fromEl = document.getElementById('ircFrom');
     fromEl.textContent = from;
     fromEl.style.background = meta.bg;
@@ -585,7 +598,7 @@
     var id = document.getElementById('ircMsgId').value;
     var m = _byId[id];
     if (!m) return;
-    var to      = String(m.email || '').trim();
+    var to      = _replyAddrOf(m);
     var subject = (document.getElementById('ircSubject').value || '').trim();
     var body    = (document.getElementById('ircText').value || '').trim();
     if (!to || to.indexOf('@') < 0) { _ircStatus('宛先メールアドレスが不正です。', 'error'); return; }

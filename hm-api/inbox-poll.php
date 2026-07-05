@@ -176,9 +176,26 @@ function poll_mailbox(array $cfg, array $acct): array {
         if (inbox_has_message_id($mid)) {
           $res['skipped']++;
         } else {
+          // Sender resolution: normally From. For a SELF-SENT notification
+          // (From = one of our own polled mailboxes, customer in Reply-To —
+          // e.g. the contact-form email) store the Reply-To instead, so the
+          // Inbox reply 宛先 targets the customer, not our own mailbox.
+          $own = [];
+          foreach (($cfg['imap_accounts'] ?? []) as $a) {
+            $mb = strtolower(trim((string)($a['mailbox'] ?? '')));
+            if ($mb !== '') $own[$mb] = true;
+          }
+          $senderEmail = $msg['from_email'];
+          $senderName  = $msg['from_name'];
+          $rt = strtolower(trim((string)($msg['reply_to_email'] ?? '')));
+          if ($rt !== '' && isset($own[strtolower($senderEmail)]) && !isset($own[$rt])) {
+            $senderEmail = (string)$msg['reply_to_email'];
+            $senderName  = (string)($msg['reply_to_name'] ?? '') !== '' ? (string)$msg['reply_to_name'] : $senderEmail;
+          }
+
           $parentIds   = array_merge($msg['in_reply_to'] !== '' ? [$msg['in_reply_to']] : [], $msg['references']);
           $subjectNorm = hm_imap_norm_subject($msg['subject']);
-          $threadId    = inbox_resolve_thread($parentIds, $msg['from_email'], $subjectNorm, $mid);
+          $threadId    = inbox_resolve_thread($parentIds, $senderEmail, $subjectNorm, $mid);
 
           $bodyLegacy = $msg['body_text'] !== '' ? $msg['body_text']
                       : (strip_tags($msg['body_html']) ?: '(本文なし)');
@@ -191,9 +208,9 @@ function poll_mailbox(array $cfg, array $acct): array {
           );
           $ins->execute([
             hm_uuid4(),
-            $msg['from_name'] !== '' ? $msg['from_name'] : $msg['from_email'],
-            $msg['from_name'] !== '' ? $msg['from_name'] : null,
-            $msg['from_email'],
+            $senderName !== '' ? $senderName : $senderEmail,
+            $senderName !== '' ? $senderName : null,
+            $senderEmail,
             $msg['subject'],
             $bodyLegacy,
             $msg['body_text'] !== '' ? $msg['body_text'] : null,

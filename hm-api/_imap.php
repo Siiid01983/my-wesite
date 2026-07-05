@@ -215,6 +215,16 @@ function hm_imap_parse($imap, int $uid): array {
   }
   if ($fromName === '') $fromName = $fromEmail;
 
+  // Reply-To — the preferred reply target when it differs from From (e.g. the
+  // contact-form notification: From = contact@, customer address in Reply-To).
+  $replyToName = ''; $replyToEmail = '';
+  if (!empty($hdr->reply_to) && is_array($hdr->reply_to)) {
+    $r = $hdr->reply_to[0];
+    $replyToName = hm_imap_decode_mime((string)($r->personal ?? ''));
+    $mbox = (string)($r->mailbox ?? ''); $host = (string)($r->host ?? '');
+    if ($mbox !== '' && $host !== '') $replyToEmail = $mbox . '@' . $host;
+  }
+
   // In-Reply-To / References — regex the raw header (parse_headers is inconsistent).
   $inReplyTo = '';
   if (preg_match('/^In-Reply-To:\s*(.+)$/im', $rawHeader, $m)) {
@@ -238,8 +248,10 @@ function hm_imap_parse($imap, int $uid): array {
     'message_id'  => $messageId,
     'in_reply_to' => $inReplyTo,
     'references'  => $references,
-    'from_name'   => $fromName,
-    'from_email'  => $fromEmail,
+    'from_name'      => $fromName,
+    'from_email'     => $fromEmail,
+    'reply_to_name'  => $replyToName,
+    'reply_to_email' => $replyToEmail,
     'subject'     => $subject,
     'body_text'   => $text,
     'body_html'   => $html,
