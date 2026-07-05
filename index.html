@@ -505,59 +505,16 @@ select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{
 /* ── Hero icons dark mode guarantee ─── */
 
 /* ═══════════════════════════════════════════════════════════
-   DUAL CONVERSION BAND
+   MID-PAGE CONVERSION BAND (single centered CTA)
    ═══════════════════════════════════════════════════════════ */
-
-/* ── Mid-page dual panels ───────────────── */
-.midpage-dual{
-  display:grid;grid-template-columns:1fr 1px 1fr;
-  gap:0;align-items:center;padding:8px 0 24px
-}
-.midpage-divider{
-  align-self:stretch;background:rgba(255,255,255,.12)
-}
-.midpage-panel{padding:16px 40px;text-align:center}
-.midpage-panel-who{
-  display:block;font-size:10px;font-weight:600;letter-spacing:.14em;
-  text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:10px
-}
-.midpage-panel-title{
-  font-size:22px;font-weight:600;color:#fff;
-  letter-spacing:.06em;margin:0 0 6px;line-height:1.3
-}
-.midpage-panel-desc{
-  font-size:13px;color:rgba(255,255,255,.6);
-  margin:0 0 20px;line-height:1.65
-}
-.midpage-line-row{
-  text-align:center;padding-bottom:8px;
-  border-top:1px solid rgba(255,255,255,.1);padding-top:20px
-}
+.midpage-single{text-align:center;padding:8px 0}
+.midpage-line-row{text-align:center;margin-top:18px}
 .midpage-line-row a{
   display:inline-flex;align-items:center;gap:6px;
   font-size:13px;color:rgba(255,255,255,.55);
   letter-spacing:.04em;transition:color .2s
 }
 .midpage-line-row a:hover{color:rgba(255,255,255,.9)}
-/* dark mode — midpage dual (bg changes to bg-soft-2) */
-@media(max-width:720px){
-  .midpage-dual{grid-template-columns:1fr;gap:0}
-  .midpage-divider{width:100%;height:1px;align-self:auto;background:rgba(255,255,255,.12)}
-  .midpage-panel{padding:20px 0}
-}
-
-/* ── Outlined button for dark band ─────── */
-.btn-outline-white{
-  display:inline-flex;align-items:center;justify-content:center;gap:10px;
-  padding:14px 28px;border-radius:999px;font-weight:500;font-size:14px;
-  letter-spacing:.08em;transition:all .3s var(--easing);
-  background:transparent;color:rgba(255,255,255,.82);
-  border:1px solid rgba(255,255,255,.28);font-family:var(--font-jp)
-}
-.btn-outline-white:hover{
-  border-color:rgba(255,255,255,.65);background:rgba(255,255,255,.07);color:#fff;
-  transform:translateY(-1px)
-}
 
 /* ═══════════════════════════════════════════════════════════
    CALCULATOR INTEGRATION PASS
@@ -1767,22 +1724,8 @@ setTimeout(window.HM_revealServiceCards, 2500);
 
 <!-- ============== MID-PAGE CTA ============== -->
 <div class="midpage-cta">
-  <div class="container">
-    <div class="midpage-dual">
-      <div class="midpage-panel">
-        <span class="midpage-panel-who">引越し日が決まっている方</span>
-        <p class="midpage-panel-title">オンライン予約</p>
-        <p class="midpage-panel-desc">日時・住所を入力して予約リクエストを送信。</p>
-        <a href="#booking" onclick="openBookingApp();return false;" class="btn btn-light">今すぐ無料見積り →</a>
-      </div>
-      <div class="midpage-divider" aria-hidden="true"></div>
-      <div class="midpage-panel">
-        <span class="midpage-panel-who">料金を確認したい方</span>
-        <p class="midpage-panel-title">無料見積り</p>
-        <p class="midpage-panel-desc">まず料金を確認。見積り後に予約も可能。</p>
-        <a href="#booking" onclick="openBookingApp();return false;" class="btn btn-outline-white">料金を確認する →</a>
-      </div>
-    </div>
+  <div class="container midpage-single">
+    <a href="#booking" onclick="openBookingApp();return false;" class="btn btn-light">今すぐ無料見積り →</a>
     <div class="midpage-line-row">
       <a href="https://line.me/R/ti/p/~hellomoving" target="_blank" rel="noopener noreferrer">
         <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.6 1.6 4.9 4 6.4-.1.5-.6 2.1-.7 2.5 0 0 0 .3.2.4.2.1.4 0 .4 0 .6-.1 3-2 3.6-2.4.8.1 1.6.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3Z"/></svg>

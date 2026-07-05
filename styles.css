@@ -2507,12 +2507,6 @@ html.dark .upload-file-item { background: var(--bg); border-color: rgba(255,255,
   background: var(--ink);
   padding: 32px 0;
 }
-.midpage-cta-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-}
 .midpage-cta p {
   color: rgba(255,255,255,.75);
   font-size: 15.5px;
@@ -2524,11 +2518,6 @@ html.dark .upload-file-item { background: var(--bg); border-color: rgba(255,255,
 
 @media (max-width: 720px) {
   .midpage-cta { padding: 28px 0; }
-  .midpage-cta-inner {
-    flex-direction: column;
-    text-align: center;
-    gap: 18px;
-  }
 }
 
 /* =============================================================
