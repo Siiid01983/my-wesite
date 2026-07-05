@@ -36,10 +36,25 @@ function _tcReset() {
   _tcConfig = Object.assign({}, _TC_DEFAULTS);
   localStorage.removeItem('hm_theme_config');
   localStorage.removeItem('hm_custom_theme_css');
+  /* Clear the server KV too — otherwise every visitor keeps receiving (and
+     re-caching) the old theme CSS via ContentLoader and the reset never
+     reaches the public site. Empty string, NOT null: the host WAF 403s
+     authenticated "value":null bodies. */
+  if (window.api) {
+    window.api.from('hm_data')
+      .upsert({ key: 'hm_custom_theme_css', value: '', updated_at: new Date().toISOString() })
+      .then(function (r) {
+        if (r.error) {
+          console.warn('[WMCTheme] API reset failed:', r.error.message);
+          if (typeof toast !== 'undefined') toast('⚠ サーバー側のテーマ削除に失敗しました — 再度お試しください', 5000);
+        }
+      });
+  }
   _tcFillPanes();
   _tcUpdatePreview();
   var banner = document.getElementById('tcAppliedBanner');
   if (banner) banner.style.display = 'none';
+  if (typeof WMCPermissions !== 'undefined') WMCPermissions.audit('update', 'theme', 'custom', 'テーマをリセット（サーバー同期）');
   if (typeof toast !== 'undefined') toast('テーマをデフォルトにリセットしました');
 }
 

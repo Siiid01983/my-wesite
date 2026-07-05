@@ -496,17 +496,29 @@ window.ContentLoader = (function () {
         _applyFooter(kv.hm_footer);
         _applyGlobalContent(kv.hm_content);
 
-        /* Theme CSS — overwrite localStorage and inject for all visitors */
-        if (kv.hm_custom_theme_css) {
-          const css = String(kv.hm_custom_theme_css);
-          _ls('hm_custom_theme_css', css);
+        /* Theme CSS — sync localStorage and the injected style for all visitors.
+           Stored RAW (setItem, not _ls/JSON.stringify): the <head> injector in
+           index/blog/article.html reads it raw at parse time, so a JSON-encoded
+           copy arrives as quoted garbage the browser discards — the theme then
+           only landed at CMS-pass time, reflowing the whole page mid-view. */
+        {
+          const css = kv.hm_custom_theme_css ? String(kv.hm_custom_theme_css) : '';
           let themeEl = document.getElementById('hm-theme-override');
-          if (!themeEl) {
-            themeEl = document.createElement('style');
-            themeEl.id = 'hm-theme-override';
-            document.head.appendChild(themeEl);
+          if (css) {
+            try { localStorage.setItem('hm_custom_theme_css', css); } catch {}
+            if (!themeEl) {
+              themeEl = document.createElement('style');
+              themeEl.id = 'hm-theme-override';
+              document.head.appendChild(themeEl);
+            }
+            themeEl.textContent = css;
+          } else {
+            /* KV empty/absent (Theme Customizer reset) — purge the stale local
+               copy and the injected style, or a visitor who ever cached a theme
+               keeps re-applying it forever. */
+            try { localStorage.removeItem('hm_custom_theme_css'); } catch {}
+            if (themeEl) themeEl.remove();
           }
-          themeEl.textContent = css;
         }
 
         /* Site Settings — single source of truth for brand identity (logo,
