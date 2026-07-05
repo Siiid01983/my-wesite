@@ -2282,7 +2282,7 @@ html.dark .upload-file-item { background: var(--bg); border-color: rgba(255,255,
 }
 .sticky-phone { background: var(--bg-soft); color: var(--ink); border: 1px solid var(--line); }
 .sticky-line { background: var(--line-color); color: #fff; }
-.sticky-quote { background: var(--ink); color: #fff; flex: 1.4; }
+.sticky-quote { background: var(--ink); color: #fff; }
 
 /* =============================================================
    REVEAL ANIMATIONS

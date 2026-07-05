@@ -906,14 +906,19 @@ body { padding-bottom: 76px; }
   align-items: center;
 }
 .sticky-btn {
-  flex: 1;
+  flex: 1 1 0 !important;   /* equal thirds regardless of label length */
+  min-width: 0 !important;
+  white-space: nowrap;
   display: flex !important;
+  flex-direction: row !important;  /* styles.css base stacks icon over text — keep one row so all 3 btns match height */
+  min-height: 44px;                /* uniform height (LINE icon is taller than text) + comfortable tap target */
+  box-sizing: border-box;
   align-items: center !important;
   justify-content: center !important;
   gap: 6px;
-  padding: 12px 14px !important;
+  padding: 12px 6px !important;
   border-radius: 10px !important;
-  font-size: 13px !important;
+  font-size: 12px !important;
   font-weight: 600 !important;
   text-decoration: none;
   border: 1px solid #e8e8e4 !important;
@@ -923,11 +928,13 @@ body { padding-bottom: 76px; }
   cursor: pointer;
 }
 .sticky-btn:hover { background: #e8e8e4 !important; }
+@media (max-width: 374px) {
+  .sticky-btn { font-size: 11px !important; padding: 12px 4px !important; }
+}
 .sticky-quote {
   background: #2C3626 !important;
   color: #fff !important;
   border-color: #2C3626 !important;
-  flex: 1.4 !important;
 }
 .sticky-quote:hover { background: #1a2018 !important; }
 .sticky-line {
@@ -2115,6 +2122,9 @@ setTimeout(window.HM_revealServiceCards, 2500);
 <div class="sticky-cta" aria-label="無料見積り・お問い合わせ">
   <a href="#booking" onclick="openBookingApp();return false;" class="sticky-btn sticky-quote">
     <span>今すぐ無料見積り</span>
+  </a>
+  <a href="#contact" class="sticky-btn sticky-contact">
+    <span>お問い合わせ</span>
   </a>
   <a href="https://line.me/R/ti/p/~hellomoving" class="sticky-btn sticky-line" target="_blank" rel="noopener noreferrer">
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.6 1.6 4.9 4 6.4-.1.5-.6 2.1-.7 2.5 0 0 0 .3.2.4.2.1.4 0 .4 0 .6-.1 3-2 3.6-2.4.8.1 1.6.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3Z"/></svg>
