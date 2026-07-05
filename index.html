@@ -791,6 +791,13 @@ section#home-hero .hero-license {
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
 }
+/* Anti-flicker gate: the grid mounts with .svc-loading (opacity 0, layout
+   space preserved by the hidden fallback render) and reveals only when the
+   CMS render pass lands — or via the JS failsafe timeout, so an API outage
+   can never leave the section blank. Prevents the visible fallback→CMS
+   "double-loading" swap on page load. */
+#serviceCardsGrid { transition: opacity .25s ease; }
+#serviceCardsGrid.svc-loading { opacity: 0; }
 @media (max-width: 768px) {
   .svc-img-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
 }
@@ -1426,7 +1433,7 @@ body { padding-bottom: 76px; }
       </button>
     </div>
 
-    <div id="serviceCardsGrid" class="svc-img-grid"></div>
+    <div id="serviceCardsGrid" class="svc-img-grid svc-loading"></div>
   </div>
 </section>
 <script>
@@ -1507,10 +1514,25 @@ window.HM_renderServiceCards = function renderServiceCards(overrides) {
       + '</div>'
       + '</a>';
   }).join('');
+  /* Reveal on the CMS pass (`overrides` present — even {} means ContentLoader
+     finished and this content is final). The fallback pass keeps the grid
+     hidden so the fallback→CMS swap is never visible. */
+  if (overrides) window.HM_revealServiceCards();
+};
+
+/* Drop the .svc-loading gate (idempotent). */
+window.HM_revealServiceCards = function () {
+  var g = document.getElementById('serviceCardsGrid');
+  if (g) g.classList.remove('svc-loading');
 };
 
 /* Immediate fallback render (CMS overrides arrive later via ContentLoader). */
 window.HM_renderServiceCards();
+
+/* Failsafe: if ContentLoader never delivers a CMS pass (API down, offline,
+   fresh install with no CMS rows), reveal the fallback render regardless —
+   the grid must never stay hidden. */
+setTimeout(window.HM_revealServiceCards, 2500);
 
 /* Delegated grid clicks — survive ContentLoader's CMS re-render (which wipes
    the per-element [data-service] handlers script.js bound at load): a click
