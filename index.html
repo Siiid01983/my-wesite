@@ -1526,12 +1526,46 @@ window.HM_revealServiceCards = function () {
   if (g) g.classList.remove('svc-loading');
 };
 
-/* Immediate fallback render (CMS overrides arrive later via ContentLoader). */
-window.HM_renderServiceCards();
+/* Seed the FIRST render from the CMS localStorage snapshot (written by
+   ContentLoader on every public load; same mapping as its
+   _applyServicesToGrid — _REF_TO_SLUG / 'emergency' alias). Repeat visitors
+   paint their final content immediately and reveal at once; the async CMS
+   pass then repaints identical content, so no swap is ever visible. Returns
+   null on a first-ever visit (no snapshot) → gated fallback render below. */
+function HM_svcSnapshotOverrides() {
+  function read(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+  var REF = { 'SVC-1': 'single', 'SVC-2': 'couple', 'SVC-3': 'student', 'SVC-4': 'sameday', 'SVC-5': 'disposal', 'SVC-6': 'furniture' };
+  var ALIAS = { emergency: 'sameday' };
+  var out = null;
+  var svcs = read('hm_services');
+  if (Array.isArray(svcs)) {
+    out = {};
+    svcs.forEach(function (s) {
+      if (!s || s.active === false) return;
+      var slug = REF[s.id] || ALIAS[s.slug] || s.slug;
+      if (!slug) return;
+      out[slug] = out[slug] || {};
+      if (s.title)         out[slug].title       = s.title;
+      if (s.description)   out[slug].description = s.description;
+      if (s.badge != null) out[slug].badge       = s.badge;
+    });
+  }
+  var imgs = read('hm_service_images');
+  if (imgs && typeof imgs === 'object') {
+    out = out || {};
+    Object.keys(imgs).forEach(function (k) {
+      var cfg = imgs[k], slug = ALIAS[k] || k;
+      if (cfg && cfg.image_url) { out[slug] = out[slug] || {}; out[slug].image = cfg.image_url; }
+    });
+  }
+  return out;
+}
+var _svcSeed = HM_svcSnapshotOverrides();
+window.HM_renderServiceCards(_svcSeed || undefined);
 
-/* Failsafe: if ContentLoader never delivers a CMS pass (API down, offline,
-   fresh install with no CMS rows), reveal the fallback render regardless —
-   the grid must never stay hidden. */
+/* Failsafe: if there was no snapshot AND ContentLoader never delivers a CMS
+   pass (API down, offline, fresh install with no CMS rows), reveal the
+   fallback render regardless — the grid must never stay hidden. */
 setTimeout(window.HM_revealServiceCards, 2500);
 
 /* Delegated grid clicks — survive ContentLoader's CMS re-render (which wipes
