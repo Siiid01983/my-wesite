@@ -40,11 +40,20 @@
     })
     .catch(err => console.warn('[SW] Registration failed:', err));
 
-  /* Reload page after a new SW takes control — but only ONCE.
-     Without this guard, an activating worker that calls clients.claim() can
-     fire controllerchange repeatedly and put the page into a reload loop. */
+  /* Reload page after a new SW takes control — but only ONCE, and only when
+     an OLDER worker is actually being replaced.
+     - _refreshing guard: an activating worker that calls clients.claim() can
+       fire controllerchange repeatedly and put the page into a reload loop.
+     - first-claim guard: on a first-ever visit the page starts uncontrolled —
+       the very first SW install claims it and fires controllerchange, but the
+       page it claimed was just served fresh from the network. Reloading there
+       gave every new visitor a visible reload ~1s after load, for no benefit.
+       Swallow exactly that one event; any LATER controllerchange (even in the
+       same session) means an older worker was replaced → reload as before. */
+  let _awaitingFirstClaim = !navigator.serviceWorker.controller;
   let _refreshing = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (_awaitingFirstClaim) { _awaitingFirstClaim = false; return; }
     if (_refreshing) return;
     _refreshing = true;
     window.location.reload();
