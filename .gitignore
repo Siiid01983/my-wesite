@@ -29,3 +29,5 @@ hm-api/vendor/
 
 # Local deploy-verification helper (hits the live site, writes verify_live.png)
 verify_deploy.mjs
+
+.claude-commit-msg.txt
