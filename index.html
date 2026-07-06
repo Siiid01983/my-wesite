@@ -417,22 +417,7 @@ select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{
 
 /* ── 16. FAQ summary arrow/marker contrast ── */
 
-/* ── 17. Disposal cards inherit service-card, ensure icon colours ── */
-
-/* ── Disposal pricing ──────────────────── */
-.disposal-pricing{margin-top:48px}
-.disposal-pricing-hd{font-size:17px;font-weight:700;color:var(--ink);letter-spacing:-.02em;margin:0 0 20px;padding-bottom:12px;border-bottom:2px solid var(--line)}
-.disposal-price-cols{display:grid;grid-template-columns:1fr 1fr;gap:24px}
-.disposal-price-block{background:var(--bg-soft);border:1px solid var(--line);border-radius:14px;padding:22px 24px}
-.disposal-price-block-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gray-2);margin:0 0 14px}
-.disposal-price-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
-.disposal-price-row:last-child{border-bottom:none;padding-bottom:0}
-.disposal-price-row:first-of-type{padding-top:0}
-.disposal-price-lbl{font-size:13.5px;color:var(--ink);font-weight:500}
-.disposal-price-val{font-size:15px;font-weight:700;color:var(--navy);letter-spacing:-.01em}
-.disposal-price-val.addon{color:#059669}
-.disposal-price-note{font-size:12px;color:var(--gray-2);margin:16px 0 0;line-height:1.6}
-@media(max-width:600px){.disposal-price-cols{grid-template-columns:1fr}}
+/* ── 17. (removed — disposal section deleted) ── */
 
 /* ── 18. Calendar legend text ── */
 
@@ -1179,7 +1164,6 @@ body { padding-bottom: 76px; }
   <div class="mobile-nav" id="mobileNav" aria-hidden="true">
     <ul>
       <li><a href="#booking">無料見積り</a></li>
-      <li><a href="#disposal">不用品回収</a></li>
       <li><a href="#commitments">お約束</a></li>
       <li><a href="#flow">引越しの流れ</a></li>
       <li><a href="#reviews">お客様の声</a></li>
@@ -1533,55 +1517,6 @@ setTimeout(window.HM_revealServiceCards, 2500);
     </div>
   </div>
 </div>
-
-<!-- ============== DISPOSAL ============== -->
-<section class="section disposal" id="disposal">
-  <div class="container">
-    <header class="section-head">
-      <span class="eyebrow" data-content-key="disposal_eyebrow">Disposal Service</span>
-      <h2 class="section-title" data-content-key="disposal_title">不用品回収・処分サービス</h2>
-      <p class="section-lead" data-content-key="disposal_lead">引越しと同時に不要家具・家電をまとめて処分できます。手続き不要、搬出から処分まで一括対応。</p>
-    </header>
-    <div class="service-grid">
-      <article class="service-card">
-        <div class="service-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M2 6h20v3H2zm1 3h2v10H3zm16 0h2v10h-2zm-12 0h10v10H7zm2 2v6h6V11z"/></svg></div>
-        <h3 data-content-key="disposal_card1_title">ベッド・マットレス処分</h3>
-        <p data-content-key="disposal_card1_body">大型ベッドフレームやマットレスをまとめて搬出・処分。分解作業も対応いたします。</p>
-        <a href="#booking" class="service-card-cta" data-service="不用品回収・処分サービス">処分を依頼する →</a>
-      </article>
-      <article class="service-card">
-        <div class="service-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M20 8H4c-1.1 0-2 .9-2 2v6h2v2h2v-2h12v2h2v-2h2v-6c0-1.1-.9-2-2-2zm0 8H4v-4h16v4zm0-6H4v-2h16v2z"/></svg></div>
-        <h3 data-content-key="disposal_card2_title">ソファ・チェア処分</h3>
-        <p data-content-key="disposal_card2_body">3人掛けソファや大型チェアも迅速に搬出。重量物でも安心してお任せください。</p>
-        <a href="#booking" class="service-card-cta" data-service="不用品回収・処分サービス">処分を依頼する →</a>
-      </article>
-      <article class="service-card">
-        <div class="service-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M18 2H6v2H4v16h2v2h12v-2h2V4h-2V2zm0 16H6V6h12v12zm-6-9a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg></div>
-        <h3 data-content-key="disposal_card3_title">冷蔵庫処分</h3>
-        <p data-content-key="disposal_card3_body">家電リサイクル法対応の適正処理。フロンガス回収まで安心・合法的に処分します。</p>
-        <a href="#booking" class="service-card-cta" data-service="不用品回収・処分サービス">処分を依頼する →</a>
-      </article>
-      <article class="service-card">
-        <div class="service-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-6 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm0 14H6v-1c0-2.21 2.69-4 6-4s6 1.79 6 4v1h-6z"/></svg></div>
-        <h3 data-content-key="disposal_card4_title">洗濯機処分</h3>
-        <p data-content-key="disposal_card4_body">縦型・ドラム式どちらも対応。家電リサイクル料込みで手続き不要です。</p>
-        <a href="#booking" class="service-card-cta" data-service="不用品回収・処分サービス">処分を依頼する →</a>
-      </article>
-      <article class="service-card">
-        <div class="service-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M4 6h16v2H4zm2 3h12v2H6zm-2 3h16v6H4zm2 2v2h12v-2z"/></svg></div>
-        <h3 data-content-key="disposal_card5_title">テーブル・棚処分</h3>
-        <p data-content-key="disposal_card5_body">ダイニングテーブル、書棚、収納棚など。分解が必要な場合も対応いたします。</p>
-        <a href="#booking" class="service-card-cta" data-service="不用品回収・処分サービス">処分を依頼する →</a>
-      </article>
-      <article class="service-card">
-        <div class="service-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M20 6h-2.18c.07-.44.18-.88.18-1.35C18 2.53 15.47 0 12.35 0c-1.7 0-3.22.81-4.19 2.05L12 6h-2l-3.5-4H6C3.79 2 2 3.79 2 6v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg></div>
-        <h3 data-content-key="disposal_card6_title">その他大型ゴミ</h3>
-        <p data-content-key="disposal_card6_body">自治体では回収できない大型廃棄物もお任せ。まずはお気軽にご相談ください。</p>
-        <a href="#booking" class="service-card-cta" data-service="不用品回収・処分サービス">処分を依頼する →</a>
-      </article>
-    </div>
-  </div>
-</section>
 
 <!-- ============== COMMITMENTS ============== -->
 <section class="section commitments" id="commitments">

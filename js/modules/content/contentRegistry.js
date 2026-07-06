@@ -47,23 +47,6 @@ const CONTENT_REGISTRY = [
   { group:'認定バッジ', key:'trust_badge3', label:'バッジ3', def:'古物商許可' },
   { group:'認定バッジ', key:'trust_badge4', label:'バッジ4', def:'オンライン予約対応' },
 
-  { group:'不用品回収セクション', key:'disposal_eyebrow', label:'ラベル（英）', def:'Disposal Service' },
-  { group:'不用品回収セクション', key:'disposal_title',   label:'見出し',        def:'不用品回収・処分サービス' },
-  { group:'不用品回収セクション', key:'disposal_lead',    label:'説明文',        def:'引越しと同時に不要家具・家電をまとめて処分できます。手続き不要、搬出から処分まで一括対応。' },
-
-  { group:'不用品回収カード', key:'disposal_card1_title', label:'カード1 見出し', def:'ベッド・マットレス処分' },
-  { group:'不用品回収カード', key:'disposal_card1_body',  label:'カード1 説明文', def:'大型ベッドフレームやマットレスをまとめて搬出・処分。分解作業も対応いたします。' },
-  { group:'不用品回収カード', key:'disposal_card2_title', label:'カード2 見出し', def:'ソファ・チェア処分' },
-  { group:'不用品回収カード', key:'disposal_card2_body',  label:'カード2 説明文', def:'3人掛けソファや大型チェアも迅速に搬出。重量物でも安心してお任せください。' },
-  { group:'不用品回収カード', key:'disposal_card3_title', label:'カード3 見出し', def:'冷蔵庫処分' },
-  { group:'不用品回収カード', key:'disposal_card3_body',  label:'カード3 説明文', def:'家電リサイクル法対応の適正処理。フロンガス回収まで安心・合法的に処分します。' },
-  { group:'不用品回収カード', key:'disposal_card4_title', label:'カード4 見出し', def:'洗濯機処分' },
-  { group:'不用品回収カード', key:'disposal_card4_body',  label:'カード4 説明文', def:'縦型・ドラム式どちらも対応。家電リサイクル料込みで手続き不要です。' },
-  { group:'不用品回収カード', key:'disposal_card5_title', label:'カード5 見出し', def:'テーブル・棚処分' },
-  { group:'不用品回収カード', key:'disposal_card5_body',  label:'カード5 説明文', def:'ダイニングテーブル、書棚、収納棚など。分解が必要な場合も対応いたします。' },
-  { group:'不用品回収カード', key:'disposal_card6_title', label:'カード6 見出し', def:'その他大型ゴミ' },
-  { group:'不用品回収カード', key:'disposal_card6_body',  label:'カード6 説明文', def:'自治体では回収できない大型廃棄物もお任せ。まずはお気軽にご相談ください。' },
-
   { group:'お約束セクション', key:'commit_eyebrow', label:'ラベル（英）', def:'Our Commitments' },
   { group:'お約束セクション', key:'commit_title',   label:'見出し',        def:'私たちの、お約束。' },
   { group:'お約束セクション', key:'commit_lead',    label:'説明文',        def:'引越しは、お客様の生活そのものを動かす大切な仕事です。だからこそ、私たちは派手なことを掲げず、当たり前のことを当たり前に行うことを大切にしています。' },
