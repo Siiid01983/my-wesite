@@ -10,12 +10,15 @@
    Every message is classified by the company mailbox that RECEIVED it — the
    existing `mailbox` column (this IS the recipient email; set by the IMAP
    poller, create-booking.php and receive-email.php):
-       booking@hello-moving.com   予約 (blue)
+       booking@hello-moving.com   予約 (blue) ← HIDDEN: excluded from the Inbox
+                                  (see CHANNELS / _isVisibleChannel below)
        support@hello-moving.com   サポート (amber)
        contact@hello-moving.com   お問い合わせ (green) ← default for legacy /
                                   unclassified rows (inbox-migrate.php backfill)
-   The UI adds a channel tab bar (すべて / booking@ / support@ / contact@) and
-   a colored recipient badge on every card.
+   The Inbox is RESTRICTED to support@ + contact@ only: booking@ (and any other
+   recipient mailbox) is filtered out of the tabs, the counts, and the data.
+   The UI adds a channel tab bar (すべて / support@ / contact@) and a colored
+   recipient badge on every card.
 
    ── Direct server-side reply (Workstream 1) ───────────────
      • 返信 → reply modal (To / From / 件名 / 本文) → inboxSendReply() POSTs to
@@ -86,7 +89,16 @@
      `key` is the send-email.php from_account that replies from the SAME
      channel (Integration Goal: reply From matches the received mailbox). */
   var DEFAULT_CHANNEL = 'contact@hello-moving.com';
-  var CHANNELS = ['booking@hello-moving.com', 'support@hello-moving.com', 'contact@hello-moving.com'];
+  // ALL company mailboxes we recognize — used to (a) classify every row's
+  // recipient correctly (so booking@ is identified as booking@, NOT misfiled as
+  // the contact@ default) and (b) detect our own self-sent addresses in
+  // _replyAddrOf. CHANNEL_META keeps all three.
+  var ALL_MAILBOXES = ['booking@hello-moving.com', 'support@hello-moving.com', 'contact@hello-moving.com'];
+  // VISIBLE channels — the Inbox is intentionally restricted to support@ +
+  // contact@. booking@ (and any mailbox not listed here) is excluded from the
+  // channel tabs, the counts, and the fetched data (see _isVisibleChannel + the
+  // _fetchMessages filter). To re-expose a channel, add its address back here.
+  var CHANNELS = ['support@hello-moving.com', 'contact@hello-moving.com'];
   var CHANNEL_META = {
     'booking@hello-moving.com': { key: 'booking', label: 'booking@', bg: 'rgba(37,99,235,.10)',  fg: '#1d4ed8' },
     'support@hello-moving.com': { key: 'support', label: 'support@', bg: 'rgba(245,158,11,.14)', fg: '#b45309' },
@@ -99,6 +111,11 @@
     return CHANNEL_META[v] ? v : DEFAULT_CHANNEL;
   }
   function _channelMeta(m) { return CHANNEL_META[_recipientOf(m)]; }
+  // The Inbox only shows the VISIBLE channels (support@ + contact@). A message
+  // whose recipient mailbox isn't visible (e.g. booking@) is dropped from the UI
+  // and every count. Legacy/unclassified rows resolve to contact@ (visible), so
+  // they stay — only explicitly-other channels are excluded.
+  function _isVisibleChannel(m) { return CHANNELS.indexOf(_recipientOf(m)) >= 0; }
 
   /* Reply address for a message: normally the stored sender email. For LEGACY
      self-sent notification rows (email = one of our own mailboxes — e.g.
@@ -107,7 +124,7 @@
      so 宛先 targets the customer instead of our own mailbox. */
   function _replyAddrOf(m) {
     var e = String((m && m.email) || '').trim();
-    if (CHANNELS.indexOf(e.toLowerCase()) < 0) return e;
+    if (ALL_MAILBOXES.indexOf(e.toLowerCase()) < 0) return e;
     var src = String((m && (m.body_text || m.body)) || '');
     var hit = src.match(/メール[:：]\s*([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/);
     return hit ? hit[1] : e;
@@ -144,7 +161,10 @@
     var res = await _api.from('inbox_messages').select('*')
       .order('created_at', { ascending: false }).limit(200);
     if (res.error) { console.error('[INBOX] Fetch failed:', res.error.message); return []; }
-    return res.data || [];
+    // Restrict the Inbox to the visible channels (support@ + contact@); booking@
+    // and any other recipient mailbox are excluded from the whole module here, so
+    // threads, counts and the total 件数 all reflect the filtered set.
+    return (res.data || []).filter(_isVisibleChannel);
   }
 
   /* ── Conversation threads ─────────────────────────────────
@@ -423,7 +443,7 @@
 
   /* ── Filter / search (client-side over the cache) ─────── */
   function inboxSetFilter(f)  { _filter = f; _renderMessages(); }
-  function inboxSetChannel(c) { _channel = (c === 'all' || CHANNEL_META[c]) ? c : 'all'; _renderMessages(); }
+  function inboxSetChannel(c) { _channel = (c === 'all' || CHANNELS.indexOf(c) >= 0) ? c : 'all'; _renderMessages(); }
   function inboxSearch(q)     { _search = q || ''; _renderMessages(); }
 
   /* ── Mark read/unread (optimistic) ────────────────────── */

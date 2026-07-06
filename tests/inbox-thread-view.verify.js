@@ -4,8 +4,9 @@
  *
  * Loads the REAL js/modules/inbox/inbox.js in a browser with a stubbed
  * window.api returning 4 messages in 2 threads:
- *   Thread A (booking@): inbound → outbound reply (labels.outbound) → inbound
+ *   Thread A (support@): inbound → outbound reply (labels.outbound) → inbound
  *   Thread B (contact@): single message
+ * (Both are VISIBLE channels — the Inbox is restricted to support@ + contact@.)
  * and drives the actual UI:
  *   grouping (2 cards, not 4) → card face = newest message → 全N通 badge →
  *   「過去のやり取り」 expand/collapse (chronological, outbound tinted ↩) →
@@ -26,19 +27,19 @@ const MSGS = [
   { // Thread A #1 — oldest inbound (read)
     id: 'a1', sender_name: '佐藤 花子', email: CUSTOMER,
     subject: '引越し日程について', body_text: '3月15日に引越しを希望します。',
-    mailbox: 'booking@hello-moving.com', message_id: '<a1@x>', thread_id: '<t1@x>',
+    mailbox: 'support@hello-moving.com', message_id: '<a1@x>', thread_id: '<t1@x>',
     received_at: '2026-07-01T10:00:00+09:00', is_read: true, labels: null,
   },
   { // Thread A #2 — our sent reply (outbound)
     id: 'a2', sender_name: 'Hello Moving 予約センター', email: CUSTOMER,
     subject: 'Re: 引越し日程について', body_text: '確認いたしました。3月15日で承ります。',
-    mailbox: 'booking@hello-moving.com', message_id: '<out-a2@hello-moving.com>', thread_id: '<t1@x>',
+    mailbox: 'support@hello-moving.com', message_id: '<out-a2@hello-moving.com>', thread_id: '<t1@x>',
     received_at: '2026-07-01T12:00:00+09:00', is_read: true, labels: { outbound: true },
   },
   { // Thread A #3 — newest inbound (UNREAD → thread face)
     id: 'a3', sender_name: '佐藤 花子', email: CUSTOMER,
     subject: 'Re: 引越し日程について', body_text: 'ありがとうございます。よろしくお願いします。',
-    mailbox: 'booking@hello-moving.com', message_id: '<a3@x>', thread_id: '<t1@x>',
+    mailbox: 'support@hello-moving.com', message_id: '<a3@x>', thread_id: '<t1@x>',
     received_at: '2026-07-02T09:00:00+09:00', is_read: false, labels: null,
   },
   { // Thread B — single-message thread (read)
@@ -164,8 +165,8 @@ function harness() {
     }));
   await page.evaluate(() => window.inboxSetFilter('all'));
 
-  await page.evaluate(() => window.inboxSetChannel('booking@hello-moving.com'));
-  check('booking@ tab shows only the booking thread',
+  await page.evaluate(() => window.inboxSetChannel('support@hello-moving.com'));
+  check('support@ tab shows only the support thread',
     await page.evaluate(() => {
       const cards = document.querySelectorAll('.ibx-card');
       return cards.length === 1 && cards[0].textContent.includes('引越し日程について');

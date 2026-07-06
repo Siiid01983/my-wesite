@@ -106,8 +106,8 @@ function harness(sendResult) {
     // 1) Render: card, channel tab bar, recipient badge.
     await page.evaluate(() => window.renderInbox());
     await page.waitForSelector('.ibx-card', { timeout: 5000 });
-    check('channel tab bar rendered (booking@/support@/contact@)',
-      await page.evaluate(() => document.querySelectorAll('.ibx-ch-tab').length === 4));
+    check('channel tab bar rendered (すべて/support@/contact@)',
+      await page.evaluate(() => document.querySelectorAll('.ibx-ch-tab').length === 3));
     const badge = await page.evaluate(() => {
       const b = document.querySelector('.ibx-ch-badge');
       return b ? { text: b.textContent, title: b.getAttribute('title') } : null;
@@ -115,9 +115,9 @@ function harness(sendResult) {
     check('card carries the recipient badge → contact@', badge && badge.text.includes('contact@'));
     check('badge title holds the full recipient email', badge && badge.title.includes('contact@hello-moving.com'));
 
-    // 1b) Channel filter: booking@ tab hides the contact@ message; すべて restores.
-    await page.evaluate(() => window.inboxSetChannel('booking@hello-moving.com'));
-    check('booking@ tab filters out contact@ messages',
+    // 1b) Channel filter: support@ tab hides the contact@ message; すべて restores.
+    await page.evaluate(() => window.inboxSetChannel('support@hello-moving.com'));
+    check('support@ tab filters out contact@ messages',
       await page.evaluate(() => document.querySelectorAll('.ibx-card').length === 0));
     await page.evaluate(() => window.inboxSetChannel('all'));
     await page.waitForSelector('.ibx-card', { timeout: 5000 });
