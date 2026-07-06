@@ -119,47 +119,60 @@
   transition-duration: .12s;
 }
 
-/* ── 3. Hamburger メニュー label ───────────────────────────────────────── */
-/* The burger bars are the button's first three spans, positioned by
-   nth-child(1..3) in styles.css with left+right anchoring. The label is the
-   4th span so those rules stay valid; the bars get a fixed 22px width so
-   widening the button doesn't stretch them. */
+/* ── 3. Hamburger メニュー — vertical stack (icon on top, label below) ──── */
+/* The burger bars are the button's first three spans (absolute; the
+   burger→X animation lives in styles.css). We keep them absolute but
+   re-center horizontally and cluster them in the TOP third, then place the
+   4th span (label) absolutely at the bottom-center. The button is a fixed
+   48×46 box that vertically centers inside the 64px fixed-height header, so
+   header height is unchanged. The .open X-state (styles.css) forces
+   top:19px at higher specificity, so the close animation is untouched. */
 .nav-toggle {
-  width: auto;
-  min-width: 40px;
-  padding: 0 10px 0 0;
-  flex-shrink: 0;                /* header flexbox must not squeeze it → no wrap */
-  white-space: nowrap;
+  width: 48px;
+  height: 46px;
+  min-width: 0;
+  padding: 0;
+  flex-shrink: 0;                /* header flexbox must not squeeze it */
 }
-.nav-toggle > span:not(.nav-toggle-label) { right: auto; width: 22px; }
+.nav-toggle > span:not(.nav-toggle-label) { left: 13px; right: auto; width: 22px; }
+.nav-toggle > span:nth-child(1) { top: 9px; }
+.nav-toggle > span:nth-child(2) { top: 15px; }
+.nav-toggle > span:nth-child(3) { top: 21px; }
 .nav-toggle .nav-toggle-label {
-  position: static;
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 5px;
   height: auto;
   background: none;
-  display: inline-block;
-  white-space: nowrap;           /* keep メニュー on one line */
-  margin-left: 38px;             /* clear of the 9px+22px bar region */
-  line-height: 40px;
-  font-size: 11px;
+  text-align: center;            /* centered under the icon */
+  white-space: nowrap;
+  line-height: 1;
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: .08em;
+  letter-spacing: .04em;
   color: var(--ink, #2C3626);
 }
 @media (max-width: 349px) {
-  /* very narrow screens: keep the icon-only button, drop the label */
-  .nav-toggle { width: 40px; min-width: 0; padding: 0; }
+  /* very narrow screens: icon-only, bars back to original 40px centering */
+  .nav-toggle { width: 40px; height: 40px; }
   .nav-toggle .nav-toggle-label { display: none; }
+  .nav-toggle > span:not(.nav-toggle-label) { left: 9px; }
+  .nav-toggle > span:nth-child(1) { top: 13px; }
+  .nav-toggle > span:nth-child(2) { top: 19px; }
+  .nav-toggle > span:nth-child(3) { top: 25px; }
 }
 
 /* ── 4. Back-to-top button (element injected by js/back-to-top.js) ─────── */
-/* Sits above the always-visible .sticky-cta bar (z-index 900, ~70px tall);
-   3D language matches the service cards. Hidden state keeps pointer-events
-   off so it can never intercept taps meant for the bar. */
+/* Fixed bottom-right, positioned in the gap ABOVE the .sticky-cta bar
+   (bar is z-index 900 at bottom:0, ~70px tall; this sits at bottom:84px so
+   the two never overlap). z-index 901 keeps it above the bar per spec even
+   though there is no overlap. 3D language matches the service cards.
+   Hidden state keeps pointer-events off so it can never block the bar. */
 .back-to-top {
   position: fixed;
   right: 16px;
   bottom: calc(84px + env(safe-area-inset-bottom));
-  z-index: 899;
+  z-index: 901;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -177,9 +190,9 @@
   box-shadow: 0 4px 12px rgba(44, 54, 38, .10);
   cursor: pointer;
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(16px);   /* slides up from lower-right on entrance */
   pointer-events: none;
-  transition: opacity .3s ease-in-out, transform .3s ease-in-out,
+  transition: opacity .35s ease-in-out, transform .35s ease-in-out,
               box-shadow .3s ease-in-out, border-color .3s ease-in-out,
               color .3s ease-in-out;
 }
@@ -187,7 +200,17 @@
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
+  /* one-shot sage attention pulse as it settles (box-shadow only, so it
+     never fights the translateY entrance transition) */
+  animation: b2tPulse 1.1s ease-out 1;
 }
+@keyframes b2tPulse {
+  0%   { box-shadow: 0 4px 12px rgba(44,54,38,.10), 0 0 0 0 rgba(154,181,122,.45); }
+  70%  { box-shadow: 0 4px 12px rgba(44,54,38,.10), 0 0 0 10px rgba(154,181,122,0); }
+  100% { box-shadow: 0 4px 12px rgba(44,54,38,.10), 0 0 0 0 rgba(154,181,122,0); }
+}
+/* Micro-interaction: gentle lift on hover (desktop), press-down on tap
+   (mobile) — same feel as the service cards. */
 @media (hover: hover) and (pointer: fine) {
   .back-to-top.visible:hover {
     transform: translateY(-4px) scale(1.05);
@@ -200,4 +223,9 @@
   transform: scale(.97);
   border-bottom-color: #9AB57A;
   transition-duration: .12s;
+}
+/* Accessibility: no slide, no pulse for users who ask for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .back-to-top { transform: none; transition: opacity .2s ease-in-out; }
+  .back-to-top.visible { transform: none; animation: none; }
 }

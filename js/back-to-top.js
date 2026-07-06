@@ -9,9 +9,22 @@
    prefers-reduced-motion. Positioned above the .sticky-cta bar by CSS.
    ───────────────────────────────────────────────────────────────────────── */
 (function () {
-  var SHOW_AT = 600;   // px scrolled before the button appears (past the hero)
+  var FALLBACK_AT = 600;   // used only if the hero element is missing
 
   function init() {
+    var hero = document.getElementById('home-hero');
+    /* Appear once the user scrolls past the hero section. Measured live in
+       update() (rAF-throttled) so it tracks the hero's real height across
+       CMS re-renders / viewport changes; -120px reveals it just before the
+       hero fully clears the top. */
+    function showAt() {
+      if (hero) {
+        var b = hero.offsetTop + hero.offsetHeight - 120;
+        if (b > 200) return b;
+      }
+      return FALLBACK_AT;
+    }
+
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'back-to-top';
@@ -29,7 +42,7 @@
 
     var ticking = false;
     function update() {
-      btn.classList.toggle('visible', window.scrollY > SHOW_AT);
+      btn.classList.toggle('visible', window.scrollY > showAt());
       ticking = false;
     }
     window.addEventListener('scroll', function () {
