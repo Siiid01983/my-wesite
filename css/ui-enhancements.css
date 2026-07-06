@@ -59,6 +59,34 @@
   }
 }
 
+/* ── 1c. Customer Voices — same snap carousel on mobile ───────────────── */
+/* Scoped to .section.reviews; cards are targeted as direct children (> *)
+   because ContentLoader's _applyRevCards re-renders the grid's innerHTML
+   from CMS data — the container (#revGridEl) is the only stable node.
+   Desktop keeps the existing auto-fill grid. Auto-play lives in
+   js/reviews-carousel.js and only ever scrolls this container. */
+@media (max-width: 720px) {
+  .section.reviews .review-grid {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 22px;
+    margin: 0 -22px;
+    padding: 4px 22px 16px;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .section.reviews .review-grid::-webkit-scrollbar { display: none; }
+
+  .section.reviews .review-grid > * {
+    flex: 0 0 76%;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+  }
+}
+
 /* ── 2. Service cards — modern 3D lift (booking Action Center grid) ───── */
 .svc-img-grid .svc-img-card {
   position: relative;
