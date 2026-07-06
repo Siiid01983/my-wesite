@@ -1,0 +1,66 @@
+/* ==========================================================================
+   UI Enhancements — flow carousel (mobile) + 3D service cards
+   ==========================================================================
+   Loaded AFTER styles.css but BEFORE index.html's inline <style> block.
+   The inline block styles the mobile process steps with !important, so the
+   carousel overrides below must match that importance and out-rank it with
+   `.section.process …` (two-class) specificity. The service-card rules only
+   need the extra `.svc-img-grid` ancestor to beat the inline definitions.
+   ========================================================================== */
+
+/* ── 1. How It Works — horizontal snap carousel on mobile ─────────────── */
+@media (max-width: 720px) {
+  .section.process .process-timeline {
+    display: flex !important;
+    gap: 12px !important;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 22px;
+    margin: 0 -22px;                 /* full-bleed past the 22px container pad */
+    padding: 4px 22px 16px;
+    overscroll-behavior-x: contain;  /* swipe never triggers browser back-nav */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .section.process .process-timeline::-webkit-scrollbar { display: none; }
+
+  /* Each step keeps its inline-block internals (number circle | title/body);
+     76% basis leaves the next card peeking ~20% as the swipe affordance. */
+  .section.process .process-step {
+    flex: 0 0 76% !important;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;        /* one step per swipe, none skipped */
+  }
+}
+
+/* ── 2. Service cards — modern 3D lift (booking Action Center grid) ───── */
+.svc-img-grid .svc-img-card {
+  position: relative;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfbf8 100%);
+  border-bottom: 3px solid #e4e4df;
+  transition: transform .3s ease-in-out, box-shadow .3s ease-in-out,
+              border-color .3s ease-in-out;
+}
+.svc-img-grid .svc-img-card__title { transition: color .3s ease-in-out; }
+.svc-img-grid .svc-img-card__badge { transition: box-shadow .3s ease-in-out; }
+
+/* Hover lift — mouse/trackpad devices only, so nothing sticks on touch */
+@media (hover: hover) and (pointer: fine) {
+  .svc-img-grid .svc-img-card:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 16px 32px rgba(44, 54, 38, .16);
+    border-bottom-color: #9AB57A;
+    z-index: 2;                      /* lift above neighboring cards */
+  }
+  .svc-img-grid .svc-img-card:hover .svc-img-card__title { color: #4a6741; }
+  .svc-img-grid .svc-img-card:hover .svc-img-card__badge {
+    box-shadow: 0 0 10px rgba(154, 181, 122, .55);
+  }
+}
+
+/* Touch feedback — quick press-down on tap */
+.svc-img-grid .svc-img-card:active {
+  transform: scale(.97);
+  border-bottom-color: #9AB57A;
+  transition-duration: .12s;
+}

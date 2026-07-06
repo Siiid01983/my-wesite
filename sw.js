@@ -34,6 +34,7 @@ const PRECACHE = [
   /* Public site */
   '/styles.css',
   '/css/action-center.css',
+  '/css/ui-enhancements.css',
   '/script.js',
   '/bookingService.js',
   '/calendarService.js',
