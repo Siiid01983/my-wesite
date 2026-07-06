@@ -1,0 +1,39 @@
+/* ==========================================================================
+   Action Center — mobile CTA emphasis for the #booking quote card
+   ==========================================================================
+   Loaded AFTER styles.css but BEFORE index.html's inline <style> block, so
+   every rule here uses `.section.booking …` (two-class specificity) to win
+   over the inline `.booking-cta-band` / `.booking-cta-btn` definitions.
+   Desktop (>768px) keeps the existing side-by-side band untouched.
+   ========================================================================== */
+
+@media (max-width: 768px) {
+
+  /* The Action Center is now the first content below the hero — tighten the
+     default 80px section padding so the quote card lands above the fold. */
+  .section.booking { padding-top: 28px; }
+
+  /* Slim the section head (base: 56px head margin + 28px eyebrow + 22px title
+     margins) so the quote card clears the fold on a typical phone. */
+  .section.booking .section-head { margin-bottom: 20px; }
+  .section.booking .section-head .eyebrow { margin-bottom: 6px; }
+  .section.booking .section-head .section-title { margin-bottom: 6px; }
+  .section.booking .section-head .section-lead { line-height: 1.7; }
+
+  /* Quote card reads as the primary CTA card: sage accent edge + soft lift */
+  .section.booking .booking-cta-band {
+    border-left: 4px solid #9AB57A;
+    border-radius: 14px;
+    padding: 20px 18px;
+    box-shadow: 0 2px 10px rgba(44, 54, 38, 0.07);
+  }
+  .section.booking .booking-cta-band h3 { font-size: 16px; }
+
+  /* Full-width tap target */
+  .section.booking .booking-cta-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 14px 24px;
+    font-size: 15px;
+  }
+}
