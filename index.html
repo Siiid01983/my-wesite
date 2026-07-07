@@ -622,11 +622,11 @@ section#home-hero .hero-service-badges .hsb-item:nth-child(n+4){display:none !im
 /* ── 3. Page base: light gray ground ── */
 body { background: #f2f2ef; }
 
-/* ── 4. Quote section: redesigned to match booking style ── */
+/* ── 4. Hero: minimalist, conversion-focused ── */
 section#home-hero.hero {
   background: #f7f7f4 !important;
   min-height: 0 !important;
-  padding: 56px 0 72px !important;
+  padding: 64px 0 76px !important;
 }
 section#home-hero .hero-bg,
 section#home-hero .hero-scroll { display: none !important; }
@@ -636,98 +636,117 @@ section#home-hero .hero-inner-form {
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  gap: 28px !important;
-  max-width: 680px !important;
+  gap: 44px !important;
+  max-width: 900px !important;
   padding-top: 0 !important;
 }
 
-/* ── Hero content → section header ── */
+/* ── Hero copy ── */
 section#home-hero .hero-content {
   text-align: center !important;
-  max-width: 620px !important;
+  max-width: 640px !important;
   padding: 0 !important;
 }
-section#home-hero .hero-trust-strip { display: none !important; }
-section#home-hero .eyebrow { display: block; margin-bottom: 7px; }
+section#home-hero .eyebrow {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  color: var(--gray-2);
+}
 section#home-hero .hero-title {
-  font-size: 28px !important;
+  font-size: 34px !important;
   font-weight: 800 !important;
   letter-spacing: -.02em !important;
-  margin: 4px 0 10px !important;
-  line-height: 1.3 !important;
+  margin: 0 0 16px !important;
+  line-height: 1.28 !important;
+  color: var(--ink) !important;
 }
 section#home-hero .hero-title .ja { display: block; }
-section#home-hero .hero-title .en {
-  display: block;
-  font-size: 13px !important;
+section#home-hero .hero-sub {
+  font-size: 16px !important;
   font-weight: 400 !important;
   color: var(--gray-2) !important;
-  letter-spacing: .05em !important;
-  margin-top: 4px;
+  line-height: 1.7 !important;
+  margin: 0 auto !important;
+  max-width: 520px !important;
 }
-section#home-hero .hero-trust-online { margin-bottom: 10px; }
-section#home-hero .hero-trust-online-primary {
-  font-size: 15px !important; font-weight: 500 !important; color: var(--ink) !important;
-}
-section#home-hero .hero-trust-online-sub {
-  font-size: 13px !important; color: var(--gray-2) !important;
-}
-/* Service badges: centered pill row */
-section#home-hero .hero-service-badges {
-  justify-content: center !important;
-  margin-bottom: 11px !important;
-}
-/* Primary CTA row — centered + prominent (hero form removed) */
+/* Primary CTA — single, prominent (brand colors unchanged) */
 section#home-hero .hero-cta {
   display: flex !important;
   justify-content: center !important;
-  flex-wrap: wrap !important;
-  gap: 12px !important;
-  margin-top: 18px !important;
+  margin-top: 28px !important;
 }
-/* Emphasize the primary booking CTA — brand colors unchanged */
 section#home-hero .btn-hero-book {
-  padding: 18px 54px !important;
+  padding: 18px 56px !important;
   border-radius: 12px !important;
-  box-shadow: 0 14px 34px rgba(11, 15, 23, .26) !important;
+  box-shadow: 0 10px 26px rgba(44,54,38,.18) !important;
 }
-section#home-hero .btn-hero-book .btn-sup { font-size: 12px !important; letter-spacing: .16em !important; }
-section#home-hero .btn-hero-book .btn-lbl { font-size: 19px !important; }
-/* Urgency → trust band */
-section#home-hero .hero-urgency {
-  display: flex !important;
-  width: max-content !important;
-  max-width: 100% !important;
-  justify-content: center !important;
-  background: transparent !important;
-  border: none !important;
-  padding: 2px 0 !important;
-  font-size: 12px !important;
-  margin: 10px auto 0 !important;
+section#home-hero .btn-hero-book .btn-lbl { font-size: 18px !important; font-weight: 700 !important; }
+
+/* ── 選ばれる4つの理由 — 4-card responsive grid ── */
+section#home-hero .hero-reasons {
+  width: 100%;
+  max-width: 900px;
 }
-section#home-hero .hero-license {
-  display: flex !important;
-  align-items: center !important;
-  gap: 7px !important;
-  width: max-content !important;
-  max-width: 100% !important;
-  justify-content: center !important;
-  margin: 18px auto 0 !important;
-  padding: 8px 16px !important;
-  background: rgba(44,54,38,.04) !important;
-  border: 1px solid rgba(44,54,38,.1) !important;
-  border-radius: 8px !important;
-  font-size: 11.5px !important;
-  font-weight: 600 !important;
-  letter-spacing: .03em !important;
-  color: #2C3626 !important;
+section#home-hero .hero-reasons-title {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--ink);
+  margin: 0 0 24px;
+}
+section#home-hero .hero-reasons-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+section#home-hero .reason-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  gap: 12px;
+  background: #f8f9fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 26px 16px;
+}
+section#home-hero .reason-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(154,181,122,.16);
+  color: #2C3626;
+}
+section#home-hero .reason-card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+  letter-spacing: .02em;
+}
+section#home-hero .reason-card p {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--gray-2);
+  margin: 0;
 }
 
-
-
+@media (min-width: 720px) {
+  section#home-hero .hero-reasons-grid { grid-template-columns: repeat(4, 1fr); }
+}
 @media (max-width: 720px) {
-  section#home-hero.hero { padding: 40px 0 56px !important; }
-  section#home-hero .hero-title { font-size: 22px !important; }
+  section#home-hero.hero { padding: 44px 0 56px !important; }
+  section#home-hero .hero-title { font-size: 26px !important; }
+  section#home-hero .hero-sub { font-size: 14.5px !important; }
+  section#home-hero .hero-reasons-title { font-size: 18px; }
 }
 
 /* ── 5. Sections: white on gray alternation ── */
@@ -1211,108 +1230,76 @@ body { padding-bottom: 76px; }
   <div class="hero-bg" id="heroBg" aria-hidden="true"></div>
   <div class="container hero-inner hero-inner-form">
     <div class="hero-content">
-      <div class="hero-trust-strip" id="heroTrustStrip" role="list" aria-label="受付情報">
-        <div class="hero-trust-pill" role="listitem">
-          <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.5 5H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-          最短2時間でご返信
-        </div>
-        <div class="hero-trust-pill" role="listitem">
-          <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zm-7-7h5v5h-5z"/></svg>
-          オンライン予約対応
-        </div>
-      </div>
       <span class="eyebrow" data-content-key="hero_eyebrow">東京 14年の実績 — 国土交通省 認可</span>
       <h1 class="hero-title" translate="no">
-        <span class="ja" id="heroTitleJa">ていねいに、運びます。</span>
-        <span class="en" id="heroTitleEn">Same-day moving. Careful, always.</span>
+        <span class="ja" id="heroTitleJa">即日対応、スマホで完結。</span>
       </h1>
-      <div class="hero-trust-online">
-        <span class="hero-trust-online-primary" id="heroSubPrimary">オンライン予約・無料見積り対応</span>
-        <span class="hero-trust-online-sub" id="heroSubSecondary">料金確認から予約までオンライン完結</span>
-      </div>
-      <div class="hero-service-badges" role="list" aria-label="対応サービス">
-        <span class="hsb-item" role="listitem" data-content-key="hero_badge1">🚚 当日対応</span>
-        <span class="hsb-item" role="listitem" data-content-key="hero_badge2">📦 単身引越し</span>
-        <span class="hsb-item" role="listitem" data-content-key="hero_badge3">👫 カップル引越し</span>
-        <span class="hsb-item" role="listitem" data-content-key="hero_badge4">🎓 学生引越し</span>
-        <span class="hsb-item" role="listitem" data-content-key="hero_badge5">♻️ 不用品回収</span>
-      </div>
-      <a href="#booking" class="hero-allsvc">すべてのサービスを見る →</a>
+      <p class="hero-sub" id="heroSubPrimary">引越し見積もりから予約まで、スマホ一つでスムーズに。</p>
       <div class="hero-cta">
         <a href="#booking" onclick="openBookingApp();return false;" class="btn-hero-book">
-          <span class="btn-sup" id="heroCtaBookSup">オンライン予約</span>
-          <span class="btn-lbl" id="heroCtaBookLbl">今すぐ無料見積り</span>
-        </a>
-        <a href="https://line.me/R/ti/p/~hellomoving" class="btn-hero-line" target="_blank" rel="noopener noreferrer">
-          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.6 1.6 4.9 4 6.4-.1.5-.6 2.1-.7 2.5 0 0 0 .3.2.4.2.1.4 0 .4 0 .6-.1 3-2 3.6-2.4.8.1 1.6.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3Z"/></svg>
-          <span id="heroCtaLine">LINE相談</span>
+          <span class="btn-lbl" id="heroCtaBookLbl">無料見積もり依頼</span>
         </a>
       </div>
-      <div class="hero-urgency" role="status" aria-live="polite">
-        <span class="hero-urgency-label" data-content-key="hero_urgency_label">本日の空き状況</span>
-        <span class="hero-urgency-avail">
-          <svg viewBox="0 0 24 24" width="10" height="10" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/></svg>
-          空きあり
-        </span>
-        <span class="hero-urgency-note" data-content-key="hero_urgency_note">最短当日対応可能</span>
+    </div>
+
+    <div class="hero-reasons" aria-labelledby="heroReasonsTitle">
+      <h2 class="hero-reasons-title" id="heroReasonsTitle">選ばれる4つの理由</h2>
+      <div class="hero-reasons-grid">
+        <div class="reason-card">
+          <span class="reason-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M15 4v7H5.17L4 12.17V4h11m1-2H3c-.55 0-1 .45-1 1v14l4-4h10c.55 0 1-.45 1-1V3c0-.55-.45-1-1-1zm5 4h-2v9H6v2c0 .55.45 1 1 1h11l4 4V7c0-.55-.45-1-1-1z"/></svg>
+          </span>
+          <h3>直接対応</h3>
+          <p>仲介業者を通さない直接対応</p>
+        </div>
+        <div class="reason-card">
+          <span class="reason-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 15.2a3.2 3.2 0 100-6.4 3.2 3.2 0 000 6.4z"/><path fill="currentColor" d="M9 2 7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+          </span>
+          <h3>写真見積</h3>
+          <p>写真を送るだけで簡単見積り</p>
+        </div>
+        <div class="reason-card">
+          <span class="reason-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+          </span>
+          <h3>適正見積</h3>
+          <p>内容確認後の明確なお見積り</p>
+        </div>
+        <div class="reason-card">
+          <span class="reason-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+          </span>
+          <h3>個人情報保護</h3>
+          <p>お客様情報を厳重に管理</p>
+        </div>
       </div>
-      <p class="hero-license">
-        <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1.06 14.54L7.4 12l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41-5.64 5.66z"/></svg>
-        国土交通省 認可運送事業者 — 損害補償保険加入済
-      </p>
     </div>
 
   </div>
   <div class="hero-scroll" aria-hidden="true"><span></span></div>
 </section>
 <script>
-/* Hero content loader — applies admin-saved content from localStorage */
+/* Hero content loader — applies admin-saved hero copy from localStorage onto the
+   redesigned hero (2026-07-07). Only elements that still exist post-redesign are
+   targeted. Any STALE_HERO value (the retired pre-redesign copy) is IGNORED so a
+   cached hm_hero can never revert the new static hero; legitimate new admin edits
+   still apply. Keep STALE_HERO in sync with js/services/contentLoader.js. */
 (function(){
   try {
     var raw = localStorage.getItem('hm_hero');
     if (!raw) return;
     var h = JSON.parse(raw);
+    var STALE_HERO = {
+      headline_ja:  'ていねいに、運びます。',
+      sub_primary:  'オンライン予約・無料見積り対応',
+      cta_book_lbl: '今すぐ無料見積り'
+    };
     var el = function(id){ return document.getElementById(id); };
-    var set = function(id, val){ var e = el(id); if (e && val) e.textContent = val; };
-    set('heroTitleJa',    h.headline_ja);
-    set('heroTitleEn',    h.headline_en);
-    set('heroSubPrimary', h.sub_primary);
-    set('heroSubSecondary', h.sub_secondary);
-    set('heroCtaBookSup', h.cta_book_sup);
-    set('heroCtaBookLbl', h.cta_book_lbl);
-    set('heroCtaLine',    h.cta_line);
-    if (Array.isArray(h.trust_badges) && h.trust_badges.length) {
-      var strip = el('heroTrustStrip');
-      if (strip) {
-        var pills = strip.querySelectorAll('.hero-trust-pill');
-        h.trust_badges.forEach(function(text, i) {
-          if (!text) return;
-          if (pills[i]) {
-            var tn = null;
-            pills[i].childNodes.forEach(function(n){ if (n.nodeType === 3) tn = n; });
-            if (tn) tn.nodeValue = '\n          ' + text + '\n        ';
-          } else {
-            var div = document.createElement('div');
-            div.className = 'hero-trust-pill';
-            div.setAttribute('role', 'listitem');
-            div.textContent = text;
-            strip.appendChild(div);
-          }
-        });
-        for (var i = h.trust_badges.length; i < pills.length; i++) {
-          pills[i].style.display = 'none';
-        }
-      }
-    }
-    if (h.bg_image) {
-      var bg = el('heroBg');
-      if (bg) {
-        bg.style.backgroundImage    = 'url("' + h.bg_image.replace(/"/g, '%22') + '")';
-        bg.style.backgroundSize     = 'cover';
-        bg.style.backgroundPosition = 'center';
-        bg.style.opacity            = '0.35';
-      }
-    }
+    var set = function(id, val, stale){ var e = el(id); if (e && val && val !== stale) e.textContent = val; };
+    set('heroTitleJa',    h.headline_ja,  STALE_HERO.headline_ja);
+    set('heroSubPrimary', h.sub_primary,  STALE_HERO.sub_primary);
+    set('heroCtaBookLbl', h.cta_book_lbl, STALE_HERO.cta_book_lbl);
   } catch(e) {}
 })();
 </script>

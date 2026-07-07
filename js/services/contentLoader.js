@@ -41,15 +41,21 @@ window.ContentLoader = (function () {
   function _uncollapse(el) { if (el && el.style.display === 'none') el.style.display = ''; }
 
   /* ── Hero ─────────────────────────────────────────────── */
+  /* Retired pre-redesign copy (2026-07-07). If a stale hm_hero KV / localStorage
+     record still carries any of these, IGNORE it so it can never revert the new
+     static hero; genuine new admin edits still apply. The redesign also removed
+     the En / secondary / cta-sup / cta-line elements, so those fields are no
+     longer applied. Keep STALE_HERO in sync with the inline loader in index.html. */
+  const STALE_HERO = {
+    headline_ja:  'ていねいに、運びます。',
+    sub_primary:  'オンライン予約・無料見積り対応',
+    cta_book_lbl: '今すぐ無料見積り',
+  };
   function _applyHero(h) {
     if (!h) return;
-    _set('heroTitleJa',      h.headline_ja);
-    _set('heroTitleEn',      h.headline_en);
-    _set('heroSubPrimary',   h.sub_primary);
-    _set('heroSubSecondary', h.sub_secondary);
-    _set('heroCtaBookSup',   h.cta_book_sup);
-    _set('heroCtaBookLbl',   h.cta_book_lbl);
-    _set('heroCtaLine',      h.cta_line);
+    if (h.headline_ja  !== STALE_HERO.headline_ja)  _set('heroTitleJa',    h.headline_ja);
+    if (h.sub_primary  !== STALE_HERO.sub_primary)  _set('heroSubPrimary', h.sub_primary);
+    if (h.cta_book_lbl !== STALE_HERO.cta_book_lbl) _set('heroCtaBookLbl', h.cta_book_lbl);
   }
 
   /* ── Services ─────────────────────────────────────────── */

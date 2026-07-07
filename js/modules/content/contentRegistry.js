@@ -25,13 +25,6 @@ const CONTENT_REGISTRY = [
      (hm_hero); only the hero's UNMANAGED extras appear here to avoid two sources
      writing one element. */
   { group:'ヒーロー（補足）', key:'hero_eyebrow',       label:'アイキャッチ（上部ラベル）', def:'東京 14年の実績 — 国土交通省 認可' },
-  { group:'ヒーロー（補足）', key:'hero_badge1',        label:'サービスバッジ1', def:'🚚 当日対応' },
-  { group:'ヒーロー（補足）', key:'hero_badge2',        label:'サービスバッジ2', def:'📦 単身引越し' },
-  { group:'ヒーロー（補足）', key:'hero_badge3',        label:'サービスバッジ3', def:'👫 カップル引越し' },
-  { group:'ヒーロー（補足）', key:'hero_badge4',        label:'サービスバッジ4', def:'🎓 学生引越し' },
-  { group:'ヒーロー（補足）', key:'hero_badge5',        label:'サービスバッジ5', def:'♻️ 不用品回収' },
-  { group:'ヒーロー（補足）', key:'hero_urgency_label', label:'空き状況ラベル',   def:'本日の空き状況' },
-  { group:'ヒーロー（補足）', key:'hero_urgency_note',  label:'空き状況ノート',   def:'最短当日対応可能' },
 
   { group:'安心バー', key:'trust_item1_key', label:'項目1 見出し', def:'14 Years of Experience' },
   { group:'安心バー', key:'trust_item1_sub', label:'項目1 補足',   def:'14年の実績' },

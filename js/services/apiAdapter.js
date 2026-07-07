@@ -594,10 +594,13 @@
       /* Quote CTA, trust badges and bg_image were retired from the public hero
          (single-CTA hero + static trust strip), so they are no longer part of
          the editable hero model. */
+      /* Redesigned hero (2026-07-07): single-CTA, fixed brand copy. The En /
+         secondary / cta-sup fields were retired with their DOM elements — kept as
+         empty defaults for back-compat with the admin form model. */
       const defaults = {
-        headline_ja: 'ていねいに、運びます。',  headline_en: 'Same-day moving. Careful, always.',
-        sub_primary: 'オンライン予約・無料見積り対応', sub_secondary: '料金確認から予約までオンライン完結',
-        cta_book_sup: 'オンライン予約', cta_book_lbl: '今すぐ無料見積り',
+        headline_ja: '即日対応、スマホで完結。',  headline_en: '',
+        sub_primary: '引越し見積もりから予約まで、スマホ一つでスムーズに。', sub_secondary: '',
+        cta_book_sup: '', cta_book_lbl: '無料見積もり依頼',
         cta_line: 'LINE相談',
       };
       const saved = _ls('hm_hero', defaults);
