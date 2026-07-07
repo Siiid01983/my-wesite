@@ -57,7 +57,7 @@
 
   /* ── Grid ── */
   .rv-wrap { max-width: 1080px; margin: 0 auto; padding: 24px 20px 40px; }
-  .rv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+  .rv-grid { display: flex; flex-direction: column; gap: 16px; max-width: 760px; margin: 0 auto; }
   .rv-card {
     background: #fff;
     border: 1px solid var(--line);
@@ -82,6 +82,16 @@
   .rv-name { font-size: 14px; font-weight: 600; color: var(--ink); }
 
   .rv-state { text-align: center; padding: 70px 20px; color: var(--muted); font-size: 14px; }
+
+  /* Per-review expand / collapse */
+  .rv-more-btn { align-self: flex-start; margin-top: 8px; background: none; border: none; padding: 0; color: var(--forest); font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; text-decoration: underline; }
+
+  /* Pagination bar */
+  .rv-pager { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; max-width: 760px; margin: 34px auto 0; }
+  .rv-pg-btn { padding: 9px 16px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--forest); font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; transition: .15s; }
+  .rv-pg-btn:hover:not([disabled]) { border-color: var(--forest); background: var(--forest); color: #fff; }
+  .rv-pg-btn[disabled] { opacity: .4; cursor: default; }
+  .rv-pg-info { font-size: 13px; color: var(--muted); padding: 0 6px; white-space: nowrap; }
 
   /* ── Bottom CTA block ── */
   .rv-cta-block { text-align: center; margin: 46px auto 10px; max-width: 640px; padding: 0 20px; }
@@ -147,6 +157,7 @@
   <main class="rv-wrap">
     <div class="rv-grid" id="rvGrid"></div>
     <div class="rv-state" id="rvState">口コミを読み込んでいます…</div>
+    <nav class="rv-pager" id="rvPager" aria-label="ページ送り"></nav>
 
     <div class="rv-cta-block">
       <h2>お引越しをご検討中ですか？</h2>
@@ -173,8 +184,12 @@
   <script>
   (function () {
     'use strict';
-    var grid = document.getElementById('rvGrid');
+    var grid  = document.getElementById('rvGrid');
     var state = document.getElementById('rvState');
+    var pager = document.getElementById('rvPager');
+    var PAGE  = 20;                 // reviews per page
+    var TRUNC = 120;                // chars before truncation
+    var _all = [], _page = 0;
 
     function esc(s) {
       return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -200,10 +215,19 @@
         ? '<span class="rv-verified">✓ 認証済み</span>' : '';
       var meta = [r.service, r.date_label || fmtDate(r.created_at), r.location]
         .filter(Boolean).map(esc).join(' ・ ');
+      // Truncate long text with a 口コミをもっと見る / 閉じる toggle (every review).
+      var full = String(r.review_text || '');
+      var trunc = full.length > TRUNC;
+      var shortT = trunc ? full.slice(0, TRUNC) + '…' : full;
+      var body = trunc
+        ? '<p class="rv-comment">' + esc(shortT) + '</p>' +
+          '<button class="rv-more-btn" type="button" data-open="0" data-short="' + esc(shortT) +
+            '" data-full="' + esc(full) + '">口コミをもっと見る</button>'
+        : '<p class="rv-comment">' + esc(full) + '</p>';
       return '' +
         '<article class="rv-card">' +
           '<div class="rv-card-top"><span class="rv-stars">' + stars(r.rating) + '</span>' + verified + '</div>' +
-          '<p class="rv-comment">' + esc(r.review_text || '') + '</p>' +
+          body +
           (meta ? '<div class="rv-meta">' + meta + '</div>' : '') +
           '<div class="rv-foot"><span class="rv-avatar">' + initial + '</span>' +
             '<span class="rv-name">' + name + ' 様</span></div>' +
@@ -220,6 +244,45 @@
       document.getElementById('rvSummary').style.display = 'inline-flex';
     }
 
+    // ── Pagination (20 per page) ──────────────────────────────────────────
+    function renderPager() {
+      var pages = Math.ceil(_all.length / PAGE);
+      if (pages <= 1) { pager.innerHTML = ''; return; }
+      function btn(label, page, disabled) {
+        return '<button class="rv-pg-btn"' + (disabled ? ' disabled' : ' data-page="' + page + '"') + '>' + label + '</button>';
+      }
+      pager.innerHTML =
+        btn('最初', 0, _page === 0) +
+        btn('前の20件', _page - 1, _page === 0) +
+        '<span class="rv-pg-info">' + (_page + 1) + ' / ' + pages + ' ページ</span>' +
+        btn('次の20件', _page + 1, _page >= pages - 1) +
+        btn('最後', pages - 1, _page >= pages - 1);
+    }
+    function renderPage() {
+      var start = _page * PAGE;
+      grid.innerHTML = _all.slice(start, start + PAGE).map(card).join('');
+      renderPager();
+    }
+
+    // Expand / collapse a single review (delegated — cards are re-rendered per page).
+    grid.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.rv-more-btn');
+      if (!b) return;
+      var p = b.previousElementSibling;
+      var open = b.getAttribute('data-open') === '1';
+      if (p) p.textContent = open ? b.getAttribute('data-short') : b.getAttribute('data-full');
+      b.textContent = open ? '口コミをもっと見る' : '閉じる';
+      b.setAttribute('data-open', open ? '0' : '1');
+    });
+    // Page navigation.
+    pager.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.rv-pg-btn[data-page]');
+      if (!b) return;
+      _page = parseInt(b.getAttribute('data-page'), 10) || 0;
+      renderPage();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
     async function load() {
       if (!window.api) { state.textContent = '口コミを読み込めませんでした。'; return; }
       var res;
@@ -233,11 +296,12 @@
         state.textContent = '口コミを読み込めませんでした。'; return;
       }
       if (res.error) { state.textContent = '口コミを読み込めませんでした。'; return; }
-      var rows = (res.data || []).filter(function (r) { return r.approved && (r.review_text || '').trim(); });
-      if (!rows.length) { state.textContent = 'まだ口コミはありません。'; return; }
+      _all = (res.data || []).filter(function (r) { return r.approved && (r.review_text || '').trim(); });
+      if (!_all.length) { state.textContent = 'まだ口コミはありません。'; return; }
       state.style.display = 'none';
-      grid.innerHTML = rows.map(card).join('');
-      summary(rows);
+      summary(_all);
+      _page = 0;
+      renderPage();
     }
     load();
   })();

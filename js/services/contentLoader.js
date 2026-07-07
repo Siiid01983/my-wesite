@@ -74,28 +74,49 @@ window.ContentLoader = (function () {
     _set('revGmbCount',  m.gmb_count);
   }
 
+  // A review counts as "Japanese" when Japanese characters dominate its text —
+  // excludes the English-only reviews from the homepage carousel.
+  function _isJapaneseText(t) {
+    t = String(t || '');
+    const ja = (t.match(/[぀-ヿ㐀-鿿]/g) || []).length;
+    const nonSpace = t.replace(/\s/g, '').length || 1;
+    return ja / nonSpace > 0.4;
+  }
+
   function _applyRevCards(revs) {
     if (revs == null) return;                       // no CMS data → keep static fallback
     const grid = _el('revGridEl');
     if (!grid) return;
-    // Public rule: only approved + published, newest first, capped to the latest 20
-    // (the full set lives on reviews.html via the 口コミをもっと見る button).
-    const published = revs.filter(r => r.status === 'approved' && r.published).slice(0, 20);
+    // Homepage carousel: approved + published, Japanese only, latest 5.
+    // (The full set — all languages — lives on reviews.html.)
+    const published = revs
+      .filter(r => r.status === 'approved' && r.published && _isJapaneseText(r.text))
+      .slice(0, 5);
     if (!published.length) { grid.innerHTML = ''; _collapse(grid); return; }  // emptied → collapse (no gap)
     // Inline-styled 認証済み badge (avoids editing the locked styles.css). Shown
     // ONLY for reviews linked to a real booking (booking_reference → r.verified).
     const VERIFIED = '<span class="review-verified" style="display:inline-flex;align-items:center;gap:3px;margin-left:auto;align-self:center;font-size:11px;font-weight:700;color:#2C3626;background:rgba(154,181,122,.22);padding:2px 9px;border-radius:999px;white-space:nowrap">✓ 認証済み</span>';
+    const MORE_STYLE = 'margin-top:8px;background:none;border:none;padding:0;color:#2C3626;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit;text-decoration:underline';
+    const TRUNC = 100;
     grid.innerHTML = published.map(r => {
       const stars    = '★'.repeat(r.rating || 5) + '☆'.repeat(5 - (r.rating || 5));
       const headline = esc(r.headline || (r.text || '').substring(0, 30) + ((r.text || '').length > 30 ? '…' : ''));
       const meta     = [r.service, r.date_label ? 'ご利用日：' + r.date_label : ''].filter(Boolean).join(' • ');
       const avatar   = esc((r.name || '?').charAt(0));
       const loc      = esc(r.location || r.service || '');
+      // Truncate to 100 chars with a 口コミをもっと見る / 閉じる toggle.
+      const full  = String(r.text || '');
+      const trunc = full.length > TRUNC;
+      const shortT = trunc ? full.slice(0, TRUNC) + '…' : full;
+      const body = trunc
+        ? `<p class="review-body">${esc(shortT)}</p>` +
+          `<button class="rev-more-btn" type="button" data-open="0" data-short="${esc(shortT)}" data-full="${esc(full)}" style="${MORE_STYLE}">口コミをもっと見る</button>`
+        : `<p class="review-body">${esc(full)}</p>`;
       return `<article class="review-card">` +
         `<div class="review-meta-line"><span class="review-stars">${stars}</span>` +
         (meta ? `<span>${esc(meta)}</span>` : '') + `</div>` +
         `<h3>${headline}</h3>` +
-        `<p>${esc(r.text || '')}</p>` +
+        body +
         `<footer><span class="avatar" aria-hidden="true">${avatar}</span>` +
         `<span class="meta"><strong>${esc(r.name || '')}</strong>` +
         (loc ? `<em>${loc}</em>` : '') + `</span>` +
@@ -104,6 +125,23 @@ window.ContentLoader = (function () {
     }).join('');
     _uncollapse(grid);
     _ensureViewAllBtn(grid);
+    _ensureMoreToggleHandler();
+  }
+
+  // Delegated expand/collapse for the truncated card bodies (bound once).
+  let _moreHandlerBound = false;
+  function _ensureMoreToggleHandler() {
+    if (_moreHandlerBound) return;
+    _moreHandlerBound = true;
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest && e.target.closest('.rev-more-btn');
+      if (!b) return;
+      const p = b.previousElementSibling;
+      const open = b.getAttribute('data-open') === '1';
+      if (p) p.textContent = open ? b.getAttribute('data-short') : b.getAttribute('data-full');
+      b.textContent = open ? '口コミをもっと見る' : '閉じる';
+      b.setAttribute('data-open', open ? '0' : '1');
+    });
   }
 
   // Inject the 口コミをもっと見る button after the review grid (once), linking to
@@ -116,12 +154,38 @@ window.ContentLoader = (function () {
     const a = document.createElement('a');
     a.id = 'revViewAllBtn';
     a.href = 'reviews.html';
-    a.textContent = '口コミをもっと見る →';
+    a.textContent = 'もっと見る →';
     a.style.cssText = 'display:inline-block;padding:13px 32px;border-radius:999px;border:1.5px solid #2C3626;color:#2C3626;background:#fff;font-weight:700;font-size:14px;text-decoration:none;transition:all .2s';
     a.addEventListener('mouseenter', () => { a.style.background = '#2C3626'; a.style.color = '#fff'; });
     a.addEventListener('mouseleave', () => { a.style.background = '#fff'; a.style.color = '#2C3626'; });
     wrap.appendChild(a);
     grid.parentNode.insertBefore(wrap, grid.nextSibling);
+  }
+
+  /* ── Reviews section header + rating (homepage) ───────────
+     Applied at runtime so the LOCKED index.html is never edited: sets the
+     お客様の声 heading + subtitle, and swaps the Google Maps rating graphic for a
+     clean くらしのマーケット評価 block. Runs after _applyRevsMeta so it wins. */
+  function _customizeReviewsSection() {
+    _set('revTitleEl', 'お客様の声');
+    _set('revLeadEl', 'スタッフの丁寧な対応に感謝のお声を多数いただいています');
+    const gmb = document.querySelector('#reviews .gmb-badge');
+    if (!gmb || document.getElementById('revKurashiRating')) return;
+    gmb.style.display = 'none';
+    const block = document.createElement('div');
+    block.id = 'revKurashiRating';
+    block.setAttribute('style',
+      'display:inline-flex;flex-direction:column;align-items:center;gap:2px;' +
+      'margin:16px auto 0;padding:16px 34px;background:#fff;border:1px solid #e6e7e2;' +
+      'border-radius:16px;box-shadow:0 6px 20px rgba(44,54,38,.06)');
+    block.innerHTML =
+      '<div style="color:#f5a623;font-size:17px;letter-spacing:.12em">★★★★★</div>' +
+      '<div style="display:flex;align-items:baseline;gap:6px;margin-top:4px">' +
+        '<span style="font-family:\'DM Serif Display\',serif;font-size:40px;font-weight:700;color:#2C3626;line-height:1">4.9</span>' +
+        '<span style="font-size:16px;color:#6b7169;font-weight:600">/ 5</span>' +
+      '</div>' +
+      '<div style="font-size:12px;font-weight:700;letter-spacing:.1em;color:#6b7169;margin-top:6px">くらしのマーケット評価</div>';
+    gmb.parentNode.insertBefore(block, gmb.nextSibling);
   }
 
   /* ── FAQ ──────────────────────────────────────────────── */
@@ -583,6 +647,9 @@ window.ContentLoader = (function () {
       } else if (calRes.error) {
         console.warn('[ContentLoader] calendar read error:', calRes.error.message);
       }
+
+      /* Reviews section header + rating swap (runtime; keeps index.html locked). */
+      _customizeReviewsSection();
   }
 
   return { init };
