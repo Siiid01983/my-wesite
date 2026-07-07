@@ -302,7 +302,16 @@
         '.ibx-dc{display:flex;gap:8px;margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}' +
         '.ibx-dc-input{flex:1;padding:8px 13px;border:1px solid var(--line);border-radius:20px;font-size:13px;background:var(--bg);color:var(--ink)}' +
         '.ibx-dc-input:focus{outline:none;border-color:#06C755}' +
-        '.ibx-dc-send{white-space:nowrap;background:#06C755;border-color:#06C755}';
+        '.ibx-dc-send{white-space:nowrap;background:#06C755;border-color:#06C755}' +
+        // Corner trash on text bubbles (soft-delete). Inside the top-right corner
+        // (avoids horizontal overflow in scrollable threads); revealed on hover.
+        '.pchat-bubble.pchat-has-del{position:relative}' +
+        '.pchat-text-del{position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;border:none;padding:0;cursor:pointer;background:rgba(11,15,23,.45);color:#fff;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s,background .15s,transform .1s}' +
+        '.pchat-row.me .pchat-text-del{background:rgba(255,255,255,.35)}' +
+        '.pchat-bubble-wrap:hover .pchat-text-del{opacity:1}' +
+        '.pchat-text-del:hover{background:#c0392b;transform:scale(1.08)}' +
+        '.pchat-text-del:active{transform:scale(.94)}' +
+        '.pchat-text-del svg{width:12px;height:12px}';
       document.head.appendChild(s);
     }
   }
@@ -346,17 +355,19 @@
       '<div class="pchat-name">' + _esc(m.sender_name || m.sender || 'Hello Moving') + '</div>';
     var parts = '';
     var text = _bubbleText(m);
-    if (text) parts += '<div class="pchat-bubble">' + _esc(text) + '</div>';
+    // Text bubbles get a corner trash icon (soft-delete), matching the per-image
+    // control — for both customer and admin messages.
+    if (text) {
+      parts += '<div class="pchat-bubble pchat-has-del">' + _esc(text) +
+        '<button class="pchat-text-del" data-ibx-del="' + _esc(m.id) + '" title="削除" aria-label="メッセージを削除">' + IBX_TRASH + '</button></div>';
+    }
     _attachmentsOf(m).forEach(function (a) {
       parts += '<div class="pchat-bubble pchat-media-bubble">' + _bubbleMedia(a, true, m.id) + '</div>';
     });
     if (!parts) return '';
-    // Message-level delete only on TEXT messages; media is deleted per-item via
-    // the corner icon on each thumbnail.
-    var del = text ? '<button class="pchat-del" data-ibx-del="' + _esc(m.id) + '" title="削除" aria-label="削除">🗑</button>' : '';
     return '<div class="pchat-row ' + (me ? 'me' : 'them') + (grouped ? ' grp' : '') + '">' + avatar +
       '<div class="pchat-bubble-wrap">' + name + parts +
-      '<div class="pchat-meta">' + _fmtTimeShort(m.received_at || m.created_at) + '</div>' + del +
+      '<div class="pchat-meta">' + _fmtTimeShort(m.received_at || m.created_at) + '</div>' +
       '</div></div>';
   }
   function _transcript(t) {
@@ -1258,7 +1269,7 @@
     if (!e.target.closest) return;
     var md = e.target.closest('.pchat-media-del[data-ibx-delmedia]');
     if (md) { e.preventDefault(); _deleteMediaAdmin(md.getAttribute('data-ibx-delmid'), md.getAttribute('data-ibx-delmedia'), md); return; }
-    var del = e.target.closest('.pchat-del[data-ibx-del]');
+    var del = e.target.closest('[data-ibx-del]');   // text bubble corner trash + legacy
     if (del) { _ibxDeleteMsg(del.getAttribute('data-ibx-del')); return; }
     var send = e.target.closest('.ibx-dc-send');
     if (send) { _directChatSend(send); return; }
