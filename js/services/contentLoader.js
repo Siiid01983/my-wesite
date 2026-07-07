@@ -78,8 +78,13 @@ window.ContentLoader = (function () {
     if (revs == null) return;                       // no CMS data → keep static fallback
     const grid = _el('revGridEl');
     if (!grid) return;
-    const published = revs.filter(r => r.status === 'approved' && r.published);
+    // Public rule: only approved + published, newest first, capped to the latest 20
+    // (the full set lives on reviews.html via the 口コミをもっと見る button).
+    const published = revs.filter(r => r.status === 'approved' && r.published).slice(0, 20);
     if (!published.length) { grid.innerHTML = ''; _collapse(grid); return; }  // emptied → collapse (no gap)
+    // Inline-styled 認証済み badge (avoids editing the locked styles.css). Shown
+    // ONLY for reviews linked to a real booking (booking_reference → r.verified).
+    const VERIFIED = '<span class="review-verified" style="display:inline-flex;align-items:center;gap:3px;margin-left:auto;align-self:center;font-size:11px;font-weight:700;color:#2C3626;background:rgba(154,181,122,.22);padding:2px 9px;border-radius:999px;white-space:nowrap">✓ 認証済み</span>';
     grid.innerHTML = published.map(r => {
       const stars    = '★'.repeat(r.rating || 5) + '☆'.repeat(5 - (r.rating || 5));
       const headline = esc(r.headline || (r.text || '').substring(0, 30) + ((r.text || '').length > 30 ? '…' : ''));
@@ -93,10 +98,30 @@ window.ContentLoader = (function () {
         `<p>${esc(r.text || '')}</p>` +
         `<footer><span class="avatar" aria-hidden="true">${avatar}</span>` +
         `<span class="meta"><strong>${esc(r.name || '')}</strong>` +
-        (loc ? `<em>${loc}</em>` : '') + `</span></footer>` +
+        (loc ? `<em>${loc}</em>` : '') + `</span>` +
+        (r.verified ? VERIFIED : '') + `</footer>` +
         `</article>`;
     }).join('');
     _uncollapse(grid);
+    _ensureViewAllBtn(grid);
+  }
+
+  // Inject the 口コミをもっと見る button after the review grid (once), linking to
+  // the full reviews.html page. Kept here (not in the locked index.html); styled
+  // inline to match the site without touching styles.css.
+  function _ensureViewAllBtn(grid) {
+    if (document.getElementById('revViewAllBtn')) return;
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'text-align:center;margin-top:30px';
+    const a = document.createElement('a');
+    a.id = 'revViewAllBtn';
+    a.href = 'reviews.html';
+    a.textContent = '口コミをもっと見る →';
+    a.style.cssText = 'display:inline-block;padding:13px 32px;border-radius:999px;border:1.5px solid #2C3626;color:#2C3626;background:#fff;font-weight:700;font-size:14px;text-decoration:none;transition:all .2s';
+    a.addEventListener('mouseenter', () => { a.style.background = '#2C3626'; a.style.color = '#fff'; });
+    a.addEventListener('mouseleave', () => { a.style.background = '#fff'; a.style.color = '#2C3626'; });
+    wrap.appendChild(a);
+    grid.parentNode.insertBefore(wrap, grid.nextSibling);
   }
 
   /* ── FAQ ──────────────────────────────────────────────── */
@@ -441,6 +466,8 @@ window.ContentLoader = (function () {
       service:    r.service       || '',
       date_label: r.date_label    || '',
       location:   r.location      || '',
+      // Verified = review is tied to a real booking (booking_reference present).
+      verified:   !!r.booking_reference,
     };
   }
 

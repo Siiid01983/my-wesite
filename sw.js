@@ -30,6 +30,7 @@ const PRECACHE = [
   '/admin-reviews.html',
   '/login.html',
   '/portal.html',
+  '/reviews.html',
   '/websiteManagement.html',
   /* Public site */
   '/styles.css',

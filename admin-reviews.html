@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Review Admin — Hello Moving</title>
+<title>口コミ管理 — Hello Moving</title>
 <meta name="robots" content="noindex,nofollow"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -219,7 +219,7 @@ html.dark .ad-btn-cancel-edit{border-color:rgba(255,255,255,.1)}
 <div id="adLogin">
   <div class="ad-login-card">
     <div class="ad-login-logo"><img src="/icons/icon.svg" alt="Hello Moving" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;display:block"></div>
-    <h1 class="ad-login-title">Review Admin</h1>
+    <h1 class="ad-login-title">口コミ管理</h1>
     <p class="ad-login-sub">Hello Moving · 管理者専用</p>
     <form id="loginForm">
       <input type="password" id="adPass" class="ad-input" placeholder="管理者パスワード" autocomplete="current-password" required/>
@@ -236,7 +236,7 @@ html.dark .ad-btn-cancel-edit{border-color:rgba(255,255,255,.1)}
     <div class="ad-header-brand">
       <div class="ad-header-mark"><img src="/icons/icon.svg" alt="Hello Moving" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;display:block"></div>
       Hello Moving
-      <span class="ad-header-tag">Review Admin</span>
+      <span class="ad-header-tag">口コミ管理</span>
     </div>
     <div class="ad-header-right">
       <button class="ad-darkbtn" id="adDarkBtn" aria-label="ダークモード切替" title="Toggle dark mode">◑</button>
@@ -253,7 +253,7 @@ html.dark .ad-btn-cancel-edit{border-color:rgba(255,255,255,.1)}
     <!-- Token Generator -->
     <div class="ad-section">
       <div class="ad-section-head">
-        <span class="ad-section-title">レビューリンク発行</span>
+        <span class="ad-section-title">口コミリンク発行</span>
         <span style="font-size:12px;color:var(--gray-2)">サービス完了後にお客様へ送付</span>
       </div>
       <div class="ad-section-body">
@@ -296,7 +296,7 @@ html.dark .ad-btn-cancel-edit{border-color:rgba(255,255,255,.1)}
     <!-- Reviews -->
     <div class="ad-section">
       <div class="ad-section-head">
-        <span class="ad-section-title">レビュー管理</span>
+        <span class="ad-section-title">口コミ管理</span>
       </div>
       <div class="ad-tabs" id="adTabs">
         <button class="ad-tab active" data-tab="pending">承認待ち <span class="ad-tab-badge" id="tabBadge">0</span></button>
@@ -444,7 +444,7 @@ html.dark .ad-btn-cancel-edit{border-color:rgba(255,255,255,.1)}
     else list=all;
     list=list.slice().sort(function(a,b){return new Date(b.createdAt)-new Date(a.createdAt);});
     var el=document.getElementById('adReviewList');
-    if(!list.length){el.innerHTML='<div class="ad-empty">レビューはありません。</div>';return;}
+    if(!list.length){el.innerHTML='<div class="ad-empty">口コミはありません。</div>';return;}
     el.innerHTML='';
     list.forEach(function(r){el.appendChild(buildReviewEl(r));});
   }
@@ -495,12 +495,12 @@ html.dark .ad-btn-cancel-edit{border-color:rgba(255,255,255,.1)}
       var reviews=getReviews();
       var idx=reviews.findIndex(function(x){return x.id===r.id;});
       if(idx===-1)return;
-      if(action==='approve'){reviews[idx].status='approved';}
+      if(action==='approve'){reviews[idx].status='approved';reviews[idx].published=true;}
       else if(action==='reject'){reviews[idx].status='rejected';reviews[idx].featured=false;}
       else if(action==='feature'){reviews[idx].featured=true;}
       else if(action==='unfeature'){reviews[idx].featured=false;}
       else if(action==='delete'){
-        if(!confirm('このレビューを削除しますか？')){return;}
+        if(!confirm('この口コミを削除しますか？')){return;}
         reviews.splice(idx,1);save(RV,reviews);renderAll();return;
       }
       else if(action==='edit'){
