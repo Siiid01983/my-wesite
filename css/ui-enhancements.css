@@ -229,3 +229,13 @@
   .back-to-top { transform: none; transition: opacity .2s ease-in-out; }
   .back-to-top.visible { transform: none; animation: none; }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   §2. Reviews FOUC guard
+   Hide the legacy Google Maps rating badge from the FIRST paint. This file is
+   loaded in <head> (before #reviews is parsed), so the old badge never flashes.
+   contentLoader.js (_customizeReviewsSection) injects the くらしのマーケット評価
+   block in its place and fades it in. If the CMS/API never runs (offline), the
+   badge simply stays hidden — the whole reviews section is API-driven anyway.
+   ════════════════════════════════════════════════════════════════════════════ */
+#reviews .gmb-badge { display: none !important; }

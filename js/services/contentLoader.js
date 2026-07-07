@@ -177,7 +177,8 @@ window.ContentLoader = (function () {
     block.setAttribute('style',
       'display:inline-flex;flex-direction:column;align-items:center;gap:2px;' +
       'margin:16px auto 0;padding:16px 34px;background:#fff;border:1px solid #e6e7e2;' +
-      'border-radius:16px;box-shadow:0 6px 20px rgba(44,54,38,.06)');
+      'border-radius:16px;box-shadow:0 6px 20px rgba(44,54,38,.06);' +
+      'opacity:0;transition:opacity .45s ease');   // fade in (smooth reveal)
     block.innerHTML =
       '<div style="color:#f5a623;font-size:17px;letter-spacing:.12em">★★★★★</div>' +
       '<div style="display:flex;align-items:baseline;gap:6px;margin-top:4px">' +
@@ -186,6 +187,7 @@ window.ContentLoader = (function () {
       '</div>' +
       '<div style="font-size:12px;font-weight:700;letter-spacing:.1em;color:#6b7169;margin-top:6px">くらしのマーケット評価</div>';
     gmb.parentNode.insertBefore(block, gmb.nextSibling);
+    requestAnimationFrame(() => { block.style.opacity = '1'; });
   }
 
   /* ── FAQ ──────────────────────────────────────────────── */
