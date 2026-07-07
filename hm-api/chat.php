@@ -75,6 +75,11 @@ function chat_verify_booking(): array {
 // The room's stable conversation key. All chat rows for a booking share this.
 function chat_thread_id(string $bookingId): string { return 'chat:' . $bookingId; }
 
+// The auto placeholder body written for a media-only message.
+function chat_is_placeholder(string $t): bool {
+  return (bool) preg_match('/^\s*\[\d+件の添付ファイルを送信しました\]\s*$/', $t);
+}
+
 // Hard-delete a message's attachment files from the private `chat` bucket. Only
 // removes files under THIS booking's own folder (path prefix guard) — so a
 // deletion can never reach another booking's or an arbitrary file. Best-effort.
@@ -179,11 +184,15 @@ if ($action === 'list') {
         $atts[] = [
           'name' => (string)($a['name'] ?? 'file'),
           'mime' => (string)($a['mime'] ?? ''),
+          'path' => $path,   // returned so the client can request per-item deletion
           'url'  => chat_sign_url($BUCKET, $path, $SECRET, $SIGN_TTL),
         ];
       }
     }
     $text = ($r['body_text'] !== null && $r['body_text'] !== '') ? (string)$r['body_text'] : (string)($r['body'] ?? '');
+    // Drop the "[N件の添付ファイル…]" placeholder for media-only messages so the
+    // portal shows just the image bubbles (never the placeholder text).
+    if ($atts && chat_is_placeholder($text)) $text = '';
     $messages[] = [
       'id'          => (string)$r['id'],
       'sender_type' => $isOutbound ? 'company' : 'customer',
@@ -261,6 +270,76 @@ if ($action === 'send') {
   hm_line_push("💬 新着チャット: {$name}（予約 {$v['ref']}）\n{$preview}\n▶ https://hello-moving.com/websiteManagement.html#inbox");
 
   hm_ok(['id' => $mid]);
+}
+
+// ── action=delete-media ──────────────────────────────────────────────────────
+// Customer deletes ONE image/file from their own message (not the whole message).
+// Scoped by email+reference + this booking's room + own (non-outbound) message.
+// Purges just that file, then updates labels.attachments; if the message has no
+// text and no attachments left, it becomes a tombstone.
+if ($action === 'delete-media') {
+  $v         = chat_verify_booking();
+  $p         = $v['body'];
+  $bookingId = (string)$v['row']['id'];
+  $thread    = chat_thread_id($bookingId);
+  $id        = trim((string)($p['id'] ?? ''));
+  $path      = str_replace('\\', '/', trim((string)($p['path'] ?? '')));
+  if ($id === '' || $path === '') hm_json(['ok' => false, 'data' => null, 'error' => 'missing_param'], 400);
+
+  try {
+    $st = hm_db()->prepare(
+      'SELECT id, body, body_text, labels FROM inbox_messages WHERE id = ? AND booking_id = ? AND thread_id = ? LIMIT 1'
+    );
+    $st->execute([$id, $bookingId, $thread]);
+    $row = $st->fetch();
+  } catch (Throwable $e) {
+    hm_log_error('chat delete-media lookup failed', ['err' => $e->getMessage()]);
+    hm_json(['ok' => false, 'data' => null, 'error' => 'server'], 500);
+  }
+  if (!$row) hm_json(['ok' => false, 'data' => null, 'error' => 'not_found'], 404);
+
+  $labels = [];
+  if (!empty($row['labels'])) {
+    $labels = is_array($row['labels']) ? $row['labels'] : (json_decode((string)$row['labels'], true) ?: []);
+  }
+  if (!empty($labels['outbound'])) hm_json(['ok' => false, 'data' => null, 'error' => 'forbidden'], 403);
+
+  $atts = (isset($labels['attachments']) && is_array($labels['attachments'])) ? $labels['attachments'] : [];
+  $remaining = [];
+  $target = null;
+  foreach ($atts as $a) {
+    if ((string)($a['path'] ?? '') === $path) { $target = $a; }
+    else { $remaining[] = $a; }
+  }
+  if ($target === null) hm_ok(['id' => $id, 'path' => $path, 'removed' => false]);   // idempotent
+
+  chat_purge_files([$target], $bookingId, $cfg);
+
+  $bodyText = (string)($row['body_text'] ?? $row['body'] ?? '');
+  $hasText  = ($bodyText !== '' && !chat_is_placeholder($bodyText));
+
+  try {
+    if (!$remaining && !$hasText) {
+      // Nothing left → tombstone (keeps thread context).
+      $tomb = ['ref' => (string)($labels['ref'] ?? $v['ref']), 'deleted' => true];
+      $st = hm_db()->prepare('UPDATE inbox_messages SET body = ?, body_text = ?, labels = ? WHERE id = ?');
+      $st->execute(['', '', json_encode($tomb, JSON_UNESCAPED_UNICODE), $id]);
+      hm_cache_invalidate_table('inbox_messages');
+      hm_ok(['id' => $id, 'removed' => true, 'deleted' => true]);
+    }
+    $newLabels = $labels;
+    if ($remaining) $newLabels['attachments'] = array_values($remaining);
+    else unset($newLabels['attachments']);
+    // Media-only message → keep the placeholder body in sync with the new count.
+    $newBody = $hasText ? (string)$row['body'] : ('[' . count($remaining) . '件の添付ファイルを送信しました]');
+    $st = hm_db()->prepare('UPDATE inbox_messages SET body = ?, body_text = ?, labels = ? WHERE id = ?');
+    $st->execute([$newBody, $newBody, json_encode($newLabels, JSON_UNESCAPED_UNICODE), $id]);
+    hm_cache_invalidate_table('inbox_messages');
+  } catch (Throwable $e) {
+    hm_log_error('chat delete-media failed', ['err' => $e->getMessage(), 'id' => $id]);
+    hm_json(['ok' => false, 'data' => null, 'error' => 'server'], 500);
+  }
+  hm_ok(['id' => $id, 'path' => $path, 'removed' => true, 'deleted' => false]);
 }
 
 // ── action=delete ────────────────────────────────────────────────────────────

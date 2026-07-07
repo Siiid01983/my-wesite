@@ -22,6 +22,7 @@
   var POLL_MS     = 5000;                     // AJAX poll interval (real-time feel)
   var MAX_BYTES   = 15 * 1024 * 1024;         // 15 MB (matches storage.php default)
   var ALLOWED     = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+  var UPLOAD_CONCURRENCY = 2;                 // upload N files at a time (queue)
 
   var _ctx    = null;    // { email, ref, name }
   var _host   = null;    // mounted container element
@@ -83,6 +84,7 @@
   var ATTACH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
   var SEND_ICON   = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
   var FILE_ICON   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+  var TRASH_ICON  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
 
   // ── API calls ────────────────────────────────────────────────────────────
   async function _post(action, extra) {
@@ -105,13 +107,19 @@
     return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日（' + dow + '）';
   }
 
-  function _mediaHtml(a) {
+  // `canDelete` (the customer's own media) adds a corner delete control that
+  // removes just this one item; `msgId` ties it back to its message.
+  function _mediaHtml(a, canDelete, msgId) {
+    var del = (canDelete && a.path)
+      ? '<button class="pchat-media-del" data-del-media="' + _esc(a.path) + '" data-del-mid="' + _esc(msgId || '') +
+        '" title="この画像を削除" aria-label="削除">' + TRASH_ICON + '</button>'
+      : '';
     if (_isImg(a.mime) && a.url) {
       return '<a href="' + _esc(a.url) + '" target="_blank" rel="noopener">' +
-             '<img class="pchat-media" src="' + _esc(a.url) + '" alt="' + _esc(a.name) + '" loading="lazy"></a>';
+             '<img class="pchat-media" src="' + _esc(a.url) + '" alt="' + _esc(a.name) + '" loading="lazy"></a>' + del;
     }
     return '<a class="pchat-file" href="' + _esc(a.url || '#') + '" target="_blank" rel="noopener">' +
-           FILE_ICON + '<span>' + _esc(a.name || 'ファイル') + '</span></a>';
+           FILE_ICON + '<span>' + _esc(a.name || 'ファイル') + '</span></a>' + del;
   }
 
   // `grouped` = same sender+channel as the previous bubble → hide the
@@ -137,10 +145,11 @@
     var parts = '';
     if (m.text) parts += '<div class="pchat-bubble">' + _esc(m.text) + '</div>';
     (m.attachments || []).forEach(function (a) {
-      parts += '<div class="pchat-bubble pchat-media-bubble">' + _mediaHtml(a) + '</div>';
+      parts += '<div class="pchat-bubble pchat-media-bubble">' + _mediaHtml(a, me, m.id) + '</div>';
     });
-    // Customers may delete their own messages only.
-    var del = me ? '<button class="pchat-del" data-del="' + _esc(m.id) + '" title="削除" aria-label="削除">🗑</button>' : '';
+    // Message-level delete only for the customer's own TEXT messages; media is
+    // deleted per-item via the corner icon on each thumbnail.
+    var del = (me && m.text) ? '<button class="pchat-del" data-del="' + _esc(m.id) + '" title="削除" aria-label="削除">🗑</button>' : '';
     return '<div class="' + rowCls + '">' + avatar +
              '<div class="pchat-bubble-wrap">' + name + parts +
                '<div class="pchat-meta">' + _fmtTime(m.created_at) + '</div>' + del +
@@ -182,7 +191,7 @@
   // a tombstone; the poll refresh reflects it (no reload).
   async function _deleteMessage(id) {
     if (!id) return;
-    if (!confirm('このメッセージを削除しますか？\n添付ファイルも完全に削除されます。')) return;
+    if (!confirm('このメッセージを削除しますか？')) return;
     _err('');
     try {
       var out = await _post('delete', { id: id });
@@ -190,6 +199,22 @@
       _lastSig = '';
       await _poll();
     } catch (_) { _err('削除できませんでした。'); }
+  }
+
+  // Customer deletes ONE image from a message → optimistic removal of that
+  // thumbnail, then chat.php purges just that file (poll reconciles the rest).
+  async function _deleteMedia(id, path, el) {
+    if (!id || !path) return;
+    if (!confirm('この画像を削除しますか？')) return;
+    var bubble = el && el.closest && el.closest('.pchat-media-bubble');
+    if (bubble && bubble.parentNode) bubble.parentNode.removeChild(bubble);   // optimistic
+    _err('');
+    try {
+      var out = await _post('delete-media', { id: id, path: path });
+      if (!out || !out.ok) _err('削除できませんでした。');
+    } catch (_) { _err('削除できませんでした。'); }
+    _lastSig = '';
+    await _poll();   // reconcile (tombstone if that was the message's last item)
   }
 
   // ── Poll loop ────────────────────────────────────────────────────────────
@@ -243,7 +268,7 @@
         var url = URL.createObjectURL(f);
         urls.push(url);
         return '<div class="pchat-bubble pchat-media-bubble">' +
-                 '<img class="pchat-media uploading" src="' + url + '" alt="' + _esc(f.name) + '"></div>';
+                 '<img class="pchat-media uploading" src="' + url + '" alt="' + _esc(f.name) + '" loading="lazy"></div>';
       }
       return '<div class="pchat-bubble pchat-media-bubble"><span class="pchat-file">' +
                FILE_ICON + '<span>' + _esc(f.name) + '</span></span></div>';
@@ -294,15 +319,26 @@
     var node = _renderOptimistic(files);
 
     try {
-      var attachments = [];
-      for (var i = 0; i < files.length; i++) {
-        var f = files[i];
-        _optimisticStatus('アップロード中… (' + (i + 1) + '/' + files.length + ')');
-        var path = _bookingId + '/' + _safeName(f.name);
-        var up = await window.api.storage.from(BUCKET).upload(path, f, { contentType: f.type, upsert: false });
-        if (up && up.error) { throw new Error('upload'); }
-        attachments.push({ path: path, name: f.name, mime: f.type, size: f.size });
+      // Bounded-concurrency upload queue (UPLOAD_CONCURRENCY workers pull from a
+      // shared cursor) so a large batch never blocks the UI or floods the network.
+      // Results are written by index so the final order matches the selection.
+      var attachments = new Array(files.length);
+      var next = 0, done = 0;
+      async function _worker() {
+        while (next < files.length) {
+          var i = next++;
+          var f = files[i];
+          var path = _bookingId + '/' + _safeName(f.name);
+          var up = await window.api.storage.from(BUCKET).upload(path, f, { contentType: f.type, upsert: false });
+          if (up && up.error) throw new Error('upload');
+          attachments[i] = { path: path, name: f.name, mime: f.type, size: f.size };
+          done++;
+          _optimisticStatus('アップロード中… (' + done + '/' + files.length + ')');
+        }
       }
+      var workers = [];
+      for (var w = 0; w < Math.min(UPLOAD_CONCURRENCY, files.length); w++) workers.push(_worker());
+      await Promise.all(workers);
       _optimisticStatus('送信中…');
       var out = await _post('send', { attachments: attachments });
       if (!out || !out.ok) throw new Error('send');
@@ -358,7 +394,10 @@
     fileIn.addEventListener('change', function () { _sendFiles(fileIn); });
     // Delegated delete (bubbles are re-rendered on every poll).
     container.addEventListener('click', function (e) {
-      var del = e.target.closest && e.target.closest('.pchat-del[data-del]');
+      if (!e.target.closest) return;
+      var md = e.target.closest('.pchat-media-del[data-del-media]');
+      if (md) { e.preventDefault(); _deleteMedia(md.getAttribute('data-del-mid'), md.getAttribute('data-del-media'), md); return; }
+      var del = e.target.closest('.pchat-del[data-del]');
       if (del) _deleteMessage(del.getAttribute('data-del'));
     });
 

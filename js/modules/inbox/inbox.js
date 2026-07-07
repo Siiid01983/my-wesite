@@ -317,14 +317,19 @@
     if (_attachmentsOf(m).length && /^\[\d+件の添付ファイルを送信しました\]\s*$/.test(t.trim())) return '';
     return t;
   }
-  function _bubbleMedia(a) {
+  var IBX_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+  function _bubbleMedia(a, canDelete, msgId) {
     var path = _esc(a.path || ''), name = _esc(a.name || 'ファイル');
+    var del = (canDelete && a.path)
+      ? '<button class="pchat-media-del" data-ibx-delmedia="' + path + '" data-ibx-delmid="' + _esc(msgId || '') +
+        '" title="この画像を削除" aria-label="削除">' + IBX_TRASH + '</button>'
+      : '';
     if (/^image\//.test(a.mime || '')) {
       return '<a class="ibx-att" data-att-path="' + path + '" data-att-kind="img" href="#" target="_blank" rel="noopener">' +
-        '<img class="pchat-media" alt="' + name + '" loading="lazy"></a>';
+        '<img class="pchat-media" alt="' + name + '" loading="lazy"></a>' + del;
     }
     return '<a class="ibx-att pchat-file" data-att-path="' + path + '" data-att-kind="file" href="#" target="_blank" rel="noopener">' +
-      '<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>' + name + '</a>';
+      '<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>' + name + '</a>' + del;
   }
   function _bubble(m, grouped) {
     var me = !_isOutbound(m);   // customer inbound → right/green; company → left/white
@@ -343,11 +348,12 @@
     var text = _bubbleText(m);
     if (text) parts += '<div class="pchat-bubble">' + _esc(text) + '</div>';
     _attachmentsOf(m).forEach(function (a) {
-      parts += '<div class="pchat-bubble pchat-media-bubble">' + _bubbleMedia(a) + '</div>';
+      parts += '<div class="pchat-bubble pchat-media-bubble">' + _bubbleMedia(a, true, m.id) + '</div>';
     });
     if (!parts) return '';
-    // Admin can delete (moderate) any message — purges media + leaves a tombstone.
-    var del = '<button class="pchat-del" data-ibx-del="' + _esc(m.id) + '" title="削除" aria-label="削除">🗑</button>';
+    // Message-level delete only on TEXT messages; media is deleted per-item via
+    // the corner icon on each thumbnail.
+    var del = text ? '<button class="pchat-del" data-ibx-del="' + _esc(m.id) + '" title="削除" aria-label="削除">🗑</button>' : '';
     return '<div class="pchat-row ' + (me ? 'me' : 'them') + (grouped ? ' grp' : '') + '">' + avatar +
       '<div class="pchat-bubble-wrap">' + name + parts +
       '<div class="pchat-meta">' + _fmtTimeShort(m.received_at || m.created_at) + '</div>' + del +
@@ -477,6 +483,43 @@
       m.body = ''; m.body_text = ''; m.labels = tomb;
       _renderMessages();
       _toast('メッセージを削除しました');
+    } catch (e) {
+      _toast('削除に失敗しました');
+    }
+  }
+
+  /* ── Delete ONE image from a message (per-item) ───────────
+     Optimistically removes the thumbnail, purges just that file, and updates
+     labels.attachments; if it was the message's last content, tombstones it. */
+  async function _deleteMediaAdmin(id, path, el) {
+    var m = _byId[id];
+    if (!m || !path || !window.api) return;
+    if (!confirm('この画像を削除しますか？')) return;
+    var bubble = el && el.closest && el.closest('.pchat-media-bubble');
+    if (bubble && bubble.parentNode) bubble.parentNode.removeChild(bubble);   // optimistic
+    var l = _labelsOf(m);
+    var atts = Array.isArray(l.attachments) ? l.attachments : [];
+    var remaining = atts.filter(function (a) { return a.path !== path; });
+    try {
+      if (window.api.storage) { await window.api.storage.from('chat').remove([path]); }
+      var bodyText = (m.body_text != null && m.body_text !== '') ? m.body_text : (m.body || '');
+      var hasText  = bodyText && !/^\s*\[\d+件の添付ファイルを送信しました\]\s*$/.test(String(bodyText).trim());
+      var payload;
+      if (!remaining.length && !hasText) {
+        var tomb = { ref: l.ref || '', deleted: true };
+        if (l.outbound) tomb.outbound = true;
+        payload = { body: '', body_text: '', labels: tomb };
+      } else {
+        var nl = {};
+        Object.keys(l).forEach(function (k) { nl[k] = l[k]; });
+        if (remaining.length) nl.attachments = remaining; else delete nl.attachments;
+        var nb = hasText ? m.body : ('[' + remaining.length + '件の添付ファイルを送信しました]');
+        payload = { body: nb, body_text: nb, labels: nl };
+      }
+      var res = await window.api.from('inbox_messages').update(payload).eq('id', id);
+      if (res && res.error) { _toast('削除に失敗しました：' + res.error.message); return; }
+      m.body = payload.body; m.body_text = payload.body_text; m.labels = payload.labels;   // optimistic
+      _renderMessages();
     } catch (e) {
       _toast('削除に失敗しました');
     }
@@ -1213,6 +1256,8 @@
   // (cards are rebuilt on every render/poll, so bind once at the document).
   document.addEventListener('click', function (e) {
     if (!e.target.closest) return;
+    var md = e.target.closest('.pchat-media-del[data-ibx-delmedia]');
+    if (md) { e.preventDefault(); _deleteMediaAdmin(md.getAttribute('data-ibx-delmid'), md.getAttribute('data-ibx-delmedia'), md); return; }
     var del = e.target.closest('.pchat-del[data-ibx-del]');
     if (del) { _ibxDeleteMsg(del.getAttribute('data-ibx-del')); return; }
     var send = e.target.closest('.ibx-dc-send');

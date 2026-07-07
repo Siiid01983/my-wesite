@@ -72,7 +72,24 @@
   border-bottom-right-radius: 4px;
 }
 /* A bubble that holds only media has no chrome of its own. */
-.pchat-media-bubble { padding: 0; background: none; border: none; }
+.pchat-media-bubble { padding: 0; background: none; border: none; position: relative; }
+
+/* Per-image delete: a small circular control on the corner of the thumbnail.
+   Visible by default (so it works on touch) and emphasised on hover. */
+.pchat-media-del {
+  position: absolute; top: 6px; right: 6px;
+  width: 26px; height: 26px; border-radius: 50%;
+  border: none; padding: 0; cursor: pointer;
+  background: rgba(11, 15, 23, .55); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  opacity: .85;
+  transition: opacity .15s, background .15s, transform .1s;
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+}
+.pchat-media-bubble:hover .pchat-media-del { opacity: 1; }
+.pchat-media-del:hover  { background: #c0392b; transform: scale(1.08); }
+.pchat-media-del:active { transform: scale(.94); }
+.pchat-media-del svg { width: 14px; height: 14px; }
 
 .pchat-meta { font-size: 10.5px; color: var(--gray-2); padding: 0 4px; align-self: flex-end; }
 .pchat-row.me .pchat-meta { align-self: flex-start; }
