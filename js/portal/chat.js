@@ -114,31 +114,48 @@
            FILE_ICON + '<span>' + _esc(a.name || 'ファイル') + '</span></a>';
   }
 
-  // `grouped` = same sender as the previous bubble → hide the avatar/name so a
-  // run of messages reads as one messenger-style group.
+  // `grouped` = same sender+channel as the previous bubble → hide the
+  // avatar/name so a run of messages reads as one messenger-style group.
   function _bubble(m, grouped) {
-    var me = m.sender_type === 'customer';
+    var me    = m.sender_type === 'customer';
+    var email = (!me && m.channel === 'email');   // formal email reply (vs direct chat)
+    var rowCls = 'pchat-row ' + (me ? 'me' : 'them') + (email ? ' email' : '') + (grouped ? ' grp' : '');
     var avatar = me ? ''
       : '<div class="pchat-avatar' + (grouped ? ' pchat-avatar-empty' : '') + '" aria-hidden="true">' + (grouped ? '' : 'HM') + '</div>';
-    var name = (me || grouped) ? '' : '<div class="pchat-name">' + _esc(m.sender_name || 'Hello Moving') + '</div>';
+
+    if (m.deleted) {
+      return '<div class="' + rowCls + '">' + avatar +
+               '<div class="pchat-bubble-wrap">' +
+                 '<div class="pchat-bubble deleted">メッセージを削除しました</div>' +
+                 '<div class="pchat-meta">' + _fmtTime(m.created_at) + '</div>' +
+               '</div></div>';
+    }
+
+    var name = (me || grouped) ? ''
+      : (email ? '<span class="pchat-email-tag">✉ メールでの返信</span>'
+               : '<div class="pchat-name">' + _esc(m.sender_name || 'Hello Moving') + '</div>');
     var parts = '';
     if (m.text) parts += '<div class="pchat-bubble">' + _esc(m.text) + '</div>';
     (m.attachments || []).forEach(function (a) {
       parts += '<div class="pchat-bubble pchat-media-bubble">' + _mediaHtml(a) + '</div>';
     });
-    return '<div class="pchat-row ' + (me ? 'me' : 'them') + (grouped ? ' grp' : '') + '">' + avatar +
+    // Customers may delete their own messages only.
+    var del = me ? '<button class="pchat-del" data-del="' + _esc(m.id) + '" title="削除" aria-label="削除">🗑</button>' : '';
+    return '<div class="' + rowCls + '">' + avatar +
              '<div class="pchat-bubble-wrap">' + name + parts +
-               '<div class="pchat-meta">' + _fmtTime(m.created_at) + '</div>' +
+               '<div class="pchat-meta">' + _fmtTime(m.created_at) + '</div>' + del +
              '</div>' +
            '</div>';
   }
+
+  function _groupKey(m) { return m.sender_type + '|' + (m.channel || '') + '|' + (m.deleted ? 'd' : ''); }
 
   function _renderStream(messages) {
     var stream = _host && _host.querySelector('.pchat-stream');
     if (!stream) return;
     // Cheap change-detection so polling doesn't rebuild/scroll-jump every 5s.
     var sig = messages.map(function (m) {
-      return m.id + ':' + (m.attachments ? m.attachments.length : 0);
+      return m.id + ':' + (m.deleted ? 'd' : '') + ':' + (m.attachments ? m.attachments.length : 0);
     }).join('|');
     if (sig === _lastSig) return;
     var nearBottom = (stream.scrollHeight - stream.scrollTop - stream.clientHeight) < 80;
@@ -149,15 +166,30 @@
       return;
     }
     var html = '';
-    var lastDay = '', lastKind = '';
+    var lastDay = '', lastKey = '';
     messages.forEach(function (m) {
       var day = _dayLabel(m.created_at);
-      if (day && day !== lastDay) { html += '<div class="pchat-day">' + _esc(day) + '</div>'; lastDay = day; lastKind = ''; }
-      html += _bubble(m, m.sender_type === lastKind);
-      lastKind = m.sender_type;
+      if (day && day !== lastDay) { html += '<div class="pchat-day">' + _esc(day) + '</div>'; lastDay = day; lastKey = ''; }
+      var key = _groupKey(m);
+      html += _bubble(m, key === lastKey);
+      lastKey = key;
     });
     stream.innerHTML = html;
     if (nearBottom) stream.scrollTop = stream.scrollHeight;
+  }
+
+  // Customer deletes one of their own messages → chat.php purges files + leaves
+  // a tombstone; the poll refresh reflects it (no reload).
+  async function _deleteMessage(id) {
+    if (!id) return;
+    if (!confirm('このメッセージを削除しますか？\n添付ファイルも完全に削除されます。')) return;
+    _err('');
+    try {
+      var out = await _post('delete', { id: id });
+      if (!out || !out.ok) { _err('削除できませんでした。'); return; }
+      _lastSig = '';
+      await _poll();
+    } catch (_) { _err('削除できませんでした。'); }
   }
 
   // ── Poll loop ────────────────────────────────────────────────────────────
@@ -324,6 +356,11 @@
     });
     sendBt.addEventListener('click', _sendText);
     fileIn.addEventListener('change', function () { _sendFiles(fileIn); });
+    // Delegated delete (bubbles are re-rendered on every poll).
+    container.addEventListener('click', function (e) {
+      var del = e.target.closest && e.target.closest('.pchat-del[data-del]');
+      if (del) _deleteMessage(del.getAttribute('data-del'));
+    });
 
     _poll().then(_scheduleNext);
   }

@@ -101,3 +101,42 @@
 .pchat-file svg { width: 16px; height: 16px; flex-shrink: 0; }
 
 .pchat-empty { margin: auto; text-align: center; color: var(--gray-2); font-size: 13px; padding: 30px; }
+
+/* ── Formal email vs direct chat (portal distinction) ──────────────────────
+   A company bubble that is a formal EMAIL reply gets an amber marker + tag so
+   the customer can tell it apart from a quick in-app chat reply. */
+.pchat-email-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  align-self: flex-start;
+  font-size: 10.5px; font-weight: 700;
+  color: #b45309;
+  background: rgba(245, 158, 11, .14);
+  padding: 2px 9px; border-radius: 999px;
+  margin-bottom: 1px;
+}
+.pchat-row.them.email .pchat-bubble { border-left: 3px solid #f59e0b; }
+
+/* ── Deleted tombstone ─────────────────────────────────────────────────────
+   The row is kept for context; content + files are purged server-side. */
+.pchat-bubble.deleted {
+  background: transparent;
+  border: 1px dashed var(--line);
+  color: var(--gray-2);
+  font-style: italic;
+  font-size: 12.5px;
+}
+.pchat-row.me .pchat-bubble.deleted { background: transparent; color: var(--gray-2); }
+
+/* ── Per-message delete affordance ─────────────────────────────────────────
+   A small control on the sender's own bubbles. Low-opacity so it stays out of
+   the way; fully visible on hover / tap. */
+.pchat-del {
+  align-self: flex-end;
+  border: none; background: none; cursor: pointer;
+  color: var(--gray-2); font-size: 11px; line-height: 1;
+  padding: 2px 4px; opacity: .35;
+  transition: opacity .15s, color .15s;
+}
+.pchat-row.me .pchat-del { align-self: flex-start; }
+.pchat-bubble-wrap:hover .pchat-del { opacity: .8; }
+.pchat-del:hover { opacity: 1; color: #c0392b; }

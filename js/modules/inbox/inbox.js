@@ -298,7 +298,11 @@
       s.id = 'ibx-transcript-styles';
       s.textContent =
         '.pchat-stream.ibx-transcript{padding:12px 2px 2px}' +
-        '.pchat-stream.ibx-transcript.long{max-height:440px;overflow-y:auto}';
+        '.pchat-stream.ibx-transcript.long{max-height:440px;overflow-y:auto}' +
+        '.ibx-dc{display:flex;gap:8px;margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}' +
+        '.ibx-dc-input{flex:1;padding:8px 13px;border:1px solid var(--line);border-radius:20px;font-size:13px;background:var(--bg);color:var(--ink)}' +
+        '.ibx-dc-input:focus{outline:none;border-color:#06C755}' +
+        '.ibx-dc-send{white-space:nowrap;background:#06C755;border-color:#06C755}';
       document.head.appendChild(s);
     }
   }
@@ -326,6 +330,13 @@
     var me = !_isOutbound(m);   // customer inbound → right/green; company → left/white
     var avatar = me ? '' :
       '<div class="pchat-avatar' + (grouped ? ' pchat-avatar-empty' : '') + '" aria-hidden="true">' + (grouped ? '' : 'HM') + '</div>';
+
+    if (_labelsOf(m).deleted) {
+      return '<div class="pchat-row ' + (me ? 'me' : 'them') + (grouped ? ' grp' : '') + '">' + avatar +
+        '<div class="pchat-bubble-wrap"><div class="pchat-bubble deleted">メッセージを削除しました</div>' +
+        '<div class="pchat-meta">' + _fmtTimeShort(m.received_at || m.created_at) + '</div></div></div>';
+    }
+
     var name = (me || grouped) ? '' :
       '<div class="pchat-name">' + _esc(m.sender_name || m.sender || 'Hello Moving') + '</div>';
     var parts = '';
@@ -335,9 +346,11 @@
       parts += '<div class="pchat-bubble pchat-media-bubble">' + _bubbleMedia(a) + '</div>';
     });
     if (!parts) return '';
+    // Admin can delete (moderate) any message — purges media + leaves a tombstone.
+    var del = '<button class="pchat-del" data-ibx-del="' + _esc(m.id) + '" title="削除" aria-label="削除">🗑</button>';
     return '<div class="pchat-row ' + (me ? 'me' : 'them') + (grouped ? ' grp' : '') + '">' + avatar +
       '<div class="pchat-bubble-wrap">' + name + parts +
-      '<div class="pchat-meta">' + _fmtTimeShort(m.received_at || m.created_at) + '</div>' +
+      '<div class="pchat-meta">' + _fmtTimeShort(m.received_at || m.created_at) + '</div>' + del +
       '</div></div>';
   }
   function _transcript(t) {
@@ -345,11 +358,128 @@
     t.msgs.forEach(function (m) {
       var day = _fmtDayLabel(m);
       if (day && day !== lastDay) { html += '<div class="pchat-day">' + _esc(day) + '</div>'; lastDay = day; lastKind = ''; }
-      var kind = _isOutbound(m) ? 'company' : 'customer';
+      var kind = (_isOutbound(m) ? 'company' : 'customer') + (_labelsOf(m).deleted ? '|d' : '');
       html += _bubble(m, kind === lastKind);
       lastKind = kind;
     });
     return '<div class="pchat-stream ibx-transcript' + (t.msgs.length > 8 ? ' long' : '') + '">' + html + '</div>';
+  }
+
+  /* ── Reservation reference (Part 1) ───────────────────────
+     inbox_messages.booking_id is the UUID booking PK. The human-readable
+     reference (HM-…) lives in bookings.notes as "ref:HM-…". Resolve it once per
+     UUID (cached) so cards show the readable ID instead of the UUID. */
+  var _refMap = {};
+  function _threadRef(t) {
+    for (var i = 0; i < t.msgs.length; i++) { var r = _labelsOf(t.msgs[i]).ref; if (r) return r; }
+    return '';
+  }
+  function _displayRef(m, t) {
+    if (!m.booking_id) return '';
+    return _refMap[m.booking_id] || _threadRef(t) || m.booking_id;
+  }
+  async function _loadRefMap() {
+    if (!window.api) return;
+    var ids = [], seen = {};
+    _messages.forEach(function (m) {
+      if (m.booking_id && !_refMap[m.booking_id] && !seen[m.booking_id]) { seen[m.booking_id] = 1; ids.push(m.booking_id); }
+    });
+    if (!ids.length) return;
+    try {
+      var res = await window.api.from('bookings').select('id, notes').in('id', ids);
+      if (res && res.data) {
+        res.data.forEach(function (b) {
+          var mm = /ref:\s*([A-Za-z0-9][A-Za-z0-9-]*)/.exec(String(b.notes || ''));
+          _refMap[b.id] = mm ? mm[1] : b.id;
+        });
+      }
+    } catch (_) {}
+  }
+
+  function _uuid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+
+  /* ── Direct Chat (Part 2) ─────────────────────────────────
+     A per-thread input that posts an in-app chat message to the customer's
+     portal chat room WITHOUT sending an email. It inserts an outbound row
+     (labels.outbound + labels.chat) into thread 'chat:<bookingId>' via the
+     staff-authed rest.php seam — the formal 返信 (email) path is untouched. */
+  function _directChatBar(t) {
+    var bid = _esc(t.latest.booking_id || '');
+    return '<div class="ibx-dc" data-booking="' + bid + '">' +
+      '<input class="ibx-dc-input" type="text" maxlength="2000" placeholder="チャットで返信（メール送信なし・アプリ内チャットに表示）…">' +
+      '<button class="btn btn-primary btn-sm ibx-dc-send" type="button">チャット送信</button>' +
+      '</div>';
+  }
+  async function _directChatSend(btn) {
+    var bar = btn.closest && btn.closest('.ibx-dc');
+    if (!bar || !window.api) return;
+    var input = bar.querySelector('.ibx-dc-input');
+    var text = (input && input.value || '').trim();
+    var bookingId = bar.getAttribute('data-booking');
+    if (!text || !bookingId) return;
+
+    var custEmail = '', ref = '';
+    _messages.forEach(function (m) {
+      if (m.booking_id !== bookingId) return;
+      if (!_isOutbound(m) && m.email && !custEmail) custEmail = m.email;
+      var r = _labelsOf(m).ref; if (r && !ref) ref = r;
+    });
+    if (!ref) ref = _refMap[bookingId] || '';
+
+    btn.disabled = true;
+    var row = {
+      id: _uuid(),
+      sender: 'Hello Moving', sender_name: 'Hello Moving',
+      email: custEmail || '',
+      subject: 'チャット' + (ref ? '（予約番号 ' + ref + '）' : ''),
+      body: text, body_text: text,
+      booking_id: bookingId,
+      mailbox: 'contact@hello-moving.com',
+      message_id: '<chat-' + _uuid() + '@hello-moving.com>',
+      thread_id: 'chat:' + bookingId,
+      labels: { outbound: true, chat: true, ref: ref },
+      is_read: 1, status: 'open',
+    };
+    var res = await window.api.from('inbox_messages').insert(row);
+    btn.disabled = false;
+    if (res && res.error) { _toast('送信に失敗しました：' + res.error.message); return; }
+    if (input) input.value = '';
+    // Optimistic append (matches the inbox's optimistic write pattern; the poll
+    // reconciles). Give it timestamps so it sorts to the bottom of the thread.
+    var now = new Date().toISOString();
+    _messages.push(Object.assign({}, row, { created_at: now, received_at: now }));
+    _renderMessages();
+    _toast('チャットを送信しました');
+  }
+
+  /* ── Delete a message (Part 3, admin/moderation) ──────────
+     Purges any media from the `chat` bucket immediately, then soft-deletes the
+     row to a tombstone (keeps thread context). Uses the existing staff-authed
+     storage + rest.php seams. */
+  async function _ibxDeleteMsg(id) {
+    var m = _byId[id];
+    if (!m || !window.api) return;
+    if (!confirm('このメッセージを削除しますか？\n添付ファイルも完全に削除されます。この操作は取り消せません。')) return;
+    var l = _labelsOf(m);
+    var paths = (Array.isArray(l.attachments) ? l.attachments : []).map(function (a) { return a.path; }).filter(Boolean);
+    try {
+      if (paths.length && window.api.storage) { await window.api.storage.from('chat').remove(paths); }
+      var tomb = { ref: l.ref || '', deleted: true };
+      if (l.outbound) tomb.outbound = true;   // keep the bubble on its original side
+      var res = await window.api.from('inbox_messages').update({ body: '', body_text: '', labels: tomb }).eq('id', id);
+      if (res && res.error) { _toast('削除に失敗しました：' + res.error.message); return; }
+      // Optimistic tombstone (poll reconciles).
+      m.body = ''; m.body_text = ''; m.labels = tomb;
+      _renderMessages();
+      _toast('メッセージを削除しました');
+    } catch (e) {
+      _toast('削除に失敗しました');
+    }
   }
 
   /* ── Action buttons (per card) ────────────────────────── */
@@ -506,7 +636,7 @@
       var m = t.latest;                    // the card face = newest message
       var q = t.quote;                     // latest quote anywhere in the thread
       var bookingTag = m.booking_id
-        ? '<span style="display:inline-block;padding:2px 8px;background:rgba(37,99,235,.1);color:var(--blue);font-size:11px;font-weight:600;border-radius:4px;margin-left:8px">' + _esc(m.booking_id) + '</span>'
+        ? '<span style="display:inline-block;padding:2px 8px;background:rgba(37,99,235,.1);color:var(--blue);font-size:11px;font-weight:600;border-radius:4px;margin-left:8px" title="予約番号">' + _esc(_displayRef(m, t)) + '</span>'
         : '';
       // Recipient badge (WS2): ALWAYS shown — unclassified rows read as contact@
       // so every card instantly identifies its inquiry channel.
@@ -552,6 +682,7 @@
           '</div>' +
           '<div style="border-top:1px solid var(--line);margin-top:6px">' + _transcript(t) + '</div>' +
           '<div style="margin-top:8px;display:flex;justify-content:flex-end;border-top:1px dashed var(--line);padding-top:10px">' + _actionBtns(m) + '</div>' +
+          (m.booking_id ? _directChatBar(t) : '') +
         '</div>';
     }).join('');
 
@@ -1040,7 +1171,8 @@
     return list.map(function (m) {
       var l = _labelsOf(m);
       return m.id + ':' + (m.is_read ? 1 : 0) + ':' + (l.outbound ? 1 : 0) +
-             ':' + (l.attachments ? l.attachments.length : 0) + ':' + (l.quote ? 1 : 0);
+             ':' + (l.attachments ? l.attachments.length : 0) + ':' + (l.quote ? 1 : 0) +
+             ':' + (l.deleted ? 1 : 0);
     }).join('|');
   }
   function _modalOpen() {
@@ -1052,9 +1184,12 @@
     var host = document.getElementById('messages-container');
     if (!host || host.offsetParent === null) return;   // Inbox not the active view
     if (_modalOpen()) return;                           // don't interrupt an open modal
+    var ae = document.activeElement;                    // don't clobber a Direct Chat draft
+    if (ae && ae.classList && ae.classList.contains('ibx-dc-input') && ae.value) return;
     var fresh = await _fetchMessages();
     if (_msgSig(fresh) === _msgSig(_messages)) return;  // nothing changed → no re-render
     _messages = fresh;
+    await _loadRefMap();
     _renderMessages();
   }
   function _startPoll() {
@@ -1069,9 +1204,28 @@
     _ensureChatCss();
     _showLoading();
     _messages = await _fetchMessages();
+    await _loadRefMap();
     _renderMessages();
     _startPoll();
   }
+
+  // Delegated handlers for the transcript's per-message delete + Direct Chat send
+  // (cards are rebuilt on every render/poll, so bind once at the document).
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest) return;
+    var del = e.target.closest('.pchat-del[data-ibx-del]');
+    if (del) { _ibxDeleteMsg(del.getAttribute('data-ibx-del')); return; }
+    var send = e.target.closest('.ibx-dc-send');
+    if (send) { _directChatSend(send); return; }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('ibx-dc-input')) {
+      e.preventDefault();
+      var bar = e.target.closest('.ibx-dc');
+      var btn = bar && bar.querySelector('.ibx-dc-send');
+      if (btn) _directChatSend(btn);
+    }
+  });
 
   window.renderInbox      = renderInbox;
   window.inboxToggleRead  = inboxToggleRead;

@@ -75,6 +75,25 @@ function chat_verify_booking(): array {
 // The room's stable conversation key. All chat rows for a booking share this.
 function chat_thread_id(string $bookingId): string { return 'chat:' . $bookingId; }
 
+// Hard-delete a message's attachment files from the private `chat` bucket. Only
+// removes files under THIS booking's own folder (path prefix guard) — so a
+// deletion can never reach another booking's or an arbitrary file. Best-effort.
+function chat_purge_files($atts, string $bookingId, array $cfg): void {
+  if (!is_array($atts)) return;
+  $root   = rtrim((string)($cfg['storage_dir'] ?? (__DIR__ . '/_uploads')), '/\\');
+  $prefix = $bookingId . '/';
+  foreach ($atts as $a) {
+    $path = str_replace('\\', '/', (string)($a['path'] ?? ''));
+    if ($path === '' || strpos($path, '..') !== false) continue;
+    if (strncmp($path, $prefix, strlen($prefix)) !== 0) continue;
+    // Sanitise each segment exactly like storage.php before touching the disk.
+    $parts = array_filter(explode('/', $path), fn($p) => $p !== '' && $p !== '.' && $p !== '..');
+    $clean = implode('/', array_map(fn($p) => preg_replace('/[^A-Za-z0-9._-]/', '', $p), $parts));
+    $file  = "$root/chat/$clean";
+    if (is_file($file)) @unlink($file);
+  }
+}
+
 // Endpoint URL of storage.php on this same install (same dir as chat.php).
 function chat_storage_url(): string {
   $https  = (($_SERVER['HTTPS'] ?? '') === 'on') || (($_SERVER['SERVER_PORT'] ?? '') == 443);
@@ -145,8 +164,15 @@ if ($action === 'list') {
       $labels = is_array($r['labels']) ? $r['labels'] : (json_decode((string)$r['labels'], true) ?: []);
     }
     $isOutbound = !empty($labels['outbound']);   // admin/company reply vs customer
+    $deleted    = !empty($labels['deleted']);
+    // Channel: customer messages are always 'chat'. Company messages are 'chat'
+    // when sent from the admin Direct Chat (labels.chat) and 'email' when they
+    // are a formal email reply (send-email.php log_inbox) — the portal styles
+    // the two differently so the customer can tell them apart.
+    $channel = $isOutbound ? (!empty($labels['chat']) ? 'chat' : 'email') : 'chat';
+
     $atts = [];
-    if (!empty($labels['attachments']) && is_array($labels['attachments'])) {
+    if (!$deleted && !empty($labels['attachments']) && is_array($labels['attachments'])) {
       foreach ($labels['attachments'] as $a) {
         $path = (string)($a['path'] ?? '');
         if ($path === '') continue;
@@ -163,14 +189,16 @@ if ($action === 'list') {
       'sender_type' => $isOutbound ? 'company' : 'customer',
       'sender_name' => $isOutbound ? ((string)($r['sender_name'] ?? '') ?: 'Hello Moving')
                                    : ((string)($r['sender_name'] ?? '') ?: (string)($r['sender'] ?? '')),
-      'text'        => $text,
+      'channel'     => $channel,
+      'deleted'     => $deleted,
+      'text'        => $deleted ? '' : $text,
       'attachments' => $atts,
       'is_read'     => (int)($r['is_read'] ?? 0) === 1,
       'created_at'  => (string)($r['received_at'] ?? $r['created_at'] ?? ''),
     ];
   }
 
-  hm_ok(['room' => $thread, 'booking_id' => $bookingId, 'messages' => $messages]);
+  hm_ok(['room' => $thread, 'booking_id' => $bookingId, 'ref' => $v['ref'], 'messages' => $messages]);
 }
 
 // ── action=send ──────────────────────────────────────────────────────────────
@@ -195,7 +223,10 @@ if ($action === 'send') {
 
   // Body: the text, or a placeholder so the admin Inbox card is never blank.
   $body = $message !== '' ? $message : '[' . count($atts) . '件の添付ファイルを送信しました]';
-  $labels = $atts ? ['attachments' => $atts] : null;
+  // labels.ref = the human-readable reservation reference (HM-…) so both the
+  // admin Inbox and the portal can show it instead of the UUID booking_id.
+  $labels = ['ref' => $v['ref']];
+  if ($atts) $labels['attachments'] = $atts;
   $mid    = '<chat-' . hm_uuid4() . '@hello-moving.com>';
 
   try {
@@ -217,7 +248,7 @@ if ($action === 'send') {
       'contact@hello-moving.com',            // visible channel → admin Inbox contact@ tab
       $mid,
       $thread,                               // stable room key
-      $labels !== null ? json_encode($labels, JSON_UNESCAPED_UNICODE) : null,
+      json_encode($labels, JSON_UNESCAPED_UNICODE),
     ]);
     hm_cache_invalidate_table('inbox_messages');
   } catch (Throwable $e) {
@@ -230,6 +261,53 @@ if ($action === 'send') {
   hm_line_push("💬 新着チャット: {$name}（予約 {$v['ref']}）\n{$preview}\n▶ https://hello-moving.com/websiteManagement.html#inbox");
 
   hm_ok(['id' => $mid]);
+}
+
+// ── action=delete ────────────────────────────────────────────────────────────
+// Customer deletes one of their OWN chat messages. Scoped by email+reference and
+// to this booking's room; refuses to touch admin/company (outbound) messages.
+// Purges any attachment files immediately (privacy + storage), then leaves a
+// soft-delete tombstone row so the conversation keeps its context.
+if ($action === 'delete') {
+  $v         = chat_verify_booking();
+  $p         = $v['body'];
+  $bookingId = (string)$v['row']['id'];
+  $thread    = chat_thread_id($bookingId);
+  $id        = trim((string)($p['id'] ?? ''));
+  if ($id === '') hm_json(['ok' => false, 'data' => null, 'error' => 'missing_id'], 400);
+
+  try {
+    $st = hm_db()->prepare(
+      'SELECT id, labels FROM inbox_messages WHERE id = ? AND booking_id = ? AND thread_id = ? LIMIT 1'
+    );
+    $st->execute([$id, $bookingId, $thread]);
+    $row = $st->fetch();
+  } catch (Throwable $e) {
+    hm_log_error('chat delete lookup failed', ['err' => $e->getMessage()]);
+    hm_json(['ok' => false, 'data' => null, 'error' => 'server'], 500);
+  }
+  if (!$row) hm_json(['ok' => false, 'data' => null, 'error' => 'not_found'], 404);
+
+  $labels = [];
+  if (!empty($row['labels'])) {
+    $labels = is_array($row['labels']) ? $row['labels'] : (json_decode((string)$row['labels'], true) ?: []);
+  }
+  // A customer may only delete their own message — never the company's.
+  if (!empty($labels['outbound'])) hm_json(['ok' => false, 'data' => null, 'error' => 'forbidden'], 403);
+  if (!empty($labels['deleted']))  hm_ok(['id' => $id, 'deleted' => true]);   // idempotent
+
+  chat_purge_files($labels['attachments'] ?? [], $bookingId, $cfg);
+
+  $tomb = ['ref' => (string)($labels['ref'] ?? $v['ref']), 'deleted' => true];
+  try {
+    $st = hm_db()->prepare('UPDATE inbox_messages SET body = ?, body_text = ?, labels = ? WHERE id = ?');
+    $st->execute(['', '', json_encode($tomb, JSON_UNESCAPED_UNICODE), $id]);
+    hm_cache_invalidate_table('inbox_messages');
+  } catch (Throwable $e) {
+    hm_log_error('chat delete failed', ['err' => $e->getMessage(), 'id' => $id]);
+    hm_json(['ok' => false, 'data' => null, 'error' => 'server'], 500);
+  }
+  hm_ok(['id' => $id, 'deleted' => true]);
 }
 
 hm_json(['ok' => false, 'data' => null, 'error' => 'unknown_action'], 400);
