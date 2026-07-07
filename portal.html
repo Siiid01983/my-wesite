@@ -750,9 +750,9 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
       <span>進捗</span>
     </button>
-    <button class="p-nav-item" data-view="messages">
+    <button class="p-nav-item" data-view="chat">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      <span>メッセージ</span>
+      <span>チャット</span>
     </button>
     <button class="p-nav-item" data-view="photos">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -789,6 +789,7 @@
   <script src="js/portal/portalAuth.js"></script>
   <script src="js/portal/portalComms.js"></script>
   <script src="js/portal/message.js"></script>
+  <script src="js/portal/chat.js"></script>
   <script src="js/portal/portalDocs.js"></script>
   <script src="js/portal/portalPhotos.js"></script>
   <script src="js/portal/portalApproval.js"></script>
@@ -1050,6 +1051,10 @@
             <div class="p-page-title">こんにちは、${esc(b.name || 'お客様')} 様</div>
             <div class="p-page-sub">ご予約番号 ${esc(b.id)} のダッシュボードです。</div>
           </div>
+          <button data-goto="chat" class="admin-cta" style="margin:0 0 18px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>チャットで相談する</span>
+          </button>
           <div class="dash-cards">
             <!-- Card 1: Booking Status -->
             <div class="dcard">
@@ -1175,36 +1180,19 @@
             </p>
           </div>`;
       },
-      messages(b) {
-        // Container only — populated asynchronously by loadMessages() because
-        // communications are fetched live and scoped to this booking.
+      chat(b) {
+        // LINE-style chat room — mounted by PortalChat (js/portal/chat.js), which
+        // AJAX-polls hm-api/chat.php (thread_id 'chat:<bookingId>' over the
+        // existing inbox_messages). Container only; the controller renders inside.
         return `
-          <div class="p-page-head">
-            <div class="p-page-title">メッセージ</div>
-            <div class="p-page-sub">ご予約番号 ${esc(b.id)} に関するやり取りの履歴です。</div>
-          </div>
-          <div class="panel">
-            <div class="panel-title">メッセージを送る（Send a Message）</div>
-            <div class="ss-form">
-              <div class="ss-field">
-                <label class="ss-label" for="msgSubject">件名（任意）</label>
-                <input class="ss-input" type="text" id="msgSubject" maxlength="120" placeholder="例：引越し当日の件について">
-              </div>
-              <div class="ss-field">
-                <label class="ss-label" for="msgBody">メッセージ</label>
-                <textarea class="ss-input" id="msgBody" maxlength="2000" placeholder="ご質問・ご要望をご記入ください。"></textarea>
-              </div>
-              <div class="ss-err" id="msgErr"></div>
-              <div class="ss-actions">
-                <button class="ss-btn" id="msgSendBtn">送信する</button>
-                <span class="ss-hint">担当者に届き、順次ご返信いたします。</span>
-              </div>
+          <div class="p-page-head" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div>
+              <div class="p-page-title">チャット</div>
+              <div class="p-page-sub">ご予約番号 ${esc(b.id)} ・ 担当者と直接やり取りできます。</div>
             </div>
+            <button id="chatHelpBtn" class="p-logout" title="チャットの使い方" style="padding:8px 14px">？ 使い方</button>
           </div>
-          <div class="panel">
-            <div class="panel-title">コミュニケーション履歴 <span id="commCount" style="font-weight:400;color:var(--gray-3);font-size:12px"></span></div>
-            <div id="commList"><div class="comm-empty">読み込み中…</div></div>
-          </div>`;
+          <div id="chatRoot"></div>`;
       },
       documents(b) {
         // Container only — populated asynchronously by loadDocuments().
@@ -1788,60 +1776,71 @@
         : '<div class="comm-empty">まだメッセージはありません。</div>';
     }
 
-    // Customer → company message send. Routes through PortalMessage.send →
-    // hm-api/contact.php, which files an inbox_messages row on the contact@
-    // channel (new thread) so it appears in the admin Inbox. See message.js.
-    async function handleMessageSend(btn) {
-      if (!_booking || !window.PortalMessage) return;
-      const errEl = $('msgErr');
-      if (errEl) errEl.style.display = 'none';
-      const subject = ($('msgSubject') && $('msgSubject').value || '').trim();
-      const message = ($('msgBody')    && $('msgBody').value    || '').trim();
-      if (!message) {
-        if (errEl) { errEl.textContent = 'メッセージをご入力ください。'; errEl.style.display = 'block'; }
-        return;
-      }
-      btn.disabled = true; btn.textContent = '送信中…';
-      try {
-        const res = await PortalMessage.send({
-          name:    (sess && sess.name) || _booking.name || 'お客様',
-          email:   (sess && sess.email) || _booking.email || '',
-          subject: subject,
-          message: message,
-          ref:     _booking.id || ''
-        });
-        if (!res.ok) {
-          const msg = res.error === 'no-email'
-            ? 'ログイン情報を確認できませんでした。再度ログインしてください。'
-            : 'メッセージを送信できませんでした。時間をおいて再度お試しください。';
-          if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
-          btn.disabled = false; btn.textContent = '送信する';
-          return;
-        }
-        if ($('msgSubject')) $('msgSubject').value = '';
-        if ($('msgBody'))    $('msgBody').value = '';
-        btn.disabled = false; btn.textContent = '送信する';
-        ssToast('メッセージを送信しました。担当者よりご返信いたします。');
-      } catch (err) {
-        console.error('[Portal] message send failed:', err);
-        if (errEl) { errEl.textContent = 'メッセージを送信できませんでした。'; errEl.style.display = 'block'; }
-        btn.disabled = false; btn.textContent = '送信する';
-      }
-    }
+    // In-content links that jump to a sidebar view (e.g. the dashboard's
+    // 「チャットで相談する」 button). Delegates to the real nav button so the
+    // active state, render and drawer-close all happen through one path.
     document.addEventListener('click', e => {
-      const btn = e.target.closest && e.target.closest('#msgSendBtn');
-      if (btn) handleMessageSend(btn);
+      const t = e.target.closest && e.target.closest('[data-goto]');
+      if (!t) return;
+      const nav = document.querySelector('.p-nav-item[data-view="' + t.getAttribute('data-goto') + '"]');
+      if (nav) nav.click();
     });
 
     let _booking = null;
     function render(view) {
       const content = $('content');
+      // Always stop the chat poll loop when leaving/re-rendering; mountChat()
+      // restarts it when the chat view is the destination.
+      if (window.PortalChat) PortalChat.unmount();
       if (!_booking) { content.innerHTML = '<div class="skeleton">予約情報を読み込めませんでした。</div>'; return; }
       content.innerHTML = (VIEWS[view] || VIEWS.overview)(_booking);
-      if (view === 'messages')  loadMessages();
+      if (view === 'chat')      mountChat();
       if (view === 'documents') loadDocuments();
       if (view === 'photos')    loadPhotos();
       if (view === 'reviews')   loadReviews();
+    }
+
+    // ---- Chat mount + onboarding ----
+    function mountChat() {
+      const root = $('chatRoot');
+      if (!root || !window.PortalChat) return;
+      PortalChat.mount(root, {
+        email: (sess && sess.email) || _booking.email || '',
+        ref:   _booking.id || (sess && sess.ref) || '',
+        name:  (sess && sess.name) || _booking.name || 'お客様',
+      });
+      const help = $('chatHelpBtn');
+      if (help) help.addEventListener('click', () => showChatGuide(true));
+      showChatGuide(false);   // one-time welcome on first visit
+    }
+
+    const CHAT_GUIDE_KEY = 'hm_chat_welcome_seen';
+    function closeChatGuide() { const ov = $('chatGuideOverlay'); if (ov) ov.style.display = 'none'; }
+    function showChatGuide(force) {
+      if (!force) { try { if (localStorage.getItem(CHAT_GUIDE_KEY)) return; } catch (_) {} }
+      let ov = $('chatGuideOverlay');
+      if (!ov) {
+        ov = document.createElement('div');
+        ov.id = 'chatGuideOverlay';
+        ov.style.cssText = 'position:fixed;inset:0;z-index:120;background:rgba(11,15,23,.5);display:flex;align-items:center;justify-content:center;padding:20px';
+        ov.innerHTML = `
+          <div style="background:#fff;border-radius:16px;max-width:400px;width:100%;padding:28px 26px;text-align:center;box-shadow:0 20px 60px rgba(11,15,23,.25)">
+            <div style="font-size:40px;margin-bottom:8px">💬</div>
+            <h3 style="font-family:var(--font-serif);font-size:20px;margin-bottom:12px;color:var(--ink)">チャットへようこそ</h3>
+            <p style="font-size:13.5px;color:var(--gray-2);line-height:1.9;text-align:left;margin-bottom:20px">
+              担当者と直接やり取りできるチャットです。<br>
+              ・ご質問やご要望をいつでも送信できます<br>
+              ・写真やPDF（見積書・図面など）も添付できます<br>
+              ・担当者からの返信もこの画面に表示されます</p>
+            <button id="chatGuideClose" class="ss-btn" style="width:100%">はじめる</button>
+          </div>`;
+        document.body.appendChild(ov);
+        ov.addEventListener('click', e => { if (e.target === ov) closeChatGuide(); });
+      }
+      ov.style.display = 'flex';
+      const c = $('chatGuideClose');
+      if (c) c.onclick = closeChatGuide;
+      try { localStorage.setItem(CHAT_GUIDE_KEY, '1'); } catch (_) {}
     }
 
     // ---- Sidebar navigation ----
@@ -1872,7 +1871,22 @@
       // Refresh header with the freshest record
       $('userName').textContent = _booking.name || 'お客様';
       $('userRef').textContent  = _booking.id || '';
-      render('overview');
+      // Deep-link from the post-booking「チャットで相談する」CTA (set on the
+      // booking success screen): land the customer directly in the Chat tab.
+      let _startView = 'overview';
+      try {
+        if (sessionStorage.getItem('hm_after_login_view') === 'chat') {
+          sessionStorage.removeItem('hm_after_login_view');
+          sessionStorage.removeItem('hm_after_login_ref');
+          _startView = 'chat';
+        }
+      } catch (_) {}
+      if (_startView === 'chat') {
+        const navBtn = document.querySelector('.p-nav-item[data-view="chat"]');
+        if (navBtn) navBtn.click(); else render('overview');
+      } else {
+        render('overview');
+      }
     })();
   })();
   </script>

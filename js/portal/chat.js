@@ -1,0 +1,290 @@
+// js/portal/chat.js → window.PortalChat
+// LINE-style customer chat for the マイページ portal, on top of inbox_messages.
+//
+// Every reservation has ONE chat room (server thread_id 'chat:<bookingId>').
+// This module is a self-contained, mountable controller:
+//     PortalChat.mount(container, { email, ref, name })
+//     PortalChat.unmount()
+// It renders the bubble UI, AJAX-polls hm-api/chat.php for a real-time feel
+// (no WebSockets), and sends text + media. Media is uploaded through the
+// existing storage.php private `chat` bucket (server-side MIME validation from
+// bytes); the message row only stores the path, and reads use short-lived
+// signed URLs returned by chat.php. Admin replies from the existing Inbox land
+// in the same room and appear here automatically on the next poll.
+//
+// Reuses window.api.storage (the same seam PortalPhotos/PortalDocs use). Adds no
+// database tables and no new storage mechanism.
+
+(function () {
+  'use strict';
+
+  var BUCKET      = 'chat';
+  var POLL_MS     = 5000;                     // AJAX poll interval (real-time feel)
+  var MAX_BYTES   = 15 * 1024 * 1024;         // 15 MB (matches storage.php default)
+  var ALLOWED     = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+
+  var _ctx    = null;    // { email, ref, name }
+  var _host   = null;    // mounted container element
+  var _timer  = null;    // poll timer
+  var _bookingId = null; // server-resolved bookings.id (for upload path scoping)
+  var _lastSig = '';     // signature of last render (skip needless re-render)
+  var _sending = false;
+  var _mounted = false;
+
+  function _base() { return (window.API_BASE || '').replace(/\/$/, ''); }
+  function _esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function _fmtTime(iso) {
+    if (!iso) return '';
+    var d = new Date(iso.indexOf('T') > 0 ? iso : iso.replace(' ', 'T'));
+    if (isNaN(d)) return '';
+    var p = function (n) { return String(n).padStart(2, '0'); };
+    return p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  function _isImg(mime) { return /^image\//.test(mime || ''); }
+  function _safeName(name) {
+    var dot = (name || '').lastIndexOf('.');
+    var ext = dot > 0 ? name.slice(dot + 1).toLowerCase().replace(/[^a-z0-9]/g, '') : 'dat';
+    return Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+  }
+
+  // ── One-time scoped styles (LINE-inspired; reuses the portal's palette vars) ──
+  function _injectStyles() {
+    if (document.getElementById('pchat-styles')) return;
+    var css =
+      '.pchat{display:flex;flex-direction:column;height:min(68vh,620px);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#eef1f4}' +
+      '.pchat-stream{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:10px}' +
+      '.pchat-day{align-self:center;font-size:11px;color:var(--gray-2);background:rgba(11,15,23,.06);padding:3px 12px;border-radius:999px;margin:4px 0}' +
+      '.pchat-row{display:flex;gap:8px;max-width:82%}' +
+      '.pchat-row.me{align-self:flex-end;flex-direction:row-reverse}' +
+      '.pchat-row.them{align-self:flex-start}' +
+      '.pchat-avatar{width:30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}' +
+      '.pchat-bubble-wrap{display:flex;flex-direction:column;gap:3px;min-width:0}' +
+      '.pchat-name{font-size:11px;color:var(--gray-2);padding:0 4px}' +
+      '.pchat-bubble{position:relative;padding:9px 13px;border-radius:14px;font-size:14px;line-height:1.65;white-space:pre-wrap;word-break:break-word}' +
+      '.pchat-row.them .pchat-bubble{background:#fff;color:var(--ink);border-bottom-left-radius:4px;box-shadow:0 1px 1px rgba(11,15,23,.06)}' +
+      '.pchat-row.me .pchat-bubble{background:#06C755;color:#fff;border-bottom-right-radius:4px}' +
+      '.pchat-meta{font-size:10.5px;color:var(--gray-3);padding:0 4px;align-self:flex-end}' +
+      '.pchat-row.me .pchat-meta{align-self:flex-start}' +
+      '.pchat-media{display:block;max-width:220px;max-height:260px;border-radius:12px;margin-top:2px;cursor:pointer}' +
+      '.pchat-file{display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border-radius:12px;background:#fff;color:var(--navy);border:1px solid var(--line);font-size:13px;text-decoration:none}' +
+      '.pchat-row.me .pchat-file{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.4)}' +
+      '.pchat-file svg{width:16px;height:16px;flex-shrink:0}' +
+      '.pchat-empty{margin:auto;text-align:center;color:var(--gray-2);font-size:13px;padding:30px}' +
+      '.pchat-bar{display:flex;align-items:flex-end;gap:8px;padding:10px 12px;background:#fff;border-top:1px solid var(--line)}' +
+      '.pchat-attach{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--navy);background:var(--line-3);cursor:pointer;transition:background .2s}' +
+      '.pchat-attach:hover{background:var(--line)}' +
+      '.pchat-attach svg{width:20px;height:20px}' +
+      '.pchat-attach.busy{opacity:.5;pointer-events:none}' +
+      '.pchat-attach input{display:none}' +
+      '.pchat-input{flex:1;resize:none;border:1px solid var(--line);border-radius:20px;padding:9px 15px;font-size:14px;font-family:var(--font-jp);line-height:1.5;max-height:120px;background:var(--bg-soft)}' +
+      '.pchat-input:focus{outline:none;border-color:var(--navy);background:#fff}' +
+      '.pchat-send{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--navy);color:#fff;cursor:pointer;transition:opacity .2s}' +
+      '.pchat-send[disabled]{opacity:.45;cursor:default}' +
+      '.pchat-send svg{width:19px;height:19px}' +
+      '.pchat-err{font-size:12px;color:#c0392b;padding:4px 14px 0}';
+    var el = document.createElement('style');
+    el.id = 'pchat-styles';
+    el.textContent = css;
+    document.head.appendChild(el);
+  }
+
+  var ATTACH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
+  var SEND_ICON   = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
+  var FILE_ICON   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+
+  // ── API calls ────────────────────────────────────────────────────────────
+  async function _post(action, extra) {
+    var body = { email: _ctx.email, reference: _ctx.ref };
+    if (extra) Object.keys(extra).forEach(function (k) { body[k] = extra[k]; });
+    var res = await fetch(_base() + '/chat.php?action=' + action, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-KEY': window.API_KEY || '' },
+      body: JSON.stringify(body),
+    });
+    return res.json().catch(function () { return { ok: false, error: 'bad-response' }; });
+  }
+
+  // ── Render ──────────────────────────────────────────────────────────────
+  function _dayLabel(iso) {
+    if (!iso) return '';
+    var d = new Date(iso.indexOf('T') > 0 ? iso : iso.replace(' ', 'T'));
+    if (isNaN(d)) return '';
+    var dow = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
+    return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日（' + dow + '）';
+  }
+
+  function _mediaHtml(a) {
+    if (_isImg(a.mime) && a.url) {
+      return '<a href="' + _esc(a.url) + '" target="_blank" rel="noopener">' +
+             '<img class="pchat-media" src="' + _esc(a.url) + '" alt="' + _esc(a.name) + '" loading="lazy"></a>';
+    }
+    return '<a class="pchat-file" href="' + _esc(a.url || '#') + '" target="_blank" rel="noopener">' +
+           FILE_ICON + '<span>' + _esc(a.name || 'ファイル') + '</span></a>';
+  }
+
+  function _bubble(m) {
+    var me   = m.sender_type === 'customer';
+    var name = me ? '' : '<div class="pchat-name">' + _esc(m.sender_name || 'Hello Moving') + '</div>';
+    var avatar = me ? '' : '<div class="pchat-avatar" aria-hidden="true">HM</div>';
+    var parts = '';
+    if (m.text) parts += '<div class="pchat-bubble">' + _esc(m.text) + '</div>';
+    (m.attachments || []).forEach(function (a) {
+      parts += '<div class="pchat-bubble" style="padding:5px;background:transparent;box-shadow:none">' + _mediaHtml(a) + '</div>';
+    });
+    return '<div class="pchat-row ' + (me ? 'me' : 'them') + '">' + avatar +
+             '<div class="pchat-bubble-wrap">' + name + parts +
+               '<div class="pchat-meta">' + _fmtTime(m.created_at) + '</div>' +
+             '</div>' +
+           '</div>';
+  }
+
+  function _renderStream(messages) {
+    var stream = _host && _host.querySelector('.pchat-stream');
+    if (!stream) return;
+    // Cheap change-detection so polling doesn't rebuild/scroll-jump every 5s.
+    var sig = messages.map(function (m) {
+      return m.id + ':' + (m.attachments ? m.attachments.length : 0);
+    }).join('|');
+    if (sig === _lastSig) return;
+    var nearBottom = (stream.scrollHeight - stream.scrollTop - stream.clientHeight) < 80;
+    _lastSig = sig;
+
+    if (!messages.length) {
+      stream.innerHTML = '<div class="pchat-empty">まだメッセージはありません。<br>ご質問・ご要望をお気軽にどうぞ。担当者が順次ご返信いたします。</div>';
+      return;
+    }
+    var html = '';
+    var lastDay = '';
+    messages.forEach(function (m) {
+      var day = _dayLabel(m.created_at);
+      if (day && day !== lastDay) { html += '<div class="pchat-day">' + _esc(day) + '</div>'; lastDay = day; }
+      html += _bubble(m);
+    });
+    stream.innerHTML = html;
+    if (nearBottom) stream.scrollTop = stream.scrollHeight;
+  }
+
+  // ── Poll loop ────────────────────────────────────────────────────────────
+  async function _poll() {
+    if (!_mounted) return;
+    try {
+      var out = await _post('list');
+      if (out && out.ok && out.data) {
+        if (out.data.booking_id) _bookingId = String(out.data.booking_id);
+        _renderStream(out.data.messages || []);
+      }
+    } catch (_) { /* transient — next tick retries */ }
+  }
+  function _scheduleNext() {
+    if (!_mounted) return;
+    _timer = setTimeout(function () { _poll().then(_scheduleNext); }, POLL_MS);
+  }
+
+  // ── Send ────────────────────────────────────────────────────────────────
+  function _err(msg) {
+    var e = _host && _host.querySelector('.pchat-err');
+    if (e) { e.textContent = msg || ''; e.style.display = msg ? 'block' : 'none'; }
+  }
+  async function _sendText() {
+    if (_sending) return;
+    var input = _host.querySelector('.pchat-input');
+    var text  = (input.value || '').trim();
+    if (!text) return;
+    _sending = true; _err('');
+    try {
+      var out = await _post('send', { message: text });
+      if (!out || !out.ok) { _err('送信できませんでした。時間をおいて再度お試しください。'); return; }
+      input.value = ''; input.style.height = 'auto';
+      _lastSig = '';                    // force re-render with the new message
+      await _poll();
+    } catch (_) {
+      _err('通信エラーが発生しました。');
+    } finally {
+      _sending = false;
+    }
+  }
+
+  async function _sendFile(fileInput) {
+    var file = fileInput.files && fileInput.files[0];
+    fileInput.value = '';
+    if (!file) return;
+    _err('');
+    if (ALLOWED.indexOf(file.type) < 0) { _err('対応形式は JPG・PNG・PDF です。'); return; }
+    if (file.size > MAX_BYTES)          { _err('ファイルが大きすぎます（最大15MB）。'); return; }
+    if (!window.api || !window.api.storage) { _err('アップロードを利用できません。'); return; }
+
+    // Need the server-resolved booking id so the upload path is in-scope. The
+    // first poll sets it; fetch once if a file is sent before that.
+    if (!_bookingId) { await _poll(); }
+    if (!_bookingId) { _err('予約情報を確認できませんでした。'); return; }
+
+    var label = _host.querySelector('.pchat-attach');
+    if (label) label.classList.add('busy');
+    try {
+      var path = _bookingId + '/' + _safeName(file.name);
+      var up = await window.api.storage.from(BUCKET).upload(path, file, { contentType: file.type, upsert: false });
+      if (up && up.error) { _err('アップロードに失敗しました。'); return; }
+      var out = await _post('send', {
+        attachments: [{ path: path, name: file.name, mime: file.type, size: file.size }],
+      });
+      if (!out || !out.ok) { _err('送信できませんでした。'); return; }
+      _lastSig = '';
+      await _poll();
+    } catch (_) {
+      _err('アップロードに失敗しました。');
+    } finally {
+      if (label) label.classList.remove('busy');
+    }
+  }
+
+  // ── Mount / unmount ──────────────────────────────────────────────────────
+  function mount(container, ctx) {
+    if (!container || !ctx || !ctx.email || !ctx.ref) return;
+    unmount();
+    _injectStyles();
+    _ctx = { email: ctx.email, ref: ctx.ref, name: ctx.name || 'お客様' };
+    _host = container;
+    _bookingId = null; _lastSig = ''; _mounted = true;
+
+    container.innerHTML =
+      '<div class="pchat">' +
+        '<div class="pchat-stream" aria-live="polite"><div class="pchat-empty">読み込み中…</div></div>' +
+        '<div class="pchat-err" style="display:none"></div>' +
+        '<div class="pchat-bar">' +
+          '<label class="pchat-attach" title="写真・PDFを添付">' + ATTACH_ICON +
+            '<input type="file" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"></label>' +
+          '<textarea class="pchat-input" rows="1" placeholder="メッセージを入力…" maxlength="4000"></textarea>' +
+          '<button class="pchat-send" title="送信" aria-label="送信">' + SEND_ICON + '</button>' +
+        '</div>' +
+      '</div>';
+
+    var input  = container.querySelector('.pchat-input');
+    var sendBt = container.querySelector('.pchat-send');
+    var fileIn = container.querySelector('.pchat-attach input');
+
+    // Auto-grow textarea + Enter-to-send (Shift+Enter = newline).
+    input.addEventListener('input', function () {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+    });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); _sendText(); }
+    });
+    sendBt.addEventListener('click', _sendText);
+    fileIn.addEventListener('change', function () { _sendFile(fileIn); });
+
+    _poll().then(_scheduleNext);
+  }
+
+  function unmount() {
+    _mounted = false;
+    if (_timer) { clearTimeout(_timer); _timer = null; }
+    _host = null; _ctx = null; _bookingId = null; _lastSig = '';
+  }
+
+  window.PortalChat = { mount: mount, unmount: unmount, POLL_MS: POLL_MS };
+})();

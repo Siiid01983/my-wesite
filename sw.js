@@ -49,6 +49,8 @@ const PRECACHE = [
   '/js/lib/apiClient.js',
   '/js/config/appConfig.js',
   '/js/portal/message.js',
+  '/js/portal/chat.js',
+  '/js/portal/postBookingChatCta.js',
   '/js/services/dataClient.js',
   '/js/services/apiAdapter.js',
   '/js/services/statisticsService.js',

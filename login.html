@@ -325,6 +325,18 @@
       });
     })();
 
+    // Deep-link prefill: the post-booking「チャットで相談する」CTA sends the
+    // just-booked customer here as login.html?ref=<reference>. Prefill the
+    // reference field so they only need to add their email (the chat intent is
+    // carried separately in sessionStorage and honoured by portal.html).
+    (function prefillReferenceFromQuery() {
+      try {
+        var qref = new URLSearchParams(location.search).get('ref');
+        var refEl = document.getElementById('reference');
+        if (qref && refEl && !refEl.value) { refEl.value = qref.trim(); if (emailEl) emailEl.focus(); }
+      } catch (_) {}
+    })();
+
     // Already authenticated (persisted API session) → go to the portal.
     (async function () {
       try {

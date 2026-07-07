@@ -221,6 +221,53 @@
   // Outbound = a reply we sent (send-email.php log_inbox row, labels.outbound).
   function _isOutbound(m) { return !!_labelsOf(m).outbound; }
 
+  /* ── Chat media (labels.attachments) ──────────────────────
+     Customer chat messages (js/portal/chat.js → chat.php) store uploaded media
+     as labels.attachments = [{path,name,mime,size}] in the private `chat`
+     storage bucket. Rendered here as image thumbnails / file chips. The read
+     URL is a short-lived SIGNED URL resolved on demand (the bucket is private),
+     so we emit placeholders and hydrate their src/href after render. */
+  function _attachmentsOf(m) {
+    var a = _labelsOf(m).attachments;
+    return Array.isArray(a) ? a : [];
+  }
+  function _attHtml(m) {
+    var atts = _attachmentsOf(m);
+    if (!atts.length) return '';
+    var items = atts.map(function (a) {
+      var path = _esc(a.path || '');
+      var name = _esc(a.name || 'ファイル');
+      if (/^image\//.test(a.mime || '')) {
+        return '<a class="ibx-att" data-att-path="' + path + '" data-att-kind="img" href="#" target="_blank" rel="noopener" ' +
+          'style="display:inline-block;margin:6px 6px 0 0;vertical-align:top">' +
+          '<img alt="' + name + '" loading="lazy" style="max-width:150px;max-height:170px;border-radius:8px;border:1px solid var(--line);display:block;background:var(--bg-soft-2)"></a>';
+      }
+      return '<a class="ibx-att" data-att-path="' + path + '" data-att-kind="file" href="#" target="_blank" rel="noopener" ' +
+        'style="display:inline-flex;align-items:center;gap:6px;margin:6px 6px 0 0;padding:7px 11px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;color:var(--blue);text-decoration:none">' +
+        '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>' + name + '</a>';
+    }).join('');
+    return '<div class="ibx-atts" style="margin-top:8px">' + items + '</div>';
+  }
+  // Resolve signed URLs for any not-yet-hydrated attachment placeholders in scope.
+  function _hydrateAttachments(scope) {
+    var sb = window.api;
+    if (!sb || !sb.storage || !scope) return;
+    var nodes = scope.querySelectorAll('.ibx-att[data-att-path]:not([data-att-done])');
+    Array.prototype.forEach.call(nodes, function (el) {
+      el.setAttribute('data-att-done', '1');
+      var path = el.getAttribute('data-att-path');
+      sb.storage.from('chat').createSignedUrl(path, 300).then(function (r) {
+        var url = r && r.data && r.data.signedUrl;
+        if (!url) return;
+        el.href = url;
+        if (el.getAttribute('data-att-kind') === 'img') {
+          var img = el.querySelector('img');
+          if (img) img.src = url;
+        }
+      }).catch(function () {});
+    });
+  }
+
   /* ── Action buttons (per card) ────────────────────────── */
   function _actionBtns(m) {
     var id = _esc(m.id);
@@ -271,6 +318,7 @@
           '<time style="color:var(--gray-2);white-space:nowrap;font-size:11px">' + _fmtDate(m.received_at || m.created_at) + '</time>' +
         '</div>' +
         '<div style="font-size:12.5px;line-height:1.65;white-space:pre-wrap;color:var(--ink-2)">' + _esc(body) + '</div>' +
+        _attHtml(m) +
       '</div>';
   }
 
@@ -420,11 +468,13 @@
           '</div>' +
           _threadHistory(t) +
           '<div style="font-size:13px;color:var(--ink-2);line-height:1.7;white-space:pre-wrap;border-top:1px solid var(--line);padding-top:10px">' + _esc(bodyText) + '</div>' +
+          _attHtml(m) +
           '<div style="margin-top:12px;display:flex;justify-content:flex-end;border-top:1px dashed var(--line);padding-top:10px">' + _actionBtns(m) + '</div>' +
         '</div>';
     }).join('');
 
     container.innerHTML = header + cards;
+    _hydrateAttachments(container);   // resolve signed URLs for chat media thumbnails
 
     // Restore search focus + caret (re-render replaces the input).
     if (_search) {
