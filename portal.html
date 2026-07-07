@@ -754,10 +754,6 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       <span>メッセージ</span>
     </button>
-    <button class="p-nav-item" data-view="documents">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
-      <span>ドキュメント</span>
-    </button>
     <button class="p-nav-item" data-view="photos">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
       <span>写真</span>
@@ -792,6 +788,7 @@
   <script src="js/portal/portalLogin.js"></script>
   <script src="js/portal/portalAuth.js"></script>
   <script src="js/portal/portalComms.js"></script>
+  <script src="js/portal/message.js"></script>
   <script src="js/portal/portalDocs.js"></script>
   <script src="js/portal/portalPhotos.js"></script>
   <script src="js/portal/portalApproval.js"></script>
@@ -1185,6 +1182,24 @@
           <div class="p-page-head">
             <div class="p-page-title">メッセージ</div>
             <div class="p-page-sub">ご予約番号 ${esc(b.id)} に関するやり取りの履歴です。</div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">メッセージを送る（Send a Message）</div>
+            <div class="ss-form">
+              <div class="ss-field">
+                <label class="ss-label" for="msgSubject">件名（任意）</label>
+                <input class="ss-input" type="text" id="msgSubject" maxlength="120" placeholder="例：引越し当日の件について">
+              </div>
+              <div class="ss-field">
+                <label class="ss-label" for="msgBody">メッセージ</label>
+                <textarea class="ss-input" id="msgBody" maxlength="2000" placeholder="ご質問・ご要望をご記入ください。"></textarea>
+              </div>
+              <div class="ss-err" id="msgErr"></div>
+              <div class="ss-actions">
+                <button class="ss-btn" id="msgSendBtn">送信する</button>
+                <span class="ss-hint">担当者に届き、順次ご返信いたします。</span>
+              </div>
+            </div>
           </div>
           <div class="panel">
             <div class="panel-title">コミュニケーション履歴 <span id="commCount" style="font-weight:400;color:var(--gray-3);font-size:12px"></span></div>
@@ -1772,6 +1787,51 @@
         ? `<div class="comm-list">${rows.map(renderComm).join('')}</div>`
         : '<div class="comm-empty">まだメッセージはありません。</div>';
     }
+
+    // Customer → company message send. Routes through PortalMessage.send →
+    // hm-api/contact.php, which files an inbox_messages row on the contact@
+    // channel (new thread) so it appears in the admin Inbox. See message.js.
+    async function handleMessageSend(btn) {
+      if (!_booking || !window.PortalMessage) return;
+      const errEl = $('msgErr');
+      if (errEl) errEl.style.display = 'none';
+      const subject = ($('msgSubject') && $('msgSubject').value || '').trim();
+      const message = ($('msgBody')    && $('msgBody').value    || '').trim();
+      if (!message) {
+        if (errEl) { errEl.textContent = 'メッセージをご入力ください。'; errEl.style.display = 'block'; }
+        return;
+      }
+      btn.disabled = true; btn.textContent = '送信中…';
+      try {
+        const res = await PortalMessage.send({
+          name:    (sess && sess.name) || _booking.name || 'お客様',
+          email:   (sess && sess.email) || _booking.email || '',
+          subject: subject,
+          message: message,
+          ref:     _booking.id || ''
+        });
+        if (!res.ok) {
+          const msg = res.error === 'no-email'
+            ? 'ログイン情報を確認できませんでした。再度ログインしてください。'
+            : 'メッセージを送信できませんでした。時間をおいて再度お試しください。';
+          if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+          btn.disabled = false; btn.textContent = '送信する';
+          return;
+        }
+        if ($('msgSubject')) $('msgSubject').value = '';
+        if ($('msgBody'))    $('msgBody').value = '';
+        btn.disabled = false; btn.textContent = '送信する';
+        ssToast('メッセージを送信しました。担当者よりご返信いたします。');
+      } catch (err) {
+        console.error('[Portal] message send failed:', err);
+        if (errEl) { errEl.textContent = 'メッセージを送信できませんでした。'; errEl.style.display = 'block'; }
+        btn.disabled = false; btn.textContent = '送信する';
+      }
+    }
+    document.addEventListener('click', e => {
+      const btn = e.target.closest && e.target.closest('#msgSendBtn');
+      if (btn) handleMessageSend(btn);
+    });
 
     let _booking = null;
     function render(view) {

@@ -48,6 +48,7 @@ const PRECACHE = [
   /* Infrastructure */
   '/js/lib/apiClient.js',
   '/js/config/appConfig.js',
+  '/js/portal/message.js',
   '/js/services/dataClient.js',
   '/js/services/apiAdapter.js',
   '/js/services/statisticsService.js',
