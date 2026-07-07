@@ -1,0 +1,103 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   chat-bubbles.css — shared LINE-style chat bubble primitives.
+
+   Single source of truth for the bubble transcript, used by BOTH surfaces:
+     • Customer portal   — js/portal/chat.js (framed, with an input bar)
+     • Admin Inbox        — js/modules/inbox/inbox.js (transcript inside each
+                            thread card; no input bar — admin replies via the
+                            existing reply modal)
+
+   Mapping is identical on both sides so the UI is harmonized:
+     .me  = Customer  → right, green
+     .them = Admin/Company → left, white/surface + border
+
+   Theme-safe: only uses CSS custom properties that BOTH pages define
+   (--bg, --ink, --line, --gray-2, --navy) plus the theme-agnostic LINE green,
+   so it renders correctly on the portal (light) and the admin (light + dark).
+   Page-specific chrome (the portal frame, scroll area and input bar) lives in
+   chat.js — NOT here — to keep this file reusable.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.pchat-stream { display: flex; flex-direction: column; gap: 8px; padding: 14px; }
+
+.pchat-day {
+  align-self: center;
+  font-size: 11px;
+  color: var(--gray-2);
+  background: rgba(127, 127, 127, .14);
+  padding: 3px 12px;
+  border-radius: 999px;
+  margin: 4px 0;
+}
+
+.pchat-row { display: flex; gap: 8px; max-width: 82%; }
+.pchat-row.me   { align-self: flex-end; flex-direction: row-reverse; }
+.pchat-row.them { align-self: flex-start; }
+/* Grouped = same sender as the previous row → tighten the gap (messenger feel). */
+.pchat-row.grp  { margin-top: -4px; }
+
+.pchat-avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  flex-shrink: 0;
+}
+/* Placeholder avatar keeps bubbles aligned on grouped rows (icon hidden). */
+.pchat-avatar-empty { background: transparent; color: transparent; }
+
+.pchat-bubble-wrap { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pchat-name { font-size: 11px; color: var(--gray-2); padding: 0 4px; }
+
+.pchat-bubble {
+  position: relative;
+  padding: 9px 13px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.pchat-row.them .pchat-bubble {
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-bottom-left-radius: 4px;
+}
+.pchat-row.me .pchat-bubble {
+  background: #06C755;
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+/* A bubble that holds only media has no chrome of its own. */
+.pchat-media-bubble { padding: 0; background: none; border: none; }
+
+.pchat-meta { font-size: 10.5px; color: var(--gray-2); padding: 0 4px; align-self: flex-end; }
+.pchat-row.me .pchat-meta { align-self: flex-start; }
+
+.pchat-media {
+  display: block;
+  max-width: 220px; max-height: 260px;
+  border-radius: 12px;
+  cursor: pointer;
+  background: rgba(127, 127, 127, .12);
+}
+/* Optimistic (still-uploading) preview. */
+.pchat-media.uploading { opacity: .55; filter: saturate(.8); }
+
+.pchat-file {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 13px;
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--navy);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  text-decoration: none;
+}
+.pchat-row.me .pchat-file { background: rgba(255, 255, 255, .18); color: #fff; border-color: rgba(255, 255, 255, .4); }
+.pchat-file svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+.pchat-empty { margin: auto; text-align: center; color: var(--gray-2); font-size: 13px; padding: 30px; }

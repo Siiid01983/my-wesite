@@ -29,6 +29,7 @@
   var _bookingId = null; // server-resolved bookings.id (for upload path scoping)
   var _lastSig = '';     // signature of last render (skip needless re-render)
   var _sending = false;
+  var _uploading = false;// an upload batch is in flight (optimistic previews shown)
   var _mounted = false;
 
   function _base() { return (window.API_BASE || '').replace(/\/$/, ''); }
@@ -51,29 +52,16 @@
     return Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
   }
 
-  // ── One-time scoped styles (LINE-inspired; reuses the portal's palette vars) ──
+  // ── One-time PORTAL-CHROME styles ────────────────────────────────────────
+  // The bubble primitives (.pchat-row/.pchat-bubble/.pchat-media/…) are shared
+  // with the admin Inbox and live in css/chat-bubbles.css (loaded via a <link>
+  // in portal.html). Only the portal-specific frame, scroll area and input bar
+  // are injected here so they never leak into the admin surface.
   function _injectStyles() {
     if (document.getElementById('pchat-styles')) return;
     var css =
       '.pchat{display:flex;flex-direction:column;height:min(68vh,620px);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#eef1f4}' +
-      '.pchat-stream{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:10px}' +
-      '.pchat-day{align-self:center;font-size:11px;color:var(--gray-2);background:rgba(11,15,23,.06);padding:3px 12px;border-radius:999px;margin:4px 0}' +
-      '.pchat-row{display:flex;gap:8px;max-width:82%}' +
-      '.pchat-row.me{align-self:flex-end;flex-direction:row-reverse}' +
-      '.pchat-row.them{align-self:flex-start}' +
-      '.pchat-avatar{width:30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}' +
-      '.pchat-bubble-wrap{display:flex;flex-direction:column;gap:3px;min-width:0}' +
-      '.pchat-name{font-size:11px;color:var(--gray-2);padding:0 4px}' +
-      '.pchat-bubble{position:relative;padding:9px 13px;border-radius:14px;font-size:14px;line-height:1.65;white-space:pre-wrap;word-break:break-word}' +
-      '.pchat-row.them .pchat-bubble{background:#fff;color:var(--ink);border-bottom-left-radius:4px;box-shadow:0 1px 1px rgba(11,15,23,.06)}' +
-      '.pchat-row.me .pchat-bubble{background:#06C755;color:#fff;border-bottom-right-radius:4px}' +
-      '.pchat-meta{font-size:10.5px;color:var(--gray-3);padding:0 4px;align-self:flex-end}' +
-      '.pchat-row.me .pchat-meta{align-self:flex-start}' +
-      '.pchat-media{display:block;max-width:220px;max-height:260px;border-radius:12px;margin-top:2px;cursor:pointer}' +
-      '.pchat-file{display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border-radius:12px;background:#fff;color:var(--navy);border:1px solid var(--line);font-size:13px;text-decoration:none}' +
-      '.pchat-row.me .pchat-file{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.4)}' +
-      '.pchat-file svg{width:16px;height:16px;flex-shrink:0}' +
-      '.pchat-empty{margin:auto;text-align:center;color:var(--gray-2);font-size:13px;padding:30px}' +
+      '.pchat .pchat-stream{flex:1;overflow-y:auto;padding:16px 14px;gap:10px}' +
       '.pchat-bar{display:flex;align-items:flex-end;gap:8px;padding:10px 12px;background:#fff;border-top:1px solid var(--line)}' +
       '.pchat-attach{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--navy);background:var(--line-3);cursor:pointer;transition:background .2s}' +
       '.pchat-attach:hover{background:var(--line)}' +
@@ -126,16 +114,19 @@
            FILE_ICON + '<span>' + _esc(a.name || 'ファイル') + '</span></a>';
   }
 
-  function _bubble(m) {
-    var me   = m.sender_type === 'customer';
-    var name = me ? '' : '<div class="pchat-name">' + _esc(m.sender_name || 'Hello Moving') + '</div>';
-    var avatar = me ? '' : '<div class="pchat-avatar" aria-hidden="true">HM</div>';
+  // `grouped` = same sender as the previous bubble → hide the avatar/name so a
+  // run of messages reads as one messenger-style group.
+  function _bubble(m, grouped) {
+    var me = m.sender_type === 'customer';
+    var avatar = me ? ''
+      : '<div class="pchat-avatar' + (grouped ? ' pchat-avatar-empty' : '') + '" aria-hidden="true">' + (grouped ? '' : 'HM') + '</div>';
+    var name = (me || grouped) ? '' : '<div class="pchat-name">' + _esc(m.sender_name || 'Hello Moving') + '</div>';
     var parts = '';
     if (m.text) parts += '<div class="pchat-bubble">' + _esc(m.text) + '</div>';
     (m.attachments || []).forEach(function (a) {
-      parts += '<div class="pchat-bubble" style="padding:5px;background:transparent;box-shadow:none">' + _mediaHtml(a) + '</div>';
+      parts += '<div class="pchat-bubble pchat-media-bubble">' + _mediaHtml(a) + '</div>';
     });
-    return '<div class="pchat-row ' + (me ? 'me' : 'them') + '">' + avatar +
+    return '<div class="pchat-row ' + (me ? 'me' : 'them') + (grouped ? ' grp' : '') + '">' + avatar +
              '<div class="pchat-bubble-wrap">' + name + parts +
                '<div class="pchat-meta">' + _fmtTime(m.created_at) + '</div>' +
              '</div>' +
@@ -158,11 +149,12 @@
       return;
     }
     var html = '';
-    var lastDay = '';
+    var lastDay = '', lastKind = '';
     messages.forEach(function (m) {
       var day = _dayLabel(m.created_at);
-      if (day && day !== lastDay) { html += '<div class="pchat-day">' + _esc(day) + '</div>'; lastDay = day; }
-      html += _bubble(m);
+      if (day && day !== lastDay) { html += '<div class="pchat-day">' + _esc(day) + '</div>'; lastDay = day; lastKind = ''; }
+      html += _bubble(m, m.sender_type === lastKind);
+      lastKind = m.sender_type;
     });
     stream.innerHTML = html;
     if (nearBottom) stream.scrollTop = stream.scrollHeight;
@@ -170,7 +162,7 @@
 
   // ── Poll loop ────────────────────────────────────────────────────────────
   async function _poll() {
-    if (!_mounted) return;
+    if (!_mounted || _uploading) return;   // don't wipe optimistic previews mid-upload
     try {
       var out = await _post('list');
       if (out && out.ok && out.data) {
@@ -208,36 +200,92 @@
     }
   }
 
-  async function _sendFile(fileInput) {
-    var file = fileInput.files && fileInput.files[0];
+  // Optimistic preview group appended to the stream while an upload batch is in
+  // flight, so the user sees each image "sending" until all are stored + sent.
+  function _renderOptimistic(files) {
+    var stream = _host && _host.querySelector('.pchat-stream');
+    if (!stream) return null;
+    var urls = [];
+    var media = files.map(function (f) {
+      if (/^image\//.test(f.type)) {
+        var url = URL.createObjectURL(f);
+        urls.push(url);
+        return '<div class="pchat-bubble pchat-media-bubble">' +
+                 '<img class="pchat-media uploading" src="' + url + '" alt="' + _esc(f.name) + '"></div>';
+      }
+      return '<div class="pchat-bubble pchat-media-bubble"><span class="pchat-file">' +
+               FILE_ICON + '<span>' + _esc(f.name) + '</span></span></div>';
+    }).join('');
+    var node = document.createElement('div');
+    node.id = 'pchat-optimistic';
+    node._objectUrls = urls;   // revoked by the caller once the batch resolves
+    node.innerHTML =
+      '<div class="pchat-row me">' +
+        '<div class="pchat-bubble-wrap">' + media +
+          '<div class="pchat-meta" id="pchat-optimistic-meta">アップロード中…</div>' +
+        '</div>' +
+      '</div>';
+    stream.appendChild(node);
+    stream.scrollTop = stream.scrollHeight;
+    return node;
+  }
+  function _optimisticStatus(txt) {
+    var el = document.getElementById('pchat-optimistic-meta');
+    if (el) el.textContent = txt;
+  }
+
+  // Multi-file send: validate, upload sequentially (with per-batch progress),
+  // then send ONE message carrying all attachments (chat.php accepts up to 10).
+  async function _sendFiles(fileInput) {
+    var picked = fileInput.files ? Array.prototype.slice.call(fileInput.files) : [];
     fileInput.value = '';
-    if (!file) return;
+    if (!picked.length) return;
     _err('');
-    if (ALLOWED.indexOf(file.type) < 0) { _err('対応形式は JPG・PNG・PDF です。'); return; }
-    if (file.size > MAX_BYTES)          { _err('ファイルが大きすぎます（最大15MB）。'); return; }
     if (!window.api || !window.api.storage) { _err('アップロードを利用できません。'); return; }
 
-    // Need the server-resolved booking id so the upload path is in-scope. The
-    // first poll sets it; fetch once if a file is sent before that.
+    var skipped = 0;
+    var files = picked.filter(function (f) {
+      var ok = ALLOWED.indexOf(f.type) >= 0 && f.size <= MAX_BYTES;
+      if (!ok) skipped++;
+      return ok;
+    });
+    if (files.length > 10) { skipped += files.length - 10; files = files.slice(0, 10); }
+    if (!files.length) { _err('対応形式は JPG・PNG・PDF（各15MBまで）です。'); return; }
+
+    // Need the server-resolved booking id so upload paths are in-scope.
     if (!_bookingId) { await _poll(); }
     if (!_bookingId) { _err('予約情報を確認できませんでした。'); return; }
 
     var label = _host.querySelector('.pchat-attach');
     if (label) label.classList.add('busy');
+    _uploading = true;                    // pause poll re-render so previews survive
+    var node = _renderOptimistic(files);
+
     try {
-      var path = _bookingId + '/' + _safeName(file.name);
-      var up = await window.api.storage.from(BUCKET).upload(path, file, { contentType: file.type, upsert: false });
-      if (up && up.error) { _err('アップロードに失敗しました。'); return; }
-      var out = await _post('send', {
-        attachments: [{ path: path, name: file.name, mime: file.type, size: file.size }],
-      });
-      if (!out || !out.ok) { _err('送信できませんでした。'); return; }
+      var attachments = [];
+      for (var i = 0; i < files.length; i++) {
+        var f = files[i];
+        _optimisticStatus('アップロード中… (' + (i + 1) + '/' + files.length + ')');
+        var path = _bookingId + '/' + _safeName(f.name);
+        var up = await window.api.storage.from(BUCKET).upload(path, f, { contentType: f.type, upsert: false });
+        if (up && up.error) { throw new Error('upload'); }
+        attachments.push({ path: path, name: f.name, mime: f.type, size: f.size });
+      }
+      _optimisticStatus('送信中…');
+      var out = await _post('send', { attachments: attachments });
+      if (!out || !out.ok) throw new Error('send');
+      if (skipped) _err(skipped + '件は対応外のためスキップしました。');
+      _uploading = false;
       _lastSig = '';
-      await _poll();
+      if (node && node.parentNode) node.parentNode.removeChild(node);
+      await _poll();                       // real (signed) bubbles replace previews
     } catch (_) {
-      _err('アップロードに失敗しました。');
+      _uploading = false;
+      if (node && node.parentNode) node.parentNode.removeChild(node);
+      _err('アップロードに失敗しました。もう一度お試しください。');
     } finally {
       if (label) label.classList.remove('busy');
+      if (node && node._objectUrls) node._objectUrls.forEach(function (u) { try { URL.revokeObjectURL(u); } catch (_) {} });
     }
   }
 
@@ -255,8 +303,8 @@
         '<div class="pchat-stream" aria-live="polite"><div class="pchat-empty">読み込み中…</div></div>' +
         '<div class="pchat-err" style="display:none"></div>' +
         '<div class="pchat-bar">' +
-          '<label class="pchat-attach" title="写真・PDFを添付">' + ATTACH_ICON +
-            '<input type="file" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"></label>' +
+          '<label class="pchat-attach" title="写真・PDFを添付（複数選択可）">' + ATTACH_ICON +
+            '<input type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"></label>' +
           '<textarea class="pchat-input" rows="1" placeholder="メッセージを入力…" maxlength="4000"></textarea>' +
           '<button class="pchat-send" title="送信" aria-label="送信">' + SEND_ICON + '</button>' +
         '</div>' +
@@ -275,7 +323,7 @@
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); _sendText(); }
     });
     sendBt.addEventListener('click', _sendText);
-    fileIn.addEventListener('change', function () { _sendFile(fileIn); });
+    fileIn.addEventListener('change', function () { _sendFiles(fileIn); });
 
     _poll().then(_scheduleNext);
   }

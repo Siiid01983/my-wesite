@@ -268,6 +268,90 @@
     });
   }
 
+  /* ── Time / day formatting for the transcript ─────────── */
+  function _fmtTimeShort(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    return isNaN(d) ? '' : d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+  }
+  function _fmtDayLabel(m) {
+    var iso = m.received_at || m.created_at;
+    if (!iso) return '';
+    var d = new Date(iso);
+    return isNaN(d) ? '' : d.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  }
+
+  /* ── Shared chat-bubble CSS ───────────────────────────────
+     Loaded here (NOT in the locked admin.html) so the Inbox transcript reuses
+     the exact same bubble styles as the portal chat (css/chat-bubbles.css).
+     A tiny admin-only tweak adapts the stream to sit inside a thread card. */
+  function _ensureChatCss() {
+    if (!document.querySelector('link[data-chat-bubbles]')) {
+      var l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = 'css/chat-bubbles.css';
+      l.setAttribute('data-chat-bubbles', '1');
+      document.head.appendChild(l);
+    }
+    if (!document.getElementById('ibx-transcript-styles')) {
+      var s = document.createElement('style');
+      s.id = 'ibx-transcript-styles';
+      s.textContent =
+        '.pchat-stream.ibx-transcript{padding:12px 2px 2px}' +
+        '.pchat-stream.ibx-transcript.long{max-height:440px;overflow-y:auto}';
+      document.head.appendChild(s);
+    }
+  }
+
+  /* ── Transcript: a thread's messages as grouped chat bubbles ──────────────
+     Harmonized with the portal: Customer = right/green (.me), Admin/company =
+     left/white (.them). Drops the "[N件の添付ファイル…]" placeholder so a
+     media-only message shows just the image/file bubbles. */
+  function _bubbleText(m) {
+    var t = (m.body_text != null && m.body_text !== '') ? m.body_text : (m.body || '');
+    t = String(t);
+    if (_attachmentsOf(m).length && /^\[\d+件の添付ファイルを送信しました\]\s*$/.test(t.trim())) return '';
+    return t;
+  }
+  function _bubbleMedia(a) {
+    var path = _esc(a.path || ''), name = _esc(a.name || 'ファイル');
+    if (/^image\//.test(a.mime || '')) {
+      return '<a class="ibx-att" data-att-path="' + path + '" data-att-kind="img" href="#" target="_blank" rel="noopener">' +
+        '<img class="pchat-media" alt="' + name + '" loading="lazy"></a>';
+    }
+    return '<a class="ibx-att pchat-file" data-att-path="' + path + '" data-att-kind="file" href="#" target="_blank" rel="noopener">' +
+      '<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>' + name + '</a>';
+  }
+  function _bubble(m, grouped) {
+    var me = !_isOutbound(m);   // customer inbound → right/green; company → left/white
+    var avatar = me ? '' :
+      '<div class="pchat-avatar' + (grouped ? ' pchat-avatar-empty' : '') + '" aria-hidden="true">' + (grouped ? '' : 'HM') + '</div>';
+    var name = (me || grouped) ? '' :
+      '<div class="pchat-name">' + _esc(m.sender_name || m.sender || 'Hello Moving') + '</div>';
+    var parts = '';
+    var text = _bubbleText(m);
+    if (text) parts += '<div class="pchat-bubble">' + _esc(text) + '</div>';
+    _attachmentsOf(m).forEach(function (a) {
+      parts += '<div class="pchat-bubble pchat-media-bubble">' + _bubbleMedia(a) + '</div>';
+    });
+    if (!parts) return '';
+    return '<div class="pchat-row ' + (me ? 'me' : 'them') + (grouped ? ' grp' : '') + '">' + avatar +
+      '<div class="pchat-bubble-wrap">' + name + parts +
+      '<div class="pchat-meta">' + _fmtTimeShort(m.received_at || m.created_at) + '</div>' +
+      '</div></div>';
+  }
+  function _transcript(t) {
+    var html = '', lastKind = '', lastDay = '';
+    t.msgs.forEach(function (m) {
+      var day = _fmtDayLabel(m);
+      if (day && day !== lastDay) { html += '<div class="pchat-day">' + _esc(day) + '</div>'; lastDay = day; lastKind = ''; }
+      var kind = _isOutbound(m) ? 'company' : 'customer';
+      html += _bubble(m, kind === lastKind);
+      lastKind = kind;
+    });
+    return '<div class="pchat-stream ibx-transcript' + (t.msgs.length > 8 ? ' long' : '') + '">' + html + '</div>';
+  }
+
   /* ── Action buttons (per card) ────────────────────────── */
   function _actionBtns(m) {
     var id = _esc(m.id);
@@ -466,10 +550,8 @@
             '</div>' +
             '<time style="font-size:11px;color:var(--gray-2);white-space:nowrap;flex-shrink:0">' + _fmtDate(whenIso) + '</time>' +
           '</div>' +
-          _threadHistory(t) +
-          '<div style="font-size:13px;color:var(--ink-2);line-height:1.7;white-space:pre-wrap;border-top:1px solid var(--line);padding-top:10px">' + _esc(bodyText) + '</div>' +
-          _attHtml(m) +
-          '<div style="margin-top:12px;display:flex;justify-content:flex-end;border-top:1px dashed var(--line);padding-top:10px">' + _actionBtns(m) + '</div>' +
+          '<div style="border-top:1px solid var(--line);margin-top:6px">' + _transcript(t) + '</div>' +
+          '<div style="margin-top:8px;display:flex;justify-content:flex-end;border-top:1px dashed var(--line);padding-top:10px">' + _actionBtns(m) + '</div>' +
         '</div>';
     }).join('');
 
@@ -948,12 +1030,47 @@
     }
   }
 
+  /* ── AJAX polling — mirrors the portal's live "chat" feel ─────────────────
+     Re-fetches on an interval and re-renders ONLY when something actually
+     changed (new/edited message, read state, attachments, quote). Skips while a
+     reply/quote modal is open or the Inbox view isn't visible, so it never
+     disrupts the operator mid-action. */
+  var _pollTimer = null;
+  function _msgSig(list) {
+    return list.map(function (m) {
+      var l = _labelsOf(m);
+      return m.id + ':' + (m.is_read ? 1 : 0) + ':' + (l.outbound ? 1 : 0) +
+             ':' + (l.attachments ? l.attachments.length : 0) + ':' + (l.quote ? 1 : 0);
+    }).join('|');
+  }
+  function _modalOpen() {
+    var r = document.getElementById('inboxReplyModal');
+    var q = document.getElementById('inboxQuoteModal');
+    return (r && r.style.display === 'flex') || (q && q.style.display === 'flex');
+  }
+  async function _pollTick() {
+    var host = document.getElementById('messages-container');
+    if (!host || host.offsetParent === null) return;   // Inbox not the active view
+    if (_modalOpen()) return;                           // don't interrupt an open modal
+    var fresh = await _fetchMessages();
+    if (_msgSig(fresh) === _msgSig(_messages)) return;  // nothing changed → no re-render
+    _messages = fresh;
+    _renderMessages();
+  }
+  function _startPoll() {
+    _stopPoll();
+    _pollTimer = setInterval(function () { _pollTick(); }, 8000);
+  }
+  function _stopPoll() { if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; } }
+
   /* ── Public entry point ───────────────────────────────── */
   async function renderInbox() {
     if (!document.getElementById('view-inbox')) return;
+    _ensureChatCss();
     _showLoading();
     _messages = await _fetchMessages();
     _renderMessages();
+    _startPoll();
   }
 
   window.renderInbox      = renderInbox;
