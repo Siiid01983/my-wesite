@@ -51,6 +51,7 @@ function showApp() {
   if (typeof _applyRoleToSidebar === 'function') _applyRoleToSidebar();
   /* Phase 27 — Mobile Experience */
   if (window.MobileNav)  MobileNav.init();
+  if (window.MobileCal)  MobileCal.init();
   if (window.OfflineQueue) OfflineQueue.init();
   if (window.PushNotifications) PushNotifications.init();
   if (window.CameraCapture) CameraCapture.init();

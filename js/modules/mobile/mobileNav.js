@@ -23,12 +23,14 @@ window.MobileNav = (function () {
   var _swipeStartY = 0;
   var _swiping     = false;
 
-  /* ── Bottom nav config (5 items) ── */
+  /* ── Bottom nav config (5 items) — Curama-style mobile tab bar ──
+     dashboard(ホーム) · bookings(予約) · calendar(カレンダー, daily timeline)
+     · inbox(メッセージ) · _menu(メニュー → opens sidebar drawer) */
   var NAV_ITEMS = [
     { view: 'dashboard',  label: 'ホーム',   svg: '<path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>' },
     { view: 'bookings',   label: '予約',     svg: '<path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>' },
-    { view: 'crm',        label: 'CRM',      svg: '<path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>' },
     { view: 'calendar',   label: 'カレンダー', svg: '<path fill="currentColor" d="M20 3h-1V1h-2v2H7V1H5v2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H4V8h16v13z"/>' },
+    { view: 'inbox',      label: 'メッセージ', svg: '<path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/>' },
     { view: '_menu',      label: 'メニュー', svg: '<path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>' },
   ];
 

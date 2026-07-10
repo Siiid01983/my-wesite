@@ -113,6 +113,7 @@ const PRECACHE = [
   '/mobile.css',
   '/js/modules/mobile/mobileNav.js',
   '/js/modules/mobile/mobileDash.js',
+  '/js/modules/mobile/mobileCalendar.js',
   '/js/modules/notifications/pushNotifications.js',
   '/js/modules/offline/offlineDB.js',
   '/js/modules/offline/offlineQueue.js',

@@ -322,3 +322,245 @@ html.dark #mobileBottomNav { background: var(--bg-soft); }
   100% { transform: translateX(0); opacity: .8; }
 }
 .swipe-hint-icon { animation: swipeHint 1.2s ease-in-out 2; }
+
+/* ════════════════════════════════════════════════════════
+   MOBILE CALENDAR — daily timeline + date-picker (Phase 27F)
+   Shown only on phones; desktop keeps the month availability grid.
+   ════════════════════════════════════════════════════════ */
+#mobileCalTimeline { display: none; }
+
+@media (max-width: 768px) {
+  /* Swap month grid → daily timeline on the Calendar view */
+  #mobileCalTimeline { display: block; }
+  #view-calendar .cal-wrap { display: none; }
+  #view-calendar #gcalPanel { display: none; }
+}
+
+/* ── Timeline header ─────────────────────────────────── */
+.mct-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 6px;
+}
+.mct-nav {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: var(--bg-soft);
+  border-radius: 10px;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.mct-nav:active { background: var(--bg-soft-2); }
+.mct-date {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+.mct-date-main { font-size: 17px; font-weight: 700; line-height: 1.1; }
+.mct-date-cap  { font-size: 10px; color: var(--gray-2); }
+.mct-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 4px 12px;
+}
+.mct-status {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.mct-st-a { color: #059669; background: rgba(16,185,129,.12); }
+.mct-st-l { color: #b45309; background: rgba(245,158,11,.14); }
+.mct-st-b { color: #b91c1c; background: rgba(239,68,68,.12); }
+html.dark .mct-st-a { color: #34d399; }
+html.dark .mct-st-l { color: #f59e0b; }
+html.dark .mct-st-b { color: #f87171; }
+.mct-count { font-size: 12px; color: var(--gray-1); font-weight: 500; }
+.mct-today {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blue);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 32px;
+}
+
+/* ── Empty state ─────────────────────────────────────── */
+.mct-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 44px 20px;
+  color: var(--gray-2);
+  text-align: center;
+}
+.mct-empty p { font-size: 13px; color: var(--gray-1); margin: 0; }
+
+/* ── Timeline list ───────────────────────────────────── */
+.mct-list { display: flex; flex-direction: column; }
+.mct-item {
+  display: grid;
+  grid-template-columns: 52px 18px 1fr;
+  align-items: stretch;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.mct-time {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  padding-top: 16px;
+  text-align: right;
+}
+.mct-rail {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+.mct-rail::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--line);
+}
+.mct-dot {
+  position: relative;
+  z-index: 1;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--green, #1D9E75);
+  border: 2px solid var(--bg);
+  margin-top: 15px;
+}
+.mct-item:first-child .mct-rail::before { top: 15px; }
+.mct-item:last-child  .mct-rail::before { bottom: calc(100% - 21px); }
+.mct-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  padding: 11px 13px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: transform .1s;
+}
+.mct-item:active .mct-card { transform: scale(.98); background: var(--bg-soft); }
+.mct-name { font-size: 14px; font-weight: 700; color: var(--ink); }
+.mct-svc  { font-size: 12px; color: var(--gray-1); }
+.mct-badges { display: flex; align-items: center; gap: 8px; margin-top: 3px; flex-wrap: wrap; }
+.mct-phone { font-size: 11px; color: var(--gray-2); font-variant-numeric: tabular-nums; }
+
+/* ── Date-picker modal ───────────────────────────────── */
+#mobileCalModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 2100;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+#mobileCalModal.open { display: flex; }
+.mcm-sheet {
+  background: var(--bg);
+  border-radius: 18px 18px 0 0;
+  width: 100%;
+  max-width: 460px;
+  padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
+  animation: mcmUp .22s ease;
+}
+@keyframes mcmUp { from { transform: translateY(30px); opacity: .4; } to { transform: translateY(0); opacity: 1; } }
+.mcm-grip {
+  width: 38px;
+  height: 4px;
+  border-radius: 3px;
+  background: var(--line);
+  margin: 4px auto 10px;
+}
+.mcm-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.mcm-title { font-size: 15px; font-weight: 700; color: var(--ink); }
+.mcm-dows { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 2px; }
+.mcm-dow  { text-align: center; font-size: 10px; font-weight: 600; color: var(--gray-2); padding: 4px 0; }
+.mcm-dow.sun { color: #ef4444; }
+.mcm-dow.sat { color: #2563eb; }
+.mcm-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.mcm-day {
+  aspect-ratio: 1;
+  border: none;
+  background: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+.mcm-empty { pointer-events: none; }
+.mcm-n { font-size: 14px; font-weight: 600; color: var(--ink); line-height: 1; }
+.mcm-day.sun .mcm-n { color: #ef4444; }
+.mcm-day.sat .mcm-n { color: #2563eb; }
+.mcm-cnt {
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--green, #1D9E75);
+  border-radius: 8px;
+  min-width: 15px;
+  height: 13px;
+  line-height: 13px;
+  padding: 0 3px;
+}
+.mcm-cnt-sp { height: 13px; }
+.mcm-day.today { background: var(--bg-soft-2); }
+.mcm-day.today .mcm-n { color: var(--blue); font-weight: 700; }
+.mcm-day.sel { background: var(--navy); }
+.mcm-day.sel .mcm-n { color: #fff; }
+.mcm-day.sel .mcm-cnt { background: #fff; color: var(--navy); }
+.mcm-day:active { background: var(--bg-soft); }
+.mcm-foot { display: flex; gap: 8px; margin-top: 14px; }
+.mcm-foot .btn { flex: 1; justify-content: center; }
