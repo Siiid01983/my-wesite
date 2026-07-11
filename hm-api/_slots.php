@@ -77,6 +77,19 @@ if (!function_exists('hm_slot_band_id')) {
     return hm_slot_band_id(hm_slot_time_from_notes($notes));
   }
 
+  /**
+   * SLOT_LOCK_ENABLED feature flag. OFF by default: enforcement only activates
+   * when 'slot_lock_enabled' is truthy in hm-api/_config.php. The key is ABSENT
+   * today, so this returns false in production and every write path behaves
+   * exactly as before. Enabling is a one-line config change the operator makes
+   * (never written by this code) once all Phase 2 write paths are in place.
+   */
+  function hm_slot_lock_enabled(): bool {
+    if (!function_exists('hm_config')) return false;
+    $c = hm_config();
+    return !empty($c['slot_lock_enabled']);
+  }
+
   /** CREATE TABLE IF NOT EXISTS booking_slots (idempotent; matches schema file). */
   function hm_slot_ensure_table(PDO $db): void {
     $db->exec(

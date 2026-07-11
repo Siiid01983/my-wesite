@@ -12,6 +12,7 @@ require_once __DIR__ . '/_db.php';
 require_once __DIR__ . '/_cache.php';
 require_once __DIR__ . '/_ratelimit.php';
 require_once __DIR__ . '/_line.php';
+require_once __DIR__ . '/_slots.php';   // Phase 2: slot lock (feature-flagged, OFF by default)
 hm_cors();
 hm_require_api_key();
 hm_rate_limit('booking', 5, 60);   // public submit: max 5 / IP / minute
@@ -102,11 +103,44 @@ $data['id'] = hm_uuid4();
 if (empty($data['status'])) $data['status'] = 'pending';
 
 try {
+  $db   = hm_db();
   $keys = array_keys($data);
   $ph   = implode(',', array_fill(0, count($keys), '?'));
   $sql  = 'INSERT INTO bookings (' . implode(',', array_map(fn($c) => "`$c`", $keys)) . ") VALUES ($ph)";
-  $st = hm_db()->prepare($sql);
-  $st->execute(array_values($data));
+
+  // ── Phase 2: server-side slot lock (SLOT_LOCK_ENABLED, OFF by default) ──────
+  //  When the flag is ON *and* this booking carries a canonical band, reserve
+  //  the slot ATOMICALLY with the booking insert, BEFORE the success response is
+  //  flushed (finding #7). A slot collision → 409 and NO booking row is written.
+  //  Because the slot's UNIQUE(date,band) row is inserted first, a duplicate
+  //  same-band re-submit also 409s → inherent idempotency for locked bands
+  //  (finding #8). Flag OFF, or a band-less / 時間指定なし booking, takes the
+  //  ORIGINAL plain-insert path below — behaviour identical to before.
+  $lockTime = hm_slot_lock_enabled() ? hm_slot_time_from_notes($data['notes'] ?? '') : null;
+  $lockBand = $lockTime !== null ? hm_slot_band_id($lockTime) : null;
+
+  if ($lockBand !== null) {
+    $db->beginTransaction();
+    try {
+      $res = hm_slot_reserve($db, (string)($data['booking_date'] ?? ''), $lockTime, (string)$data['id']);
+      if (!empty($res['conflict'])) {
+        $db->rollBack();
+        hm_log_write('info.log', ['type' => 'slot_conflict', 'endpoint' => 'create-booking',
+          'date' => (string)($data['booking_date'] ?? ''), 'band' => $lockBand]);
+        hm_json(['ok' => false, 'data' => null, 'error' => 'slot_taken'], 409);
+      }
+      $st = $db->prepare($sql);
+      $st->execute(array_values($data));
+      $db->commit();
+    } catch (Throwable $e) {
+      if ($db->inTransaction()) $db->rollBack();
+      throw $e;
+    }
+  } else {
+    $st = $db->prepare($sql);
+    $st->execute(array_values($data));
+  }
+
   hm_log_booking($data['id'], ['email' => (string)($data['customer_email'] ?? ''), 'date' => (string)($data['booking_date'] ?? '')]);
   hm_cache_invalidate_table('bookings');   // dashboard stats / lists pick this up
 
