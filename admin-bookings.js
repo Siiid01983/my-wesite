@@ -245,7 +245,14 @@ function buildTable(bk, compact) {
   const rows = bk.map(b => `<tr>
     ${chk(b.id)}
     <td class="td-mono" style="font-size:11px">${esc(b.id||'—')}</td>
-    <td><strong>${esc(b.name||'—')}</strong>${!compact&&b.email?`<br><span class="td-sm">${esc(b.email)}</span>`:''}</td>
+    <td>
+      <div style="font-weight:700;color:var(--ink)">${esc(b.name||'—')}</div>
+      ${b.fromAddr?`<div class="td-sm" style="display:flex;align-items:flex-start;gap:3px;margin-top:2px;max-width:220px">
+        <svg viewBox="0 0 24 24" width="11" height="11" style="flex-shrink:0;margin-top:2px;opacity:.6"><path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/></svg>
+        <span>${esc(b.fromAddr)}${b.toAddr?` → ${esc(b.toAddr)}`:''}</span>
+      </div>`:''}
+      ${!compact&&b.email?`<div class="td-sm" style="margin-top:2px">${esc(b.email)}</div>`:''}
+    </td>
     <td>${fmtD(b.date)}</td>
     <td>${badge(b.status||'新規')}</td>
     ${!compact?`<td class="td-sm">${fmtDT(b.createdAt)}</td>`:''}
@@ -272,7 +279,7 @@ function buildTable(bk, compact) {
 
   return `<table><thead><tr>
     ${selectAllTh}
-    <th>予約番号</th><th>お客様名</th><th>引越し日</th><th>ステータス</th>
+    <th>予約番号</th><th>お客様・場所</th><th>引越し日</th><th>ステータス</th>
     ${!compact?'<th>受付日時</th>':''}
     <th>操作</th>
   </tr></thead><tbody>${rows}</tbody></table>`;

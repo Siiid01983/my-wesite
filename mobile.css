@@ -421,69 +421,107 @@ html.dark .mct-st-b { color: #f87171; }
 }
 .mct-empty p { font-size: 13px; color: var(--gray-1); margin: 0; }
 
-/* ── Timeline list ───────────────────────────────────── */
-.mct-list { display: flex; flex-direction: column; }
-.mct-item {
+/* ── Hourly timeline grid (08:00–18:00) ──────────────── */
+.mct-grid { display: flex; flex-direction: column; padding-top: 4px; }
+.mct-hour {
   display: grid;
-  grid-template-columns: 52px 18px 1fr;
+  grid-template-columns: 50px 1fr;
+  gap: 10px;
   align-items: stretch;
-  gap: 8px;
-  background: none;
-  border: none;
-  padding: 0;
-  text-align: left;
-  cursor: pointer;
-  font-family: inherit;
-  -webkit-tap-highlight-color: transparent;
+  min-height: 56px;
 }
-.mct-time {
-  font-size: 12px;
+.mct-hh {
+  font-size: 13px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--gray-1);
   font-variant-numeric: tabular-nums;
-  padding-top: 16px;
+  padding-top: 10px;
   text-align: right;
+  border-right: 2px solid var(--line);
+  padding-right: 10px;
 }
-.mct-rail {
-  position: relative;
+.mct-hour.has .mct-hh { color: var(--ink); }
+.mct-track {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 0 8px;
+  min-width: 0;
 }
-.mct-rail::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: var(--line);
-}
-.mct-dot {
-  position: relative;
-  z-index: 1;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--green, #1D9E75);
-  border: 2px solid var(--bg);
-  margin-top: 15px;
-}
-.mct-item:first-child .mct-rail::before { top: 15px; }
-.mct-item:last-child  .mct-rail::before { bottom: calc(100% - 21px); }
-.mct-card {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--bg);
-  padding: 11px 13px;
-  margin-bottom: 10px;
+
+/* Slot base — every slot is a full-width, ≥52px touch target */
+.mct-slot {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  transition: transform .1s;
+  width: 100%;
+  min-height: 52px;
+  border-radius: 12px;
+  padding: 10px 13px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  transition: transform .1s, background .12s;
+  -webkit-tap-highlight-color: transparent;
 }
-.mct-item:active .mct-card { transform: scale(.98); background: var(--bg-soft); }
-.mct-name { font-size: 14px; font-weight: 700; color: var(--ink); }
-.mct-svc  { font-size: 12px; color: var(--gray-1); }
-.mct-badges { display: flex; align-items: center; gap: 8px; margin-top: 3px; flex-wrap: wrap; }
+.mct-slot:active { transform: scale(.985); }
+
+/* Available slot — dashed, brand-green, inviting */
+.mct-slot-free {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1.5px dashed rgba(29,158,117,.5);
+  background: rgba(29,158,117,.05);
+  color: #147a5a;
+  font-size: 13px;
+  font-weight: 600;
+}
+.mct-slot-free:active { background: rgba(29,158,117,.12); }
+html.dark .mct-slot-free { color: #34d399; border-color: rgba(52,211,153,.4); }
+
+/* Locked (day 満了) — hard-blocked, high-contrast red */
+.mct-slot-lock {
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+  border: 1.5px solid rgba(239,68,68,.35);
+  background: rgba(239,68,68,.07);
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: not-allowed;
+}
+html.dark .mct-slot-lock { color: #f87171; }
+
+/* Booked slot — solid card, locked, name/location separated */
+.mct-slot-booked {
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--navy);
+  background: var(--bg);
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+.mct-slot-booked:active { background: var(--bg-soft); }
+.mct-lockrow { display: flex; align-items: center; gap: 6px; margin-bottom: 1px; flex-wrap: wrap; }
+.mct-lockicon { color: var(--navy); flex-shrink: 0; }
+html.dark .mct-lockicon { color: #93b4ff; }
+.mct-band { font-size: 11px; font-weight: 700; color: var(--gray-1); }
+.mct-name { font-size: 15px; font-weight: 700; color: var(--ink); line-height: 1.25; }
+.mct-loc {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--gray-1);
+  line-height: 1.35;
+}
+.mct-loc svg { flex-shrink: 0; margin-top: 2px; color: var(--gray-2); }
+.mct-arrow { color: var(--gray-2); font-weight: 700; }
+.mct-meta { display: flex; align-items: center; gap: 10px; margin-top: 2px; flex-wrap: wrap; }
+.mct-svc { font-size: 12px; color: var(--gray-1); }
 .mct-phone { font-size: 11px; color: var(--gray-2); font-variant-numeric: tabular-nums; }
 
 /* ── Date-picker modal ───────────────────────────────── */
