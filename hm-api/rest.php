@@ -24,6 +24,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_db.php';
 require_once __DIR__ . '/_cache.php';
 require_once __DIR__ . '/_ratelimit.php';
+require_once __DIR__ . '/_slots.php';   // Phase 2 (slice 2): slot sync (feature-flagged, OFF by default)
 hm_cors();
 hm_require_api_key();
 // Authenticated data API: the admin/portal SPA legitimately bursts many reads on
@@ -174,6 +175,12 @@ function build_where(array $filters, array $S, array $OPS, callable $qid, callab
   return [$clauses ? (' WHERE ' . implode(' AND ', $clauses)) : '', $params];
 }
 
+// Phase 2 (slice 2) slot synchronisation gate. TRUE only when the feature flag
+// is ON *and* the write targets the bookings table. When FALSE, every branch
+// below runs its ORIGINAL statements unchanged — production behaviour is
+// byte-for-byte identical while slot_lock_enabled is OFF.
+$slotSync = hm_slot_lock_enabled() && $table === 'bookings';
+
 try {
   // ════════════════════════════ SELECT ══════════════════════════════════════
   if ($action === 'select') {
@@ -219,29 +226,46 @@ try {
     $rows = (is_array($values) && array_keys($values) === range(0, count($values) - 1)) ? $values : [$values];
     if (!$rows) hm_ok([]);
 
-    $generated = [];   // ids/unique values to re-select for "returning"
-    foreach ($rows as $row) {
-      $data = [];
-      foreach ($row as $c => $v) if ($valid_col($c)) $data[$c] = enc_val($c, $v, $S);
-      if ($S['uuid_pk'] && empty($data['id'])) $data['id'] = hm_uuid4();
+    // Slot sync applies to a true INSERT of bookings only (not upsert). Reserve
+    // each row's slot inside ONE transaction with the insert(s):
+    //   reserve → insert → commit ; a slot collision rolls back → NO booking.
+    $slotIns = $slotSync && $action === 'insert';
+    if ($slotIns) $db->beginTransaction();
+    try {
+      $generated = [];   // ids/unique values to re-select for "returning"
+      foreach ($rows as $row) {
+        $data = [];
+        foreach ($row as $c => $v) if ($valid_col($c)) $data[$c] = enc_val($c, $v, $S);
+        if ($S['uuid_pk'] && empty($data['id'])) $data['id'] = hm_uuid4();
 
-      $cols = array_keys($data);
-      $ph   = implode(',', array_fill(0, count($cols), '?'));
-      $sql  = 'INSERT INTO ' . $qid($table) . ' (' . implode(',', array_map($qid, $cols)) . ") VALUES ($ph)";
+        $cols = array_keys($data);
+        $ph   = implode(',', array_fill(0, count($cols), '?'));
+        $sql  = 'INSERT INTO ' . $qid($table) . ' (' . implode(',', array_map($qid, $cols)) . ") VALUES ($ph)";
 
-      if ($action === 'upsert') {
-        $confCol = (string)($req['onConflict'] ?? ($S['unique'][0] ?? 'id'));
-        $upd = [];
-        foreach ($cols as $c) if ($c !== 'id' && $c !== $confCol) $upd[] = $qid($c) . '=VALUES(' . $qid($c) . ')';
-        if ($upd) $sql .= ' ON DUPLICATE KEY UPDATE ' . implode(',', $upd);
-        else      $sql .= ' ON DUPLICATE KEY UPDATE ' . $qid($confCol) . '=VALUES(' . $qid($confCol) . ')';
+        if ($action === 'upsert') {
+          $confCol = (string)($req['onConflict'] ?? ($S['unique'][0] ?? 'id'));
+          $upd = [];
+          foreach ($cols as $c) if ($c !== 'id' && $c !== $confCol) $upd[] = $qid($c) . '=VALUES(' . $qid($c) . ')';
+          if ($upd) $sql .= ' ON DUPLICATE KEY UPDATE ' . implode(',', $upd);
+          else      $sql .= ' ON DUPLICATE KEY UPDATE ' . $qid($confCol) . '=VALUES(' . $qid($confCol) . ')';
+        }
+
+        if ($slotIns) {   // reserve BEFORE the booking insert, same transaction
+          $res = hm_slot_reserve($db, (string)($data['booking_date'] ?? ''), hm_slot_time_from_notes($data['notes'] ?? ''), (string)($data['id'] ?? ''));
+          if (!empty($res['conflict'])) { $db->rollBack(); hm_err('slot_taken', 409, 'slot_taken'); }
+        }
+
+        $st = $db->prepare($sql);
+        $st->execute(array_values($data));
+
+        // Track how to fetch the affected row back.
+        if (!$S['uuid_pk']) $generated[] = ['col' => 'id', 'val' => (int)$db->lastInsertId()];
+        elseif (isset($data['id'])) $generated[] = ['col' => 'id', 'val' => $data['id']];
       }
-      $st = $db->prepare($sql);
-      $st->execute(array_values($data));
-
-      // Track how to fetch the affected row back.
-      if (!$S['uuid_pk']) $generated[] = ['col' => 'id', 'val' => (int)$db->lastInsertId()];
-      elseif (isset($data['id'])) $generated[] = ['col' => 'id', 'val' => $data['id']];
+      if ($slotIns) $db->commit();
+    } catch (Throwable $e) {
+      if ($slotIns && $db->inTransaction()) $db->rollBack();
+      throw $e;
     }
 
     hm_cache_invalidate_table($table);
@@ -258,8 +282,36 @@ try {
     [$where, $whereParams] = build_where($req['filters'] ?? [], $S, $OPS, $qid, $valid_col);
     if ($where === '') hm_err('UPDATE requires a filter', 400, 'no_filter');
 
-    $st = $db->prepare('UPDATE ' . $qid($table) . ' SET ' . implode(',', $set) . $where);
-    $st->execute(array_merge($setParams, $whereParams));
+    if ($slotSync) {
+      // Reschedule lock-move (+ cancel release), atomic per affected booking:
+      //   release old slot → reserve new slot → UPDATE booking → commit.
+      // FOR UPDATE locks the target rows for the duration of the transaction.
+      $db->beginTransaction();
+      try {
+        $sel = $db->prepare('SELECT `id`,`booking_date`,`notes`,`status` FROM ' . $qid($table) . $where . ' FOR UPDATE');
+        $sel->execute($whereParams);
+        foreach ($sel->fetchAll() as $b) {
+          $newStatus = array_key_exists('status', $patch)       ? (string)$patch['status']       : (string)($b['status'] ?? '');
+          $newDate   = array_key_exists('booking_date', $patch) ? (string)$patch['booking_date'] : (string)($b['booking_date'] ?? '');
+          $newNotes  = array_key_exists('notes', $patch)        ? (string)$patch['notes']        : (string)($b['notes'] ?? '');
+          hm_slot_release($db, (string)$b['id']);              // free whatever this booking held (no-op if none)
+          $cancelled = in_array($newStatus, ['cancelled', 'キャンセル'], true);
+          if (!$cancelled) {                                   // re-reserve at the (possibly new) date/band
+            $res = hm_slot_reserve($db, $newDate, hm_slot_time_from_notes($newNotes), (string)$b['id']);
+            if (!empty($res['conflict'])) { $db->rollBack(); hm_err('slot_taken', 409, 'slot_taken'); }
+          }
+        }
+        $st = $db->prepare('UPDATE ' . $qid($table) . ' SET ' . implode(',', $set) . $where);
+        $st->execute(array_merge($setParams, $whereParams));
+        $db->commit();
+      } catch (Throwable $e) {
+        if ($db->inTransaction()) $db->rollBack();
+        throw $e;
+      }
+    } else {
+      $st = $db->prepare('UPDATE ' . $qid($table) . ' SET ' . implode(',', $set) . $where);
+      $st->execute(array_merge($setParams, $whereParams));
+    }
 
     hm_cache_invalidate_table($table);
     if (empty($req['returning'])) hm_ok([]);
@@ -274,13 +326,37 @@ try {
     if ($where === '') hm_err('DELETE requires a filter', 400, 'no_filter');
 
     $returned = [];
-    if (!empty($req['returning'])) {
-      $st0 = $db->prepare('SELECT * FROM ' . $qid($table) . $where);
-      $st0->execute($params);
-      $returned = array_map(fn($r) => cast_row($r, $S), $st0->fetchAll());
+    if ($slotSync) {
+      // Delete-orphan prevention, atomic: delete booking(s) → release slot(s) →
+      // commit. Release is by booking_id, so it is safe/idempotent even when a
+      // booking held no slot (band-less, or created while the flag was OFF).
+      $db->beginTransaction();
+      try {
+        $idSel = $db->prepare('SELECT `id` FROM ' . $qid($table) . $where);
+        $idSel->execute($params);
+        $ids = array_map(fn($r) => (string)$r['id'], $idSel->fetchAll());
+        if (!empty($req['returning'])) {
+          $st0 = $db->prepare('SELECT * FROM ' . $qid($table) . $where);
+          $st0->execute($params);
+          $returned = array_map(fn($r) => cast_row($r, $S), $st0->fetchAll());
+        }
+        $st = $db->prepare('DELETE FROM ' . $qid($table) . $where);
+        $st->execute($params);
+        foreach ($ids as $bid) hm_slot_release($db, $bid);
+        $db->commit();
+      } catch (Throwable $e) {
+        if ($db->inTransaction()) $db->rollBack();
+        throw $e;
+      }
+    } else {
+      if (!empty($req['returning'])) {
+        $st0 = $db->prepare('SELECT * FROM ' . $qid($table) . $where);
+        $st0->execute($params);
+        $returned = array_map(fn($r) => cast_row($r, $S), $st0->fetchAll());
+      }
+      $st = $db->prepare('DELETE FROM ' . $qid($table) . $where);
+      $st->execute($params);
     }
-    $st = $db->prepare('DELETE FROM ' . $qid($table) . $where);
-    $st->execute($params);
     hm_cache_invalidate_table($table);
     return finish_rows($returned, $req);
   }
