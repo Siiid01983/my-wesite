@@ -17,6 +17,10 @@
 // ════════════════════════════════════════════════════════════════════════════
 declare(strict_types=1);
 
+// Build marker — reported by slot-preflight.php so the safe-test driver can
+// detect whether a fresh deploy actually took effect (vs stale OPcache bytecode).
+if (!defined('HM_SLOTS_BUILD')) define('HM_SLOTS_BUILD', 'phase2-slice2');
+
 if (!function_exists('hm_slot_band_id')) {
 
   /**
