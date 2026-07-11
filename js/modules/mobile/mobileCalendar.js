@@ -57,14 +57,26 @@ window.MobileCal = (function () {
      Kept in one table so a booking is anchored to its band's START
      hour (shown once) rather than duplicated across every hour. */
   var HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
-  function _bandOf(timeStr) {
-    var t = String(timeStr || '');
-    if (t.indexOf('午前') >= 0) return { start: 9,  range: '09:00〜12:00', key: 'am' };
-    if (t.indexOf('午後') >= 0) return { start: 12, range: '12:00〜15:00', key: 'pm' };
-    if (t.indexOf('夕方') >= 0) return { start: 15, range: '15:00〜18:00', key: 'ev' };
-    if (t.indexOf('夜間') >= 0) return { start: 18, range: '18:00〜21:00', key: 'nt' };
-    return { start: 8, range: '時間指定なし', key: 'any' };   // 時間指定なし / 空
+
+  /* Services for the quick-book sheet (matches the public 6-service lineup) */
+  var SERVICES = [
+    '当日・お急ぎ引越しプラン', '単身引越し', 'カップル・ご夫婦引越し',
+    '学生・新生活引越し', '不用品回収・処分サービス', '家具組立・分解'
+  ];
+
+  /* Map any stored time value onto its hour bucket (08–18).
+     Works for exact slots ("09:00〜10:00") AND public band labels
+     ("午前（9:00〜12:00）" → 9, "午後…" → 12, "夕方…" → 15, "夜間…" → 18)
+     by reading the FIRST hour number; blank/時間指定なし → 08 bucket. */
+  function _slotHourOf(timeStr) {
+    var m = String(timeStr || '').match(/(\d{1,2})\s*[:時]/);
+    if (!m) return 8;
+    var h = +m[1];
+    if (h < 8)  return 8;
+    if (h > 18) return 18;
+    return h;
   }
+  function _slotLabel(h) { return pad(h) + ':00〜' + pad(h + 1) + ':00'; }
 
   /* ── Timeline injection ────────────────────────────────── */
   function _injectTimeline() {
@@ -119,13 +131,18 @@ window.MobileCal = (function () {
       '<div class="mct-sub">' +
         '<span class="mct-status ' + stCls + '">' + stTxt + '</span>' +
         '<span class="mct-count">予約 ' + list.length + '件</span>' +
-        (isToday ? '' : '<button class="mct-today" onclick="MobileCal.goToday()">今日へ</button>') +
+        '<span class="mct-sub-actions">' +
+          (isToday ? '' : '<button class="mct-today" onclick="MobileCal.goToday()">今日へ</button>') +
+          '<button class="mct-month-toggle" onclick="MobileCal.toggleMonth()" aria-label="月間カレンダー表示切替">' +
+            '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M20 3h-1V1h-2v2H7V1H5v2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H4V8h16v13z"/></svg>月間表示' +
+          '</button>' +
+        '</span>' +
       '</div>';
 
-    /* Bucket bookings by the START hour of their time-band */
+    /* Bucket bookings into their hour slot (08–18) */
     var byHour = {};
     list.forEach(function (b) {
-      var h = _bandOf(b.time).start;
+      var h = _slotHourOf(b.time);
       (byHour[h] = byHour[h] || []).push(b);
     });
 
@@ -148,8 +165,8 @@ window.MobileCal = (function () {
           '</div>';
       } else {
         cells =
-          '<button class="mct-slot mct-slot-free" onclick="if(window.openAdd)openAdd()" aria-label="' + hh + ' に予約を追加">' +
-            '<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>' +
+          '<button class="mct-slot mct-slot-free" onclick="MobileCal.bookSlot(' + h + ')" aria-label="' + hh + ' の枠を予約">' +
+            '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>' +
             '<span>空き · 予約可</span>' +
           '</button>';
       }
@@ -247,6 +264,88 @@ window.MobileCal = (function () {
       '</div>';
   }
 
+  /* ── Book-this-slot sheet ──────────────────────────────── */
+  function _injectBookModal() {
+    if (document.getElementById('mobileCalBookModal')) return;
+    var m = document.createElement('div');
+    m.id = 'mobileCalBookModal';
+    m.addEventListener('click', function (e) { if (e.target === m) closeBook(); });
+    document.body.appendChild(m);
+  }
+
+  function bookSlot(h) {
+    _injectBookModal();
+    var m = document.getElementById('mobileCalBookModal');
+    var d = new Date((_sel || todayStr()) + 'T00:00:00');
+    var dow = d.getDay();
+    var label = (d.getMonth() + 1) + '月' + d.getDate() + '日（' + DN[dow] + '）';
+    var slot = _slotLabel(h);
+
+    m.innerHTML =
+      '<div class="mcb-sheet" role="dialog" aria-label="この枠を予約">' +
+        '<div class="mcm-grip"></div>' +
+        '<div class="mcb-head">' +
+          '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/></svg>' +
+          '<span>この枠を予約</span>' +
+        '</div>' +
+        '<div class="mcb-slotline">' +
+          '<span class="mcb-date">' + label + '</span>' +
+          '<span class="mcb-time">' + slot + '</span>' +
+        '</div>' +
+        '<label class="mcb-field"><span>お客様名 <em>必須</em></span>' +
+          '<input id="mcbName" type="text" inputmode="text" placeholder="山田 太郎" autocomplete="off"></label>' +
+        '<label class="mcb-field"><span>電話番号</span>' +
+          '<input id="mcbPhone" type="tel" inputmode="tel" placeholder="090-0000-0000" autocomplete="off"></label>' +
+        '<label class="mcb-field"><span>サービス</span>' +
+          '<select id="mcbService">' + SERVICES.map(function (s) {
+            return '<option value="' + esc(s) + '">' + esc(s) + '</option>';
+          }).join('') + '</select></label>' +
+        '<input type="hidden" id="mcbSlot" value="' + esc(slot) + '">' +
+        '<div class="mcb-foot">' +
+          '<button class="btn btn-ghost" onclick="MobileCal.closeBook()">キャンセル</button>' +
+          '<button class="btn btn-primary mcb-confirm" onclick="MobileCal.confirmBook()">' +
+            '<svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/></svg>' +
+            'この枠を予約する</button>' +
+        '</div>' +
+      '</div>';
+    m.classList.add('open');
+    setTimeout(function () { var n = document.getElementById('mcbName'); if (n) n.focus(); }, 60);
+  }
+
+  function closeBook() {
+    var m = document.getElementById('mobileCalBookModal');
+    if (m) m.classList.remove('open');
+  }
+
+  function confirmBook() {
+    var name = (document.getElementById('mcbName') || {}).value || '';
+    if (!name.trim()) {
+      var n = document.getElementById('mcbName');
+      if (n) { n.classList.add('mcb-err'); n.focus(); }
+      if (typeof toast === 'function') toast('お客様名を入力してください');
+      return;
+    }
+    if (typeof window.quickBookSlot !== 'function') {
+      if (typeof toast === 'function') toast('予約機能を初期化中です。再度お試しください');
+      return;
+    }
+    window.quickBookSlot({
+      date:    _sel,
+      time:    (document.getElementById('mcbSlot') || {}).value || '',
+      name:    name,
+      phone:   (document.getElementById('mcbPhone') || {}).value || '',
+      service: (document.getElementById('mcbService') || {}).value || '単身引越し'
+    });
+    closeBook();
+    render(_sel);   // slot now shows the client + lock
+  }
+
+  /* ── Month-grid toggle (reveal the ○△× availability editor) ── */
+  function toggleMonth() {
+    var v = document.getElementById('view-calendar');
+    if (v) v.classList.toggle('mc-show-month');
+  }
+
   /* ── Public actions ────────────────────────────────────── */
   function step(delta) { render(_shiftDay(_sel || todayStr(), delta)); }
   function goToday()    { _picker = new Date(); closePicker(); render(todayStr()); }
@@ -267,6 +366,7 @@ window.MobileCal = (function () {
   function init() {
     _injectTimeline();
     _injectModal();
+    _injectBookModal();
     _wrapGo();
     /* Keep timeline live when availability/bookings change elsewhere */
     document.addEventListener('calendar:updated', function () {
@@ -284,6 +384,10 @@ window.MobileCal = (function () {
     openPicker: openPicker,
     closePicker: closePicker,
     pickerMove: pickerMove,
+    bookSlot: bookSlot,
+    closeBook: closeBook,
+    confirmBook: confirmBook,
+    toggleMonth: toggleMonth,
   };
 
 })();

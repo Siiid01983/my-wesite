@@ -543,6 +543,47 @@ function saveBooking() {
   closeEdit(); renderBookings(); renderDash();
 }
 
+/* ────────────────────────────────────────────────────────
+   QUICK SLOT BOOKING
+   Books a single time slot straight from the mobile hourly
+   timeline WITHOUT the full add-form. Goes through the same
+   locked pipeline as saveBooking's create branch (Adapter.
+   addBooking + BookingService.recordBooking) so counts, the
+   day-level lock (hm_booked) and notifications stay in sync.
+   Returns the created booking, or null if name is missing.
+   ──────────────────────────────────────────────────────── */
+function quickBookSlot(fields) {
+  fields = fields || {};
+  const name = String(fields.name || '').trim();
+  if (!name) return null;
+  const b = {
+    id: genId(),
+    name,
+    email: String(fields.email || '').trim(),
+    phone: String(fields.phone || '').trim(),
+    service: fields.service || '単身引越し',
+    status: '確定',                 // a booked slot is a firm hold
+    date: fields.date,
+    time: fields.time || '',
+    fromAddr: '', toAddr: '',
+    notes: '（枠予約 / タイムラインから作成）',
+    createdAt: new Date().toISOString()
+  };
+  Adapter.addBooking(b);
+  BookingService.recordBooking(b);            // locks the day-slot + syncs public calendar
+  if (typeof sendLineNotif === 'function') {
+    sendLineNotif(`📅 枠予約\n${b.name}様\nサービス: ${b.service}\n日程: ${b.date} ${b.time}\nID: ${b.id}`, 'newBooking');
+  }
+  if (typeof sendEmailNotif === 'function') {
+    try { sendEmailNotif({ subject:`[Hello Moving] 新規枠予約 - ${b.name}様`, trigger_type:'新規予約', ...bkEmailParams(b) }, 'newBooking'); } catch(e) {}
+  }
+  if (typeof toast === 'function') toast(`${b.time || 'この枠'} を予約しました`);
+  if (typeof renderBookings === 'function') renderBookings();
+  if (typeof renderDash === 'function') renderDash();
+  return b;
+}
+window.quickBookSlot = quickBookSlot;
+
 /* ════════════════════════════════════════════════════════
    DETAIL MODAL
    ════════════════════════════════════════════════════════ */
