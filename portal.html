@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Noto+Serif+JP:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/chat-bubbles.css" /><!-- shared LINE-style chat bubbles (also used by the admin Inbox) -->
+<link rel="stylesheet" href="css/portal-v2.css" /><!-- Customer Portal V2 (Phase 2) — scoped to .pv2; inert while flag OFF -->
 
 <style>
   :root {
@@ -796,6 +797,10 @@
   <script src="js/portal/portalApproval.js"></script>
   <script src="js/portal/portalReviews.js"></script>
   <script src="js/portal/portalSelfService.js"></script>
+  <!-- Customer Portal V2 (Phase 2) — feature flag + dormant scaffold. Additive; -->
+  <!-- inert (no DOM/style) while CUSTOMER_PORTAL_V2_ENABLED=false. -->
+  <script src="js/config/portalFlags.js"></script>
+  <script src="js/portal/portalV2.js"></script>
 
   <script>
   (async function () {

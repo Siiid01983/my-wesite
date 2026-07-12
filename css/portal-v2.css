@@ -1,0 +1,226 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   Customer Portal V2 — additive styles (Phase 2, Step 2: Booking History)
+
+   ZERO effect while the flag is OFF: every rule is scoped under `.pv2`, and
+   portalV2.js creates no `.pv2` element unless the flag is ON. Reuses the
+   portal's existing CSS variables and `.badge` styling.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Section shell ─────────────────────────────────────────────────────────── */
+.pv2.pv2-history { margin: 22px 0 8px; }
+.pv2 .pv2-hist-head { display: flex; align-items: center; margin-bottom: 12px; }
+.pv2 .pv2-hist-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink, #1a1f2b);
+  margin: 0;
+  letter-spacing: .01em;
+}
+
+/* ── Notes / loading / error ───────────────────────────────────────────────── */
+.pv2 .pv2-note { padding: 18px; color: var(--gray-2, #6b7280); font-size: 13px; }
+.pv2 .pv2-err  { color: #c0392b; }
+
+/* ── Table (desktop default) ───────────────────────────────────────────────── */
+.pv2 .pv2-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg, #fff);
+  border: 1px solid var(--line, rgba(0,0,0,.08));
+  border-radius: 14px;
+  overflow: hidden;
+}
+.pv2 .pv2-table thead th {
+  text-align: left;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--gray-2, #6b7280);
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line, rgba(0,0,0,.08));
+  background: var(--line-3, #f7f8fa);
+  white-space: nowrap;
+}
+.pv2 .pv2-table tbody td {
+  padding: 13px 14px;
+  font-size: 13.5px;
+  color: var(--ink, #1a1f2b);
+  border-bottom: 1px solid var(--line-2, rgba(0,0,0,.05));
+  vertical-align: middle;
+}
+.pv2 .pv2-table tbody tr:last-child td { border-bottom: none; }
+.pv2 .pv2-table tbody tr:hover { background: var(--line-3, #f7f8fa); }
+.pv2 .pv2-ref { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+/* ── Pager ─────────────────────────────────────────────────────────────────── */
+.pv2 .pv2-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 14px;
+}
+.pv2 .pv2-pg {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink, #1a1f2b);
+  background: var(--bg, #fff);
+  border: 1px solid var(--line, rgba(0,0,0,.12));
+  border-radius: 10px;
+  padding: 8px 18px;
+  min-height: 40px;
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.pv2 .pv2-pg:hover:not(:disabled) { border-color: var(--navy, #0a1f44); }
+.pv2 .pv2-pg:disabled { opacity: .4; cursor: not-allowed; }
+.pv2 .pv2-pg-info { font-size: 12.5px; color: var(--gray-2, #6b7280); font-variant-numeric: tabular-nums; }
+
+/* ── Empty state ───────────────────────────────────────────────────────────── */
+.pv2 .pv2-empty {
+  text-align: center;
+  padding: 40px 20px;
+  background: var(--bg, #fff);
+  border: 1px dashed var(--line, rgba(0,0,0,.14));
+  border-radius: 14px;
+}
+.pv2 .pv2-empty-msg { font-size: 14px; color: var(--gray-1, #4b5563); margin: 0 0 16px; }
+.pv2 .pv2-cta {
+  display: inline-block;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--navy, #0a1f44);
+  border-radius: 12px;
+  padding: 12px 24px;
+  min-height: 44px;
+  line-height: 20px;
+}
+.pv2 .pv2-cta:hover { opacity: .92; }
+
+/* ── Mobile: table → cards (≤768px) ────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .pv2 .pv2-table { border: none; border-radius: 0; background: transparent; overflow: visible; }
+  .pv2 .pv2-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } /* visually-hidden */
+  .pv2 .pv2-table tbody tr {
+    display: block;
+    background: var(--bg, #fff);
+    border: 1px solid var(--line, rgba(0,0,0,.08));
+    border-radius: 12px;
+    padding: 6px 4px;
+    margin-bottom: 12px;
+  }
+  .pv2 .pv2-table tbody tr:hover { background: var(--bg, #fff); }
+  .pv2 .pv2-table tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--line-2, rgba(0,0,0,.05));
+    font-size: 14px;
+  }
+  .pv2 .pv2-table tbody tr td:last-child { border-bottom: none; }
+  .pv2 .pv2-table tbody td::before {
+    content: attr(data-label);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray-2, #6b7280);
+    flex-shrink: 0;
+  }
+  .pv2 .pv2-pg { flex: 1; }
+}
+
+/* ── Clickable history rows (Step 3 entry) ─────────────────────────────────── */
+.pv2 .pv2-row { cursor: pointer; }
+.pv2 .pv2-row:focus-visible { outline: 2px solid var(--navy, #0a1f44); outline-offset: -2px; }
+
+/* ── Booking Details modal (Step 3) ────────────────────────────────────────── */
+#pv2-detail.pv2-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+#pv2-detail[hidden] { display: none; }
+#pv2-detail .pv2-modal-backdrop { position: absolute; inset: 0; background: rgba(11,15,23,.5); }
+#pv2-detail .pv2-modal-card {
+  position: relative; background: var(--bg, #fff); width: min(560px, 94vw);
+  max-height: 90vh; overflow-y: auto; border-radius: 16px; box-shadow: 0 24px 60px rgba(0,0,0,.28);
+}
+#pv2-detail .pv2-modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px; border-bottom: 1px solid var(--line, rgba(0,0,0,.08));
+  position: sticky; top: 0; background: var(--bg, #fff); border-radius: 16px 16px 0 0;
+}
+#pv2-detail .pv2-modal-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--ink, #1a1f2b); }
+#pv2-detail .pv2-modal-close {
+  background: none; border: none; font-size: 24px; line-height: 1; color: var(--gray-2, #6b7280);
+  cursor: pointer; padding: 0 4px; min-width: 40px; min-height: 40px;
+}
+#pv2-detail .pv2-modal-body { padding: 18px; }
+#pv2-detail .pv2-d-status { margin-bottom: 14px; }
+#pv2-detail .pv2-fields { display: flex; flex-direction: column; gap: 0; }
+#pv2-detail .pv2-f {
+  display: flex; align-items: flex-start; gap: 12px; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid var(--line-2, rgba(0,0,0,.05));
+}
+#pv2-detail .pv2-f-k { font-size: 12.5px; font-weight: 600; color: var(--gray-2, #6b7280); flex-shrink: 0; }
+#pv2-detail .pv2-f-v { font-size: 13.5px; color: var(--ink, #1a1f2b); text-align: right; word-break: break-word; }
+#pv2-detail .pv2-d-notes { margin-top: 14px; }
+#pv2-detail .pv2-d-notes p { margin: 6px 0 0; font-size: 13.5px; color: var(--ink, #1a1f2b); white-space: pre-wrap; line-height: 1.7; }
+#pv2-detail .pv2-d-tl { margin-top: 18px; }
+#pv2-detail .pv2-d-tl .timeline { margin-top: 8px; }
+/* pending timeline steps: dim (reuses existing .timeline / .tl-item styling) */
+#pv2-detail .tl-item.tl-pending { opacity: .45; }
+#pv2-detail .pv2-d-actions { margin-top: 22px; }
+#pv2-detail .pv2-rebook {
+  width: 100%; font-family: inherit; font-size: 15px; font-weight: 700; color: #fff;
+  background: var(--navy, #0a1f44); border: none; border-radius: 12px; padding: 14px; min-height: 50px; cursor: pointer;
+}
+#pv2-detail .pv2-rebook:hover { opacity: .92; }
+
+/* Mobile: full-width bottom-sheet feel */
+@media (max-width: 768px) {
+  #pv2-detail.pv2-modal { align-items: flex-end; }
+  #pv2-detail .pv2-modal-card { width: 100%; max-height: 92vh; border-radius: 16px 16px 0 0; }
+}
+
+/* ── Panel wrapper + section spacing (Steps 5/6) ───────────────────────────── */
+.pv2.pv2-panel > section + section { margin-top: 26px; }
+.pv2 .pv2-messages .pv2-hist-title, .pv2 .pv2-history .pv2-hist-title { margin: 0; }
+
+/* ── Profile Summary card (Step 5) ─────────────────────────────────────────── */
+.pv2 .pv2-prof-card {
+  background: var(--bg, #fff); border: 1px solid var(--line, rgba(0,0,0,.08));
+  border-radius: 14px; padding: 18px 20px;
+}
+.pv2 .pv2-prof-title { font-size: 12px; font-weight: 700; color: var(--gray-2, #6b7280); letter-spacing: .06em; }
+.pv2 .pv2-prof-name { font-size: 20px; font-weight: 700; color: var(--ink, #1a1f2b); margin: 4px 0 14px; }
+.pv2 .pv2-prof-grid { display: flex; flex-wrap: wrap; gap: 10px 28px; }           /* compact horizontal (desktop) */
+.pv2 .pv2-pf { display: flex; flex-direction: column; gap: 2px; min-width: 120px; }
+.pv2 .pv2-pf-k { font-size: 11.5px; font-weight: 600; color: var(--gray-2, #6b7280); }
+.pv2 .pv2-pf-v { font-size: 14px; color: var(--ink, #1a1f2b); word-break: break-word; }
+@media (max-width: 768px) {
+  .pv2 .pv2-prof-grid { flex-direction: column; gap: 12px; }                       /* stacked (mobile) */
+  .pv2 .pv2-pf { flex-direction: row; justify-content: space-between; align-items: baseline; }
+}
+
+/* ── Messaging (Step 6) — conversation layout ──────────────────────────────── */
+.pv2 .pv2-msg-body {
+  background: var(--bg, #fff); border: 1px solid var(--line, rgba(0,0,0,.08)); border-radius: 14px; overflow: hidden;
+}
+.pv2 .pv2-msg-list { max-height: 380px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.pv2 .pv2-bubble { max-width: 78%; padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.6; }
+.pv2 .pv2-bubble.them { align-self: flex-start; background: var(--line-3, #f2f4f7); color: var(--ink, #1a1f2b); border-bottom-left-radius: 4px; }
+.pv2 .pv2-bubble.mine { align-self: flex-end; background: var(--navy, #0a1f44); color: #fff; border-bottom-right-radius: 4px; }
+.pv2 .pv2-bubble-meta { font-size: 11px; opacity: .7; margin-bottom: 3px; }
+.pv2 .pv2-bubble-text { white-space: pre-wrap; word-break: break-word; }
+.pv2 .pv2-msg-compose { display: flex; gap: 10px; align-items: flex-end; padding: 12px; border-top: 1px solid var(--line, rgba(0,0,0,.08)); }
+.pv2 .pv2-msg-input {
+  flex: 1; font-family: inherit; font-size: 15px; color: var(--ink, #1a1f2b);
+  border: 1px solid var(--line, rgba(0,0,0,.14)); border-radius: 12px; padding: 12px 14px; resize: vertical; min-height: 48px; box-sizing: border-box;
+}
+.pv2 .pv2-msg-input:focus { outline: none; border-color: var(--navy, #0a1f44); }
+.pv2 .pv2-msg-send {
+  flex-shrink: 0; font-family: inherit; font-size: 15px; font-weight: 700; color: #fff;
+  background: var(--navy, #0a1f44); border: none; border-radius: 12px; padding: 0 22px; min-height: 48px; min-width: 72px; cursor: pointer;
+}
+.pv2 .pv2-msg-send:hover { opacity: .92; }
+.pv2 .pv2-messages .pv2-empty { border: none; }

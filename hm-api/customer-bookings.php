@@ -82,6 +82,7 @@ try {
       'date'    => (string)($row['booking_date'] ?? ''),
       'service' => $svc,
       'status'  => (string)($row['status'] ?? ''),
+      'created' => (string)($row['created_at'] ?? ''),   // already SELECTed; no query/schema change
     ];
   }
 
