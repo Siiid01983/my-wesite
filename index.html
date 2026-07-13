@@ -3566,7 +3566,15 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     } catch (e) {
       console.error('[BA] createBooking failed:', e);
       btn.disabled = false; btn.textContent = label; baSubmitting = false;
-      if (err) err.style.display = '';
+      if (err) {
+        // 409 slot_taken → the chosen time band was reserved by another booking
+        // between selection and submit (server-side slot lock). Guide the
+        // customer to pick another slot instead of the generic contact fallback.
+        err.textContent = (e && e.message === 'slot_taken')
+          ? 'ご希望の時間帯は、先ほど他のお客様のご予約で満席となりました。お手数ですが別の日時をお選びください。'
+          : '送信に失敗しました。お電話（090-2489-3402）またはLINEにてご連絡ください。';
+        err.style.display = '';
+      }
       return;
     }
     if (!ref) {
