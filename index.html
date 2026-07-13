@@ -3407,6 +3407,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
       return;
     }
     baState.dateISO = v;
+    _baFetchAvail(v);   // refresh time-slot availability for the chosen date
     var el = document.getElementById('ba-val-date');
     el.textContent = _baFmtDate(v); el.classList.add('filled');
     document.getElementById('ba-row-date').classList.remove('ba-row--focused');
@@ -3417,6 +3418,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   window.baSetDate = function (iso) {
     if (!iso) return;
     baState.dateISO = iso;
+    _baFetchAvail(iso);   // refresh time-slot availability for the prefilled date
     var inp = document.getElementById('ba-input-date'); if (inp) inp.value = iso;
     var el = document.getElementById('ba-val-date');
     if (el) { el.textContent = _baFmtDate(iso); el.classList.add('filled'); }
@@ -3675,6 +3677,48 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     });
     host.innerHTML = html;
   }
+  // ── Slot availability (Smart Booking Engine) ────────────
+  // Mirrors server hm_slot_band_id(): map a time-slot value to a canonical band
+  // ('am'|'pm'|'ev'|'nt') or null (flexible / 時間指定なし → never locked).
+  var baAvailBands = null;   // { am:'available'|'reserved', … } for baState.dateISO, else null
+  function _baBandId(v) {
+    var t = String(v == null ? '' : v).trim();
+    if (!t) return null;
+    if (t.indexOf('午前') !== -1) return 'am';
+    if (t.indexOf('午後') !== -1) return 'pm';
+    if (t.indexOf('夕方') !== -1) return 'ev';
+    if (t.indexOf('夜間') !== -1) return 'nt';
+    if (t.indexOf('時間指定なし') !== -1) return null;   // flexible → not band-locked
+    var m = t.match(/(\d{1,2})\s*[:：時]/);
+    if (m) {
+      var h = parseInt(m[1], 10);
+      if (h >= 8  && h < 12) return 'am';
+      if (h >= 12 && h < 15) return 'pm';
+      if (h >= 15 && h < 18) return 'ev';
+      if (h >= 18)           return 'nt';
+    }
+    return null;
+  }
+  function _baBandReserved(band) {
+    return !!(band && baAvailBands && baAvailBands[band] && baAvailBands[band] !== 'available');
+  }
+  // Fetch real-time band availability for a date. availability.php returns
+  // 'reserved' for BOTH customer reservations and admin_blocked rows, so this one
+  // check hides blocked + booked bands. Fail-open: any error leaves slots
+  // unrestricted — the server slot lock (409 slot_taken) is the authoritative
+  // backstop, so a network blip must never prevent legitimate bookings.
+  function _baFetchAvail(iso) {
+    baAvailBands = null;
+    var base = (window.API_BASE || '').replace(/\/+$/, '');
+    if (!iso || !base) { baRenderTimeSlots(); return; }
+    fetch(base + '/availability.php?date=' + encodeURIComponent(iso), {
+      headers: { 'X-API-KEY': window.API_KEY || '' }
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (out) { baAvailBands = (out && out.ok && out.bands) ? out.bands : null; })
+      .catch(function () { baAvailBands = null; })
+      .then(function () { baRenderTimeSlots(); });
+  }
   function baRenderTimeSlots() {
     var host = document.getElementById('ba-time-host');
     if (!host) return;
@@ -3682,8 +3726,19 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
       var label = (s && typeof s === 'object') ? String(s.label || '') : String(s || '');
       var value = (s && typeof s === 'object' && s.value) ? String(s.value) : label;
       if (!label) return '';
+      if (_baBandReserved(_baBandId(value))) {   // reserved OR admin_blocked → not selectable
+        return '<label class="ba-filter-label" style="opacity:.45;cursor:not-allowed;text-decoration:line-through">'
+          + '<input type="radio" name="ba-time" value="' + _baEsc(value) + '" disabled> ' + _baEsc(label) + '（満席）</label>';
+      }
       return '<label class="ba-filter-label"><input type="radio" name="ba-time" value="' + _baEsc(value) + '"> ' + _baEsc(label) + '</label>';
     }).join('');
+    // If a previously chosen slot became unavailable (date changed / just blocked),
+    // clear it so a stale reserved band can't be carried into submit.
+    if (baState.timeSlot && _baBandReserved(_baBandId(baState.timeSlot))) {
+      baState.timeSlot = '';
+      var tv = document.getElementById('ba-val-time');
+      if (tv) { tv.textContent = '時間帯を選択'; tv.classList.remove('filled'); }
+    }
     if (baState.timeSlot) {
       host.querySelectorAll('input[name="ba-time"]').forEach(function (r) { if (r.value === baState.timeSlot) r.checked = true; });
     }
