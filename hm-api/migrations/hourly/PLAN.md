@@ -34,12 +34,12 @@ schedulers on one calendar (→ double-bookings). This plan sequences the whole 
 3. **`booking-slot.hourly.php`** — the rewritten admin reserve/release endpoint,
    interval-based. Review the diff vs the deployed `booking-slot.php`; when happy,
    replace the live file (or route the app to the new name first).
-4. **`create-booking.hourly.patch.md`** — spec + code for switching the customer
-   booking path to interval collision (still writing bands for back-compat during
-   transition). *[next batch]*
-5. **`availability.hourly.patch.md`** — return busy intervals for a date instead of
-   4 band states. *[next batch]*
-6. **`block-slot.hourly.patch.md`** — block by interval. *[next batch]*
+4. **`create-booking.hourly.patch.md`** — dual-write `start_at`/`end_at` from the
+   requested band (keeps the band lock during transition). *[batch 2 — DRAFTED]*
+5. **`availability.hourly.patch.md`** — add a busy `intervals` array to the response
+   (keeps `bands` for back-compat / dual-read). *[batch 2 — DRAFTED]*
+6. **`block-slot.hourly.patch.md`** — interval blocking via an `admin_blocked`
+   `bookings` row (Option A), or leave band-based (Option B, default). *[batch 2 — DRAFTED]*
 7. **Website JS** — BA overlay time picker + availability rendering. *[next batch —
    touches index.html core surface, needs your explicit sign-off]*
 8. **Mobile** — `DayGrid` range-select, a Create-Booking modal, and `api/slots.ts`
