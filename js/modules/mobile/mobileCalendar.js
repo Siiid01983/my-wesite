@@ -54,9 +54,8 @@ window.MobileCal = (function () {
      The booking pipeline stores b.time as a BAND label (午前/午後/
      夕方/夜間/時間指定なし), not a clock time. We map each band onto
      its clock hours so the hourly 08:00–18:00 grid can place it.
-     Kept in one table so a booking is anchored to its band's START
-     hour (shown once) rather than duplicated across every hour. */
-  var HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+     Anchored to its band's START hour; the DAY_START/DAY_END window and PPM
+     below drive the absolute block layout. */
 
   /* Services for the quick-book sheet (matches the public 6-service lineup) */
   var SERVICES = [
@@ -77,6 +76,39 @@ window.MobileCal = (function () {
     return h;
   }
   function _slotLabel(h) { return pad(h) + ':00〜' + pad(h + 1) + ':00'; }
+
+  /* ── Interval model (dynamic block layout) ──────────────────
+     Resolve each booking to a [startMin,endMin] window on the day axis, then
+     render absolute-positioned blocks (top = start·PPM, height = duration·PPM)
+     instead of fixed hour rows. Prefers real start_at/end_at timestamps once the
+     backend provides them; falls back to the band window so this works today. */
+  var DAY_START = 8, DAY_END = 19, PPM = 1.2;   // 08:00–19:00 window · px per minute
+
+  function _intervalOf(b) {
+    if (b.start_at && b.end_at) {
+      var s = new Date(String(b.start_at).replace(' ', 'T'));
+      var e = new Date(String(b.end_at).replace(' ', 'T'));
+      if (!isNaN(s) && !isNaN(e) && e > s) {
+        return { s: s.getHours() * 60 + s.getMinutes(), e: e.getHours() * 60 + e.getMinutes() };
+      }
+    }
+    var h = _slotHourOf(b.time);                 // band fallback → [startH, +duration]
+    return { s: h * 60, e: h * 60 + (/指定なし/.test(b.time || '') ? 60 : 180) }; // 3h band / 1h
+  }
+
+  /* Greedy lane assignment so concurrent bookings sit side-by-side. */
+  function _assignLanes(items) {
+    items.sort(function (a, b) { return a.s - b.s || a.e - b.e; });
+    var ends = [];
+    items.forEach(function (it) {
+      var lane = -1;
+      for (var i = 0; i < ends.length; i++) { if (ends[i] <= it.s) { lane = i; break; } }
+      if (lane === -1) { lane = ends.length; ends.push(0); }
+      ends[lane] = it.e;
+      it.lane = lane;
+    });
+    return ends.length || 1;
+  }
 
   /* ── Timeline injection ────────────────────────────────── */
   function _injectTimeline() {
@@ -139,46 +171,44 @@ window.MobileCal = (function () {
         '</span>' +
       '</div>';
 
-    /* Bucket bookings into their hour slot (08–18) */
-    var byHour = {};
-    list.forEach(function (b) {
-      var h = _slotHourOf(b.time);
-      (byHour[h] = byHour[h] || []).push(b);
-    });
-
-    /* Full-day lock: when the day's capacity is exhausted (× 満了) the
-       whole day is hard-blocked for the public calendar — surface that. */
+    /* Full-day lock: when the day's capacity is exhausted (× 満了) the whole
+       day is hard-blocked for the public calendar — surface that. */
     var dayLocked = st === 'booked';
 
-    var rows = HOURS.map(function (h) {
-      var hh   = pad(h) + ':00';
-      var here = byHour[h] || [];
-      var cells;
+    /* Resolve bookings → intervals, then assign lanes for overlaps. */
+    var items = list.map(function (b) { var iv = _intervalOf(b); return { b: b, s: iv.s, e: iv.e, lane: 0 }; });
+    var laneCount = _assignLanes(items);
+    var winStart = DAY_START * 60, winEnd = DAY_END * 60;
 
-      if (here.length) {
-        cells = here.map(function (b) { return _bookingCard(b); }).join('');
-      } else if (dayLocked) {
-        cells =
-          '<div class="mct-slot mct-slot-lock" aria-label="満了・受付停止">' +
-            '<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/></svg>' +
-            '<span>満了・受付停止</span>' +
-          '</div>';
-      } else {
-        cells =
-          '<button class="mct-slot mct-slot-free" onclick="MobileCal.bookSlot(' + h + ')" aria-label="' + hh + ' の枠を予約">' +
-            '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>' +
-            '<span>空き · 予約可</span>' +
-          '</button>';
-      }
+    /* Background rail: hour gridlines + labels (does NOT contain bookings). */
+    var rail = '';
+    for (var gh = DAY_START; gh <= DAY_END; gh++) {
+      rail += '<div class="mct-line" style="top:' + ((gh - DAY_START) * 60 * PPM) + 'px">' +
+                '<span class="mct-hh">' + pad(gh) + ':00</span></div>';
+    }
 
-      return '<div class="mct-hour' + (here.length ? ' has' : '') + '">' +
-          '<span class="mct-hh">' + hh + '</span>' +
-          '<div class="mct-track">' + cells + '</div>' +
-        '</div>';
+    /* Absolute blocks: top = (start − windowStart)·PPM, height = duration·PPM. */
+    var blocks = items.map(function (it) {
+      var s0 = Math.max(it.s, winStart), e0 = Math.min(it.e, winEnd);
+      var top    = (s0 - winStart) * PPM;
+      var height = Math.max((e0 - s0) * PPM, 22);            // min height for tappability
+      var w = 100 / laneCount, left = it.lane * w;
+      return '<div class="mct-block" style="top:' + top + 'px;height:' + height + 'px;' +
+               'left:calc(' + left + '% + 46px);width:calc(' + w + '% - 50px)" role="listitem">' +
+               _bookingCard(it.b) +
+             '</div>';
     }).join('');
 
+    var emptyHint = (!items.length && !dayLocked)
+      ? '<div class="mct-empty">タップして予約枠を追加</div>' : '';
+
+    var axisH = (DAY_END - DAY_START) * 60 * PPM;
     root.innerHTML = head +
-      '<div class="mct-grid" role="list" aria-label="' + label + ' 時間別スケジュール">' + rows + '</div>';
+      '<div class="mct-axis' + (dayLocked ? ' mct-axis-lock' : '') + '" ' +
+           'style="height:' + axisH + 'px" onclick="MobileCal.axisTap(event)" ' +
+           'role="list" aria-label="' + label + ' 時間別スケジュール">' +
+        rail + blocks + emptyHint +
+      '</div>';
   }
 
   /* Single booking block (used inside an hour track) — clearly
@@ -188,10 +218,14 @@ window.MobileCal = (function () {
     if (b.fromAddr) {
       loc = esc(b.fromAddr) + (b.toAddr ? ' <span class="mct-arrow">→</span> ' + esc(b.toAddr) : '');
     }
+    // Show the real HH:MM〜HH:MM once timestamps exist; else the band label.
+    var timeLabel = (b.start_at && b.end_at)
+      ? (String(b.start_at).slice(11, 16) + '〜' + String(b.end_at).slice(11, 16))
+      : (b.time || '時間指定なし');
     return '<button class="mct-slot mct-slot-booked" onclick="if(window.openDetail)openDetail(\'' + esc(b.id) + '\')">' +
         '<span class="mct-lockrow">' +
           '<svg class="mct-lockicon" viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/></svg>' +
-          '<span class="mct-band">' + esc(b.time || '時間指定なし') + '</span>' +
+          '<span class="mct-band">' + esc(timeLabel) + '</span>' +
           badge(b.status || '新規') +
         '</span>' +
         '<span class="mct-name">' + esc(b.name || 'お客様') + '</span>' +
@@ -346,6 +380,17 @@ window.MobileCal = (function () {
     if (v) v.classList.toggle('mc-show-month');
   }
 
+  /* Tap empty axis space → quick-book at the tapped hour. Ignores taps that
+     land on a booking block (their own handler opens the detail). */
+  function axisTap(e) {
+    if (e.target && e.target.closest && e.target.closest('.mct-block')) return;
+    if (_availOf(_sel) === 'booked') return;                 // day locked (満了)
+    var rect = e.currentTarget.getBoundingClientRect();
+    var minute = (e.clientY - rect.top) / PPM + DAY_START * 60;
+    var h = Math.floor(Math.max(DAY_START * 60, Math.min(minute, (DAY_END - 1) * 60)) / 60);
+    bookSlot(h);
+  }
+
   /* ── Public actions ────────────────────────────────────── */
   function step(delta) { render(_shiftDay(_sel || todayStr(), delta)); }
   function goToday()    { _picker = new Date(); closePicker(); render(todayStr()); }
@@ -388,6 +433,7 @@ window.MobileCal = (function () {
     closeBook: closeBook,
     confirmBook: confirmBook,
     toggleMonth: toggleMonth,
+    axisTap: axisTap,
   };
 
 })();

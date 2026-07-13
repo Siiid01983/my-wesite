@@ -466,6 +466,28 @@ html.dark .mct-st-b { color: #f87171; }
   min-width: 0;
 }
 
+/* ── Dynamic time-axis (absolute-positioned blocks) ───────────── */
+.mct-axis { position: relative; margin: 6px 4px 14px; }
+.mct-axis-lock { background: rgba(239,68,68,.04); border-radius: 12px; }
+.mct-line {
+  position: absolute; left: 0; right: 0;
+  border-top: 1px solid var(--line-2, var(--line));
+  pointer-events: none;
+}
+.mct-line .mct-hh {              /* override the old grid-column label styling */
+  position: absolute; top: -8px; left: 0;
+  width: 42px; padding: 0; border: 0;
+  text-align: left; font-size: 11px; font-weight: 600;
+  color: var(--gray-2); background: var(--bg);
+}
+.mct-block { position: absolute; overflow: hidden; }
+.mct-block .mct-slot-booked { height: 100%; min-height: 0; margin: 0; overflow: hidden; }
+.mct-empty {
+  position: absolute; top: 12px; left: 46px; right: 6px;
+  padding: 14px; text-align: center; font-size: 13px; color: var(--gray-2);
+  border: 1.5px dashed var(--line); border-radius: 12px; pointer-events: none;
+}
+
 /* Slot base — every slot is a full-width, ≥52px touch target */
 .mct-slot {
   display: flex;
