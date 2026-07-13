@@ -134,6 +134,13 @@ const PRECACHE = [
   '/js/modules/wmc/pageManager.js',
   '/js/modules/wmc/wmcMedia.js',
   '/js/modules/wmc/blockEditor.js',
+
+  /* Customer Portal V2 (Phase 2) — flag + modules + rebook handoff */
+  '/js/config/portalFlags.js',
+  '/js/portal/portalV2.js',
+  '/css/portal-v2.css',
+  '/js/ba-overlay-prefill.js',
+  '/js/rebook-receiver.js',
 ];
 
 /* ── Install: pre-cache static assets ──────────────────── */
