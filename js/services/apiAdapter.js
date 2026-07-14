@@ -225,6 +225,16 @@
       // Do NOT reformat — mobileCalendar parses new Date(str.replace(' ','T')) and
       // slices HH:MM from chars 11–16. Undefined pre-migration → null (safe). The
       // WRITE side (bookingToRow) stays deferred until the UI sends real times.
+      //
+      // Hourly availability schema (consumed elsewhere, documented here for one
+      // place of truth): availability.php returns, per date, the legacy
+      //   bands: { am|pm|ev|nt: 'available'|'reserved' }
+      // AND (when hourly is live) an additive
+      //   intervals: [{ id, customer_name, status, start_at, end_at }]
+      // of the day's busy ranges. The BA overlay slot picker (index.html
+      // _baSlotReserved) prefers `intervals` for precise overlap and falls back to
+      // `bands` when it is missing/empty. These same start_at/end_at strings are
+      // the per-booking form below.
       start_at:  r.start_at    || null,
       end_at:    r.end_at      || null,
     };

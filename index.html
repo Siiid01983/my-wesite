@@ -3681,6 +3681,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   // Mirrors server hm_slot_band_id(): map a time-slot value to a canonical band
   // ('am'|'pm'|'ev'|'nt') or null (flexible / 時間指定なし → never locked).
   var baAvailBands = null;   // { am:'available'|'reserved', … } for baState.dateISO, else null
+  var baAvailIntervals = null;   // [{start_at,end_at,…}] busy ranges for baState.dateISO (hourly), else null
   function _baBandId(v) {
     var t = String(v == null ? '' : v).trim();
     if (!t) return null;
@@ -3702,21 +3703,67 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   function _baBandReserved(band) {
     return !!(band && baAvailBands && baAvailBands[band] && baAvailBands[band] !== 'available');
   }
+  // ── Hourly (interval) availability — precise overlap when the server sends it ──
+  // Parse a slot value into a [startMin, endMin] window (minutes past midnight):
+  //   • explicit "H:MM〜H:MM" inside the value/label (covers "午前（9:00〜12:00）"
+  //     AND pure hourly slots like "09:00〜10:00"), else
+  //   • the band's fixed window via _baBandId (am 9–12, pm 12–15, ev 15–18, nt 18–21).
+  //   • 時間指定なし / unparseable → null (flexible → never reserved).
+  function _baSlotWindow(value) {
+    var t = String(value == null ? '' : value);
+    if (t.indexOf('時間指定なし') !== -1) return null;
+    var m = t.match(/(\d{1,2})\s*[:：]\s*(\d{2})\s*[〜～~\-]\s*(\d{1,2})\s*[:：]\s*(\d{2})/);
+    if (m) {
+      var a = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+      var b = parseInt(m[3], 10) * 60 + parseInt(m[4], 10);
+      if (b > a) return [a, b];
+    }
+    var band = _baBandId(value);
+    var W = { am: [540, 720], pm: [720, 900], ev: [900, 1080], nt: [1080, 1260] };
+    return (band && W[band]) ? W[band] : null;
+  }
+  // Minutes-past-midnight from a "YYYY-MM-DD HH:MM:SS" (or ...T...) datetime, else null.
+  function _baHM(s) {
+    var t = String(s == null ? '' : s).split(/[ T]/)[1] || '';
+    var m = t.match(/^(\d{1,2}):(\d{2})/);
+    return m ? (parseInt(m[1], 10) * 60 + parseInt(m[2], 10)) : null;
+  }
+  // True if the slot's window overlaps ANY busy interval (half-open, mirrors server).
+  function _baIntervalReserved(value) {
+    var win = _baSlotWindow(value);
+    if (!win || !(baAvailIntervals && baAvailIntervals.length)) return false;
+    for (var i = 0; i < baAvailIntervals.length; i++) {
+      var it = baAvailIntervals[i] || {};
+      var bs = _baHM(it.start_at), be = _baHM(it.end_at);
+      if (bs == null || be == null) continue;
+      if (win[0] < be && win[1] > bs) return true;   // overlap
+    }
+    return false;
+  }
+  // Hybrid reserved-check: interval-precise when the server sent a non-empty
+  // `intervals` array, else the legacy band lookup (back-compat / historical dates).
+  function _baSlotReserved(value) {
+    if (baAvailIntervals && baAvailIntervals.length) return _baIntervalReserved(value);
+    return _baBandReserved(_baBandId(value));
+  }
   // Fetch real-time band availability for a date. availability.php returns
   // 'reserved' for BOTH customer reservations and admin_blocked rows, so this one
   // check hides blocked + booked bands. Fail-open: any error leaves slots
   // unrestricted — the server slot lock (409 slot_taken) is the authoritative
   // backstop, so a network blip must never prevent legitimate bookings.
   function _baFetchAvail(iso) {
-    baAvailBands = null;
+    baAvailBands = null; baAvailIntervals = null;
     var base = (window.API_BASE || '').replace(/\/+$/, '');
     if (!iso || !base) { baRenderTimeSlots(); return; }
     fetch(base + '/availability.php?date=' + encodeURIComponent(iso), {
       headers: { 'X-API-KEY': window.API_KEY || '' }
     })
       .then(function (r) { return r.json(); })
-      .then(function (out) { baAvailBands = (out && out.ok && out.bands) ? out.bands : null; })
-      .catch(function () { baAvailBands = null; })
+      .then(function (out) {
+        baAvailBands     = (out && out.ok && out.bands) ? out.bands : null;
+        baAvailIntervals = (out && out.ok && Array.isArray(out.intervals)) ? out.intervals : null;
+      })
+      .catch(function () { baAvailBands = null; baAvailIntervals = null; })
       .then(function () { baRenderTimeSlots(); });
   }
   function baRenderTimeSlots() {
@@ -3726,7 +3773,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
       var label = (s && typeof s === 'object') ? String(s.label || '') : String(s || '');
       var value = (s && typeof s === 'object' && s.value) ? String(s.value) : label;
       if (!label) return '';
-      if (_baBandReserved(_baBandId(value))) {   // reserved OR admin_blocked → not selectable
+      if (_baSlotReserved(value)) {   // reserved OR admin_blocked → not selectable (hourly-precise when available)
         return '<label class="ba-filter-label" style="opacity:.45;cursor:not-allowed;text-decoration:line-through">'
           + '<input type="radio" name="ba-time" value="' + _baEsc(value) + '" disabled> ' + _baEsc(label) + '（満席）</label>';
       }
@@ -3734,7 +3781,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     }).join('');
     // If a previously chosen slot became unavailable (date changed / just blocked),
     // clear it so a stale reserved band can't be carried into submit.
-    if (baState.timeSlot && _baBandReserved(_baBandId(baState.timeSlot))) {
+    if (baState.timeSlot && _baSlotReserved(baState.timeSlot)) {
       baState.timeSlot = '';
       var tv = document.getElementById('ba-val-time');
       if (tv) { tv.textContent = '時間帯を選択'; tv.classList.remove('filled'); }
