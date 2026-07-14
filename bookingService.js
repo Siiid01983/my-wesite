@@ -80,7 +80,7 @@ function _parseItems(raw) {
 // ── Field mappers ─────────────────────────────────────────────────────────────
 
 function _bookingToRow(b) {
-  return {
+  const row = {
     customer_name:  b.name      || '',
     customer_email: b.email     || null,
     customer_phone: b.phone     || null,
@@ -90,6 +90,13 @@ function _bookingToRow(b) {
     notes:          _packNotes(b),
     created_at:     b.createdAt || new Date().toISOString(),
   };
+  // CLIENT-REQUEST model: the customer's two preferred appointment datetimes.
+  // Sent only when present; create-booking.php stores them (status stays pending)
+  // ONLY when hourly is live, and strips them otherwise — so this is safe to send
+  // regardless of server mode.
+  if (b.preferredStart1) row.preferred_start_1 = b.preferredStart1;
+  if (b.preferredStart2) row.preferred_start_2 = b.preferredStart2;
+  return row;
 }
 
 function _rowToBooking(r) {
@@ -178,6 +185,8 @@ const BookingService = (() => {
       status,
       date:      move_date,
       time:      fields.time     || '',
+      preferredStart1: fields.preferredStart1 || '',
+      preferredStart2: fields.preferredStart2 || '',
       fromAddr:  fromA,
       toAddr:    single ? '' : toA,
       notes:     fields.notes    || '',
