@@ -29,6 +29,25 @@ Replace these at the **same paths** on your server (via cPanel File Manager or F
 | 7 | `hm-api/_config.example.php` | Replace *(documentation only — safe but optional)* |
 | 8 | `hm-api/migrations/hourly/_intervals.php` | **DELETE if present** *(the file moved to `hm-api/_intervals.php`; remove the stale copy)* |
 
+**Admin hourly block management (optional — the "時間帯ブロック" interval editor):**
+| # | Server path | Action |
+|---|---|---|
+| 9  | `hm-api/block-interval.php` | **NEW file** — upload *(admin add/remove arbitrary-range blocks; gated by `hourly_enabled`)* |
+| 10 | `js/modules/calendar/intervalEditor.js` | **NEW file** — upload *(the admin modal UI)* |
+| 11 | `admin.html` | Replace *(adds one `<script>` include for the module)* |
+
+> These three power the admin's per-date interval editor. They're inert until hourly is active (`block-interval.php` returns `409 hourly_disabled`), so they're safe to upload anytime.
+
+**Client-Request booking model (optional — pending requests + admin confirm/reject):**
+| # | Server path | Action |
+|---|---|---|
+| 12 | `hm-api/confirm-request.php` | **NEW file** — upload *(admin confirm→confirmed / reject→rejected; overlap-checked)* |
+| 13 | `hm-api/create-booking.php` | Replace *(already listed as #3 — this adds preferred_start_1/2 + pending-request handling)* |
+| 14 | `hm-api/rest.php` | Replace *(already #4 — adds preferred_start_1/2 to the allowlist)* |
+| 15 | `js/services/apiAdapter.js` | Replace *(already #5 — preferred_start_1/2 passthrough + rejected↔却下)* |
+
+> These are gated by `hourly_enabled` **and** the `002` migration (below). Dormant until both are done; safe to upload anytime.
+
 > ⚠️ **Do NOT upload `hm-api/_config.php`.** The commit never touches it. Uploading your local copy would overwrite the server's real DB password with the placeholder. You'll edit the server's `_config.php` directly in Step 3.
 
 ---
@@ -76,6 +95,16 @@ FROM bookings;
 ```
 
 > Re-running the `ALTER TABLE` a second time errors with *"Duplicate column name 'start_at'"* — that just means it already applied. Safe to ignore.
+
+**Then, for the Client-Request model, run `002_client_request.sql`** (same SQL tab):
+
+```sql
+ALTER TABLE bookings
+  ADD COLUMN preferred_start_1 DATETIME NULL AFTER end_at,
+  ADD COLUMN preferred_start_2 DATETIME NULL AFTER preferred_start_1;
+```
+
+> `status` already exists + is indexed — no change. Run **both** 001 and 002 before flipping `hourly_enabled`; the code probes for each column independently, so a partial run stays dormant rather than erroring.
 
 ---
 

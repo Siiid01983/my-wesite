@@ -3044,8 +3044,12 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 
   // Single source of truth for the booking the overlay is assembling.
   function baBlankState() {
-    return { serviceId:'', service:'', fromAddr:'', toAddr:'', dateISO:'', timeSlot:'', fromFloor:'', toFloor:'', fromEv:'', toEv:'', disposal:'', workers:2, filters:'', name:'', email:'', phone:'', notes:'' };
+    return { serviceId:'', service:'', fromAddr:'', toAddr:'', dateISO:'', timeSlot:'', preferredStart1:'', preferredStart2:'', fromFloor:'', toFloor:'', fromEv:'', toEv:'', disposal:'', workers:2, filters:'', name:'', email:'', phone:'', notes:'' };
   }
+  // CLIENT-REQUEST mode: when the server has hourly live, the time step becomes two
+  // "preferred datetime" inputs and the flow submits a PENDING request instead of a
+  // band. Resolved once per overlay open by _baFetchMode(); false = legacy band UI.
+  var baHourly = false;
   var baState = baBlankState();
   var baCurrentScreen = 'services';
   var baSubmitting = false;
@@ -3222,9 +3226,31 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   window.baShowScreen = baShowScreen;
 
   // ── Public API ──────────────────────────────────────────
+  // Resolve band vs client-request mode from the server (availability.php `hourly`),
+  // then re-render the time step + submit label. Fail-safe: any error → band UI.
+  function _baFetchMode() {
+    var base = (window.API_BASE || '').replace(/\/+$/, '');
+    if (!base) { baHourly = false; return; }
+    var today = new Date().toISOString().slice(0, 10);
+    fetch(base + '/availability.php?date=' + encodeURIComponent(today), { headers: { 'X-API-KEY': window.API_KEY || '' } })
+      .then(function (r) { return r.json(); })
+      .then(function (out) { baHourly = !!(out && out.ok && out.hourly); })
+      .catch(function () { baHourly = false; })
+      .then(function () { baRenderTimeSlots(); _baApplyModeLabels(); });
+  }
+  function _baApplyModeLabels() {
+    var sb = document.getElementById('ba-submit-btn');
+    if (sb) sb.textContent = baHourly ? '予約リクエストを送信' : '予約を確定する';
+    var tt = document.querySelector('#ba-drawer-time .ba-drawer-title');
+    if (tt) tt.textContent = baHourly ? '希望日時（第1・第2希望）' : (_baCfg().labels.timeTitle || '希望時間帯');
+    var vt = document.getElementById('ba-val-time-label');
+    if (vt) vt.textContent = baHourly ? '希望日時' : '希望時間帯';
+  }
+
   window.openBookingApp = function (serviceName) {
     document.getElementById('booking-app').classList.add('open');
     document.body.style.overflow = 'hidden';
+    baHourly = false; _baFetchMode();   // resolve mode; re-renders time step on return
     // Pull the latest availability so the date step reflects real bookings.
     if (typeof window.refreshBookingCalendar === 'function') { try { window.refreshBookingCalendar(); } catch (_) {} }
     // Re-render the picker so admin CMS name/image edits (localStorage snapshot)
@@ -3441,14 +3467,31 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 
   // ── Preferred time ──────────────────────────────────────
   window.baConfirmTime = function () {
+    var el = document.getElementById('ba-val-time');
+    if (baHourly) {
+      var i1 = document.getElementById('ba-pref-1'), i2 = document.getElementById('ba-pref-2');
+      var p1 = i1 ? i1.value : '', p2 = i2 ? i2.value : '';
+      if (!p1) { alert('第1希望の日時を選択してください。'); return; }
+      if (p2 && p2 === p1) { alert('第2希望は第1希望と異なる日時にしてください。'); return; }
+      baState.preferredStart1 = p1;
+      baState.preferredStart2 = p2;
+      el.textContent = _baFmtPref(p1) + (p2 ? '／' + _baFmtPref(p2) : '');
+      el.classList.add('filled');
+      baCloseDrawer('time');
+      return;
+    }
     var checked = document.querySelector('#ba-drawer-time input[name="ba-time"]:checked');
     var v = checked ? checked.value : '';
     if (!v) return;                                                     // require a choice
     baState.timeSlot = v;
-    var el = document.getElementById('ba-val-time');
     el.textContent = v; el.classList.add('filled');
     baCloseDrawer('time');
   };
+  // "2026-07-20T09:30" → "7/20 09:30" (compact display for the summary chip/rows).
+  function _baFmtPref(v) {
+    var m = String(v || '').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})/);
+    return m ? (parseInt(m[2], 10) + '/' + parseInt(m[3], 10) + ' ' + m[4]) : String(v || '');
+  }
 
   // ── Workers ─────────────────────────────────────────────
   window.baSetWorker = function (n) {
@@ -3463,7 +3506,9 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     if (!baState.fromAddr) { alert(single ? '作業場所を入力してください。' : '現住所を入力してください。'); baOpenDrawer('from'); return; }
     if (!single && !baState.toAddr) { alert('引越し先を入力してください。'); baOpenDrawer('to'); return; }
     if (!baState.dateISO)  { alert('希望日を選択してください。'); baOpenDrawer('date'); return; }
-    if (!baState.timeSlot) { alert('希望時間帯を選択してください。'); baOpenDrawer('time'); return; }
+    if (baHourly) {
+      if (!baState.preferredStart1) { alert('ご希望の日時を選択してください。'); baOpenDrawer('time'); return; }
+    } else if (!baState.timeSlot) { alert('希望時間帯を選択してください。'); baOpenDrawer('time'); return; }
     baShowScreen('contact');
     setTimeout(function () { var n = document.getElementById('ba-name'); if (n) n.focus(); }, 80);
   };
@@ -3483,7 +3528,12 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
       rows.push(['引越し先', (baState.toAddr || '—') + (baState.toFloor ? '（' + baState.toFloor + '階・EV' + (baState.toEv || '-') + '）' : '')]);
     }
     rows.push(['希望日',   _baFmtDate(baState.dateISO)]);
-    rows.push(['希望時間', baState.timeSlot || '—']);
+    if (baHourly) {
+      rows.push(['第1希望', baState.preferredStart1 ? _baFmtPref(baState.preferredStart1) : '—']);
+      if (baState.preferredStart2) rows.push(['第2希望', _baFmtPref(baState.preferredStart2)]);
+    } else {
+      rows.push(['希望時間', baState.timeSlot || '—']);
+    }
     rows.push(['作業員',   baState.workers + '名']);
     rows.push(['荷物',     items]);
     if (baState.disposal) rows.push(['不用品回収', baState.disposal]);
@@ -3555,7 +3605,9 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
         serviceId: baState.serviceId || '',
         locMode:   single ? 'single' : 'dual',
         date:      baState.dateISO || '',
-        time:      baState.timeSlot || '',
+        time:      baHourly ? '' : (baState.timeSlot || ''),
+        preferredStart1: baHourly ? (baState.preferredStart1 || '') : '',
+        preferredStart2: baHourly ? (baState.preferredStart2 || '') : '',
         fromAddr:  baState.fromAddr,
         toAddr:    single ? '' : baState.toAddr,
         name:      baState.name,
@@ -3681,6 +3733,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   // Mirrors server hm_slot_band_id(): map a time-slot value to a canonical band
   // ('am'|'pm'|'ev'|'nt') or null (flexible / 時間指定なし → never locked).
   var baAvailBands = null;   // { am:'available'|'reserved', … } for baState.dateISO, else null
+  var baAvailIntervals = null;   // [{start_at,end_at,…}] busy ranges for baState.dateISO (hourly), else null
   function _baBandId(v) {
     var t = String(v == null ? '' : v).trim();
     if (!t) return null;
@@ -3702,31 +3755,96 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   function _baBandReserved(band) {
     return !!(band && baAvailBands && baAvailBands[band] && baAvailBands[band] !== 'available');
   }
+  // ── Hourly (interval) availability — precise overlap when the server sends it ──
+  // Parse a slot value into a [startMin, endMin] window (minutes past midnight):
+  //   • explicit "H:MM〜H:MM" inside the value/label (covers "午前（9:00〜12:00）"
+  //     AND pure hourly slots like "09:00〜10:00"), else
+  //   • the band's fixed window via _baBandId (am 9–12, pm 12–15, ev 15–18, nt 18–21).
+  //   • 時間指定なし / unparseable → null (flexible → never reserved).
+  function _baSlotWindow(value) {
+    var t = String(value == null ? '' : value);
+    if (t.indexOf('時間指定なし') !== -1) return null;
+    var m = t.match(/(\d{1,2})\s*[:：]\s*(\d{2})\s*[〜～~\-]\s*(\d{1,2})\s*[:：]\s*(\d{2})/);
+    if (m) {
+      var a = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+      var b = parseInt(m[3], 10) * 60 + parseInt(m[4], 10);
+      if (b > a) return [a, b];
+    }
+    var band = _baBandId(value);
+    var W = { am: [540, 720], pm: [720, 900], ev: [900, 1080], nt: [1080, 1260] };
+    return (band && W[band]) ? W[band] : null;
+  }
+  // Minutes-past-midnight from a "YYYY-MM-DD HH:MM:SS" (or ...T...) datetime, else null.
+  function _baHM(s) {
+    var t = String(s == null ? '' : s).split(/[ T]/)[1] || '';
+    var m = t.match(/^(\d{1,2}):(\d{2})/);
+    return m ? (parseInt(m[1], 10) * 60 + parseInt(m[2], 10)) : null;
+  }
+  // True if the slot's window overlaps ANY busy interval (half-open, mirrors server).
+  function _baIntervalReserved(value) {
+    var win = _baSlotWindow(value);
+    if (!win || !(baAvailIntervals && baAvailIntervals.length)) return false;
+    for (var i = 0; i < baAvailIntervals.length; i++) {
+      var it = baAvailIntervals[i] || {};
+      var bs = _baHM(it.start_at), be = _baHM(it.end_at);
+      if (bs == null || be == null) continue;
+      if (win[0] < be && win[1] > bs) return true;   // overlap
+    }
+    return false;
+  }
+  // Hybrid reserved-check: interval-precise when the server sent a non-empty
+  // `intervals` array, else the legacy band lookup (back-compat / historical dates).
+  function _baSlotReserved(value) {
+    if (baAvailIntervals && baAvailIntervals.length) return _baIntervalReserved(value);
+    return _baBandReserved(_baBandId(value));
+  }
   // Fetch real-time band availability for a date. availability.php returns
   // 'reserved' for BOTH customer reservations and admin_blocked rows, so this one
   // check hides blocked + booked bands. Fail-open: any error leaves slots
   // unrestricted — the server slot lock (409 slot_taken) is the authoritative
   // backstop, so a network blip must never prevent legitimate bookings.
   function _baFetchAvail(iso) {
-    baAvailBands = null;
+    baAvailBands = null; baAvailIntervals = null;
     var base = (window.API_BASE || '').replace(/\/+$/, '');
     if (!iso || !base) { baRenderTimeSlots(); return; }
     fetch(base + '/availability.php?date=' + encodeURIComponent(iso), {
       headers: { 'X-API-KEY': window.API_KEY || '' }
     })
       .then(function (r) { return r.json(); })
-      .then(function (out) { baAvailBands = (out && out.ok && out.bands) ? out.bands : null; })
-      .catch(function () { baAvailBands = null; })
+      .then(function (out) {
+        baAvailBands     = (out && out.ok && out.bands) ? out.bands : null;
+        baAvailIntervals = (out && out.ok && Array.isArray(out.intervals)) ? out.intervals : null;
+      })
+      .catch(function () { baAvailBands = null; baAvailIntervals = null; })
       .then(function () { baRenderTimeSlots(); });
+  }
+  // CLIENT-REQUEST mode: two "preferred datetime" inputs instead of band radios.
+  // The admin later decides the final start/end (confirm-request.php). Prefilled
+  // with the chosen 希望日 (+ default 09:00 / 13:00) but fully editable.
+  function _baRenderPreferredInputs(host) {
+    var d = baState.dateISO || new Date().toISOString().slice(0, 10);
+    var v1 = baState.preferredStart1 || (d + 'T09:00');
+    var v2 = baState.preferredStart2 || '';
+    host.innerHTML =
+        '<div class="ba-pref-field" style="margin-bottom:14px">'
+      +   '<div style="font-size:13px;font-weight:600;margin-bottom:6px">第1希望 <span style="color:#b91c1c">*</span></div>'
+      +   '<input type="datetime-local" id="ba-pref-1" value="' + _baEsc(v1) + '" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #d5dae1;border-radius:8px;font:inherit">'
+      + '</div>'
+      + '<div class="ba-pref-field">'
+      +   '<div style="font-size:13px;font-weight:600;margin-bottom:6px">第2希望（任意）</div>'
+      +   '<input type="datetime-local" id="ba-pref-2" value="' + _baEsc(v2) + '" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #d5dae1;border-radius:8px;font:inherit">'
+      + '</div>'
+      + '<p style="font-size:12px;color:#6b7280;margin:12px 0 0">ご希望の日時をお選びください。担当者が空き状況を確認し、正式な作業時間をご連絡します。</p>';
   }
   function baRenderTimeSlots() {
     var host = document.getElementById('ba-time-host');
     if (!host) return;
+    if (baHourly) { _baRenderPreferredInputs(host); return; }
     host.innerHTML = _baCfg().timeSlots.map(function (s) {
       var label = (s && typeof s === 'object') ? String(s.label || '') : String(s || '');
       var value = (s && typeof s === 'object' && s.value) ? String(s.value) : label;
       if (!label) return '';
-      if (_baBandReserved(_baBandId(value))) {   // reserved OR admin_blocked → not selectable
+      if (_baSlotReserved(value)) {   // reserved OR admin_blocked → not selectable (hourly-precise when available)
         return '<label class="ba-filter-label" style="opacity:.45;cursor:not-allowed;text-decoration:line-through">'
           + '<input type="radio" name="ba-time" value="' + _baEsc(value) + '" disabled> ' + _baEsc(label) + '（満席）</label>';
       }
@@ -3734,7 +3852,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     }).join('');
     // If a previously chosen slot became unavailable (date changed / just blocked),
     // clear it so a stale reserved band can't be carried into submit.
-    if (baState.timeSlot && _baBandReserved(_baBandId(baState.timeSlot))) {
+    if (baState.timeSlot && _baSlotReserved(baState.timeSlot)) {
       baState.timeSlot = '';
       var tv = document.getElementById('ba-val-time');
       if (tv) { tv.textContent = '時間帯を選択'; tv.classList.remove('filled'); }

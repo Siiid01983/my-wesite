@@ -67,14 +67,16 @@ try {
   // own pace. Dormant otherwise → response is byte-for-byte identical to before.
   // Wrapped defensively so an interval-read hiccup can never break availability.
   $intervals = [];
+  $hourly = false;   // Client-Request / hourly mode signal for the booking overlay.
   try {
     $db = hm_db();
-    if (hm_iv_active($db)) $intervals = hm_iv_day($db, $date);
+    $hourly = hm_iv_active($db);
+    if ($hourly) $intervals = hm_iv_day($db, $date);
   } catch (Throwable $ie) {
     hm_log_error('availability intervals read failed (non-fatal)', ['err' => $ie->getMessage(), 'date' => $date]);
   }
 
-  hm_json(['ok' => true, 'date' => $date, 'bands' => $bands, 'intervals' => $intervals]);
+  hm_json(['ok' => true, 'date' => $date, 'bands' => $bands, 'intervals' => $intervals, 'hourly' => $hourly]);
 } catch (Throwable $e) {
   hm_log_error('availability failed', ['err' => $e->getMessage(), 'date' => $date]);
   hm_json(['ok' => false, 'error' => hm_safe_msg('Request failed', $e)], 500);

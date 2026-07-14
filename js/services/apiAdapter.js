@@ -123,10 +123,10 @@
   // Admin panel uses Japanese; API schema uses English.
   const BK_TO_DB = {
     '新規': 'pending', '確認中': 'checking',
-    '確定': 'confirmed', '完了': 'completed', 'キャンセル': 'cancelled',
+    '確定': 'confirmed', '完了': 'completed', 'キャンセル': 'cancelled', '却下': 'rejected',
   };
   const BK_TO_LOCAL = {
-    pending: '新規', checking: '確認中', confirmed: '確定', completed: '完了', cancelled: 'キャンセル',
+    pending: '新規', checking: '確認中', confirmed: '確定', completed: '完了', cancelled: 'キャンセル', rejected: '却下',
   };
   // Calendar: admin uses 'booked'; API schema uses 'full'.
   const CAL_TO_DB    = { booked: 'full' };
@@ -225,8 +225,24 @@
       // Do NOT reformat — mobileCalendar parses new Date(str.replace(' ','T')) and
       // slices HH:MM from chars 11–16. Undefined pre-migration → null (safe). The
       // WRITE side (bookingToRow) stays deferred until the UI sends real times.
+      //
+      // Hourly availability schema (consumed elsewhere, documented here for one
+      // place of truth): availability.php returns, per date, the legacy
+      //   bands: { am|pm|ev|nt: 'available'|'reserved' }
+      // AND (when hourly is live) an additive
+      //   intervals: [{ id, customer_name, status, start_at, end_at }]
+      // of the day's busy ranges. The BA overlay slot picker (index.html
+      // _baSlotReserved) prefers `intervals` for precise overlap and falls back to
+      // `bands` when it is missing/empty. These same start_at/end_at strings are
+      // the per-booking form below.
       start_at:  r.start_at    || null,
       end_at:    r.end_at      || null,
+      // CLIENT-REQUEST model: the customer's two preferred appointment datetimes
+      // (raw "YYYY-MM-DD HH:MM:SS" or null). Read-only passthrough — the admin
+      // Pending Requests view reads these and sets the final start_at/end_at via
+      // confirm-request.php. Undefined pre-migration → null (safe).
+      preferred_start_1: r.preferred_start_1 || null,
+      preferred_start_2: r.preferred_start_2 || null,
     };
   }
 
