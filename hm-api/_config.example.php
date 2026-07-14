@@ -121,6 +121,18 @@ return [
   //   Leave '' to require CLI (php hm-api/admin-migrate.php) only.
   'admin_setup_token'   => '',
 
+  // ── Hourly scheduling (interval start_at/end_at instead of fixed bands) ───
+  //   Master switch for the interval scheduler in the LIVE customer endpoints
+  //   (create-booking dual-write + availability `intervals`). SAFE BY DEFAULT:
+  //   absent/false → those paths stay dormant and behave exactly as before.
+  //   ⚠ ORDER: run hm-api/migrations/hourly/001_bookings_hourly.sql (cPanel →
+  //   phpMyAdmin, back up first) so bookings.start_at/end_at exist, THEN set this
+  //   to true. Belt-and-suspenders: the code also probes for the column, so a
+  //   wrong order (flag on, migration not yet run) still stays dormant, not broken.
+  //   Rollback = set back to false (one line, no redeploy). Mirrors
+  //   slot_lock_enabled / line_enabled / imap_enabled.
+  'hourly_enabled' => false,
+
   // ── Email (send-email.php) ────────────────────────────────────────────────
   //   'mail'   → use PHP mail() (works out-of-the-box on most cPanel hosts)
   //   'smtp'   → authenticated SMTP via hm-api/_smtp.php (native socket client —

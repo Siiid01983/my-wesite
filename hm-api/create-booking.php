@@ -13,6 +13,7 @@ require_once __DIR__ . '/_cache.php';
 require_once __DIR__ . '/_ratelimit.php';
 require_once __DIR__ . '/_line.php';
 require_once __DIR__ . '/_slots.php';   // Phase 2: slot lock (feature-flagged, OFF by default)
+require_once __DIR__ . '/_intervals.php';   // hourly dual-write gate (feature-flagged, OFF by default)
 hm_cors();
 hm_require_api_key();
 hm_rate_limit('booking', 5, 60);   // public submit: max 5 / IP / minute
@@ -104,6 +105,28 @@ if (empty($data['status'])) $data['status'] = 'pending';
 
 try {
   $db   = hm_db();
+
+  // ── HOURLY dual-write (gated): mirror the requested band into start_at/end_at
+  //    so the interval scheduler stays consistent while the UI is still band-based.
+  //    Band → fixed window: am 09–12 · pm 12–15 · ev 15–18 · nt 18–21. Only runs
+  //    when hourly is BOTH enabled AND migrated (hm_iv_active) — otherwise the two
+  //    keys are never added and the INSERT below is byte-for-byte as before, so a
+  //    code-before-migration deploy cannot break booking creation. Bookings with
+  //    no band / 時間指定なし leave start_at,end_at unset (NULL = flexible).
+  if (hm_iv_active($db)) {
+    $__band = hm_slot_band_id(hm_slot_time_from_notes($data['notes'] ?? ''));
+    $__bandHours = [
+      'am' => ['09:00', '12:00'], 'pm' => ['12:00', '15:00'],
+      'ev' => ['15:00', '18:00'], 'nt' => ['18:00', '21:00'],
+    ];
+    $__dateOnly = substr((string)($data['booking_date'] ?? ''), 0, 10);
+    if ($__band !== null && isset($__bandHours[$__band])
+        && preg_match('/^\d{4}-\d{2}-\d{2}$/', $__dateOnly)) {
+      $data['start_at'] = $__dateOnly . ' ' . $__bandHours[$__band][0] . ':00';
+      $data['end_at']   = $__dateOnly . ' ' . $__bandHours[$__band][1] . ':00';
+    }
+  }
+
   $keys = array_keys($data);
   $ph   = implode(',', array_fill(0, count($keys), '?'));
   $sql  = 'INSERT INTO bookings (' . implode(',', array_map(fn($c) => "`$c`", $keys)) . ") VALUES ($ph)";
