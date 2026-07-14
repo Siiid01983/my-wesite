@@ -3231,7 +3231,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   function _baFetchMode() {
     var base = (window.API_BASE || '').replace(/\/+$/, '');
     if (!base) { baHourly = false; return; }
-    var today = new Date().toISOString().slice(0, 10);
+    var today = _baTodayLocal();   // LOCAL strict YYYY-MM-DD (toISOString is UTC → wrong day pre-09:00 JST)
     fetch(base + '/availability.php?date=' + encodeURIComponent(today), { headers: { 'X-API-KEY': window.API_KEY || '' } })
       .then(function (r) { return r.json(); })
       .then(function (out) { baHourly = !!(out && out.ok && out.hourly); })
@@ -3805,8 +3805,26 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   // check hides blocked + booked bands. Fail-open: any error leaves slots
   // unrestricted — the server slot lock (409 slot_taken) is the authoritative
   // backstop, so a network blip must never prevent legitimate bookings.
+  // Coerce ANY date-ish value to the strict zero-padded "YYYY-MM-DD" that
+  // availability.php requires (createFromFormat('!Y-m-d') + exact re-match). Guards
+  // against a Date object, a non-padded "2026-7-5", "YYYY/MM/DD", or an ISO value
+  // that carries a time ("…T09:30") arriving via baSetDate()/portal prefill — any
+  // of which would otherwise trip "invalid date — expected YYYY-MM-DD".
+  function _baDateOnly(v) {
+    if (v == null) return '';
+    if (v instanceof Date && !isNaN(v)) {
+      return v.getFullYear() + '-' + String(v.getMonth() + 1).padStart(2, '0') + '-' + String(v.getDate()).padStart(2, '0');
+    }
+    var s = String(v).trim();
+    var m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);   // leading date, - or / sep
+    if (m) return m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
+    var d = new Date(s);                                     // last-resort parse
+    if (!isNaN(d)) return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    return s;
+  }
   function _baFetchAvail(iso) {
     baAvailBands = null; baAvailIntervals = null;
+    iso = _baDateOnly(iso);   // normalize before it hits the strict server validator
     var base = (window.API_BASE || '').replace(/\/+$/, '');
     if (!iso || !base) { baRenderTimeSlots(); return; }
     fetch(base + '/availability.php?date=' + encodeURIComponent(iso), {
