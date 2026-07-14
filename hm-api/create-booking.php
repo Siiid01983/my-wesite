@@ -19,7 +19,7 @@ hm_require_api_key();
 hm_rate_limit('booking', 5, 60);   // public submit: max 5 / IP / minute
 
 $p = hm_body(true);
-$ALLOWED = ['customer_name','customer_email','customer_phone','booking_date','service_id','status','notes','items','created_at'];
+$ALLOWED = ['customer_name','customer_email','customer_phone','booking_date','service_id','status','notes','items','created_at','preferred_start_1','preferred_start_2'];
 
 $data = [];
 foreach ($ALLOWED as $c) {
@@ -106,14 +106,33 @@ if (empty($data['status'])) $data['status'] = 'pending';
 try {
   $db   = hm_db();
 
-  // ── HOURLY dual-write (gated): mirror the requested band into start_at/end_at
-  //    so the interval scheduler stays consistent while the UI is still band-based.
-  //    Band → fixed window: am 09–12 · pm 12–15 · ev 15–18 · nt 18–21. Only runs
-  //    when hourly is BOTH enabled AND migrated (hm_iv_active) — otherwise the two
-  //    keys are never added and the INSERT below is byte-for-byte as before, so a
-  //    code-before-migration deploy cannot break booking creation. Bookings with
-  //    no band / 時間指定なし leave start_at,end_at unset (NULL = flexible).
-  if (hm_iv_active($db)) {
+  // ── HOURLY / CLIENT-REQUEST handling (all gated; dormant until hourly is live) ─
+  //  Two mutually-exclusive branches, both behind hm_iv_active (flag ON + migrated):
+  //   • Client-Request model — the customer sent preferred appointment time(s):
+  //     store them and keep the row a PENDING request. start_at/end_at stay NULL;
+  //     the admin sets the final duration later via confirm-request.php. No band,
+  //     no forced end-time calc.
+  //   • Band transition — no preferred time: mirror the requested band into
+  //     start_at/end_at (am 09–12 · pm 12–15 · ev 15–18 · nt 18–21), as before.
+  //  Deploy-order-safe: the preferred_* columns are kept ONLY when their migration
+  //  (002) has run (hm_bookings_has_request_cols); otherwise they are stripped so
+  //  the INSERT matches whatever schema is actually present.
+  $__ivActive = hm_iv_active($db);
+  if ($__ivActive && hm_bookings_has_request_cols($db)) {
+    foreach (['preferred_start_1', 'preferred_start_2'] as $__pk) {
+      if (isset($data[$__pk])) {
+        $__nz = hm_iv_normalize((string)$data[$__pk]);
+        if ($__nz === null) unset($data[$__pk]); else $data[$__pk] = $__nz;
+      }
+    }
+  } else {
+    unset($data['preferred_start_1'], $data['preferred_start_2']);
+  }
+
+  if ($__ivActive && !empty($data['preferred_start_1'])) {
+    // Client-Request: awaits admin confirmation. start_at/end_at intentionally NULL.
+    $data['status'] = 'pending';
+  } elseif ($__ivActive) {
     $__band = hm_slot_band_id(hm_slot_time_from_notes($data['notes'] ?? ''));
     $__bandHours = [
       'am' => ['09:00', '12:00'], 'pm' => ['12:00', '15:00'],

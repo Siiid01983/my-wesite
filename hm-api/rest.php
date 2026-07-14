@@ -41,7 +41,7 @@ $SCHEMA = [
     'uuid_pk' => true, 'unique' => ['key'],
   ],
   'bookings' => [
-    'cols' => ['id','customer_name','customer_email','customer_phone','booking_date','start_at','end_at','service_id','status','notes','items','created_at','updated_at'],
+    'cols' => ['id','customer_name','customer_email','customer_phone','booking_date','start_at','end_at','preferred_start_1','preferred_start_2','service_id','status','notes','items','created_at','updated_at'],
     'json' => ['items'], 'bool' => [], 'int' => [],
     'uuid_pk' => true, 'unique' => ['id'],
   ],

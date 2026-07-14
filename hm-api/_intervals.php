@@ -64,6 +64,25 @@ if (!function_exists('hm_iv_normalize')) {
     return hm_hourly_enabled() && hm_bookings_has_interval_cols($db);
   }
 
+  /**
+   * Does bookings.preferred_start_1 exist yet (Client-Request model, 002 migration)?
+   * Cached per-process. Lets create-booking store preferred times ONLY once the
+   * column is present, so a partial migration (001 run, 002 not) never breaks the
+   * booking INSERT — independent of migration order.
+   */
+  function hm_bookings_has_request_cols(PDO $db): bool {
+    static $has = null;
+    if ($has === null) {
+      try {
+        $q = $db->query("SHOW COLUMNS FROM bookings LIKE 'preferred_start_1'");
+        $has = (bool)($q && $q->fetch());
+      } catch (Throwable $e) {
+        $has = false;
+      }
+    }
+    return $has;
+  }
+
   // ── Interval primitives ─────────────────────────────────────────────────────
 
   // Accept ISO 8601 ("2026-07-20T09:30" / "...:00Z" / "... 09:30:00") → MySQL
