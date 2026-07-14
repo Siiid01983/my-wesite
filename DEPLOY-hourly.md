@@ -29,6 +29,15 @@ Replace these at the **same paths** on your server (via cPanel File Manager or F
 | 7 | `hm-api/_config.example.php` | Replace *(documentation only — safe but optional)* |
 | 8 | `hm-api/migrations/hourly/_intervals.php` | **DELETE if present** *(the file moved to `hm-api/_intervals.php`; remove the stale copy)* |
 
+**Admin hourly block management (optional — the "時間帯ブロック" interval editor):**
+| # | Server path | Action |
+|---|---|---|
+| 9  | `hm-api/block-interval.php` | **NEW file** — upload *(admin add/remove arbitrary-range blocks; gated by `hourly_enabled`)* |
+| 10 | `js/modules/calendar/intervalEditor.js` | **NEW file** — upload *(the admin modal UI)* |
+| 11 | `admin.html` | Replace *(adds one `<script>` include for the module)* |
+
+> These three power the admin's per-date interval editor. They're inert until hourly is active (`block-interval.php` returns `409 hourly_disabled`), so they're safe to upload anytime.
+
 > ⚠️ **Do NOT upload `hm-api/_config.php`.** The commit never touches it. Uploading your local copy would overwrite the server's real DB password with the placeholder. You'll edit the server's `_config.php` directly in Step 3.
 
 ---
