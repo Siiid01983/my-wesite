@@ -3472,6 +3472,8 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
       var i1 = document.getElementById('ba-pref-1'), i2 = document.getElementById('ba-pref-2');
       var p1 = i1 ? i1.value : '', p2 = i2 ? i2.value : '';
       if (!p1) { alert('第1希望の日時を選択してください。'); return; }
+      var minDT = _baTodayLocal() + 'T00:00';   // enforce minDate: today (manual-entry guard)
+      if (p1 < minDT || (p2 && p2 < minDT)) { alert('過去の日時は選択できません。'); return; }
       if (p2 && p2 === p1) { alert('第2希望は第1希望と異なる日時にしてください。'); return; }
       baState.preferredStart1 = p1;
       baState.preferredStart2 = p2;
@@ -3821,18 +3823,28 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   // CLIENT-REQUEST mode: two "preferred datetime" inputs instead of band radios.
   // The admin later decides the final start/end (confirm-request.php). Prefilled
   // with the chosen 希望日 (+ default 09:00 / 13:00) but fully editable.
+  // Local (not UTC) "YYYY-MM-DD" for TODAY — used as the datetime-local min so past
+  // dates can't be picked (the native equivalent of a picker's minDate: today). The
+  // datetime-local control already renders in the browser's locale (Japanese on a
+  // JP browser), so no separate 'ja' locale option is needed here.
+  function _baTodayLocal() {
+    var t = new Date();
+    return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+  }
   function _baRenderPreferredInputs(host) {
-    var d = baState.dateISO || new Date().toISOString().slice(0, 10);
+    var today = _baTodayLocal();
+    var d = baState.dateISO || today;          // 希望日 (calendar already blocks past) or today
+    var minDT = today + 'T00:00';              // minDate: today (prevents past selection)
     var v1 = baState.preferredStart1 || (d + 'T09:00');
     var v2 = baState.preferredStart2 || '';
     host.innerHTML =
         '<div class="ba-pref-field" style="margin-bottom:14px">'
       +   '<div style="font-size:13px;font-weight:600;margin-bottom:6px">第1希望 <span style="color:#b91c1c">*</span></div>'
-      +   '<input type="datetime-local" id="ba-pref-1" value="' + _baEsc(v1) + '" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #d5dae1;border-radius:8px;font:inherit">'
+      +   '<input type="datetime-local" id="ba-pref-1" min="' + minDT + '" value="' + _baEsc(v1) + '" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #d5dae1;border-radius:8px;font:inherit">'
       + '</div>'
       + '<div class="ba-pref-field">'
       +   '<div style="font-size:13px;font-weight:600;margin-bottom:6px">第2希望（任意）</div>'
-      +   '<input type="datetime-local" id="ba-pref-2" value="' + _baEsc(v2) + '" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #d5dae1;border-radius:8px;font:inherit">'
+      +   '<input type="datetime-local" id="ba-pref-2" min="' + minDT + '" value="' + _baEsc(v2) + '" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #d5dae1;border-radius:8px;font:inherit">'
       + '</div>'
       + '<p style="font-size:12px;color:#6b7280;margin:12px 0 0">ご希望の日時をお選びください。担当者が空き状況を確認し、正式な作業時間をご連絡します。</p>';
   }
