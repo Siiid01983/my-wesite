@@ -20,6 +20,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 declare(strict_types=1);
 require_once __DIR__ . '/_db.php';
+require_once __DIR__ . '/_intervals.php';   // hourly: busy-interval reader (gated, dormant until hm_iv_active)
 require_once __DIR__ . '/_ratelimit.php';
 hm_cors();
 hm_require_api_key();
@@ -60,7 +61,20 @@ try {
     if (array_key_exists($band, $bands)) $bands[$band] = 'reserved';   // ignore any non-canonical values
   }
 
-  hm_json(['ok' => true, 'date' => $date, 'bands' => $bands]);
+  // HOURLY (dual-read, additive): when hourly is live (flag ON + migration run),
+  // also return the day's real busy time ranges alongside the 4 band states. The
+  // website keeps reading `bands`; the app/grid migrate to `intervals` at their
+  // own pace. Dormant otherwise → response is byte-for-byte identical to before.
+  // Wrapped defensively so an interval-read hiccup can never break availability.
+  $intervals = [];
+  try {
+    $db = hm_db();
+    if (hm_iv_active($db)) $intervals = hm_iv_day($db, $date);
+  } catch (Throwable $ie) {
+    hm_log_error('availability intervals read failed (non-fatal)', ['err' => $ie->getMessage(), 'date' => $date]);
+  }
+
+  hm_json(['ok' => true, 'date' => $date, 'bands' => $bands, 'intervals' => $intervals]);
 } catch (Throwable $e) {
   hm_log_error('availability failed', ['err' => $e->getMessage(), 'date' => $date]);
   hm_json(['ok' => false, 'error' => hm_safe_msg('Request failed', $e)], 500);

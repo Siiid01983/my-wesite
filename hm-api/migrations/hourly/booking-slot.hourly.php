@@ -22,7 +22,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../../_lib.php';   // adjust include path on deploy
 require_once __DIR__ . '/../../_db.php';
-require_once __DIR__ . '/_intervals.php';
+require_once __DIR__ . '/../../_intervals.php';   // canonical copy lives in hm-api/ root
 
 $isCli = (PHP_SAPI === 'cli');
 

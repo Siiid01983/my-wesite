@@ -221,6 +221,12 @@
       workers:   extra.workers || parsedWorkers,
       time:      extra.time    || '',
       createdAt: r.created_at  || new Date().toISOString(),
+      // HOURLY (read-only passthrough): raw stored "YYYY-MM-DD HH:MM:SS" or null.
+      // Do NOT reformat — mobileCalendar parses new Date(str.replace(' ','T')) and
+      // slices HH:MM from chars 11–16. Undefined pre-migration → null (safe). The
+      // WRITE side (bookingToRow) stays deferred until the UI sends real times.
+      start_at:  r.start_at    || null,
+      end_at:    r.end_at      || null,
     };
   }
 
