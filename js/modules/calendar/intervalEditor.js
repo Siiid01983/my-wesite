@@ -31,7 +31,11 @@ window.IntervalEditor = (function () {
 
   /* ── small helpers ── */
   function _base()   { return (window.API_BASE || '').replace(/\/+$/, ''); }
-  function _today()  { return (typeof window.todayStr === 'function') ? window.todayStr() : new Date().toISOString().slice(0, 10); }
+  function _today()  {
+    if (typeof window.todayStr === 'function') return _dateOnly(window.todayStr());
+    var t = new Date();   // LOCAL (toISOString is UTC → wrong day pre-09:00 JST)
+    return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+  }
   function _toast(m) { if (typeof window.toast === 'function') window.toast(m); else console.log('[IntervalEditor]', m); }
   function _headers() {
     var h = { 'Content-Type': 'application/json', 'X-API-KEY': window.API_KEY || '' };
@@ -48,6 +52,22 @@ window.IntervalEditor = (function () {
     var t = String(dt == null ? '' : dt).split(/[ T]/)[1] || '';
     var m = t.match(/^(\d{1,2}):(\d{2})/);
     return m ? (('0' + m[1]).slice(-2) + ':' + m[2]) : '';
+  }
+  // Coerce ANY date-ish value to the strict zero-padded "YYYY-MM-DD" that
+  // availability.php / block-interval.php require (createFromFormat('!Y-m-d') +
+  // exact re-match). Mirrors index.html's _baDateOnly — guards a Date object, a
+  // non-padded "2026-7-5", "YYYY/MM/DD", or a time-bearing value from any caller.
+  function _dateOnly(v) {
+    if (v == null) return '';
+    if (v instanceof Date && !isNaN(v)) {
+      return v.getFullYear() + '-' + String(v.getMonth() + 1).padStart(2, '0') + '-' + String(v.getDate()).padStart(2, '0');
+    }
+    var s = String(v).trim();
+    var m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+    if (m) return m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
+    var d = new Date(s);
+    if (!isNaN(d)) return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    return s;
   }
   var BAND_LABEL = { am: '午前', pm: '午後', ev: '夕方', nt: '夜間' };
 
@@ -98,7 +118,7 @@ window.IntervalEditor = (function () {
 
     o.addEventListener('click', function (e) { if (e.target === o) close(); });
     document.getElementById('hmIvClose').onclick = close;
-    document.getElementById('hmIvDate').onchange = function () { _date = this.value || _date; _load(); };
+    document.getElementById('hmIvDate').onchange = function () { _date = _dateOnly(this.value) || _date; _load(); };
     document.getElementById('hmIvAdd').onclick = _addBlock;
   }
 
@@ -111,7 +131,7 @@ window.IntervalEditor = (function () {
 
   /* ── read: bands + intervals from availability.php ── */
   function _load() {
-    var d = _date;
+    var d = _dateOnly(_date);   // strict YYYY-MM-DD before the strict server validator
     _msg('読み込み中…');
     document.getElementById('hmIvBands').innerHTML = '';
     document.getElementById('hmIvList').innerHTML = '<div style="color:#9ca3af;font-size:13px">読み込み中…</div>';
@@ -172,7 +192,7 @@ window.IntervalEditor = (function () {
     _msg('登録中…');
     fetch(_base() + '/block-interval.php', {
       method: 'POST', headers: _headers(),
-      body: JSON.stringify({ action: 'block', date: _date, start_time: s, end_time: e, reason: reason })
+      body: JSON.stringify({ action: 'block', date: _dateOnly(_date), start_time: s, end_time: e, reason: reason })
     })
       .then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
       .then(function (res) {
@@ -203,7 +223,7 @@ window.IntervalEditor = (function () {
   /* ── public open / close ── */
   function open(ds) {
     _ensureOverlay();
-    _date = ds || _today();
+    _date = _dateOnly(ds) || _today();
     document.getElementById('hmIvDate').value = _date;
     document.getElementById(OVERLAY_ID).style.display = 'flex';
     _load();
