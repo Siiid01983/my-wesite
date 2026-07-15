@@ -58,6 +58,7 @@ const SKIP = new Set([
   'serve.js', 'deploy.js', 'package.json', 'package-lock.json',
   'CLAUDE.md',
   'mobile',   // React Native / Expo handoff source — belongs in the mobile repo, never on the web server
+  'smoke-test-capacity.js',   // ops/verification script — not part of the web app, never deploy it
 ]);
 
 /*
