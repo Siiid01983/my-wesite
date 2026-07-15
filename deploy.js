@@ -57,8 +57,9 @@ const SKIP = new Set([
   '.git', '.github', 'node_modules', '.claude', 'tests',
   'serve.js', 'deploy.js', 'package.json', 'package-lock.json',
   'CLAUDE.md',
-  'mobile',       // React Native / Expo handoff source — belongs in the mobile repo, never on the web server
-  '_config.php',  // server config (real DB password) — see the any-depth guard below; never overwrite it
+  'mobile',                   // React Native / Expo handoff source — belongs in the mobile repo, never on the web server
+  '_config.php',              // server config (real DB password) — see the any-depth guard below; never overwrite it
+  'smoke-test-capacity.js',   // ops/verification script — not part of the web app, never deploy it
 ]);
 
 // _config.php lives in hm-api/ (not the repo root), and the SKIP set is only
