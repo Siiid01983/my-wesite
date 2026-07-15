@@ -21,6 +21,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_db.php';
 require_once __DIR__ . '/_intervals.php';   // hourly: busy-interval reader (gated, dormant until hm_iv_active)
+require_once __DIR__ . '/_capacity.php';    // per-band capacity status (inert until configured)
 require_once __DIR__ . '/_ratelimit.php';
 hm_cors();
 hm_require_api_key();
@@ -68,6 +69,7 @@ try {
   // Wrapped defensively so an interval-read hiccup can never break availability.
   $intervals = [];
   $hourly = false;   // Client-Request / hourly mode signal for the booking overlay.
+  $capacity = null;  // per-band capacity status (Morning/Afternoon/Evening/Night).
   try {
     $db = hm_db();
     $hourly = hm_iv_active($db);
@@ -75,8 +77,16 @@ try {
   } catch (Throwable $ie) {
     hm_log_error('availability intervals read failed (non-fatal)', ['err' => $ie->getMessage(), 'date' => $date]);
   }
+  // Capacity block (additive): { am:{status,capacity,used,remaining,closed}, … }.
+  // Inert when unconfigured (every band resolves to capacity 1 / open). Defensive
+  // so a capacity-read hiccup never breaks the availability endpoint.
+  try {
+    $capacity = hm_cap_day(hm_db(), $date);
+  } catch (Throwable $ce) {
+    hm_log_error('availability capacity read failed (non-fatal)', ['err' => $ce->getMessage(), 'date' => $date]);
+  }
 
-  hm_json(['ok' => true, 'date' => $date, 'bands' => $bands, 'intervals' => $intervals, 'hourly' => $hourly]);
+  hm_json(['ok' => true, 'date' => $date, 'bands' => $bands, 'intervals' => $intervals, 'hourly' => $hourly, 'capacity' => $capacity]);
 } catch (Throwable $e) {
   hm_log_error('availability failed', ['err' => $e->getMessage(), 'date' => $date]);
   hm_json(['ok' => false, 'error' => hm_safe_msg('Request failed', $e)], 500);
