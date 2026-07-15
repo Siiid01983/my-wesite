@@ -123,10 +123,10 @@
   // Admin panel uses Japanese; API schema uses English.
   const BK_TO_DB = {
     '新規': 'pending', '確認中': 'checking',
-    '確定': 'confirmed', '完了': 'completed', 'キャンセル': 'cancelled', '却下': 'rejected',
+    '確定': 'confirmed', '完了': 'completed', 'キャンセル': 'cancelled', '却下': 'rejected', '要修正': 'needs_revision',
   };
   const BK_TO_LOCAL = {
-    pending: '新規', checking: '確認中', confirmed: '確定', completed: '完了', cancelled: 'キャンセル', rejected: '却下',
+    pending: '新規', checking: '確認中', confirmed: '確定', completed: '完了', cancelled: 'キャンセル', rejected: '却下', needs_revision: '要修正',
   };
   // Calendar: admin uses 'booked'; API schema uses 'full'.
   const CAL_TO_DB    = { booked: 'full' };
