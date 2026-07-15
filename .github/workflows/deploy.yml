@@ -62,10 +62,12 @@ jobs:
                  -not -path './.github*' \
                  -not -path './.claude*' \
                  -not -path './tests*' \
+                 -not -path './mobile*' \
                  -not -name 'serve.js' \
                  -not -name 'deploy.js' \
                  -not -name 'package*.json' \
                  -not -name 'CLAUDE.md' \
+                 -not -name '_config.php' \
                  -not -name '*.test.js' \
                  -type f | sort
 
