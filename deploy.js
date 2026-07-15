@@ -57,9 +57,15 @@ const SKIP = new Set([
   '.git', '.github', 'node_modules', '.claude', 'tests',
   'serve.js', 'deploy.js', 'package.json', 'package-lock.json',
   'CLAUDE.md',
-  'mobile',   // React Native / Expo handoff source — belongs in the mobile repo, never on the web server
+  'mobile',                   // React Native / Expo handoff source — belongs in the mobile repo, never on the web server
+  '_config.php',              // server config (real DB password) — see the any-depth guard below; never overwrite it
   'smoke-test-capacity.js',   // ops/verification script — not part of the web app, never deploy it
 ]);
+
+// _config.php lives in hm-api/ (not the repo root), and the SKIP set is only
+// consulted at the root. Skip it at ANY depth so a local/emergency deploy can
+// never clobber the server's real _config.php.
+const SKIP_ANY_DEPTH = new Set(['_config.php']);
 
 /*
  * Upload localDir contents into the FTP server's current working directory.
@@ -71,6 +77,7 @@ async function uploadDir(client, localDir) {
   const entries = fs.readdirSync(localDir, { withFileTypes: true });
   for (const entry of entries) {
     if (isRoot && SKIP.has(entry.name)) continue;
+    if (SKIP_ANY_DEPTH.has(entry.name)) continue;   // e.g. hm-api/_config.php — never upload
     // Dotfiles are skipped EXCEPT server-config files that must reach cPanel:
     //   .htaccess  — rewrite/redirect/security rules
     //   .user.ini  — PHP-FPM runtime overrides (raises upload limits so large
