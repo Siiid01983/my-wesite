@@ -13,6 +13,8 @@ dev-reset.html
 _admin_script_extract.js
 _test_booking.js
 components/
+!mobile/components/
+!mobile/components/**
 lib/
 !js/lib/
 /services/
