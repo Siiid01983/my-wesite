@@ -14,6 +14,7 @@ require_once __DIR__ . '/_ratelimit.php';
 require_once __DIR__ . '/_line.php';
 require_once __DIR__ . '/_slots.php';   // Phase 2: slot lock (feature-flagged, OFF by default)
 require_once __DIR__ . '/_intervals.php';   // hourly dual-write gate (feature-flagged, OFF by default)
+require_once __DIR__ . '/_capacity.php';    // capacity-based reserve (capacity_enabled, OFF by default)
 hm_cors();
 hm_require_api_key();
 hm_rate_limit('booking', 5, 60);   // public submit: max 5 / IP / minute
@@ -158,18 +159,29 @@ try {
   //  same-band re-submit also 409s → inherent idempotency for locked bands
   //  (finding #8). Flag OFF, or a band-less / 時間指定なし booking, takes the
   //  ORIGINAL plain-insert path below — behaviour identical to before.
-  $lockTime = hm_slot_lock_enabled() ? hm_slot_time_from_notes($data['notes'] ?? '') : null;
+  // Reserve gate: 'capacity_enabled' (per-band configurable capacity) takes
+  // precedence over the capacity-1 slot lock. When EITHER is on AND the booking
+  // carries a band, the reserve runs ATOMICALLY with the insert; a collision → 409
+  // and NO booking row is written. capacity_enabled OFF → byte-for-byte the prior
+  // slot-lock behavior (hm_slot_lock_enabled path unchanged).
+  $capOn    = hm_capacity_enabled();
+  $lockTime = (hm_slot_lock_enabled() || $capOn) ? hm_slot_time_from_notes($data['notes'] ?? '') : null;
   $lockBand = $lockTime !== null ? hm_slot_band_id($lockTime) : null;
 
   if ($lockBand !== null) {
     $db->beginTransaction();
     try {
-      $res = hm_slot_reserve($db, (string)($data['booking_date'] ?? ''), $lockTime, (string)$data['id']);
+      $res = $capOn
+        ? hm_cap_reserve($db, (string)($data['booking_date'] ?? ''), $lockBand, (string)$data['id'])
+        : hm_slot_reserve($db, (string)($data['booking_date'] ?? ''), $lockTime, (string)$data['id']);
       if (!empty($res['conflict'])) {
         $db->rollBack();
         hm_log_write('info.log', ['type' => 'slot_conflict', 'endpoint' => 'create-booking',
-          'date' => (string)($data['booking_date'] ?? ''), 'band' => $lockBand]);
-        hm_json(['ok' => false, 'data' => null, 'error' => 'slot_taken'], 409);
+          'date' => (string)($data['booking_date'] ?? ''), 'band' => $lockBand,
+          'mode' => $capOn ? 'capacity' : 'lock', 'reason' => (string)($res['reason'] ?? 'slot_taken')]);
+        // Keep error='slot_taken' for frontend compatibility; 'reason' adds detail
+        // (full | closed) for capacity mode.
+        hm_json(['ok' => false, 'data' => null, 'error' => 'slot_taken', 'reason' => (string)($res['reason'] ?? 'full')], 409);
       }
       $st = $db->prepare($sql);
       $st->execute(array_values($data));

@@ -133,6 +133,16 @@ return [
   //   slot_lock_enabled / line_enabled / imap_enabled.
   'hourly_enabled' => false,
 
+  // ── Capacity-based scheduling (per-band Morning/Afternoon/Evening/Night) ───
+  //  OFF (default) → create-booking keeps the capacity-1 slot-lock behavior.
+  //  ON  → reserves via hm_cap_reserve(); a booking fails only when the band is
+  //  closed or its capacity is exhausted. Admin configures capacity via
+  //  slot-capacity.php (per-band defaults + per-date overrides + close/reopen).
+  //  ⚠ ORDER: run migrations/capacity/001_slot_capacity.sql FIRST, then flip on.
+  //  Inert until configured (no rows → every band resolves to capacity 1 / open).
+  //  Rollback = set false (one line, no redeploy). Mirrors slot_lock_enabled.
+  'capacity_enabled' => false,
+
   // ── Email (send-email.php) ────────────────────────────────────────────────
   //   'mail'   → use PHP mail() (works out-of-the-box on most cPanel hosts)
   //   'smtp'   → authenticated SMTP via hm-api/_smtp.php (native socket client —
