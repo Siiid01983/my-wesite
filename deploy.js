@@ -57,6 +57,7 @@ const SKIP = new Set([
   '.git', '.github', 'node_modules', '.claude', 'tests',
   'serve.js', 'deploy.js', 'package.json', 'package-lock.json',
   'CLAUDE.md',
+  'mobile',   // React Native / Expo handoff source — belongs in the mobile repo, never on the web server
 ]);
 
 /*
