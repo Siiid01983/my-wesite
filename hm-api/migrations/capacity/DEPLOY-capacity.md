@@ -35,8 +35,10 @@ Branch: `feature/capacity-system`.
      PRIMARY KEY (booking_date, time_band)
    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
    ```
-   (Optional) seed per-band defaults:
+   (Optional) seed per-band defaults — run `seed_defaults.sql` from this folder
+   (am/pm/ev = 5, nt = 3; idempotent):
    ```sql
+   -- hm-api/migrations/capacity/seed_defaults.sql
    INSERT INTO slot_capacity (booking_date, time_band, capacity, is_closed) VALUES
      ('*','am',5,0), ('*','pm',5,0), ('*','ev',5,0), ('*','nt',3,0)
    ON DUPLICATE KEY UPDATE capacity=VALUES(capacity), is_closed=VALUES(is_closed);
