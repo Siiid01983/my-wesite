@@ -79,6 +79,12 @@
         '<div class="ops-row-main"><div class="ops-row-title">通知センター</div>' +
           '<div class="ops-row-sub">' + (notif ? notif + '件の未読通知' : '未読はありません') + '</div></div>' +
         '<div class="ops-row-end">' + (notif ? '<span class="ops-badge-status st-new">' + notif + '</span>' : UI.icon('chevronR')) + '</div>' +
+      '</a>' +
+      '<a class="ops-row tap" href="settings.html">' +
+        '<div class="ops-avatar" style="background:#eef0ea;color:var(--hm-green)">' + UI.icon('settings') + '</div>' +
+        '<div class="ops-row-main"><div class="ops-row-title">設定</div>' +
+          '<div class="ops-row-sub">セッションタイムアウトなど</div></div>' +
+        '<div class="ops-row-end">' + UI.icon('chevronR') + '</div>' +
       '</a>';
   }
 

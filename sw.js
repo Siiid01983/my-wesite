@@ -151,6 +151,7 @@ const PRECACHE = [
   '/ops/chat.html',
   '/ops/calendar.html',
   '/ops/notifications.html',
+  '/ops/settings.html',
   '/ops/css/ops.css',
   '/ops/js/ops-core.js',
   '/ops/js/dashboard.js',
@@ -159,6 +160,7 @@ const PRECACHE = [
   '/ops/js/chat.js',
   '/ops/js/calendar.js',
   '/ops/js/notifications.js',
+  '/ops/js/settings.js',
 ];
 
 /* ── Install: pre-cache static assets ──────────────────── */
