@@ -21,6 +21,8 @@
     base: String(window.API_BASE || (window.location.origin + '/hm-api')).replace(/\/+$/, ''),
     key:  window.API_KEY || '',
     POLL_MS: 15000,
+    SESSION_TIMEOUT_MS: 30 * 60 * 1000,   // auto-logout after 30 min of inactivity (matches admin panel)
+    SESSION_WARN_MS:    60 * 1000,        // warn this long before the idle logout fires
   });
 
   /* ── Util ───────────────────────────────────────────────────────────────── */
@@ -189,6 +191,50 @@
         self.clear();
         window.location.reload();
       });
+    },
+
+    /* ── Session timeout ────────────────────────────────────────────────────
+       Auto-logout on inactivity, plus enforcement of the server token's absolute
+       expiry while the app stays open, plus cross-tab logout. A single self-
+       correcting tick (≤15s) drives it — no per-event timer churn. */
+    TIMEOUT_FLAG: 'hm_ops_timeout',
+    _idleTimer: null, _lastAct: 0, _warned: false, _onTimeout: null, _onWarn: null,
+
+    startSession: function (opts) {
+      opts = opts || {};
+      this._onTimeout = opts.onTimeout || null;
+      this._onWarn = opts.onWarn || null;
+      this._lastAct = Date.now();
+      this._warned = false;
+      var self = this;
+      var bump = function () { self._lastAct = Date.now(); };
+      // Genuine interaction only — NOT focus/visibility, so returning to the tab
+      // after a long absence still triggers the idle logout instead of resetting it.
+      ['pointerdown', 'keydown', 'touchstart', 'scroll'].forEach(function (ev) {
+        window.addEventListener(ev, bump, { passive: true });
+      });
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) self._tick(); });
+      // Another tab logging out clears the token → drop this tab too.
+      window.addEventListener('storage', function (e) {
+        if (e.key === self.TOKEN && !e.newValue) self._fire('logout');
+      });
+      this._tick();
+    },
+    _tick: function () {
+      clearTimeout(this._idleTimer);
+      if (!this.isValid()) { this._fire('expired'); return; }        // absolute token expiry / revoked
+      var remain = (cfg.SESSION_TIMEOUT_MS || 1800000) - (Date.now() - this._lastAct);
+      if (remain <= 0) { this._fire('idle'); return; }
+      if (remain <= (cfg.SESSION_WARN_MS || 60000)) {
+        if (!this._warned) { this._warned = true; if (this._onWarn) this._onWarn(); }
+      } else { this._warned = false; }
+      var self = this;
+      this._idleTimer = setTimeout(function () { self._tick(); }, Math.min(remain, 15000));
+    },
+    _fire: function (reason) {
+      clearTimeout(this._idleTimer);
+      this.clear();
+      if (this._onTimeout) this._onTimeout(reason);
     },
   });
 
@@ -479,6 +525,13 @@
     document.body.appendChild(ov);
     var btn = ov.querySelector('#ops-li-btn');
     var err = ov.querySelector('#ops-li-err');
+    // Explain a prior auto-logout, if that is why we are back here.
+    try {
+      if (sessionStorage.getItem(Auth.TIMEOUT_FLAG)) {
+        err.textContent = 'セッションがタイムアウトしました。再度ログインしてください。';
+        sessionStorage.removeItem(Auth.TIMEOUT_FLAG);
+      }
+    } catch (_) {}
     function submit() {
       var email = ov.querySelector('#ops-li-email').value.trim();
       var pass = ov.querySelector('#ops-li-pass').value;
@@ -498,9 +551,19 @@
 
   /* ── Boot: guard auth, then run the page initializer ───────────────────── */
   Ops.ready = function (init) {
+    function begin() {
+      Auth.startSession({
+        onTimeout: function (reason) {
+          try { sessionStorage.setItem(Auth.TIMEOUT_FLAG, reason || '1'); } catch (_) {}
+          window.location.reload();   // clear() already ran in _fire → restore() will fail → login overlay
+        },
+        onWarn: function () { if (UI && UI.toast) UI.toast('操作がないため、まもなく自動ログアウトします'); },
+      });
+      init();
+    }
     function start() {
-      if (Auth.restore()) { init(); }
-      else { showLogin(function () { init(); }); }
+      if (Auth.restore()) { begin(); }
+      else { showLogin(begin); }
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
     else start();
