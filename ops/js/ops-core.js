@@ -395,6 +395,7 @@
           '<button class="ops-bell" aria-label="通知" onclick="location.href=\'notifications.html\'">' + ICONS.bell +
             '<span class="ops-badge ' + (unread ? '' : 'ops-hide') + '" data-ops-bell>' + (unread > 99 ? '99+' : unread) + '</span>' +
           '</button>' +
+          '<button class="ops-topbtn" aria-label="ログアウト" data-ops-logout>' + ICONS.logout + '</button>' +
         '</div>';
 
       var nav = document.createElement('nav');
@@ -407,6 +408,11 @@
 
       document.body.insertBefore(top, document.body.firstChild);
       document.body.appendChild(nav);
+
+      var lo = top.querySelector('[data-ops-logout]');
+      if (lo) lo.addEventListener('click', function () {
+        if (confirm('ログアウトしますか？')) { lo.disabled = true; lo.innerHTML = '<span class="ops-spin"></span>'; Auth.logout(); }
+      });
     },
 
     setBell: function (n) {

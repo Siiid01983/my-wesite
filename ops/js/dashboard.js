@@ -79,19 +79,7 @@
         '<div class="ops-row-main"><div class="ops-row-title">通知センター</div>' +
           '<div class="ops-row-sub">' + (notif ? notif + '件の未読通知' : '未読はありません') + '</div></div>' +
         '<div class="ops-row-end">' + (notif ? '<span class="ops-badge-status st-new">' + notif + '</span>' : UI.icon('chevronR')) + '</div>' +
-      '</a>' +
-
-      '<div class="ops-section-title">アカウント</div>' +
-      '<div class="ops-card" style="padding:12px 14px">' +
-        '<div class="ops-row-title" style="font-size:.92rem">' + U.esc(name) + '</div>' +
-        (user.email ? '<div class="ops-row-sub" style="margin-bottom:12px">' + U.esc(user.email) + '</div>' : '<div style="height:12px"></div>') +
-        '<button class="ops-btn ghost" id="ops-logout">' + UI.icon('logout') + 'ログアウト</button>' +
-      '</div>';
-
-    var lo = document.getElementById('ops-logout');
-    if (lo) lo.addEventListener('click', function () {
-      if (confirm('ログアウトしますか？')) { lo.disabled = true; lo.innerHTML = '<span class="ops-spin"></span>'; Ops.Auth.logout(); }
-    });
+      '</a>';
   }
 
   function todayRow(b) {
