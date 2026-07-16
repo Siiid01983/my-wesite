@@ -1,0 +1,29 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   bookings.css — M2 Bookings, page-specific styles (additive to ops.css).
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Card: ID · Customer · Date · Status badge */
+.bk-card { position: relative; }
+.bk-ref { font-size: .72rem; font-weight: 700; color: var(--hm-muted); letter-spacing: .02em; }
+.bk-name { font-weight: 700; font-size: .98rem; }
+.bk-meta { font-size: .8rem; color: var(--hm-muted); margin-top: 1px; }
+
+/* Quick-action grid (Call · Chat · Calendar) */
+.bk-quick { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+.bk-quick .ops-btn { width: auto; flex-direction: column; gap: 5px; padding: 11px 6px; font-size: .78rem; }
+.bk-quick .ops-btn svg { width: 20px; height: 20px; }
+.bk-quick .ops-btn[disabled] { opacity: .4; pointer-events: none; }
+
+/* Status transition buttons */
+.bk-trans { display: flex; flex-direction: column; gap: 8px; }
+
+/* Infinite-scroll sentinel */
+.bk-sentinel { height: 24px; }
+.bk-sentinel .ops-spin { border-color: rgba(44,54,38,.2); border-top-color: var(--hm-green); }
+
+/* Error state */
+.bk-error { text-align: center; padding: 44px 22px; color: var(--hm-muted); }
+.bk-error svg { width: 46px; height: 46px; color: var(--st-cancel); margin-bottom: 12px; }
+.bk-error h3 { font-size: 1rem; color: var(--hm-ink); margin: 0 0 4px; }
+.bk-error .ops-btn { max-width: 220px; margin: 16px auto 0; }
+.ops-empty .ops-btn { max-width: 220px; margin: 16px auto 0; }

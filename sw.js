@@ -153,6 +153,7 @@ const PRECACHE = [
   '/ops/notifications.html',
   '/ops/settings.html',
   '/ops/css/ops.css',
+  '/ops/css/bookings.css',
   '/ops/js/ops-core.js',
   '/ops/js/dashboard.js',
   '/ops/js/bookings.js',
