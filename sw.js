@@ -141,6 +141,24 @@ const PRECACHE = [
   '/css/portal-v2.css',
   '/js/ba-overlay-prefill.js',
   '/js/rebook-receiver.js',
+
+  /* Operations app (/ops/) — standalone mobile staff app (M1–M6).
+     HTML pages are network-first via the navigate branch; the shared core, per-
+     module scripts, and stylesheet are cache-first like the rest of the app JS. */
+  '/ops/index.html',
+  '/ops/bookings.html',
+  '/ops/customers.html',
+  '/ops/chat.html',
+  '/ops/calendar.html',
+  '/ops/notifications.html',
+  '/ops/css/ops.css',
+  '/ops/js/ops-core.js',
+  '/ops/js/dashboard.js',
+  '/ops/js/bookings.js',
+  '/ops/js/customers.js',
+  '/ops/js/chat.js',
+  '/ops/js/calendar.js',
+  '/ops/js/notifications.js',
 ];
 
 /* ── Install: pre-cache static assets ──────────────────── */
