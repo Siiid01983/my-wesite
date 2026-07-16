@@ -25,6 +25,33 @@
     SESSION_WARN_MS:    60 * 1000,        // warn this long before the idle logout fires
   });
 
+  /* ── Settings (device-local, persisted) ─────────────────────────────────────
+     Operator-adjustable preferences stored per-device in localStorage. load()
+     runs at script load (below) so cfg reflects saved values on EVERY page before
+     the session watcher starts. The Settings page reads/writes through here. */
+  var Settings = (Ops.Settings = {
+    KEY: 'hm_ops_settings',
+    defaults: { sessionTimeoutMin: 30, warnEnabled: true },
+    TIMEOUT_CHOICES: [15, 30, 60, 120, 0],   // 0 = disabled (idle logout off)
+
+    _read: function () { try { return JSON.parse(localStorage.getItem(this.KEY) || 'null') || {}; } catch (_) { return {}; } },
+    get: function () { return Object.assign({}, this.defaults, this._read()); },
+    apply: function (s) {
+      s = s || this.get();
+      var min = parseInt(s.sessionTimeoutMin, 10);
+      if (isNaN(min) || min < 0) min = this.defaults.sessionTimeoutMin;
+      cfg.SESSION_TIMEOUT_MS = min * 60 * 1000;             // 0 → disabled
+      cfg.SESSION_WARN_MS = s.warnEnabled ? 60 * 1000 : 0;
+    },
+    save: function (patch) {
+      var next = Object.assign(this.get(), patch || {});
+      try { localStorage.setItem(this.KEY, JSON.stringify(next)); } catch (_) {}
+      this.apply(next);
+      return next;
+    },
+    load: function () { this.apply(this.get()); },
+  });
+
   /* ── Util ───────────────────────────────────────────────────────────────── */
   var util = (Ops.util = {
     esc: function (s) {
@@ -223,12 +250,18 @@
     _tick: function () {
       clearTimeout(this._idleTimer);
       if (!this.isValid()) { this._fire('expired'); return; }        // absolute token expiry / revoked
-      var remain = (cfg.SESSION_TIMEOUT_MS || 1800000) - (Date.now() - this._lastAct);
+      var self = this;
+      var to = cfg.SESSION_TIMEOUT_MS || 0;
+      if (to <= 0) {   // idle timeout disabled — keep enforcing absolute expiry only
+        this._idleTimer = setTimeout(function () { self._tick(); }, 15000);
+        return;
+      }
+      var remain = to - (Date.now() - this._lastAct);
       if (remain <= 0) { this._fire('idle'); return; }
-      if (remain <= (cfg.SESSION_WARN_MS || 60000)) {
+      var warn = cfg.SESSION_WARN_MS || 0;
+      if (warn > 0 && remain <= warn) {
         if (!this._warned) { this._warned = true; if (this._onWarn) this._onWarn(); }
       } else { this._warned = false; }
-      var self = this;
       this._idleTimer = setTimeout(function () { self._tick(); }, Math.min(remain, 15000));
     },
     _fire: function (reason) {
@@ -410,6 +443,7 @@
     sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
     empty: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
     logout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
+    settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
   };
   Ops.ICONS = ICONS;
 
@@ -569,6 +603,8 @@
     else start();
   };
 
-  // Keep window.__HM_ADMIN_TOKEN populated as early as possible.
+  // Keep window.__HM_ADMIN_TOKEN populated as early as possible, and apply saved
+  // settings so cfg reflects them before any page starts the session watcher.
   Auth.restore();
+  Settings.load();
 })();
