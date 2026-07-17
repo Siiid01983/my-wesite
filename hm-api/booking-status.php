@@ -25,7 +25,8 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_lib.php';
 require_once __DIR__ . '/_db.php';
-require_once __DIR__ . '/_slots.php';   // canonical slot layer (reserve / release)
+require_once __DIR__ . '/_slots.php';      // canonical slot layer (release / band id)
+require_once __DIR__ . '/_capacity.php';   // capacity-aware reserve (per-band configurable capacity)
 
 $isCli = (PHP_SAPI === 'cli');
 
@@ -153,30 +154,28 @@ try {
     $up->execute([$status, $bookingId]);
 
     // 1b) Slot sync — CONFIRMED reserves its (date, band); CANCELLED releases it.
-    //     Reuses the canonical slot layer (_slots.php); a reserved row blocks the
-    //     band in availability.php and shows on the calendar exactly like any
-    //     customer reservation. Independent of the create-time slot_lock_enabled
-    //     flag: an admin confirmation ALWAYS records the reservation. Flexible /
-    //     時間指定なし bookings resolve to no band → nothing is locked.
+    //     Uses the SAME reserve path as create-booking (hm_cap_reserve), so it
+    //     honours the configured per-band capacity + closed state — no capacity-1
+    //     assumption. A reserved row blocks the band in availability.php / the
+    //     capacity 'used' count and shows on the calendar like any reservation.
+    //     Independent of slot_lock_enabled: confirmation ALWAYS records the slot.
+    //     Flexible / 時間指定なし bookings resolve to no band → nothing is locked.
     if ($status === 'confirmed') {
       $band = hm_slot_band_from_notes($bk['notes']);
       if ($band !== null) {
         hm_slot_ensure_table($db);
-        $h = $db->prepare('SELECT booking_id, status FROM booking_slots WHERE booking_date = ? AND time_band = ? AND slot_index = 0 LIMIT 1');
-        $h->execute([$bdate, $band]);
-        $held = $h->fetch(PDO::FETCH_ASSOC);
-        if (!$held) {
-          hm_slot_reserve($db, $bdate, $band, $bookingId);                    // free → reserve
-        } elseif ((string)$held['booking_id'] === $bookingId) {
-          /* already reserved by THIS booking → idempotent re-confirm, no-op */
-        } elseif ((string)$held['status'] === 'admin_blocked') {
-          // Admin is confirming a real booking on a band they'd manually blocked
-          // → the confirmed booking takes the slot over.
-          $db->prepare("DELETE FROM booking_slots WHERE booking_date = ? AND time_band = ? AND slot_index = 0 AND status = 'admin_blocked'")
-             ->execute([$bdate, $band]);
-          hm_slot_reserve($db, $bdate, $band, $bookingId);
-        } else {
-          $c = new HmSlotConflict('slot_taken'); $c->band = $band; throw $c;  // genuine double-book → 409
+        // Already reserved for THIS booking (the normal case when capacity_enabled
+        // reserved it at create-time)? Then confirming is a no-op. Otherwise reserve
+        // now via the capacity engine (claims the lowest free slot_index up to the
+        // configured capacity; 'full' / 'closed' → 409, not a false double-book).
+        $own = $db->prepare('SELECT COUNT(*) FROM booking_slots WHERE booking_id = ? AND booking_date = ? AND time_band = ?');
+        $own->execute([$bookingId, $bdate, $band]);
+        if ((int)$own->fetchColumn() === 0) {
+          $res = hm_cap_reserve($db, $bdate, $band, $bookingId);
+          if (!empty($res['conflict'])) {
+            $c = new HmSlotConflict((string)($res['reason'] ?? 'slot_taken'));
+            $c->band = $band; throw $c;                                        // band full / closed → 409
+          }
         }
       }
     } elseif ($status === 'cancelled') {
@@ -226,8 +225,9 @@ try {
   bkst_out(['ok' => true, 'booking_id' => $bookingId, 'status' => $status, 'notified' => $notifyCustomer], $isCli);
 
 } catch (HmSlotConflict $e) {
-  // Confirmation refused: the time-band is already reserved by another booking.
-  bkst_out(['ok' => false, 'error' => 'slot_taken', 'band' => $e->band], $isCli, 409);
+  // Confirmation refused: the time-band is full or closed (capacity exhausted).
+  // error='slot_taken' kept for frontend compatibility; 'reason' adds full|closed.
+  bkst_out(['ok' => false, 'error' => 'slot_taken', 'reason' => $e->getMessage(), 'band' => $e->band], $isCli, 409);
 } catch (Throwable $e) {
   if (function_exists('hm_log_error')) hm_log_error('booking-status failed', ['err' => $e->getMessage(), 'booking' => $bookingId, 'status' => $status ?? '']);
   bkst_out(['ok' => false, 'error' => hm_safe_msg('Request failed', $e)], $isCli, 500);
