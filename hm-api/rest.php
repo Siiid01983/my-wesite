@@ -122,6 +122,16 @@ if ($action === 'delete') {
     hm_require_staff_write();                                 // reviews moderation only
   }
 }
+// RC-E — read protection for tables holding customer PII / internal data. SELECT
+// on these now requires a valid staff token (the same identity ops/admin already
+// send: apiClient always attaches X-ADMIN-TOKEN). The page-served public API key
+// can no longer read customer data. Fails CLOSED. Customer-facing reads use the
+// ownership-gated endpoints: customer-bookings.php / customer-profile.php /
+// portal-communications.php.
+$SENSITIVE_READ_TABLES = ['bookings', 'communications', 'inbox_messages', 'audit_log'];
+if ($action === 'select' && in_array($table, $SENSITIVE_READ_TABLES, true)) {
+  hm_require_staff_read();
+}
 
 $db     = hm_db();
 

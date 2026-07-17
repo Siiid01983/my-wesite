@@ -2,28 +2,27 @@
 // Customer Communication Center — READ-ONLY view of the existing
 // `communications` table (Phase 5C).
 //
-// Security model: a customer may only ever see rows whose booking_id equals the
-// booking their session is bound to. As defense-in-depth we ALSO drop any row
-// whose customer_email does not match the session email, so even a booking_id
-// collision could never leak another customer's correspondence.
+// SECURITY (hardened): reads NO LONGER go through the public-key rest.php SELECT.
+// They go through hm-api/portal-communications.php, which verifies the session's
+// (email + reference) ownership SERVER-SIDE and scopes the result to that
+// customer's booking + email. The client cannot supply the scope, so there is no
+// global-read surface even though the page-served API key is public.
 //
-// This module is strictly read-only (SELECT only). It does NOT write, modify, or
-// re-use the admin communication system (js/modules/communications/communications.js).
+// As defense-in-depth we ALSO drop any row whose customer_email does not match
+// the session email. Strictly read-only; does NOT write or re-use the admin
+// communication system (js/modules/communications/communications.js).
 
 (function () {
   'use strict';
 
-  // Normalise booking id(s) the way the writer (_safeBookingId) does: booking_id
-  // is a text column, so compare as strings. Accepts a single id or an array —
-  // a booking has two equivalent identifiers (its HM-reference and its numeric
-  // DB id) and the existing system has filed messages under either one. Both
-  // identify the SAME booking, so querying for either stays single-booking scoped.
-  function _safeIds(ids) {
-    const arr = Array.isArray(ids) ? ids : [ids];
-    return [...new Set(arr.filter(v => v != null && v !== '').map(String))];
-  }
-
   function _norm(email) { return (email || '').toLowerCase().trim(); }
+
+  // The server proves ownership from the session's (email + reference); read them
+  // from the verified portal session rather than trusting client-passed scope.
+  function _session() {
+    try { return (window.PortalAuth && PortalAuth.getSession && PortalAuth.getSession()) || null; }
+    catch (e) { return null; }
+  }
 
   // Map a raw DB row to the read-only shape the portal renders.
   function _map(r) {
@@ -39,45 +38,46 @@
     };
   }
 
-  // Fetch the communication history for one booking, scoped to one customer.
+  // Fetch the communication history for the session's booking, scoped to one
+  // customer — resolved and enforced SERVER-SIDE.
   //
-  //   bookingIds    — the booking's identifier(s) the session is bound to. May be
-  //                   a single id or [hmReference, numericDbId] — both name the
-  //                   same booking (required; empty → returns nothing).
-  //   customerEmail — the session email, used for the secondary email guard
+  //   bookingIds    — retained for call-site compatibility; NO LONGER trusted for
+  //                   scoping (the server derives the booking from the reference).
+  //   customerEmail — fallback for the session email (also used as the email guard)
   //
   // Returns rows newest-first. Returns [] on any error or missing scope so the
   // UI degrades gracefully and never shows un-scoped data.
   async function fetchForBooking(bookingIds, customerEmail) {
-    const sb    = window.api;
-    const ids   = _safeIds(bookingIds);
-    const email = _norm(customerEmail);
+    const base = String(window.API_BASE || '').replace(/\/+$/, '');
+    const sess = _session();
+    const email = _norm(customerEmail || (sess && sess.email));
+    const ref   = String((sess && sess.ref) || '').trim();
 
-    // Hard requirement: without a booking scope we return nothing. Never run an
-    // unfiltered SELECT from the customer surface.
-    if (!sb || !ids.length) return [];
+    // Hard requirement: without a verified (email + reference) we return nothing.
+    // Ownership is proven server-side — never run an un-scoped read here.
+    if (!base || !email || !ref) return [];
 
-    let data, error;
+    let out;
     try {
-      ({ data, error } = await sb
-        .from('communications')
-        .select('id, booking_id, customer_email, sender_email, subject, message, direction, created_at')
-        .in('booking_id', ids)
-        .order('created_at', { ascending: false }));
+      const res = await fetch(
+        base + '/portal-communications.php?email=' + encodeURIComponent(email) + '&reference=' + encodeURIComponent(ref),
+        { headers: { 'X-API-KEY': window.API_KEY || '' }, credentials: 'include' }
+      );
+      out = await res.json();
     } catch (err) {
       console.error('[PortalComms] fetch failed:', err);
       return [];
     }
-    if (error) {
-      console.error('[PortalComms] fetch error:', error.message);
+    if (!out || !out.ok || !out.data) {
+      if (out && out.error) console.error('[PortalComms] fetch error:', (out.error && out.error.message) || out.error);
       return [];
     }
 
-    const rows = (data || []).map(_map);
+    const rows = (out.data.items || []).map(_map);
 
     // Defense-in-depth: drop any row whose customer_email is set but does not
-    // match the authenticated customer. (Rows with a blank customer_email are
-    // kept because they are already constrained by the unique booking_id.)
+    // match the authenticated customer. (Blank customer_email rows are kept —
+    // already constrained by the server-side booking scope.)
     return rows.filter(r => {
       const rc = _norm(r.customer_email);
       return !email || !rc || rc === email;
