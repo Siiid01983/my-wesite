@@ -126,7 +126,11 @@ body.cal-dnd .cal-event, body.cal-dnd .cal-chip-bk, body.cal-dnd .cal-wk-card { 
    handled by our pointer-DnD, not hijacked by the browser as a scroll. Only the
    draggable elements opt out of native gestures; empty timeline/day areas keep
    normal vertical scrolling. */
-.cal-event, .cal-event .cal-resize, .cal-wk-card, .cal-chip-bk { touch-action: none; }
+.cal-event, .cal-event .cal-resize, .cal-wk-card, .cal-chip-bk {
+  touch-action: none;
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;   /* stop iOS long-press selection/callout (fires pointercancel) */
+}
 .cal-ghost { position: fixed; z-index: 9999; pointer-events: none; opacity: .92; transform: rotate(-1.5deg); box-shadow: 0 8px 24px rgba(0,0,0,.22); max-width: 220px; }
 
 /* ── Detail modal reuse (chips) ─────────────────────────────────────────── */
