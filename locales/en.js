@@ -8,7 +8,7 @@ window.LOCALES.en = {
   "common.search": "Search", "common.back": "Back", "common.loading": "Loading…",
   "common.close": "Close", "common.delete": "Delete", "common.updating": "Updating…",
   "common.saving": "Saving…", "common.saved": "Saved", "common.saveFailed": "Save failed",
-  "common.none": "—", "common.more": "Show more", "common.customer": "Customer",
+  "common.none": "—", "common.more": "Show more", "common.customer": "Customer", "common.honorific": "", "common.booking": "Booking", "common.status": "Status",
 
   /* nav */
   "nav.dashboard": "Home", "nav.bookings": "Bookings", "nav.customers": "Customers",
@@ -51,7 +51,7 @@ window.LOCALES.en = {
 
   /* customers (M3) */
   "customers.title": "Customers", "customers.searchPh": "Search by name, email, phone",
-  "customers.count": "{n} customers", "customers.notFound": "No customers found",
+  "customers.count": "{n} customers", "customers.notFound": "No customers found", "customers.unnamed": "(unnamed)",
   "customers.empty": "No customers yet", "customers.emptySub": "Customers appear here once bookings arrive",
   "customers.errorTitle": "Couldn't load customers", "customers.bookingCountUnit": "",
   "customers.lastPrefix": "Last", "customers.bookingCount": "Bookings", "customers.lastBooking": "Last booking",

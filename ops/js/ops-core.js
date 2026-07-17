@@ -16,6 +16,9 @@
 
   var Ops = (window.Ops = window.Ops || {});
 
+  // i18n shortcut — safe if localeManager somehow didn't load (returns the key).
+  var T = (Ops.t = function (k, p) { return window.t ? window.t(k, p) : k; });
+
   /* ── Config ─────────────────────────────────────────────────────────────── */
   var cfg = (Ops.cfg = {
     base: String(window.API_BASE || (window.location.origin + '/hm-api')).replace(/\/+$/, ''),
@@ -474,13 +477,14 @@
       top.className = 'ops-top';
       top.innerHTML =
         '<div class="ops-top-inner">' +
-          (opts.back ? '<button class="ops-back" aria-label="戻る" onclick="history.length>1?history.back():location.href=\'index.html\'">' + ICONS.back + '</button>'
+          (opts.back ? '<button class="ops-back" aria-label="' + util.esc(T('common.back')) + '" onclick="history.length>1?history.back():location.href=\'index.html\'">' + ICONS.back + '</button>'
                      : '<div class="ops-brand-dot">HM</div>') +
           '<h1>' + util.esc(title) + '</h1>' +
-          '<button class="ops-bell" aria-label="通知" onclick="location.href=\'notifications.html\'">' + ICONS.bell +
+          (window.Locale ? Locale.switchHtml() : '') +
+          '<button class="ops-bell" aria-label="' + util.esc(T('chrome.notifications')) + '" onclick="location.href=\'notifications.html\'">' + ICONS.bell +
             '<span class="ops-badge ' + (unread ? '' : 'ops-hide') + '" data-ops-bell>' + (unread > 99 ? '99+' : unread) + '</span>' +
           '</button>' +
-          '<button class="ops-topbtn" aria-label="ログアウト" data-ops-logout>' + ICONS.logout + '</button>' +
+          '<button class="ops-topbtn" aria-label="' + util.esc(T('chrome.logout')) + '" data-ops-logout>' + ICONS.logout + '</button>' +
         '</div>';
 
       var nav = document.createElement('nav');
@@ -488,15 +492,16 @@
       var msgBadge = opts.navBadge && opts.navBadge.chat ? opts.navBadge.chat : 0;
       nav.innerHTML = '<div class="ops-nav-inner">' + NAV.map(function (n) {
         var badge = (n.key === 'chat' && msgBadge) ? '<span class="ops-nav-badge">' + (msgBadge > 9 ? '9+' : msgBadge) + '</span>' : '';
-        return '<a href="' + n.href + '" class="' + (n.key === active ? 'active' : '') + '">' + ICONS[n.icon] + badge + '<span>' + n.label + '</span></a>';
+        return '<a href="' + n.href + '" class="' + (n.key === active ? 'active' : '') + '">' + ICONS[n.icon] + badge + '<span>' + util.esc(T('nav.' + n.key)) + '</span></a>';
       }).join('') + '</div>';
 
       document.body.insertBefore(top, document.body.firstChild);
       document.body.appendChild(nav);
+      if (window.Locale) Locale.bindSwitch(top);
 
       var lo = top.querySelector('[data-ops-logout]');
       if (lo) lo.addEventListener('click', function () {
-        if (confirm('ログアウトしますか？')) { lo.disabled = true; lo.innerHTML = '<span class="ops-spin"></span>'; Auth.logout(); }
+        if (confirm(T('chrome.logoutConfirm'))) { lo.disabled = true; lo.innerHTML = '<span class="ops-spin"></span>'; Auth.logout(); }
       });
     },
 
@@ -508,7 +513,8 @@
     },
 
     statusBadge: function (jp) {
-      return '<span class="ops-badge-status ' + Ops.statusClass(jp) + '">' + util.esc(jp) + '</span>';
+      var label = T('status.' + (BK_TO_DB[jp] || 'pending'));
+      return '<span class="ops-badge-status ' + Ops.statusClass(jp) + '">' + util.esc(label) + '</span>';
     },
 
     skeleton: function (n) {
@@ -554,32 +560,34 @@
     ov.innerHTML =
       '<div class="ops-login-card">' +
         '<div class="ops-login-logo">HM</div>' +
-        '<h1>オペレーション</h1>' +
-        '<p>Hello Moving 業務アプリ</p>' +
-        '<input id="ops-li-email" type="email" inputmode="email" autocomplete="username" placeholder="メールアドレス" />' +
-        '<input id="ops-li-pass" type="password" autocomplete="current-password" placeholder="パスワード" />' +
+        '<h1>' + util.esc(T('login.title')) + '</h1>' +
+        '<p>' + util.esc(T('login.subtitle')) + '</p>' +
+        '<input id="ops-li-email" type="email" inputmode="email" autocomplete="username" placeholder="' + util.esc(T('login.email')) + '" />' +
+        '<input id="ops-li-pass" type="password" autocomplete="current-password" placeholder="' + util.esc(T('login.password')) + '" />' +
         '<p class="ops-login-err" id="ops-li-err"></p>' +
-        '<button class="ops-btn" id="ops-li-btn">ログイン</button>' +
+        '<button class="ops-btn" id="ops-li-btn">' + util.esc(T('login.submit')) + '</button>' +
+        '<div style="margin-top:14px;display:flex;justify-content:center">' + (window.Locale ? Locale.switchHtml('dark') : '') + '</div>' +
       '</div>';
     document.body.appendChild(ov);
+    if (window.Locale) Locale.bindSwitch(ov);
     var btn = ov.querySelector('#ops-li-btn');
     var err = ov.querySelector('#ops-li-err');
     // Explain a prior auto-logout, if that is why we are back here.
     try {
       if (sessionStorage.getItem(Auth.TIMEOUT_FLAG)) {
-        err.textContent = 'セッションがタイムアウトしました。再度ログインしてください。';
+        err.textContent = T('login.timeout');
         sessionStorage.removeItem(Auth.TIMEOUT_FLAG);
       }
     } catch (_) {}
     function submit() {
       var email = ov.querySelector('#ops-li-email').value.trim();
       var pass = ov.querySelector('#ops-li-pass').value;
-      if (!email || !pass) { err.textContent = 'メールとパスワードを入力してください'; return; }
+      if (!email || !pass) { err.textContent = T('login.needCreds'); return; }
       btn.disabled = true; btn.innerHTML = '<span class="ops-spin"></span>';
       Auth.login(email, pass).then(function (r) {
-        btn.disabled = false; btn.textContent = 'ログイン';
-        if (!r.ok) { err.textContent = r.error || 'ログインに失敗しました'; return; }
-        if (r.mustChange) { err.textContent = '初回パスワード変更が必要です。管理画面で設定してください。'; Auth.clear(); return; }
+        btn.disabled = false; btn.textContent = T('login.submit');
+        if (!r.ok) { err.textContent = r.error || T('login.failed'); return; }
+        if (r.mustChange) { err.textContent = T('login.mustChange'); Auth.clear(); return; }
         ov.remove();
         onDone();
       });
@@ -596,7 +604,7 @@
           try { sessionStorage.setItem(Auth.TIMEOUT_FLAG, reason || '1'); } catch (_) {}
           window.location.reload();   // clear() already ran in _fire → restore() will fail → login overlay
         },
-        onWarn: function () { if (UI && UI.toast) UI.toast('操作がないため、まもなく自動ログアウトします'); },
+        onWarn: function () { if (UI && UI.toast) UI.toast(T('session.warn')); },
       });
       init();
     }

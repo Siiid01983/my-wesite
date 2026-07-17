@@ -68,29 +68,29 @@
     return '<div class="ops-row tap" data-open="' + U.esc(c.key) + '">' +
       '<div class="ops-avatar">' + U.initials(c.name) + '</div>' +
       '<div class="ops-row-main">' +
-        '<div class="ops-row-title">' + U.esc(c.name || '（名称未設定）') + '様</div>' +
+        '<div class="ops-row-title">' + U.esc(c.name || t('customers.unnamed')) + t('common.honorific') + '</div>' +
         '<div class="ops-row-sub">' + U.esc(c.email || c.phone || '') + '</div>' +
       '</div>' +
       '<div class="ops-row-end">' +
-        '<span class="ops-badge-status st-confirm">' + c.total + '件</span>' +
-        '<span class="ops-row-meta">最終 ' + U.fmtDate(c.last.date) + '</span>' +
+        '<span class="ops-badge-status st-confirm">' + c.total + t('customers.bookingCountUnit') + '</span>' +
+        '<span class="ops-row-meta">' + t('customers.lastPrefix') + ' ' + U.fmtDate(c.last.date) + '</span>' +
       '</div>' +
     '</div>';
   }
 
   function emptyState() {
     return '<div class="ops-empty">' + UI.icon('customers') +
-      '<h3>顧客情報がありません</h3>' +
-      '<p>' + (state.q ? '検索条件を変えてお試しください' : '予約が入ると顧客が表示されます') + '</p>' +
-      (!state.q ? '<a class="ops-btn ghost" href="index.html">ダッシュボードへ戻る</a>' : '') +
+      '<h3>' + (state.q ? t('customers.notFound') : t('customers.empty')) + '</h3>' +
+      '<p>' + (state.q ? t('bookings.emptyFilteredSub') : t('customers.emptySub')) + '</p>' +
+      (!state.q ? '<a class="ops-btn ghost" href="index.html">' + t('dashboard.backToDashboard') + '</a>' : '') +
     '</div>';
   }
 
   function errorState() {
     return '<div class="ops-empty">' + UI.icon('empty') +
-      '<h3>顧客情報を取得できません</h3>' +
-      '<p>接続を確認して、もう一度お試しください。</p>' +
-      '<button class="ops-btn" id="cust-retry" style="margin-top:14px">再試行</button>' +
+      '<h3>' + t('customers.errorTitle') + '</h3>' +
+      '<p>' + t('bookings.errorSub') + '</p>' +
+      '<button class="ops-btn" id="cust-retry" style="margin-top:14px">' + t('common.retry') + '</button>' +
     '</div>';
   }
 
@@ -108,9 +108,9 @@
     var el = document.getElementById('ops-content');
     el.innerHTML =
       '<div class="ops-search">' + UI.icon('search') +
-        '<input id="ops-q" type="search" placeholder="名前・メール・電話で検索" autocomplete="off" />' +
+        '<input id="ops-q" type="search" placeholder="' + t('customers.searchPh') + '" autocomplete="off" />' +
       '</div>' +
-      '<div class="ops-muted" style="font-size:.78rem;font-weight:600;margin:0 2px 10px">' + state.customers.length + ' 名の顧客</div>' +
+      '<div class="ops-muted" style="font-size:.78rem;font-weight:600;margin:0 2px 10px">' + t('customers.count', { n: state.customers.length }) + '</div>' +
       '<div id="ops-list"></div>';
     var q = document.getElementById('ops-q');
     q.value = state.q;
@@ -134,32 +134,32 @@
     var c = state.cur;
     var latest = c.last;
     var html =
-      '<h2>' + U.esc(c.name || '（名称未設定）') + '様</h2>' +
+      '<h2>' + U.esc(c.name || t('customers.unnamed')) + t('common.honorific') + '</h2>' +
       '<div class="ops-muted" style="margin:0 0 14px;font-size:.86rem">' + U.esc(c.email || c.phone || '') + '</div>' +
 
       '<div class="ops-stat-grid" style="margin-bottom:14px">' +
-        '<div class="ops-stat"><div class="ops-stat-num">' + c.total + '</div><div class="ops-stat-label">予約回数</div></div>' +
-        '<div class="ops-stat"><div class="ops-stat-num" style="font-size:1.15rem;padding-top:8px">' + U.fmtDate(c.last.date) + '</div><div class="ops-stat-label">最終予約</div></div>' +
+        '<div class="ops-stat"><div class="ops-stat-num">' + c.total + '</div><div class="ops-stat-label">' + t('customers.bookingCount') + '</div></div>' +
+        '<div class="ops-stat"><div class="ops-stat-num" style="font-size:1.15rem;padding-top:8px">' + U.fmtDate(c.last.date) + '</div><div class="ops-stat-label">' + t('customers.lastBooking') + '</div></div>' +
       '</div>' +
 
       '<div class="ops-card" style="margin:0 0 4px;padding:4px 14px">' +
-        kv('メール', c.email) +
-        kv('電話', c.phone) +
-        kv('よく使うサービス', c.favorite) +
-        kv('初回予約', U.fmtDateFull(c.first.date)) +
-        kv('最終予約', U.fmtDateFull(c.last.date)) +
+        kv(t('bookings.email'), c.email) +
+        kv(t('bookings.phone'), c.phone) +
+        kv(t('customers.favoriteService'), c.favorite) +
+        kv(t('customers.firstBooking'), U.fmtDateFull(c.first.date)) +
+        kv(t('customers.lastBooking'), U.fmtDateFull(c.last.date)) +
       '</div>' +
 
-      '<div class="ops-section-title" style="margin:16px 2px 8px">予約履歴（' + c.total + '）</div>' +
+      '<div class="ops-section-title" style="margin:16px 2px 8px">' + t('customers.history') + '（' + c.total + '）</div>' +
       '<div id="cust-hist"></div>' +
 
       '<div class="ops-btn-row" style="margin-top:16px">' +
-        (c.phone ? '<a class="ops-btn ghost" href="tel:' + U.esc(c.phone) + '">' + UI.icon('phone') + '電話</a>' : '') +
-        '<a class="ops-btn ghost" href="chat.html?booking=' + encodeURIComponent(latest.dbId) + '&ref=' + encodeURIComponent(latest.ref) + '">' + UI.icon('chat') + 'チャット</a>' +
+        (c.phone ? '<a class="ops-btn ghost" href="tel:' + U.esc(c.phone) + '">' + UI.icon('phone') + t('bookings.call') + '</a>' : '') +
+        '<a class="ops-btn ghost" href="chat.html?booking=' + encodeURIComponent(latest.dbId) + '&ref=' + encodeURIComponent(latest.ref) + '">' + UI.icon('chat') + t('bookings.chat') + '</a>' +
       '</div>' +
       '<div class="ops-btn-row" style="margin-top:8px">' +
-        '<a class="ops-btn ghost" href="bookings.html?ref=' + encodeURIComponent(latest.ref) + '">' + UI.icon('bookings') + '予約を見る</a>' +
-        '<button class="ops-btn sage" data-act="rebook">' + UI.icon('calendar') + '再予約</button>' +
+        '<a class="ops-btn ghost" href="bookings.html?ref=' + encodeURIComponent(latest.ref) + '">' + UI.icon('bookings') + t('customers.viewBookings') + '</a>' +
+        '<button class="ops-btn sage" data-act="rebook">' + UI.icon('calendar') + t('customers.rebook') + '</button>' +
       '</div>';
 
     profileSheet.open(html);
@@ -171,7 +171,7 @@
   function historyRow(b) {
     return '<div class="ops-row tap" data-bk="' + U.esc(b.dbId) + '" style="margin-bottom:8px">' +
       '<div class="ops-row-main">' +
-        '<div class="ops-row-title" style="font-size:.9rem">' + U.esc(b.service || 'ご予約') + '</div>' +
+        '<div class="ops-row-title" style="font-size:.9rem">' + U.esc(b.service || t('common.booking')) + '</div>' +
         '<div class="ops-row-sub">' + U.fmtDate(b.date) + ' · ' + U.esc(b.ref) + '</div>' +
       '</div>' +
       '<div class="ops-row-end">' + UI.statusBadge(b.status) + '</div>' +
@@ -185,7 +185,7 @@
     var slice = c.bookings.slice(0, state.histShown);
     host.innerHTML = slice.map(historyRow).join('') +
       (state.histShown < c.bookings.length
-        ? '<button class="ops-btn ghost cust-more" id="cust-more">もっと見る（残り' + (c.bookings.length - state.histShown) + '件）</button>'
+        ? '<button class="ops-btn ghost cust-more" id="cust-more">' + t('common.more') + '（' + (c.bookings.length - state.histShown) + '）</button>'
         : '');
     host.querySelectorAll('[data-bk]').forEach(function (r) {
       r.addEventListener('click', function () { openBookingDetail(r.getAttribute('data-bk')); });
@@ -196,7 +196,7 @@
 
   /* ── Booking-details sheet (incl. mandatory inventory) ────────────────────── */
   function inventoryHtml(items) {
-    if (!items || !items.length) return '<p class="cust-none">家具情報はありません</p>';
+    if (!items || !items.length) return '<p class="cust-none">' + t('furniture.none') + '</p>';
     return '<div class="cust-chips">' + items.map(function (it) {
       return '<span class="cust-chip">' + U.esc(it) + '</span>';
     }).join('') + '</div>';
@@ -207,25 +207,25 @@
     if (!b) return;
 
     var html =
-      '<h2>予約詳細</h2>' +
-      '<div class="ops-muted" style="margin:0 0 6px;font-size:.86rem">受付番号 ' + U.esc(b.ref) + ' · ' + UI.statusBadge(b.status) + '</div>' +
+      '<h2>' + t('customers.detailTitle') + '</h2>' +
+      '<div class="ops-muted" style="margin:0 0 6px;font-size:.86rem">' + t('bookings.receiptNo') + ' ' + U.esc(b.ref) + ' · ' + UI.statusBadge(b.status) + '</div>' +
 
-      section('お客様情報', kv('お名前', (b.name || '') && b.name + '様') + kv('電話', b.phone) + kv('メール', b.email)) +
+      section(t('customers.customerInfo'), kv(t('customers.name'), (b.name || '') && b.name + t('common.honorific')) + kv(t('bookings.phone'), b.phone) + kv(t('bookings.email'), b.email)) +
 
-      section('引越し情報',
-        kv('受付番号', b.ref) +
-        kv('サービス', b.service) +
-        kv('引越し日', U.fmtDateFull(b.date)) +
-        (b.time ? kv('時間帯', b.time) : '') +
-        kv('ステータス', b.status)) +
+      section(t('customers.movingInfo'),
+        kv(t('bookings.receiptNo'), b.ref) +
+        kv(t('bookings.service'), b.service) +
+        kv(t('bookings.moveDate'), U.fmtDateFull(b.date)) +
+        (b.time ? kv(t('bookings.timeSlot'), b.time) : '') +
+        kv(t('common.status'), t('status.' + Ops.toDbStatus(b.status)))) +
 
-      section('住所', (kv('現住所', b.fromAddr) + kv('引越し先', b.toAddr)) || '<p class="cust-none" style="margin:6px 0">住所情報はありません</p>') +
+      section(t('customers.addresses'), (kv(t('customers.currentAddr'), b.fromAddr) + kv(t('customers.destAddr'), b.toAddr)) || '<p class="cust-none" style="margin:6px 0">' + t('customers.noAddr') + '</p>') +
 
       ((b.notes || b.internalNotes)
-        ? section('メモ', kv('お客様メモ', b.notes) + kv('社内メモ', b.internalNotes))
+        ? section(t('customers.memo'), kv(t('customers.custMemo'), b.notes) + kv(t('customers.internalMemo'), b.internalNotes))
         : '') +
 
-      '<div class="ops-section-title" style="margin:16px 2px 8px">搬送家具・荷物一覧</div>' +
+      '<div class="ops-section-title" style="margin:16px 2px 8px">' + t('furniture.title') + '</div>' +
       inventoryHtml(b.items);
 
     detailSheet.open(html);
@@ -244,7 +244,7 @@
         ts: Date.now(),
       }));
     } catch (e) {}
-    UI.toast('再予約画面を開いています…');
+    UI.toast(t('customers.rebookOpening'));
     location.href = '../index.html';
   }
 
@@ -267,7 +267,7 @@
   }
 
   Ops.ready(function () {
-    UI.mountChrome({ active: 'customers', title: '顧客' });
+    UI.mountChrome({ active: 'customers', title: t('customers.title') });
     profileSheet = UI.sheet();
     detailSheet = UI.sheet();
     load();

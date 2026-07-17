@@ -7,7 +7,7 @@ window.LOCALES.ja = {
   "common.search": "検索", "common.back": "戻る", "common.loading": "読み込み中…",
   "common.close": "閉じる", "common.delete": "削除", "common.updating": "更新中…",
   "common.saving": "保存中…", "common.saved": "保存しました", "common.saveFailed": "保存に失敗しました",
-  "common.none": "—", "common.more": "もっと見る", "common.customer": "お客様",
+  "common.none": "—", "common.more": "もっと見る", "common.customer": "お客様", "common.honorific": "様", "common.booking": "ご予約", "common.status": "ステータス",
 
   /* nav */
   "nav.dashboard": "ホーム", "nav.bookings": "予約", "nav.customers": "顧客",
@@ -50,7 +50,7 @@ window.LOCALES.ja = {
 
   /* customers (M3) */
   "customers.title": "顧客", "customers.searchPh": "名前・メール・電話で検索",
-  "customers.count": "{n} 名の顧客", "customers.notFound": "顧客が見つかりません",
+  "customers.count": "{n} 名の顧客", "customers.notFound": "顧客が見つかりません", "customers.unnamed": "（名称未設定）",
   "customers.empty": "顧客情報がありません", "customers.emptySub": "予約が入ると顧客が表示されます",
   "customers.errorTitle": "顧客情報を取得できません", "customers.bookingCountUnit": "件",
   "customers.lastPrefix": "最終", "customers.bookingCount": "予約回数", "customers.lastBooking": "最終予約",
