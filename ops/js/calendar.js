@@ -39,7 +39,7 @@
      pinpointed. Zero cost / never rendered unless ?debug=1 is in the URL.
      BUILD is a marker so you can confirm the device actually loaded THIS file
      (vs a stale service-worker cache). Bump it whenever calendar.js changes. */
-  var BUILD = 'calendar-2026-07-17-threshold-start';
+  var BUILD = 'calendar-2026-07-17b-no-capture';
   var DBG = /[?&]debug=1(?:&|$)/.test(location.search || '');
   var _dbgEl = null, _dbgMoveT = 0, _dbgEnvDone = false;
   function dbg(msg) {
@@ -386,7 +386,6 @@
     function up(ev) { var t = dragging ? dropAt(ev.clientX, ev.clientY, mode) : null; if (DBG) dbg('pointerup dragging=' + dragging + ' target=' + dbgTarget(t)); end(t); }
     function end(target) {
       document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', cancel);
-      try { if (pid != null && el.releasePointerCapture) el.releasePointerCapture(pid); } catch (_) {}
       if (ghost) ghost.remove();
       document.body.classList.remove('cal-dnd'); el.classList.remove('cal-dragging'); clearHot();
       if (dragging) {
@@ -401,9 +400,11 @@
     }
     function cancel() { dbg('POINTERCANCEL → abort (dragging=' + dragging + ')'); end(null); }   // pointercancel (e.g. OS gesture)
     dbg('pointerdown mode=' + mode + ' pid=' + pid);
-    // Capture the pointer up-front (while the element still has pointer-events)
-    // so move/up are delivered even once the finger leaves the card.
-    try { if (pid != null && el.setPointerCapture) el.setPointerCapture(pid); } catch (_) {}
+    // NOTE: do NOT setPointerCapture here. On iOS/WebKit, calling it inside
+    // pointerdown suppresses subsequent pointermove events (the drag never
+    // starts). Touch pointers are IMPLICITLY captured to the pointerdown target
+    // and their events bubble to document, so these document-level listeners
+    // receive move/up reliably; touch-action:none stops the browser scrolling.
     document.addEventListener('pointermove', move, { passive: false });
     document.addEventListener('pointerup', up);
     document.addEventListener('pointercancel', cancel);
