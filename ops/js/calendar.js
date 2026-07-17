@@ -1,181 +1,456 @@
 /* ════════════════════════════════════════════════════════════════════════════
-   calendar.js — M5 Calendar (/ops/calendar.html)
+   calendar.js — M5 Dispatcher Calendar (/ops/calendar.html)
 
-   READ-ONLY. Day + week views of slot availability and booking blocks.
-   Availability (available / reserved / full per band) comes from the existing
-   availability.php (booking_slots + capacity); booking blocks come from the
-   bookings table. No slot is created, reserved, or released here.
+   A flexible, Curama-style operational calendar over the EXISTING bookings.
+     • Day timeline (06:00–22:00) · Week columns · Month grid
+     • Booking cards positioned at their ACTUAL time (start_at/end_at, or parsed
+       from the packed notes time) — NO time bands, NO booking_slots, NO locking
+     • Drag to reschedule: another date (week/month), another time + duration (day)
+       persisted through the existing bookings update (rest.php: booking_date /
+       start_at / end_at only) — the booking engine is never touched
+     • Filters (status / staff / search / scope) · staff overlay · detail modal
+       with the exact furniture list · lazy per-view rendering (500+ bookings)
    ════════════════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
   var U = Ops.util, UI = Ops.UI, Api = Ops.Api;
 
   var WD = ['日', '月', '火', '水', '木', '金', '土'];
-  var BANDS = [
-    { key: 'am', label: '午前', time: '08:00–12:00' },
-    { key: 'pm', label: '午後', time: '12:00–16:00' },
-    { key: 'ev', label: '夕方', time: '16:00–19:00' },
-    { key: 'nt', label: '夜間', time: '19:00–21:00' },
+  var H0 = 6, H1 = 22;                          // timeline window
+  var HOUR_PX = 58;                             // must match --cal-hour
+
+  var STATUS_CLASS = { '新規': 'cst-pending', '確認中': 'cst-progress', '確定': 'cst-confirm', '完了': 'cst-done', 'キャンセル': 'cst-cancel', '却下': 'cst-cancel', '要修正': 'cst-progress' };
+  var STATUS_FILTERS = [
+    { k: 'all', l: 'すべて' },
+    { k: '新規', l: '保留' },
+    { k: '確定', l: '確定' },
+    { k: '確認中', l: '進行中' },
+    { k: '完了', l: '完了' },
   ];
 
-  var state = { selected: U.todayStr(), weekStart: null, view: 'day', bookings: [], byDate: {}, avail: {} };
+  var state = {
+    selected: U.todayStr(), anchor: U.todayStr(), view: 'day',
+    bookings: [], byDate: {}, error: false,
+    q: '', status: 'all', staff: 'all', staffOverlay: false, sheet: null,
+  };
 
   /* ── Date helpers ──────────────────────────────────────────────────────── */
-  function parse(s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function parse(s) { var p = String(s).split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
   function fmt(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function addDays(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }
   function sundayOf(s) { var d = parse(s); return addDays(d, -d.getDay()); }
-  function weekDates() { var out = []; for (var i = 0; i < 7; i++) out.push(fmt(addDays(state.weekStart, i))); return out; }
+  function weekDates(anchor) { var ws = sundayOf(anchor); var o = []; for (var i = 0; i < 7; i++) o.push(fmt(addDays(ws, i))); return o; }
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function min2hm(m) { return pad(Math.floor(m / 60)) + ':' + pad(m % 60); }
+  function nowSql() { return new Date().toISOString().slice(0, 19).replace('T', ' '); }
 
-  function bookingsOf(date) { return (state.byDate[date] || []); }
-
-  /* ── Availability fetch + cache ────────────────────────────────────────── */
-  function loadAvail(date) {
-    if (state.avail[date]) return Promise.resolve(state.avail[date]);
-    return Api.availability(date).then(function (j) {
-      var a = (j && j.ok) ? { bands: j.bands || {}, capacity: j.capacity || null } : { bands: {}, capacity: null };
-      state.avail[date] = a;
-      return a;
-    });
-  }
-
-  function bandState(date, key) {
-    var a = state.avail[date];
-    if (!a) return 'loading';
-    var cap = a.capacity && a.capacity[key];
-    if (cap) {
-      if (cap.closed) return 'full';
-      if (typeof cap.remaining === 'number' && cap.remaining <= 0) return 'full';
+  /* ── Schedule derivation (real times only — never bands) ───────────────── */
+  function hmFrom(s) { var d = new Date(String(s).replace(' ', 'T')); if (isNaN(d)) return null; return { h: d.getHours(), m: d.getMinutes() }; }
+  function sched(b) {
+    var s = b.startAt ? hmFrom(b.startAt) : null;
+    var e = b.endAt ? hmFrom(b.endAt) : null;
+    if (!s && b.time) {
+      var m = String(b.time).match(/(\d{1,2}):(\d{2})(?:\s*[-–~〜]\s*(\d{1,2}):(\d{2}))?/);
+      if (m) { s = { h: +m[1], m: +m[2] }; if (m[3]) e = { h: +m[3], m: +m[4] }; }
     }
-    return a.bands[key] === 'reserved' ? 'reserved' : 'available';
+    var hasTime = !!s;
+    if (!s) s = { h: 9, m: 0 };
+    if (!e) e = { h: Math.min(s.h + 2, 23), m: s.m };
+    var sMin = s.h * 60 + s.m, eMin = e.h * 60 + e.m;
+    if (eMin <= sMin) eMin = sMin + 60;
+    return { sMin: sMin, eMin: eMin, hasTime: hasTime };
   }
-  var STATE_LABEL = { available: '空きあり', reserved: '予約済み', full: '満枠', loading: '…' };
+  function timeLabel(b) { var t = sched(b); return min2hm(t.sMin) + '-' + min2hm(t.eMin); }
+  function stClass(b) { return STATUS_CLASS[b.status] || 'cst-done'; }
 
-  /* ── Render ────────────────────────────────────────────────────────────── */
+  /* ── byDate index (excludes cancelled from the board; kept in state.bookings) */
+  function reindex() {
+    var by = {};
+    state.bookings.forEach(function (b) {
+      if (!b.date || b.status === 'キャンセル') return;
+      (by[b.date] = by[b.date] || []).push(b);
+    });
+    Object.keys(by).forEach(function (d) { by[d].sort(function (a, b) { return sched(a).sMin - sched(b).sMin; }); });
+    state.byDate = by;
+  }
+  function removeBk(b) { var a = state.byDate[b.date]; if (!a) return; var i = a.indexOf(b); if (i >= 0) a.splice(i, 1); }
+  function addBk(b) { if (b.status === 'キャンセル') return; (state.byDate[b.date] = state.byDate[b.date] || []).push(b); state.byDate[b.date].sort(function (x, y) { return sched(x).sMin - sched(y).sMin; }); }
+
+  /* ── Filters ───────────────────────────────────────────────────────────── */
+  function staffOf(b) { return (b.workers && String(b.workers).trim()) || '未割当'; }
+  function passesFilter(b) {
+    if (state.status !== 'all' && b.status !== state.status) return false;
+    if (state.staff !== 'all' && staffOf(b) !== state.staff) return false;
+    if (state.q) {
+      var q = state.q.trim().toLowerCase();
+      if ((b.name + ' ' + b.ref + ' ' + (b.service || '')).toLowerCase().indexOf(q) < 0) return false;
+    }
+    return true;
+  }
+  function dayList(date) { return (state.byDate[date] || []).filter(passesFilter); }
+  function staffOptions() {
+    var set = {};
+    state.bookings.forEach(function (b) { if (b.status !== 'キャンセル') set[staffOf(b)] = 1; });
+    return Object.keys(set).sort();
+  }
+
+  /* ── Counts / summary ──────────────────────────────────────────────────── */
+  function todayCount() { return (state.byDate[U.todayStr()] || []).length; }
+  function pendingCount() { return state.bookings.filter(function (b) { return b.status === '新規'; }).length; }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     Render — shell + active view
+     ════════════════════════════════════════════════════════════════════════ */
+  function titleFor() {
+    var a = parse(state.anchor);
+    if (state.view === 'day') return U.fmtDateFull(state.selected);
+    if (state.view === 'week') { var w = weekDates(state.anchor); var s = parse(w[0]), e = parse(w[6]); return (s.getMonth() + 1) + '/' + s.getDate() + ' – ' + (e.getMonth() + 1) + '/' + e.getDate(); }
+    return a.getFullYear() + '年' + (a.getMonth() + 1) + '月';
+  }
+  function step(dir) {
+    if (state.view === 'day') { state.selected = fmt(addDays(parse(state.selected), dir)); state.anchor = state.selected; }
+    else if (state.view === 'week') { state.anchor = fmt(addDays(parse(state.anchor), 7 * dir)); }
+    else { var d = parse(state.anchor); d.setMonth(d.getMonth() + dir); state.anchor = fmt(d); }
+    render();
+  }
+
   function render() {
     var el = document.getElementById('ops-content');
-    var ws = state.weekStart;
-    var title = ws.getFullYear() + '年' + (ws.getMonth() + 1) + '月';
+    if (state.error) { el.innerHTML = errorState(); var rt = document.getElementById('cal-retry'); if (rt) rt.addEventListener('click', load); return; }
 
     el.innerHTML =
-      '<div class="ops-cal-head">' +
-        '<button class="ops-cal-nav" id="ops-prev" aria-label="前の週">' + UI.icon('chevronL') + '</button>' +
-        '<div class="ops-cal-title">' + title + '</div>' +
-        '<button class="ops-cal-nav" id="ops-next" aria-label="次の週">' + UI.icon('chevronR') + '</button>' +
+      summaryHtml() +
+      '<div class="cal-views"><div class="cal-seg">' +
+        ['day', 'week', 'month'].map(function (v) { return '<button data-view="' + v + '" class="' + (state.view === v ? 'active' : '') + '">' + ({ day: '日', week: '週', month: '月' })[v] + '</button>'; }).join('') +
+      '</div></div>' +
+      '<div class="cal-toolbar">' +
+        '<button class="cal-nav" id="cal-prev">' + UI.icon('chevronL') + '</button>' +
+        '<div class="cal-title">' + U.esc(titleFor()) + '</div>' +
+        '<button class="cal-nav" id="cal-next">' + UI.icon('chevronR') + '</button>' +
+        '<button class="cal-today" id="cal-today">今日</button>' +
       '</div>' +
-      weekStrip() +
-      '<div class="ops-filters" style="margin-bottom:14px">' +
-        '<button class="ops-chip' + (state.view === 'day' ? ' active' : '') + '" data-v="day">日</button>' +
-        '<button class="ops-chip' + (state.view === 'week' ? ' active' : '') + '" data-v="week">週</button>' +
-        '<button class="ops-chip" id="ops-today">今日</button>' +
-      '</div>' +
-      '<div id="ops-cal-body"></div>';
+      filtersHtml() +
+      '<div id="cal-body"></div>';
 
-    document.getElementById('ops-prev').addEventListener('click', function () { state.weekStart = addDays(state.weekStart, -7); render(); prefetchWeek(); });
-    document.getElementById('ops-next').addEventListener('click', function () { state.weekStart = addDays(state.weekStart, 7); render(); prefetchWeek(); });
-    document.getElementById('ops-today').addEventListener('click', function () { state.selected = U.todayStr(); state.weekStart = sundayOf(state.selected); render(); prefetchWeek(); });
-    el.querySelectorAll('[data-v]').forEach(function (c) { c.addEventListener('click', function () { state.view = c.getAttribute('data-v'); render(); }); });
-    el.querySelectorAll('[data-day]').forEach(function (c) { c.addEventListener('click', function () { state.selected = c.getAttribute('data-day'); state.view = 'day'; render(); loadAvail(state.selected).then(renderBody); }); });
-
+    el.querySelectorAll('[data-view]').forEach(function (b) { b.addEventListener('click', function () { state.view = b.getAttribute('data-view'); render(); }); });
+    document.getElementById('cal-prev').addEventListener('click', function () { step(-1); });
+    document.getElementById('cal-next').addEventListener('click', function () { step(1); });
+    document.getElementById('cal-today').addEventListener('click', function () { state.selected = U.todayStr(); state.anchor = state.selected; render(); });
+    wireFilters();
     renderBody();
   }
 
-  function weekStrip() {
-    var today = U.todayStr();
-    var cells = weekDates().map(function (d, i) {
-      var dt = parse(d);
-      var cnt = bookingsOf(d).length;
-      return '<div class="day' + (d === state.selected ? ' selected' : '') + (d === today ? ' today' : '') + '" data-day="' + d + '">' +
-        '<span>' + dt.getDate() + '</span>' + (cnt ? '<span class="dot"></span>' : '') +
-      '</div>';
-    }).join('');
-    return '<div class="ops-week">' + WD.map(function (w) { return '<div class="wd">' + w + '</div>'; }).join('') + cells + '</div>';
-  }
-
-  function bandRow(date, b) {
-    var st = bandState(date, b.key);
-    return '<div class="ops-band">' +
-      '<div><div class="ops-band-name">' + b.label + '</div><div class="ops-band-time">' + b.time + '</div></div>' +
-      '<div style="flex:1"></div>' +
-      '<span class="ops-band-state ' + st + '">' + STATE_LABEL[st] + '</span>' +
+  function summaryHtml() {
+    return '<div class="cal-summary">' +
+      '<div class="cal-badge">' + UI.icon('calendar') + '<div><b>' + todayCount() + '</b> <span>本日の予約</span></div></div>' +
+      '<div class="cal-badge warn">' + UI.icon('clock') + '<div><b>' + pendingCount() + '</b> <span>要確認（保留）</span></div></div>' +
     '</div>';
   }
 
-  function blockRow(b) {
-    return '<a class="ops-row tap" href="bookings.html?ref=' + encodeURIComponent(b.ref) + '">' +
-      '<div class="ops-avatar">' + U.initials(b.name) + '</div>' +
-      '<div class="ops-row-main">' +
-        '<div class="ops-row-title">' + U.esc(b.name) + '様</div>' +
-        '<div class="ops-row-sub">' + U.esc(b.service || 'ご予約') + (b.time ? ' · ' + U.esc(b.time) : '') + '</div>' +
+  function filtersHtml() {
+    var staff = staffOptions();
+    return '<div class="cal-filters">' +
+      '<div class="cal-search">' + UI.icon('search') + '<input id="cal-q" type="search" placeholder="顧客・予約IDで検索" autocomplete="off" /></div>' +
+      '<div class="cal-chips">' +
+        STATUS_FILTERS.map(function (f) { return '<button class="cal-chip' + (state.status === f.k ? ' active' : '') + '" data-st="' + f.k + '">' + f.l + '</button>'; }).join('') +
+        '<select class="cal-staff-sel" id="cal-staff"><option value="all">全スタッフ</option>' +
+          staff.map(function (s) { return '<option value="' + U.esc(s) + '"' + (state.staff === s ? ' selected' : '') + '>' + U.esc(s) + '</option>'; }).join('') +
+        '</select>' +
       '</div>' +
-      '<div class="ops-row-end">' + UI.statusBadge(b.status) + '</div>' +
-    '</a>';
+      '<label class="cal-toggle" style="margin-top:8px"><input type="checkbox" id="cal-staff-ov"' + (state.staffOverlay ? ' checked' : '') + ' /> スタッフ別に表示</label>' +
+    '</div>';
+  }
+
+  function wireFilters() {
+    var q = document.getElementById('cal-q');
+    q.value = state.q;
+    q.addEventListener('input', U.debounce(function () { state.q = q.value; renderBody(); }, 200));
+    document.querySelectorAll('[data-st]').forEach(function (c) { c.addEventListener('click', function () { state.status = c.getAttribute('data-st'); render(); }); });
+    document.getElementById('cal-staff').addEventListener('change', function () { state.staff = this.value; renderBody(); });
+    document.getElementById('cal-staff-ov').addEventListener('change', function () { state.staffOverlay = this.checked; renderBody(); });
   }
 
   function renderBody() {
-    var host = document.getElementById('ops-cal-body');
+    var host = document.getElementById('cal-body');
     if (!host) return;
-    if (state.view === 'week') { host.innerHTML = renderWeekView(); bindBlocks(host); return; }
-
-    var date = state.selected;
-    var blocks = bookingsOf(date);
-    host.innerHTML =
-      '<div class="ops-card" style="text-align:center;padding:12px"><strong style="font-size:1.02rem">' + U.fmtDateFull(date) + '</strong></div>' +
-      '<div class="ops-section-title" style="margin-top:6px">時間帯の空き状況</div>' +
-      BANDS.map(function (b) { return bandRow(date, b); }).join('') +
-      '<div class="ops-section-title">予約ブロック（' + blocks.length + '件）</div>' +
-      (blocks.length ? blocks.map(blockRow).join('') : UI.empty('予約はありません', 'この日の予約ブロックはまだありません', 'calendar'));
-    bindBlocks(host);
+    if (state.staffOverlay) { host.innerHTML = staffOverlayHtml(); bindCards(host, 'date'); return; }
+    if (state.view === 'day') { host.innerHTML = dayHtml(); bindDay(host); }
+    else if (state.view === 'week') { host.innerHTML = weekHtml(); bindCards(host, 'date'); }
+    else { host.innerHTML = monthHtml(); bindCards(host, 'date'); }
   }
 
-  function renderWeekView() {
-    return weekDates().map(function (d) {
-      var dt = parse(d);
-      var blocks = bookingsOf(d);
-      var chips = BANDS.map(function (b) {
-        var st = bandState(d, b.key);
-        return '<span class="ops-band-state ' + st + '" style="font-size:.66rem;padding:2px 7px">' + b.label + '</span>';
-      }).join(' ');
-      return '<div class="ops-card tap" data-day="' + d + '" style="padding:13px 14px;margin-bottom:10px">' +
-        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
-          '<strong>' + (dt.getMonth() + 1) + '/' + dt.getDate() + '（' + WD[dt.getDay()] + '）</strong>' +
-          '<span class="ops-muted" style="font-size:.8rem">予約 ' + blocks.length + '件</span>' +
-        '</div>' +
-        '<div style="display:flex;flex-wrap:wrap;gap:5px">' + chips + '</div>' +
+  /* ── DAY view (timeline, absolute cards, time DnD + resize) ─────────────── */
+  function packLanes(evs) {
+    var laneEnd = [];
+    evs.forEach(function (ev) {
+      var placed = false;
+      for (var i = 0; i < laneEnd.length; i++) { if (ev._s >= laneEnd[i]) { ev._lane = i; laneEnd[i] = ev._e; placed = true; break; } }
+      if (!placed) { ev._lane = laneEnd.length; laneEnd.push(ev._e); }
+    });
+    return laneEnd.length || 1;
+  }
+  function dayHtml() {
+    var list = dayList(state.selected);
+    var hours = '';
+    for (var h = H0; h <= H1; h++) hours += '<div class="cal-hour-lbl">' + pad(h) + ':00</div>';
+    var rows = '';
+    for (var r = H0; r <= H1; r++) rows += '<div class="cal-hour-row" data-drop-hour="' + r + '"></div>';
+
+    list.forEach(function (b) { var s = sched(b); b._s = s.sMin; b._e = s.eMin; });
+    var lanes = packLanes(list);
+    var events = list.map(function (b) {
+      var top = ((b._s - H0 * 60) / 60) * HOUR_PX;
+      var hgt = Math.max(((b._e - b._s) / 60) * HOUR_PX - 4, 26);
+      var w = 100 / lanes, left = b._lane * w;
+      return '<div class="cal-event ' + stClass(b) + '" data-open="' + U.esc(b.dbId) + '" data-drag="time" ' +
+        'style="top:' + top + 'px;height:' + hgt + 'px;left:calc(' + left + '% + 2px);width:calc(' + w + '% - 4px)">' +
+        '<div class="e-name">' + U.esc(b.name) + '様</div>' +
+        '<div class="e-meta">' + U.esc(b.service || 'ご予約') + ' · ' + timeLabel(b) + '</div>' +
+        '<div class="cal-resize" data-resize="' + U.esc(b.dbId) + '"></div>' +
       '</div>';
     }).join('');
+    var body = '<div class="cal-day"><div class="cal-hours">' + hours + '</div>' +
+      '<div class="cal-timeline" style="height:' + ((H1 - H0 + 1) * HOUR_PX) + 'px">' + rows + events + '</div></div>';
+    if (!list.length) body += '<div class="cal-hint">この日の予約はありません</div>';
+    return body + '<div class="cal-hint">長押しでドラッグ → 時間変更／下端で長さ変更</div>';
   }
-
-  function bindBlocks(host) {
-    host.querySelectorAll('[data-day]').forEach(function (c) {
-      c.addEventListener('click', function () { state.selected = c.getAttribute('data-day'); state.view = 'day'; render(); loadAvail(state.selected).then(renderBody); });
+  function bindDay(host) {
+    host.querySelectorAll('[data-open]').forEach(function (el) {
+      el.addEventListener('click', function () { openDetail(el.getAttribute('data-open')); });
+      var b = byId(el.getAttribute('data-open'));
+      if (b) attachDrag(el, b, 'time');
+    });
+    host.querySelectorAll('[data-resize]').forEach(function (g) {
+      var b = byId(g.getAttribute('data-resize'));
+      if (b) attachResize(g, b);
     });
   }
 
-  function prefetchWeek() {
-    weekDates().forEach(function (d) { loadAvail(d).then(function () { if (document.getElementById('ops-cal-body')) renderBody(); }); });
+  /* ── WEEK view (columns, date DnD) ─────────────────────────────────────── */
+  function weekHtml() {
+    var today = U.todayStr();
+    return '<div class="cal-week">' + weekDates(state.anchor).map(function (d) {
+      var dt = parse(d), list = dayList(d);
+      var cards = list.map(function (b) {
+        return '<div class="cal-wk-card ' + stClass(b) + '" data-open="' + U.esc(b.dbId) + '" data-drag="date">' +
+          '<div class="w-time">' + timeLabel(b) + '</div><div class="w-name">' + U.esc(b.name) + '様</div></div>';
+      }).join('');
+      return '<div class="cal-col" data-drop-date="' + d + '">' +
+        '<div class="cal-col-hd' + (d === today ? ' today' : '') + '">' + WD[dt.getDay()] + '<small>' + (dt.getMonth() + 1) + '/' + dt.getDate() + '</small></div>' +
+        '<div class="cal-col-body">' + (cards || '<div class="cal-hint" style="margin:6px 0">—</div>') + '</div>' +
+      '</div>';
+    }).join('') + '</div>';
   }
 
+  /* ── MONTH view (grid, date DnD) ───────────────────────────────────────── */
+  function monthCells(anchor) {
+    var a = parse(anchor); a.setDate(1);
+    var start = addDays(a, -a.getDay());
+    var mon = a.getMonth(), out = [];
+    for (var i = 0; i < 42; i++) { var d = addDays(start, i); out.push({ date: fmt(d), inMonth: d.getMonth() === mon }); }
+    return out;
+  }
+  function monthHtml() {
+    var today = U.todayStr();
+    var wd = '<div class="cal-month-wd">' + WD.map(function (w) { return '<div>' + w + '</div>'; }).join('') + '</div>';
+    var cells = monthCells(state.anchor).map(function (c) {
+      var dt = parse(c.date), list = dayList(c.date);
+      var chips = list.slice(0, 3).map(function (b) {
+        return '<div class="cal-chip-bk ' + stClass(b) + '" data-open="' + U.esc(b.dbId) + '" data-drag="date"><i></i><span>' + U.esc(b.name) + '</span></div>';
+      }).join('');
+      var more = list.length > 3 ? '<div class="cal-more">+' + (list.length - 3) + '</div>' : '';
+      return '<div class="cal-cell' + (c.inMonth ? '' : ' dim') + (c.date === today ? ' today' : '') + '" data-drop-date="' + c.date + '" data-goto="' + c.date + '">' +
+        '<div class="cal-cell-d">' + dt.getDate() + '</div>' + chips + more + '</div>';
+    }).join('');
+    return wd + '<div class="cal-month">' + cells + '</div>';
+  }
+
+  /* ── Staff overlay ─────────────────────────────────────────────────────── */
+  function currentRange() {
+    if (state.view === 'day') return [state.selected];
+    if (state.view === 'week') return weekDates(state.anchor);
+    return monthCells(state.anchor).filter(function (c) { return c.inMonth; }).map(function (c) { return c.date; });
+  }
+  function staffOverlayHtml() {
+    var groups = {};
+    currentRange().forEach(function (d) { dayList(d).forEach(function (b) { var s = staffOf(b); (groups[s] = groups[s] || []).push(b); }); });
+    var keys = Object.keys(groups).sort();
+    if (!keys.length) return '<div class="cal-none">この期間の予約はありません</div>';
+    return keys.map(function (k) {
+      var items = groups[k].sort(function (a, b) { return (a.date + a._s).localeCompare ? String(a.date).localeCompare(String(b.date)) : 0; });
+      var cards = items.map(function (b) {
+        return '<div class="cal-wk-card ' + stClass(b) + '" data-open="' + U.esc(b.dbId) + '" style="margin-bottom:6px">' +
+          '<div class="w-time">' + U.fmtDate(b.date) + ' · ' + timeLabel(b) + '</div><div class="w-name">' + U.esc(b.name) + '様 · ' + U.esc(b.service || 'ご予約') + '</div></div>';
+      }).join('');
+      return '<div class="cal-staff-grp"><div class="cal-staff-hd">' + UI.icon('customers') + U.esc(k) + '<span class="n">' + items.length + '件</span></div>' + cards + '</div>';
+    }).join('');
+  }
+
+  /* ── Card binding (week/month/staff share date-drag + tap-to-open) ─────── */
+  function bindCards(host, mode) {
+    host.querySelectorAll('[data-open]').forEach(function (el) {
+      el.addEventListener('click', function () { openDetail(el.getAttribute('data-open')); });
+      if (el.getAttribute('data-drag')) { var b = byId(el.getAttribute('data-open')); if (b) attachDrag(el, b, mode); }
+    });
+    host.querySelectorAll('[data-goto]').forEach(function (cell) {
+      cell.addEventListener('click', function (e) {
+        if (e.target.closest('[data-open]')) return;               // chip handled its own tap
+        state.selected = cell.getAttribute('data-goto'); state.anchor = state.selected; state.view = 'day'; render();
+      });
+    });
+  }
+
+  function byId(id) { for (var i = 0; i < state.bookings.length; i++) if (String(state.bookings[i].dbId) === String(id)) return state.bookings[i]; return null; }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     Drag & drop (long-press) — reschedule via existing bookings update
+     ════════════════════════════════════════════════════════════════════════ */
+  function attachDrag(el, b, mode) {
+    el.addEventListener('pointerdown', function (e) {
+      if (e.button && e.button !== 0) return;
+      dragSession(e, el, b, mode);
+    });
+  }
+  function attachResize(g, b) {
+    g.addEventListener('pointerdown', function (e) {
+      e.stopPropagation();
+      if (e.button && e.button !== 0) return;
+      dragSession(e, g.parentNode, b, 'resize');
+    });
+  }
+  function dragSession(e, el, b, mode) {
+    var sx = e.clientX, sy = e.clientY, dragging = false, ghost = null, hold;
+    function begin() {
+      dragging = true; document.body.classList.add('cal-dnd'); el.classList.add('cal-dragging');
+      if (mode !== 'resize') { ghost = el.cloneNode(true); ghost.className += ' cal-ghost'; ghost.style.width = el.offsetWidth + 'px'; document.body.appendChild(ghost); place(sx, sy); }
+    }
+    function place(x, y) { if (ghost) { ghost.style.left = (x - el.offsetWidth / 2) + 'px'; ghost.style.top = (y - 18) + 'px'; } }
+    function hot(x, y) {
+      clearHot();
+      var t = dropAt(x, y, mode);
+      if (t) t.classList.add('cal-hot');
+    }
+    function move(ev) {
+      if (!dragging) { if (Math.abs(ev.clientX - sx) > 10 || Math.abs(ev.clientY - sy) > 10) end(null); return; }
+      ev.preventDefault(); place(ev.clientX, ev.clientY); hot(ev.clientX, ev.clientY);
+    }
+    function up(ev) { var t = dragging ? dropAt(ev.clientX, ev.clientY, mode) : null; end(t); }
+    function end(target) {
+      clearTimeout(hold); document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up);
+      if (ghost) ghost.remove();
+      document.body.classList.remove('cal-dnd'); el.classList.remove('cal-dragging'); clearHot();
+      if (dragging) {
+        // A real drag happened — swallow the click that the browser fires next so
+        // the detail modal doesn't pop open on drop.
+        var swallow = function (ev) { ev.stopPropagation(); ev.preventDefault(); el.removeEventListener('click', swallow, true); };
+        el.addEventListener('click', swallow, true);
+        setTimeout(function () { el.removeEventListener('click', swallow, true); }, 400);
+        if (target) applyDrop(b, target, mode);
+      }
+      dragging = false;
+    }
+    hold = setTimeout(begin, 200);
+    document.addEventListener('pointermove', move, { passive: false });
+    document.addEventListener('pointerup', up);
+  }
+  function dropAt(x, y, mode) {
+    var el = document.elementFromPoint(x, y);
+    if (!el) return null;
+    return el.closest(mode === 'time' || mode === 'resize' ? '[data-drop-hour]' : '[data-drop-date]');
+  }
+  function clearHot() { document.querySelectorAll('.cal-hot').forEach(function (n) { n.classList.remove('cal-hot'); }); }
+
+  function applyDrop(b, tgt, mode) {
+    var cur = sched(b), sMin = cur.sMin, eMin = cur.eMin, dur = eMin - sMin, newDate = b.date, setTimes = cur.hasTime;
+    if (mode === 'date') {
+      newDate = tgt.getAttribute('data-drop-date');
+      if (newDate === b.date) return;
+    } else if (mode === 'time') {
+      var hr = +tgt.getAttribute('data-drop-hour'); sMin = hr * 60; eMin = sMin + dur; setTimes = true;
+      if (sMin === cur.sMin) return;
+    } else if (mode === 'resize') {
+      var hr2 = +tgt.getAttribute('data-drop-hour'); eMin = (hr2 + 1) * 60; if (eMin <= sMin) eMin = sMin + 60; setTimes = true;
+      if (eMin === cur.eMin) return;
+    }
+    commit(b, newDate, sMin, eMin, setTimes);
+  }
+
+  function commit(b, newDate, sMin, eMin, setTimes) {
+    var prev = { date: b.date, startAt: b.startAt, endAt: b.endAt, time: b.time };
+    removeBk(b);
+    b.date = newDate;
+    if (setTimes) { b.startAt = newDate + ' ' + min2hm(sMin) + ':00'; b.endAt = newDate + ' ' + min2hm(eMin) + ':00'; b.time = min2hm(sMin) + '-' + min2hm(eMin); }
+    else if (b.startAt) { b.startAt = newDate + ' ' + b.startAt.slice(11); if (b.endAt) b.endAt = newDate + ' ' + b.endAt.slice(11); }
+    addBk(b);
+    renderBody();
+    UI.toast('保存中…');
+
+    var values = { updated_at: nowSql(), booking_date: newDate };
+    if (setTimes || b.startAt) { if (b.startAt) values.start_at = b.startAt; if (b.endAt) values.end_at = b.endAt; }
+    Api.rest({ table: 'bookings', action: 'update', values: values, filters: [{ col: 'id', op: 'eq', val: b.dbId }] }).then(function (res) {
+      if (res.error) {
+        removeBk(b); b.date = prev.date; b.startAt = prev.startAt; b.endAt = prev.endAt; b.time = prev.time; addBk(b);
+        renderBody(); UI.toast('保存に失敗しました：' + ((res.error && res.error.message) || ''));
+      } else { UI.toast(b.name + '様の予約を更新しました'); }
+    });
+  }
+
+  /* ── Detail modal ──────────────────────────────────────────────────────── */
+  function kv(k, v) { return v ? '<div class="ops-kv"><span class="k">' + k + '</span><span class="v">' + U.esc(v) + '</span></div>' : ''; }
+  function furnitureHtml(items) {
+    if (!items || !items.length) return '<div class="cal-none">家具情報はありません</div>';
+    var agg = {}, order = [];
+    items.forEach(function (it) { var n = String(it).trim(); if (!n) return; if (!(n in agg)) { agg[n] = 0; order.push(n); } agg[n]++; });
+    return '<div class="cal-furni">' + order.map(function (n) {
+      var hasCount = /[×xX]\s*\d+\s*$/.test(n);
+      return '<div class="f"><span>' + U.esc(n) + '</span>' + (hasCount ? '' : '<span class="fx">×' + agg[n] + '</span>') + '</div>';
+    }).join('') + '</div>';
+  }
+  function openDetail(id) {
+    var b = byId(id); if (!b) return;
+    var price = b.price || b.amount || b.total_price;
+    var addr = (kv('現住所', b.fromAddr) + kv('引越し先', b.toAddr)) || '<p class="cal-none" style="margin:6px 0">住所情報はありません</p>';
+    var html =
+      '<h2>' + U.esc(b.name) + '様</h2>' +
+      '<div class="ops-muted" style="margin:0 0 12px;font-size:.86rem">受付番号 ' + U.esc(b.ref) + ' · <span class="cal-stbadge ' + stClass(b) + '">' + U.esc(b.status) + '</span></div>' +
+      '<div class="ops-card" style="margin:0 0 12px;padding:4px 14px">' +
+        kv('サービス', b.service) + kv('引越し日', U.fmtDateFull(b.date)) + kv('時間', timeLabel(b)) +
+        kv('電話', b.phone) + kv('メール', b.email) +
+        kv('担当スタッフ', b.workers) + (price ? kv('料金', price) : '') +
+      '</div>' +
+      '<div class="ops-section-title" style="margin:4px 2px 8px">住所</div><div class="ops-card" style="margin:0 0 12px;padding:4px 14px">' + addr + '</div>' +
+      (b.notes ? '<div class="ops-section-title" style="margin:4px 2px 8px">メモ</div><div class="ops-card" style="margin:0 0 12px;padding:10px 14px;font-size:.9rem">' + U.esc(b.notes) + '</div>' : '') +
+      '<div class="ops-section-title" style="margin:4px 2px 8px">搬送家具・荷物一覧</div>' + furnitureHtml(b.items) +
+      '<div class="ops-btn-row" style="margin-top:14px">' +
+        '<a class="ops-btn ghost" href="customers.html">' + UI.icon('customers') + '顧客</a>' +
+        '<a class="ops-btn ghost" href="message.html?booking=' + encodeURIComponent(b.dbId) + '&ref=' + encodeURIComponent(b.ref) + '">' + UI.icon('chat') + 'チャット</a>' +
+      '</div>' +
+      '<div class="ops-btn-row" style="margin-top:8px">' +
+        '<a class="ops-btn sage" href="bookings.html?ref=' + encodeURIComponent(b.ref) + '">' + UI.icon('bookings') + '予約を編集</a>' +
+      '</div>';
+    state.sheet.open(html);
+  }
+
+  /* ── Load / boot ───────────────────────────────────────────────────────── */
+  function errorState() {
+    return '<div class="ops-empty">' + UI.icon('empty') + '<h3>予約情報を取得できません</h3>' +
+      '<p>接続を確認して、もう一度お試しください。</p><button class="ops-btn" id="cal-retry" style="margin-top:14px">再試行</button></div>';
+  }
   function load() {
     var el = document.getElementById('ops-content');
-    el.innerHTML = UI.skeleton(5);
+    el.innerHTML = UI.skeleton(6);
+    state.error = false;
     Api.listBookings().then(function (r) {
-      var byDate = {};
-      (r.data || []).forEach(function (b) {
-        if (b.status === 'キャンセル' || !b.date) return;
-        (byDate[b.date] = byDate[b.date] || []).push(b);
-      });
+      if (r.error && !(r.data && r.data.length)) { state.error = true; render(); return; }
       state.bookings = r.data || [];
-      state.byDate = byDate;
-      state.weekStart = sundayOf(state.selected);
+      reindex();
       render();
-      loadAvail(state.selected).then(renderBody);
-      prefetchWeek();
     });
   }
 
   Ops.ready(function () {
     UI.mountChrome({ active: 'calendar', title: 'カレンダー' });
+    state.sheet = UI.sheet();
     load();
   });
 })();
