@@ -300,7 +300,7 @@
         '.pchat-stream.ibx-transcript{padding:12px 2px 2px}' +
         '.pchat-stream.ibx-transcript.long{max-height:440px;overflow-y:auto}' +
         '.ibx-dc{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}' +
-        '.ibx-dc-attach{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 9px;cursor:pointer;font-size:15px;line-height:1}' +
+        '.ibx-dc-attach,.ibx-dc-cam{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 9px;cursor:pointer;font-size:15px;line-height:1}' +
         '.ibx-dc-pending{width:100%;display:flex;flex-wrap:wrap;gap:6px}' +
         '.ibx-dc-pchip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;background:var(--bg);border:1px solid var(--line);font-size:12px}' +
         '.ibx-dc-pchip button{border:none;background:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0}' +
@@ -432,6 +432,8 @@
   function _directChatBar(t) {
     var bid = _esc(t.latest.booking_id || '');
     return '<div class="ibx-dc" data-booking="' + bid + '">' +
+      '<button class="ibx-dc-cam" type="button" title="カメラ / Camera">📷</button>' +
+      '<input class="ibx-dc-camfile" type="file" accept="image/*" capture="environment" hidden>' +
       '<button class="ibx-dc-attach" type="button" title="添付">📎</button>' +
       '<input class="ibx-dc-file" type="file" accept="image/*,application/pdf,.doc,.docx" multiple hidden>' +
       '<input class="ibx-dc-input" type="text" maxlength="2000" placeholder="チャットで返信（メール送信なし・アプリ内チャットに表示）…">' +
@@ -1317,13 +1319,15 @@
     if (del) { _ibxDeleteMsg(del.getAttribute('data-ibx-del')); return; }
     var att = e.target.closest('.ibx-dc-attach');
     if (att) { var bar0 = att.closest('.ibx-dc'); var f0 = bar0 && bar0.querySelector('.ibx-dc-file'); if (f0) f0.click(); return; }
+    var camb = e.target.closest('.ibx-dc-cam');
+    if (camb) { var barc = camb.closest('.ibx-dc'); var fc = barc && barc.querySelector('.ibx-dc-camfile'); if (fc) fc.click(); return; }
     var rm = e.target.closest('.ibx-dc-pchip [data-rm]');
     if (rm) { var bar1 = rm.closest('.ibx-dc'); var list1 = _dcPending[bar1.getAttribute('data-booking')] || []; list1.splice(+rm.getAttribute('data-rm'), 1); _dcRenderPending(bar1); return; }
     var send = e.target.closest('.ibx-dc-send');
     if (send) { _directChatSend(send); return; }
   });
   document.addEventListener('change', function (e) {
-    var f = e.target.closest && e.target.closest('.ibx-dc-file');
+    var f = e.target.closest && (e.target.closest('.ibx-dc-file') || e.target.closest('.ibx-dc-camfile'));
     if (!f) return;
     var bar = f.closest('.ibx-dc');
     _dcUpload(bar, f.files); f.value = '';

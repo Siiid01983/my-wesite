@@ -17,6 +17,7 @@
   var PAGE = document.body.getAttribute('data-ops-page');
 
   var ATTACH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
+  var CAM_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
 
   /* ── Shared: model building (mirrors chat.js / admin Inbox) ─────────────── */
   function parseLabels(m) {
@@ -320,6 +321,8 @@
     if (T.tab !== 'chat') return '';
     if (!c.canSend) return '<div class="mc-locked">' + t('chat.locked') + '</div>';
     return '<div class="mc-composer">' +
+      '<button class="mc-attach" id="mc-cam" aria-label="' + t('chat.cameraAria') + '">' + CAM_SVG + '</button>' +
+      '<input type="file" id="mc-cam-file" accept="image/*" capture="environment" hidden />' +
       '<button class="mc-attach" id="mc-attach" aria-label="' + t('chat.attachAria') + '">' + ATTACH_SVG + '</button>' +
       '<input type="file" id="mc-file" accept="image/*,application/pdf,.doc,.docx" multiple hidden />' +
       '<div class="mc-cmid">' +
@@ -367,8 +370,14 @@
     var send = document.getElementById('mc-send');
     var attach = document.getElementById('mc-attach');
     var file = document.getElementById('mc-file');
+    var cam = document.getElementById('mc-cam');
+    var camFile = document.getElementById('mc-cam-file');
     if (attach && file) attach.addEventListener('click', function () { file.click(); });
     if (file) file.addEventListener('change', function () { handleFiles(T.conv || c, file.files); file.value = ''; });
+    // Camera: on mobile capture="environment" opens the rear camera directly;
+    // on desktop the attribute is ignored → normal file picker. Same upload flow.
+    if (cam && camFile) cam.addEventListener('click', function () { camFile.click(); });
+    if (camFile) camFile.addEventListener('change', function () { handleFiles(T.conv || c, camFile.files); camFile.value = ''; });
     renderPending();
     if (input && send) {
       input.addEventListener('input', function () { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 96) + 'px'; });
