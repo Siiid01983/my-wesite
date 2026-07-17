@@ -15,12 +15,12 @@
   var sheet, io;
 
   var FILTERS = [
-    { key: 'all', label: 'すべて' },
-    { key: '新規', label: 'New' },
-    { key: '確認中', label: 'Checking' },
-    { key: '確定', label: 'Confirmed' },
-    { key: '完了', label: 'Completed' },
-    { key: 'キャンセル', label: 'Cancelled' },
+    { key: 'all', label: 'bookings.f.all' },
+    { key: '新規', label: 'bookings.f.new' },
+    { key: '確認中', label: 'bookings.f.checking' },
+    { key: '確定', label: 'bookings.f.confirmed' },
+    { key: '完了', label: 'bookings.f.completed' },
+    { key: 'キャンセル', label: 'bookings.f.cancelled' },
   ];
 
   // Guided forward transitions; Cancel is allowed from any non-cancelled status.
@@ -40,8 +40,8 @@
       '<div class="ops-avatar">' + U.initials(b.name) + '</div>' +
       '<div class="ops-row-main">' +
         '<div class="bk-ref">' + U.esc(b.ref) + '</div>' +
-        '<div class="bk-name">' + U.esc(b.name) + '様</div>' +
-        '<div class="bk-meta">' + U.fmtDate(b.date) + ' · ' + U.esc(b.service || 'ご予約') + '</div>' +
+        '<div class="bk-name">' + U.esc(b.name) + t('common.honorific') + '</div>' +
+        '<div class="bk-meta">' + U.fmtDate(b.date) + ' · ' + U.esc(b.service || t('common.booking')) + '</div>' +
       '</div>' +
       '<div class="ops-row-end">' + UI.statusBadge(b.status) + '</div>' +
     '</div>';
@@ -71,18 +71,18 @@
 
   function emptyState() {
     return '<div class="ops-empty">' + UI.icon('bookings') +
-      '<h3>予約がありません</h3>' +
-      '<p>' + (state.q || state.filter !== 'all' ? '検索・フィルター条件を変えてお試しください' : '新しい予約が入るとここに表示されます') + '</p>' +
-      (!state.q && state.filter === 'all' ? '<a class="ops-btn ghost" href="index.html">ダッシュボードへ戻る</a>' : '') +
+      '<h3>' + t('bookings.empty') + '</h3>' +
+      '<p>' + (state.q || state.filter !== 'all' ? t('bookings.emptyFilteredSub') : t('bookings.emptySub')) + '</p>' +
+      (!state.q && state.filter === 'all' ? '<a class="ops-btn ghost" href="index.html">' + t('dashboard.backToDashboard') + '</a>' : '') +
     '</div>';
   }
   function bindEmpty() { /* anchor navigates natively */ }
 
   function errorState() {
     return '<div class="bk-error">' + UI.icon('empty') +
-      '<h3>予約情報を取得できません</h3>' +
-      '<p>接続を確認して、もう一度お試しください。</p>' +
-      '<button class="ops-btn" id="bk-retry">再試行</button>' +
+      '<h3>' + t('bookings.errorTitle') + '</h3>' +
+      '<p>' + t('bookings.errorSub') + '</p>' +
+      '<button class="ops-btn" id="bk-retry">' + t('common.retry') + '</button>' +
     '</div>';
   }
 
@@ -90,12 +90,12 @@
     var el = document.getElementById('ops-content');
     el.innerHTML =
       '<div class="ops-search">' + UI.icon('search') +
-        '<input id="ops-q" type="search" placeholder="ID・名前・電話・メールで検索" autocomplete="off" />' +
+        '<input id="ops-q" type="search" placeholder="' + t('bookings.searchPh') + '" autocomplete="off" />' +
       '</div>' +
       '<div class="ops-filters" id="ops-filters">' +
         FILTERS.map(function (f) {
           var count = f.key === 'all' ? state.all.length : state.all.filter(function (b) { return b.status === f.key; }).length;
-          return '<button class="ops-chip' + (state.filter === f.key ? ' active' : '') + '" data-f="' + f.key + '">' + f.label + ' (' + count + ')</button>';
+          return '<button class="ops-chip' + (state.filter === f.key ? ' active' : '') + '" data-f="' + f.key + '">' + t(f.label) + ' (' + count + ')</button>';
         }).join('') +
       '</div>' +
       '<div id="ops-list"></div>';
@@ -115,38 +115,38 @@
     var b = state.all.filter(function (x) { return String(x.dbId) === String(dbId); })[0];
     if (!b) return;
 
-    var addr = (b.fromAddr ? kv('出発', b.fromAddr) : '') + (b.toAddr ? kv('到着', b.toAddr) : '');
-    var items = (b.items && b.items.length) ? kv('荷物', b.items.join('、')) : '';
+    var addr = (b.fromAddr ? kv(t('bookings.from'), b.fromAddr) : '') + (b.toAddr ? kv(t('bookings.to'), b.toAddr) : '');
+    var items = (b.items && b.items.length) ? kv(t('bookings.items'), b.items.join('、')) : '';
 
     var nexts = (NEXT[b.status] || []).slice();
-    var trans = nexts.map(function (s) { return '<button class="ops-btn sage" data-st="' + s + '">' + s + 'に変更</button>'; }).join('');
-    if (b.status !== 'キャンセル') trans += '<button class="ops-btn danger" data-st="キャンセル">キャンセルにする</button>';
-    if (!trans) trans = '<p class="ops-muted" style="font-size:.82rem;text-align:center;margin:6px 0">これ以上のステータス変更はありません</p>';
+    var trans = nexts.map(function (s) { return '<button class="ops-btn sage" data-st="' + s + '">' + t('bookings.changeTo', { s: t('status.' + Ops.toDbStatus(s)) }) + '</button>'; }).join('');
+    if (b.status !== 'キャンセル') trans += '<button class="ops-btn danger" data-st="キャンセル">' + t('bookings.makeCancel') + '</button>';
+    if (!trans) trans = '<p class="ops-muted" style="font-size:.82rem;text-align:center;margin:6px 0">' + t('bookings.noMoreStatus') + '</p>';
 
     var html =
-      '<h2>' + U.esc(b.name) + '様</h2>' +
-      '<div class="ops-muted" style="margin:0 0 14px;font-size:.86rem">受付番号 ' + U.esc(b.ref) + ' · ' + UI.statusBadge(b.status) + '</div>' +
+      '<h2>' + U.esc(b.name) + t('common.honorific') + '</h2>' +
+      '<div class="ops-muted" style="margin:0 0 14px;font-size:.86rem">' + t('bookings.receiptNo') + ' ' + U.esc(b.ref) + ' · ' + UI.statusBadge(b.status) + '</div>' +
 
       '<div class="ops-card" style="margin:0 0 14px;padding:4px 14px">' +
-        kv('引越し日', U.fmtDateFull(b.date)) +
-        (b.time ? kv('時間帯', b.time) : '') +
-        kv('サービス', b.service) +
-        (b.workers ? kv('作業員', b.workers) : '') +
+        kv(t('bookings.moveDate'), U.fmtDateFull(b.date)) +
+        (b.time ? kv(t('bookings.timeSlot'), b.time) : '') +
+        kv(t('bookings.service'), b.service) +
+        (b.workers ? kv(t('bookings.workers'), b.workers) : '') +
         addr + items +
-        kv('メール', b.email) +
-        kv('電話', b.phone) +
-        (b.notes ? kv('備考', b.notes) : '') +
-        kv('受付日時', U.fmtDateFull(b.createdAt)) +
+        kv(t('bookings.email'), b.email) +
+        kv(t('bookings.phone'), b.phone) +
+        (b.notes ? kv(t('bookings.notes'), b.notes) : '') +
+        kv(t('bookings.receivedAt'), U.fmtDateFull(b.createdAt)) +
       '</div>' +
 
-      '<div class="ops-section-title" style="margin:4px 2px 8px">クイックアクション</div>' +
+      '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('bookings.quickActions') + '</div>' +
       '<div class="bk-quick">' +
-        '<a class="ops-btn ghost"' + (b.phone ? ' href="tel:' + U.esc(b.phone) + '"' : ' disabled') + '>' + UI.icon('phone') + '電話</a>' +
-        '<a class="ops-btn ghost" href="chat.html?booking=' + encodeURIComponent(b.dbId) + '&ref=' + encodeURIComponent(b.ref) + '">' + UI.icon('chat') + 'チャット</a>' +
-        '<a class="ops-btn ghost"' + (b.date ? ' href="calendar.html?date=' + encodeURIComponent(b.date) + '"' : ' disabled') + '>' + UI.icon('calendar') + '空き枠</a>' +
+        '<a class="ops-btn ghost"' + (b.phone ? ' href="tel:' + U.esc(b.phone) + '"' : ' disabled') + '>' + UI.icon('phone') + t('bookings.call') + '</a>' +
+        '<a class="ops-btn ghost" href="chat.html?booking=' + encodeURIComponent(b.dbId) + '&ref=' + encodeURIComponent(b.ref) + '">' + UI.icon('chat') + t('bookings.chat') + '</a>' +
+        '<a class="ops-btn ghost"' + (b.date ? ' href="calendar.html?date=' + encodeURIComponent(b.date) + '"' : ' disabled') + '>' + UI.icon('calendar') + t('bookings.slot') + '</a>' +
       '</div>' +
 
-      '<div class="ops-section-title" style="margin:16px 2px 8px">ステータス変更</div>' +
+      '<div class="ops-section-title" style="margin:16px 2px 8px">' + t('bookings.statusChange') + '</div>' +
       '<div class="bk-trans">' + trans + '</div>';
 
     sheet.open(html);
@@ -157,17 +157,17 @@
 
   function changeStatus(b, newStatus) {
     if (b.status === newStatus) return;
-    if (newStatus === 'キャンセル' && !confirm(b.name + '様の予約をキャンセルにしますか？')) return;
+    if (newStatus === 'キャンセル' && !confirm(t('bookings.cancelConfirm', { name: b.name }))) return;
     var prev = b.status, prevRaw = b.statusRaw;
     b.status = newStatus; b.statusRaw = Ops.toDbStatus(newStatus);   // optimistic
-    renderList(); openDetail(b.dbId); UI.toast('更新中…');
+    renderList(); openDetail(b.dbId); UI.toast(t('common.updating'));
     Api.updateBookingStatus(b.dbId, newStatus).then(function (res) {
       if (res.error) {
         b.status = prev; b.statusRaw = prevRaw;                      // rollback
         renderList(); openDetail(b.dbId);
-        UI.toast('更新に失敗しました：' + (res.error.message || ''));
+        UI.toast(t('common.saveFailed') + '：' + (res.error.message || ''));
       } else {
-        UI.toast(b.name + '様を「' + newStatus + '」に変更しました');
+        UI.toast(t('bookings.updated', { name: b.name, s: t('status.' + Ops.toDbStatus(newStatus)) }));
       }
     });
   }
@@ -195,7 +195,7 @@
   }
 
   Ops.ready(function () {
-    UI.mountChrome({ active: 'bookings', title: '予約管理' });
+    UI.mountChrome({ active: 'bookings', title: t('bookings.title') });
     sheet = UI.sheet();
     load();
   });
