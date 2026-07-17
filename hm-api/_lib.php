@@ -211,6 +211,26 @@ function hm_require_staff_write(): void {
   }
 }
 
+// Strict staff-only READ gate (RC-E). Requires a VALID, non-revoked staff session
+// token (role admin OR manager) to SELECT from tables holding customer PII /
+// internal data (bookings, communications, inbox_messages, audit_log). Unlike
+// hm_require_staff_write(), this FAILS CLOSED: if the signing secret is not
+// provisioned (so tokens cannot be verified at all) we DENY rather than defer —
+// sensitive reads must never fall back to the public API-key gate. A logged-in
+// admin/manager's apiClient already sends X-ADMIN-TOKEN on every request, so the
+// Ops app and admin panel keep working; anonymous public-key callers are 401'd.
+// Customer-facing reads use the ownership-gated endpoints (customer-bookings.php,
+// customer-profile.php, portal-communications.php) instead of rest.php.
+function hm_require_staff_read(): void {
+  $tok  = $_SERVER['HTTP_X_ADMIN_TOKEN'] ?? '';
+  $p    = (hm_admin_secret() !== '' && is_string($tok) && $tok !== '') ? hm_admin_token_verify($tok) : null;
+  $role = is_array($p) ? ($p['role'] ?? '') : '';
+  if (!$p || ($role !== 'admin' && $role !== 'manager') || !hm_admin_token_account_valid($p)) {
+    hm_log_auth_fail('sensitive_read_token');
+    hm_json(['ok' => false, 'data' => null, 'error' => ['message' => 'Staff authorization required', 'code' => 'staff_required']], 401);
+  }
+}
+
 function hm_json($data, int $status = 200): void {
   http_response_code($status);
   header('Content-Type: application/json; charset=utf-8');
