@@ -115,7 +115,7 @@
     var b = state.all.filter(function (x) { return String(x.dbId) === String(dbId); })[0];
     if (!b) return;
 
-    var addr = (b.fromAddr ? kv(t('bookings.from'), b.fromAddr) : '') + (b.toAddr ? kv(t('bookings.to'), b.toAddr) : '');
+    var addr = (b.fromAddr ? kv(t('bookings.from'), Ops.addrText(b, 'from')) : '') + (b.toAddr ? kv(t('bookings.to'), Ops.addrText(b, 'to')) : '');
     var items = (b.items && b.items.length) ? kv(t('bookings.items'), b.items.join('、')) : '';
 
     var nexts = (NEXT[b.status] || []).slice();
@@ -138,6 +138,7 @@
         (b.notes ? kv(t('bookings.notes'), b.notes) : '') +
         kv(t('bookings.receivedAt'), U.fmtDateFull(b.createdAt)) +
       '</div>' +
+      Ops.addrExtraHtml(b) +
 
       '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('bookings.quickActions') + '</div>' +
       '<div class="bk-quick">' +
@@ -165,7 +166,10 @@
       if (res.error) {
         b.status = prev; b.statusRaw = prevRaw;                      // rollback
         renderList(); openDetail(b.dbId);
-        UI.toast(t('common.saveFailed') + '：' + (res.error.message || ''));
+        var msg = (res.error.code === 'slot_taken')
+          ? t('bookings.slotTaken')
+          : (t('common.saveFailed') + '：' + (res.error.message || ''));
+        UI.toast(msg);
       } else {
         UI.toast(t('bookings.updated', { name: b.name, s: t('status.' + Ops.toDbStatus(newStatus)) }));
       }

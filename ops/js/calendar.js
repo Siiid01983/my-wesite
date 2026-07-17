@@ -467,7 +467,7 @@
   function openDetail(id) {
     var b = byId(id); if (!b) return;
     var price = b.price || b.amount || b.total_price;
-    var addr = (kv(t('customers.currentAddr'), b.fromAddr) + kv(t('customers.destAddr'), b.toAddr)) || '<p class="cal-none" style="margin:6px 0">' + t('customers.noAddr') + '</p>';
+    var addr = (kv(t('customers.currentAddr'), Ops.addrText(b, 'from')) + kv(t('customers.destAddr'), Ops.addrText(b, 'to'))) || '<p class="cal-none" style="margin:6px 0">' + t('customers.noAddr') + '</p>';
     var html =
       '<h2>' + U.esc(b.name) + t('common.honorific') + '</h2>' +
       '<div class="ops-muted" style="margin:0 0 12px;font-size:.86rem">' + t('bookings.receiptNo') + ' ' + U.esc(b.ref) + ' · <span class="cal-stbadge ' + stClass(b) + '">' + U.esc(t('status.' + Ops.toDbStatus(b.status))) + '</span></div>' +
@@ -476,7 +476,7 @@
         kv(t('bookings.phone'), b.phone) + kv(t('bookings.email'), b.email) +
         kv(t('calendar.staff'), b.workers) + (price ? kv(t('calendar.price'), price) : '') +
       '</div>' +
-      '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('customers.addresses') + '</div><div class="ops-card" style="margin:0 0 12px;padding:4px 14px">' + addr + '</div>' +
+      '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('customers.addresses') + '</div><div class="ops-card" style="margin:0 0 12px;padding:4px 14px">' + addr + '</div>' + Ops.addrExtraHtml(b) +
       (b.notes ? '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('customers.memo') + '</div><div class="ops-card" style="margin:0 0 12px;padding:10px 14px;font-size:.9rem">' + U.esc(b.notes) + '</div>' : '') +
       '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('furniture.title') + '</div>' + furnitureHtml(b.items) +
       '<div class="ops-btn-row" style="margin-top:14px">' +
@@ -506,9 +506,30 @@
     });
   }
 
+  /* Live sync (P2): re-fetch on an interval so a confirmation / reschedule / new
+     booking made elsewhere (e.g. the Bookings screen or the customer flow) shows
+     on the calendar without a manual reload. Skips while dragging or while a
+     detail sheet is open, and refreshes only the body + summary counts so an
+     in-progress search/filter keeps its focus. Slot reservation itself is the
+     existing slot architecture (unchanged) — this reflects its result. */
+  function refresh() {
+    if (state.error) return;
+    if (document.body.classList.contains('cal-dnd')) return;                 // mid-drag
+    if (document.querySelector('.ops-sheet-backdrop.open')) return;          // viewing a booking
+    Api.listBookings().then(function (r) {
+      if (r.error && !(r.data && r.data.length)) return;                     // transient blip → keep current
+      state.bookings = r.data || [];
+      reindex();
+      if (document.getElementById('cal-body')) renderBody();
+      var sum = document.querySelector('.cal-summary');
+      if (sum) sum.outerHTML = summaryHtml();
+    });
+  }
+
   Ops.ready(function () {
     UI.mountChrome({ active: 'calendar', title: t('calendar.title') });
     state.sheet = UI.sheet();
     load();
+    setInterval(refresh, Ops.cfg.POLL_MS);
   });
 })();

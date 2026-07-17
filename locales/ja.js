@@ -43,6 +43,7 @@ window.LOCALES.ja = {
   "bookings.changeTo": "{s}に変更", "bookings.makeCancel": "キャンセルにする",
   "bookings.cancelConfirm": "{name}様の予約をキャンセルにしますか？",
   "bookings.updated": "{name}様を「{s}」に変更しました",
+  "bookings.slotTaken": "この時間帯はすでに予約が入っています。確定できません。",
   "bookings.receiptNo": "受付番号", "bookings.moveDate": "引越し日", "bookings.timeSlot": "時間帯",
   "bookings.service": "サービス", "bookings.workers": "作業員", "bookings.from": "出発", "bookings.to": "到着",
   "bookings.items": "荷物", "bookings.email": "メール", "bookings.phone": "電話", "bookings.notes": "備考",
@@ -176,4 +177,7 @@ window.LOCALES.ja = {
   "util.minAgo": "{n}分前",
   "util.hourAgo": "{n}時間前",
   "util.dayAgo": "{n}日前",
+  "privacy.hidden": "住所の詳細は予約確定後に表示されます",
+  "privacy.mapFrom": "出発地をマップで開く",
+  "privacy.mapTo": "到着地をマップで開く",
 };

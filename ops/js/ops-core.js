@@ -164,6 +164,56 @@
   }
   Ops.normalizeBooking = normalizeBooking;
 
+  /* ── Address privacy (P1) ──────────────────────────────────────────────────
+     The full address is exposed only once a booking is CONFIRMED (確定) or
+     completed. Before that, staff dispatch views see the locality only
+     (prefecture/city/ward/area); banchi, building and apartment are hidden.
+     Privacy-first: uncertain parses mask MORE. (The customer's own portal keeps
+     their full address — this gate is for the staff/dispatch context.) */
+  util.maskAddress = function (a) {
+    a = String(a == null ? '' : a).trim();
+    if (!a) return '';
+    if (a.indexOf(',') >= 0) {                                   // western: keep the last 2 locality parts
+      var p = a.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+      return (p.length > 2 ? p.slice(-2).join(', ') : p.join(', ')) + ' …';
+    }
+    var m = a.match(/^(.*?[0-9０-９]+\s*丁目)/);                   // JP: keep through chōme
+    if (m) return m[1].trim() + ' …';
+    m = a.match(/^([^0-9０-９]+)/);                               // else keep up to the first number (drops banchi/building)
+    if (m && m[1].trim().length >= 2) return m[1].trim() + ' …';
+    return a.slice(0, 6) + ' …';
+  };
+  Ops.bookingConfirmed = function (b) { return !!b && (b.status === '確定' || b.status === '完了'); };
+  Ops.addrText = function (b, which) {
+    var full = (which === 'to') ? (b.toAddr || '') : (b.fromAddr || '');
+    if (!full) return '';
+    return Ops.bookingConfirmed(b) ? full : util.maskAddress(full);
+  };
+
+  /* Google Maps — keyless URL schemes work today (no API key). Static-map
+     preview and place_id need a key: Ops.maps.keyed() is the placeholder
+     integration point — set window.HM_MAPS_KEY (deploy-injected) to activate. */
+  Ops.maps = {
+    keyed: function () { return !!window.HM_MAPS_KEY; },
+    routeUrl: function (addr) { return addr ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(addr) : ''; },
+    staticPreview: function (addr) {
+      return (this.keyed() && addr)
+        ? 'https://maps.googleapis.com/maps/api/staticmap?size=600x240&zoom=15&markers=' + encodeURIComponent(addr) + '&key=' + encodeURIComponent(window.HM_MAPS_KEY)
+        : null;   // placeholder until a key is provisioned
+    },
+  };
+  /* Address extras for a detail view: a "reveals after confirmation" note while
+     unconfirmed, or keyless Google Maps links once the full address is shown. */
+  Ops.addrExtraHtml = function (b) {
+    if (!Ops.bookingConfirmed(b)) {
+      return '<div style="font-size:.76rem;color:var(--hm-muted,#8a8f86);margin:6px 2px 0">' + util.esc(T('privacy.hidden')) + '</div>';
+    }
+    var link = function (addr, key) {
+      return addr ? '<a target="_blank" rel="noopener" href="' + Ops.maps.routeUrl(addr) + '" style="display:inline-flex;align-items:center;gap:5px;font-size:.8rem;font-weight:600;color:var(--hm-green,#2C3626);text-decoration:none;margin:6px 12px 0 2px">📍 ' + util.esc(T(key)) + '</a>' : '';
+    };
+    return link(b.fromAddr, 'privacy.mapFrom') + link(b.toAddr, 'privacy.mapTo');
+  };
+
   /* ── Auth (reuses hm-api/admin-login.php; hybrid session + HMAC token) ─────
      Stores the admin token under ops-scoped keys so the app is independent of
      admin.html's session, and sets window.__HM_ADMIN_TOKEN so apiClient / our
@@ -317,11 +367,37 @@
       });
     },
     updateBookingStatus: function (dbId, jpStatus) {
+      var db = Ops.toDbStatus(jpStatus);
+      // Confirm / cancel go through the lifecycle endpoint so the (date, band)
+      // slot is RESERVED / RELEASED via the canonical slot layer (_slots.php) —
+      // a confirmed booking blocks its band in availability + the calendar. Other
+      // transitions stay a lightweight direct status write.
+      if (db === 'confirmed' || db === 'cancelled') return Api.setBookingStatus(dbId, db);
       return Api.rest({
         table: 'bookings', action: 'update',
-        values: { status: Ops.toDbStatus(jpStatus), updated_at: new Date().toISOString().slice(0, 19).replace('T', ' ') },
+        values: { status: db, updated_at: new Date().toISOString().slice(0, 19).replace('T', ' ') },
         filters: [{ col: 'id', op: 'eq', val: dbId }],
       });
+    },
+    /* POST hm-api/booking-status.php (status + slot reserve/release). Ops confirm/
+       cancel is an internal dispatch action, so notify=false — no customer inbox
+       notification is created (chat/mobile keep the default ON). Normalises its
+       {ok,error} reply to our {data,error} envelope so callers treat it like
+       Api.rest. A 409 surfaces error.code='slot_taken'. */
+    setBookingStatus: function (dbId, dbStatus) {
+      return fetch(cfg.base + '/booking-status.php', {
+        method: 'POST', headers: headers(true),
+        body: JSON.stringify({ booking_id: dbId, status: dbStatus, notify: false }),
+      })
+        .then(function (r) {
+          return r.text().then(function (txt) {
+            var j = null; try { j = JSON.parse(txt); } catch (_) {}
+            if (j && j.ok) return { data: j, error: null };
+            var code = (j && j.error) || ('HTTP ' + r.status);
+            return { data: null, error: { message: String(code), code: String(code), status: r.status } };
+          });
+        })
+        .catch(function (e) { return { data: null, error: { message: (e && e.message) || 'network', isNetwork: true } }; });
     },
 
     /* Inbox / chat threads ------------------------------------------------- */

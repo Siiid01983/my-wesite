@@ -25,8 +25,13 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_lib.php';
 require_once __DIR__ . '/_db.php';
+require_once __DIR__ . '/_slots.php';   // canonical slot layer (reserve / release)
 
 $isCli = (PHP_SAPI === 'cli');
+
+// Thrown when confirming a booking whose (date, band) is already held by a
+// DIFFERENT real booking — surfaced as HTTP 409 (double-booking guard).
+class HmSlotConflict extends RuntimeException { public $band = ''; }
 
 function bkst_out(array $payload, bool $isCli, int $status = 200): void {
   if ($isCli) {
@@ -100,6 +105,10 @@ if (!isset(HM_BKST_MAP[$statusIn])) {
 }
 $status = HM_BKST_MAP[$statusIn];
 $note   = trim((string)($param('note') ?? ''));
+// notify defaults ON (customer gets an inbox notification, as chat has always
+// done). Callers that only want the status/slot change pass notify=false/0.
+$nv = $param('notify');
+$notifyCustomer = ($nv === null) ? true : !in_array(strtolower(trim((string)$nv)), ['0', 'false', 'no', 'off'], true);
 
 try {
   $db = hm_db();
@@ -143,6 +152,38 @@ try {
     $up = $db->prepare('UPDATE bookings SET status = ? WHERE id = ?');
     $up->execute([$status, $bookingId]);
 
+    // 1b) Slot sync — CONFIRMED reserves its (date, band); CANCELLED releases it.
+    //     Reuses the canonical slot layer (_slots.php); a reserved row blocks the
+    //     band in availability.php and shows on the calendar exactly like any
+    //     customer reservation. Independent of the create-time slot_lock_enabled
+    //     flag: an admin confirmation ALWAYS records the reservation. Flexible /
+    //     時間指定なし bookings resolve to no band → nothing is locked.
+    if ($status === 'confirmed') {
+      $band = hm_slot_band_from_notes($bk['notes']);
+      if ($band !== null) {
+        hm_slot_ensure_table($db);
+        $h = $db->prepare('SELECT booking_id, status FROM booking_slots WHERE booking_date = ? AND time_band = ? AND slot_index = 0 LIMIT 1');
+        $h->execute([$bdate, $band]);
+        $held = $h->fetch(PDO::FETCH_ASSOC);
+        if (!$held) {
+          hm_slot_reserve($db, $bdate, $band, $bookingId);                    // free → reserve
+        } elseif ((string)$held['booking_id'] === $bookingId) {
+          /* already reserved by THIS booking → idempotent re-confirm, no-op */
+        } elseif ((string)$held['status'] === 'admin_blocked') {
+          // Admin is confirming a real booking on a band they'd manually blocked
+          // → the confirmed booking takes the slot over.
+          $db->prepare("DELETE FROM booking_slots WHERE booking_date = ? AND time_band = ? AND slot_index = 0 AND status = 'admin_blocked'")
+             ->execute([$bdate, $band]);
+          hm_slot_reserve($db, $bdate, $band, $bookingId);
+        } else {
+          $c = new HmSlotConflict('slot_taken'); $c->band = $band; throw $c;  // genuine double-book → 409
+        }
+      }
+    } elseif ($status === 'cancelled') {
+      hm_slot_ensure_table($db);
+      hm_slot_release($db, $bookingId);                                        // free the band
+    }
+
     // 2) Needs_Revision: also append the note to the booking's revision history
     //    (notes) so it's retained on the booking itself, not only in the message.
     if ($status === 'needs_revision' && $note !== '') {
@@ -153,21 +194,23 @@ try {
     }
 
     // 3) Auto-notification row (mirrors create-booking.php's inbox_messages insert).
-    $ins = $db->prepare(
-      'INSERT INTO inbox_messages (id, sender, email, subject, body, body_text, booking_id, mailbox, sender_name, received_at)
-       VALUES (?,?,?,?,?,?,?,?,?,NOW())'
-    );
-    $ins->execute([
-      hm_uuid4(),
-      'Hello Moving',
-      $email,
-      "【予約 {$ref}】" . $head,
-      $msg,
-      $msg,
-      $bookingId,
-      'booking@hello-moving.com',
-      'Hello Moving',
-    ]);
+    if ($notifyCustomer) {
+      $ins = $db->prepare(
+        'INSERT INTO inbox_messages (id, sender, email, subject, body, body_text, booking_id, mailbox, sender_name, received_at)
+         VALUES (?,?,?,?,?,?,?,?,?,NOW())'
+      );
+      $ins->execute([
+        hm_uuid4(),
+        'Hello Moving',
+        $email,
+        "【予約 {$ref}】" . $head,
+        $msg,
+        $msg,
+        $bookingId,
+        'booking@hello-moving.com',
+        'Hello Moving',
+      ]);
+    }
 
     $db->commit();
   } catch (Throwable $e) {
@@ -180,8 +223,11 @@ try {
     hm_cache_invalidate_table('inbox_messages');
   }
 
-  bkst_out(['ok' => true, 'booking_id' => $bookingId, 'status' => $status, 'notified' => true], $isCli);
+  bkst_out(['ok' => true, 'booking_id' => $bookingId, 'status' => $status, 'notified' => $notifyCustomer], $isCli);
 
+} catch (HmSlotConflict $e) {
+  // Confirmation refused: the time-band is already reserved by another booking.
+  bkst_out(['ok' => false, 'error' => 'slot_taken', 'band' => $e->band], $isCli, 409);
 } catch (Throwable $e) {
   if (function_exists('hm_log_error')) hm_log_error('booking-status failed', ['err' => $e->getMessage(), 'booking' => $bookingId, 'status' => $status ?? '']);
   bkst_out(['ok' => false, 'error' => hm_safe_msg('Request failed', $e)], $isCli, 500);

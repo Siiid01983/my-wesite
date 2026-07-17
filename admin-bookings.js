@@ -608,16 +608,23 @@ function openDetail(id) {
         </span>
       </div>`
     : '';
-  // Single-location services (junk removal / furniture assembly) collect one
-  // 作業場所 instead of dual addresses — relabel + drop the empty destination row.
+  // Address privacy (P1): the full address is shown only once the booking is
+  // 確定 / 完了; before that only the locality is exposed (shared helper — same
+  // rule as Ops + Portal). Single-location services (junk removal / furniture
+  // assembly) collect one 作業場所 instead of dual addresses.
+  const _mask = a => (window.HMAddrPrivacy ? HMAddrPrivacy.addrText(a, b.status) : a);
+  const _fa = _mask(b.fromAddr), _ta = _mask(b.toAddr);
   const addrRows = bkIsSingleLoc(b)
-    ? r('作業場所', b.fromAddr)
-    : r('引越し元', b.fromAddr) + r('引越し先', b.toAddr);
+    ? r('作業場所', _fa)
+    : r('引越し元', _fa) + r('引越し先', _ta);
+  const addrHint = (window.HMAddrPrivacy && !HMAddrPrivacy.confirmed(b.status) && (b.fromAddr || b.toAddr))
+    ? `<div style="font-size:11.5px;color:var(--gray-1);padding:6px 0 2px">${esc(HMAddrPrivacy.HINT_JA)}</div>`
+    : '';
   document.getElementById('detailBody').innerHTML =
     `<div style="margin-bottom:12px">${badge(b.status||'新規')}</div>` +
     r('サービス',b.service) + r('引越し日',fmtD(b.date)) + r('希望時間帯',b.time) +
     r('お客様名',b.name) + r('メール',b.email) +
-    addrRows +
+    addrRows + addrHint +
     itemsRow +
     r('備考',b.notes) + r('受付日時',fmtDT(b.createdAt));
   document.getElementById('detailPdfBtn').onclick   = () => downloadPDFBooking(id);
