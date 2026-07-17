@@ -33,3 +33,6 @@ hm-api/vendor/
 verify_deploy.mjs
 
 .claude-commit-msg.txt
+
+# Runtime logs — ignore the log files, keep hm-api/logs/.htaccess (dir protection)
+hm-api/logs/*.log
