@@ -90,6 +90,11 @@ window.LOCALES.ja = {
   "chat.notFound": "会話が見つかりません", "chat.notFoundSub": "一覧からもう一度お選びください。",
   "chat.toList": "メッセージ一覧へ", "chat.refPrefix": "予約ID: ", "chat.customer": "お客様",
   "chat.moving": "引越し情報", "chat.noBookingId": "予約なし",
+  "chat.deleted": "（削除されたメッセージ）",
+  "chat.attachment": "（添付ファイル）",
+  "chat.deletedMsg": "削除されたメッセージ",
+  "chat.attachAria": "添付",
+  "chat.sendAria": "送信",
 
   /* notifications (M6) */
   "notif.title": "通知センター", "notif.t.all": "すべて", "notif.t.unread": "未読",

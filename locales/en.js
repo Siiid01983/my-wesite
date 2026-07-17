@@ -91,6 +91,11 @@ window.LOCALES.en = {
   "chat.notFound": "Conversation not found", "chat.notFoundSub": "Please pick one from the list again.",
   "chat.toList": "To message list", "chat.refPrefix": "Booking ID: ", "chat.customer": "Customer",
   "chat.moving": "Moving details", "chat.noBookingId": "No booking",
+  "chat.deleted": "(deleted message)",
+  "chat.attachment": "(attachment)",
+  "chat.deletedMsg": "Deleted message",
+  "chat.attachAria": "Attach",
+  "chat.sendAria": "Send",
 
   /* notifications (M6) */
   "notif.title": "Notifications", "notif.t.all": "All", "notif.t.unread": "Unread",
