@@ -319,12 +319,10 @@
     });
   }
   function dragSession(e, el, b, mode) {
-    var sx = e.clientX, sy = e.clientY, dragging = false, ghost = null, hold;
+    var sx = e.clientX, sy = e.clientY, dragging = false, ghost = null;
     var pid = e.pointerId;
     function begin() {
       dragging = true; document.body.classList.add('cal-dnd'); el.classList.add('cal-dragging');
-      // Keep receiving move/up even if the finger drifts off the element.
-      try { if (pid != null && el.setPointerCapture) el.setPointerCapture(pid); } catch (_) {}
       if (mode !== 'resize') { ghost = el.cloneNode(true); ghost.className += ' cal-ghost'; ghost.style.width = el.offsetWidth + 'px'; document.body.appendChild(ghost); place(sx, sy); }
     }
     function place(x, y) { if (ghost) { ghost.style.left = (x - el.offsetWidth / 2) + 'px'; ghost.style.top = (y - 18) + 'px'; } }
@@ -334,12 +332,19 @@
       if (t) t.classList.add('cal-hot');
     }
     function move(ev) {
-      if (!dragging) { if (Math.abs(ev.clientX - sx) > 10 || Math.abs(ev.clientY - sy) > 10) end(null); return; }
+      if (!dragging) {
+        // Start the drag as soon as the pointer moves past a small threshold.
+        // (The old 200ms hold + ">10px → cancel" gate aborted every real drag,
+        // because a genuine drag moves before the timer fires. touch-action:none
+        // on the card already prevents the browser from scroll-hijacking, so no
+        // long-press is needed to disambiguate.)
+        if (Math.abs(ev.clientX - sx) < 8 && Math.abs(ev.clientY - sy) < 8) return;  // still a tap
+        begin();
+      }
       ev.preventDefault(); place(ev.clientX, ev.clientY); hot(ev.clientX, ev.clientY);
     }
     function up(ev) { var t = dragging ? dropAt(ev.clientX, ev.clientY, mode) : null; end(t); }
     function end(target) {
-      clearTimeout(hold);
       document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', cancel);
       try { if (pid != null && el.releasePointerCapture) el.releasePointerCapture(pid); } catch (_) {}
       if (ghost) ghost.remove();
@@ -355,7 +360,9 @@
       dragging = false;
     }
     function cancel() { end(null); }   // pointercancel (e.g. OS gesture) → abort cleanly
-    hold = setTimeout(begin, 200);
+    // Capture the pointer up-front (while the element still has pointer-events)
+    // so move/up are delivered even once the finger leaves the card.
+    try { if (pid != null && el.setPointerCapture) el.setPointerCapture(pid); } catch (_) {}
     document.addEventListener('pointermove', move, { passive: false });
     document.addEventListener('pointerup', up);
     document.addEventListener('pointercancel', cancel);
