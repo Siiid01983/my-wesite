@@ -96,10 +96,10 @@
       var d = new Date(String(s).replace(' ', 'T'));
       if (isNaN(d)) return '';
       var diff = (Date.now() - d.getTime()) / 1000;
-      if (diff < 60) return 'たった今';
-      if (diff < 3600) return Math.floor(diff / 60) + '分前';
-      if (diff < 86400) return Math.floor(diff / 3600) + '時間前';
-      if (diff < 604800) return Math.floor(diff / 86400) + '日前';
+      if (diff < 60) return window.t ? window.t('util.justNow') : 'たった今';
+      if (diff < 3600) return window.t ? window.t('util.minAgo', { n: Math.floor(diff / 60) }) : Math.floor(diff / 60) + '分前';
+      if (diff < 86400) return window.t ? window.t('util.hourAgo', { n: Math.floor(diff / 3600) }) : Math.floor(diff / 3600) + '時間前';
+      if (diff < 604800) return window.t ? window.t('util.dayAgo', { n: Math.floor(diff / 86400) }) : Math.floor(diff / 86400) + '日前';
       return (d.getMonth() + 1) + '月' + d.getDate() + '日';
     },
     debounce: function (fn, ms) {
@@ -204,7 +204,7 @@
       }).then(function (r) { return r.json().catch(function () { return null; }); })
         .then(function (j) {
           if (!j || !j.ok || !j.data || !j.data.token) {
-            var msg = (j && j.error && (j.error.message || j.error)) || 'ログインに失敗しました';
+            var msg = (j && j.error && (j.error.message || j.error)) || T('login.failed');
             return { ok: false, error: String(msg) };
           }
           var d = j.data;
@@ -214,7 +214,7 @@
           window.__HM_ADMIN_TOKEN = d.token;
           return { ok: true, mustChange: !!d.mustChange, user: d.user };
         })
-        .catch(function () { return { ok: false, error: 'サーバーに接続できません' }; });
+        .catch(function () { return { ok: false, error: T('login.connError') }; });
     },
     logout: function () {
       var self = this;

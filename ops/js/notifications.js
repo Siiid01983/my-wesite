@@ -39,14 +39,14 @@
 
   /* ── Type metadata / classification ────────────────────────────────────── */
   var MAP = {
-    booking:  { cat: 'booking', icon: 'bookings', pr: 'high',   label: '新しい予約' },
-    update:   { cat: 'booking', icon: 'clock',    pr: 'normal', label: '予約変更' },
-    status:   { cat: 'booking', icon: 'clock',    pr: 'normal', label: '予約変更' },
-    cancel:   { cat: 'booking', icon: 'bell',     pr: 'high',   label: '予約キャンセル' },
-    message:  { cat: 'message', icon: 'chat',     pr: 'normal', label: '新しいメッセージ' },
-    reminder: { cat: 'booking', icon: 'clock',    pr: 'normal', label: 'リマインダー' },
-    calendar: { cat: 'booking', icon: 'calendar', pr: 'normal', label: '本日の予定' },
-    system:   { cat: 'system',  icon: 'settings', pr: 'low',    label: 'システム通知' },
+    booking:  { cat: 'booking', icon: 'bookings', pr: 'high',   label: 'notif.type.booking' },
+    update:   { cat: 'booking', icon: 'clock',    pr: 'normal', label: 'notif.type.update' },
+    status:   { cat: 'booking', icon: 'clock',    pr: 'normal', label: 'notif.type.update' },
+    cancel:   { cat: 'booking', icon: 'bell',     pr: 'high',   label: 'notif.type.cancel' },
+    message:  { cat: 'message', icon: 'chat',     pr: 'normal', label: 'notif.type.message' },
+    reminder: { cat: 'booking', icon: 'clock',    pr: 'normal', label: 'notif.type.reminder' },
+    calendar: { cat: 'booking', icon: 'calendar', pr: 'normal', label: 'notif.type.calendar' },
+    system:   { cat: 'system',  icon: 'settings', pr: 'low',    label: 'notif.type.system' },
   };
   function typeKey(n) {
     var id = n.id || '', t = n.type || '';
@@ -57,7 +57,7 @@
   function meta(n) {
     var k = typeKey(n), m = MAP[k] || MAP.system;
     // Canonical label per type (spec) — only system keeps a custom stored title.
-    var label = (k === 'system' && n.title) ? n.title : m.label;
+    var label = t(m.label);
     return { key: k, cat: m.cat, icon: m.icon, priority: n.priority || m.pr, label: label };
   }
   function setKeyFor(cat, key) { return key === 'booking' ? 'booking' : (key === 'update' || key === 'status' || key === 'cancel') ? 'changes' : cat === 'message' ? 'messages' : (key === 'reminder' || key === 'calendar') ? 'reminders' : 'system'; }
@@ -77,7 +77,7 @@
   function hashStr(s) { var h = 0; for (var i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; } return (h >>> 0).toString(36); }
   function timeOf(b) {
     if (b.startAt) { var d = new Date(String(b.startAt).replace(' ', 'T')); if (!isNaN(d)) return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
-    return (b.time && String(b.time).match(/\d{1,2}:\d{2}/) || ['時刻未定'])[0];
+    return (b.time && String(b.time).match(/\d{1,2}:\d{2}/) || [t('notif.timeTbd')])[0];
   }
   function derive(list) {
     var today = U.todayStr(), tomorrow = fmt(addDays(new Date(), 1));
@@ -157,8 +157,8 @@
   }
 
   /* ── Render ────────────────────────────────────────────────────────────── */
-  var TABS = [{ k: 'all', l: 'すべて' }, { k: 'unread', l: '未読' }, { k: 'booking', l: '予約' }, { k: 'message', l: 'メッセージ' }, { k: 'system', l: 'システム' }];
-  var SCOPES = [{ k: 'all', l: 'すべて' }, { k: 'today', l: '今日' }, { k: 'week', l: '今週' }, { k: 'month', l: '今月' }];
+  var TABS = [{ k: 'all', l: 'notif.t.all' }, { k: 'unread', l: 'notif.t.unread' }, { k: 'booking', l: 'notif.t.booking' }, { k: 'message', l: 'notif.t.message' }, { k: 'system', l: 'notif.t.system' }];
+  var SCOPES = [{ k: 'all', l: 'notif.scope.all' }, { k: 'today', l: 'notif.scope.today' }, { k: 'week', l: 'notif.scope.week' }, { k: 'month', l: 'notif.scope.month' }];
 
   function card(n) {
     var m = meta(n), b = relatedBooking(n);
@@ -168,7 +168,7 @@
       '<div class="nc-main">' +
         '<div class="nc-top"><span class="nc-title">' + U.esc(m.label) + '</span><span class="nc-time">' + U.relTime(new Date(n.ts).toISOString()) + '</span></div>' +
         '<div class="nc-desc">' + U.esc(desc) + '</div>' +
-        (m.priority === 'high' ? '<span class="nc-pri">重要</span>' : '') +
+        (m.priority === 'high' ? '<span class="nc-pri">' + t('notif.important') + '</span>' : '') +
       '</div>' +
       (n.read ? '' : '<span class="nc-dot"></span>') +
     '</div>';
@@ -185,20 +185,20 @@
           : (cnt[t.k] ? '<span class="nc-tn">' + cnt[t.k] + '</span>' : '');
         return '<button class="nc-tab' + (state.tab === t.k ? ' active' : '') + '" data-tab="' + t.k + '">' + t.l + badge + '</button>';
       }).join('') + '</div>' +
-      '<div class="nc-search">' + UI.icon('search') + '<input id="nc-q" type="search" placeholder="予約ID・顧客名・本文で検索" autocomplete="off" /></div>' +
+      '<div class="nc-search">' + UI.icon('search') + '<input id="nc-q" type="search" placeholder="' + t('notif.searchPh') + '" autocomplete="off" /></div>' +
       '<div class="nc-bar">' +
         SCOPES.map(function (s) { return '<button class="nc-chip' + (state.scope === s.k ? ' active' : '') + '" data-scope="' + s.k + '">' + s.l + '</button>'; }).join('') +
-        '<button class="nc-chip' + (state.highOnly ? ' active' : '') + '" id="nc-high">高優先</button>' +
+        '<button class="nc-chip' + (state.highOnly ? ' active' : '') + '" id="nc-high">' + t('notif.high') + '</button>' +
         '<span class="sp"></span>' +
         '<button class="nc-iconbtn" id="nc-settings" aria-label="設定">' + UI.icon('settings') + '</button>' +
       '</div>' +
       '<div class="nc-bar" style="margin-top:-4px">' +
-        '<button class="nc-chip' + (state.showArchived ? ' active' : '') + '" id="nc-arch">' + (state.showArchived ? 'アーカイブ表示中' : 'アーカイブ') + '</button>' +
+        '<button class="nc-chip' + (state.showArchived ? ' active' : '') + '" id="nc-arch">' + (state.showArchived ? t('notif.archived') : t('notif.archive')) + '</button>' +
         '<span class="sp"></span>' +
-        (cnt.all ? '<button class="nc-chip" id="nc-readall">すべて既読</button>' : '') +
+        (cnt.all ? '<button class="nc-chip" id="nc-readall">' + t('notif.markAll') + '</button>' : '') +
       '</div>' +
       (list.length ? '<div class="nc-list">' + list.map(card).join('') + '</div>'
-                   : UI.empty(state.showArchived ? 'アーカイブはありません' : '通知はありません', '新しい予約・メッセージ・リマインダーがここに表示されます', 'bell'));
+                   : UI.empty(state.showArchived ? t('notif.emptyArch') : t('notif.empty'), t('notif.emptySub'), 'bell'));
 
     // Wire
     el.querySelectorAll('[data-tab]').forEach(function (t) { t.addEventListener('click', function () { state.tab = t.getAttribute('data-tab'); render(); }); });
@@ -208,7 +208,7 @@
     document.getElementById('nc-high').addEventListener('click', function () { state.highOnly = !state.highOnly; render(); });
     document.getElementById('nc-arch').addEventListener('click', function () { state.showArchived = !state.showArchived; render(); });
     document.getElementById('nc-settings').addEventListener('click', openSettings);
-    var ra = document.getElementById('nc-readall'); if (ra) ra.addEventListener('click', function () { markAllRead(); UI.toast('すべて既読にしました'); refreshBadges(); render(); });
+    var ra = document.getElementById('nc-readall'); if (ra) ra.addEventListener('click', function () { markAllRead(); UI.toast(t('notif.markedAll')); refreshBadges(); render(); });
     el.querySelectorAll('[data-id]').forEach(function (c) { c.addEventListener('click', function () { openDetail(c.getAttribute('data-id')); }); });
 
     refreshBadges();
@@ -223,37 +223,37 @@
     var m = meta(n), b = relatedBooking(n);
     var actions = '';
     if (m.cat === 'booking') {
-      if (b) actions += '<a class="ops-btn ghost" href="bookings.html?ref=' + encodeURIComponent(b.ref) + '">' + UI.icon('bookings') + '予約を開く</a>' +
-                        '<a class="ops-btn ghost" href="customers.html">' + UI.icon('customers') + '顧客</a>';
-      if (m.key === 'reminder' || m.key === 'calendar') actions += '<a class="ops-btn ghost" href="calendar.html">' + UI.icon('calendar') + 'カレンダー</a>';
+      if (b) actions += '<a class="ops-btn ghost" href="bookings.html?ref=' + encodeURIComponent(b.ref) + '">' + UI.icon('bookings') + t('notif.openBooking') + '</a>' +
+                        '<a class="ops-btn ghost" href="customers.html">' + UI.icon('customers') + t('notif.openCustomer') + '</a>';
+      if (m.key === 'reminder' || m.key === 'calendar') actions += '<a class="ops-btn ghost" href="calendar.html">' + UI.icon('calendar') + t('notif.openCalendar') + '</a>';
     } else if (m.cat === 'message') {
-      actions += '<a class="ops-btn" href="message.html?' + (b ? 'booking=' + encodeURIComponent(b.dbId) + '&ref=' + encodeURIComponent(b.ref) : 'id=' + encodeURIComponent(dbIdOf(n) || '')) + '">' + UI.icon('chat') + 'チャットを開く</a>';
+      actions += '<a class="ops-btn" href="message.html?' + (b ? 'booking=' + encodeURIComponent(b.dbId) + '&ref=' + encodeURIComponent(b.ref) : 'id=' + encodeURIComponent(dbIdOf(n) || '')) + '">' + UI.icon('chat') + t('notif.openChat') + '</a>';
     } else {
-      actions += '<button class="ops-btn ghost" id="nc-log">' + UI.icon('clock') + 'ログを確認</button>';
+      actions += '<button class="ops-btn ghost" id="nc-log">' + UI.icon('clock') + t('notif.openLog') + '</button>';
     }
 
     var html =
-      '<h2>' + U.esc(m.label) + (m.priority === 'high' ? ' <span class="nc-pri">重要</span>' : '') + '</h2>' +
+      '<h2>' + U.esc(m.label) + (m.priority === 'high' ? ' <span class="nc-pri">' + t('notif.important') + '</span>' : '') + '</h2>' +
       '<div class="ops-muted" style="margin:0 0 12px;font-size:.84rem">' + U.esc(U.fmtDateFull(new Date(n.ts).toISOString())) + ' · ' + U.relTime(new Date(n.ts).toISOString()) + '</div>' +
-      '<div class="ops-card" style="margin:0 0 12px;padding:10px 14px;font-size:.92rem">' + U.esc(n.text || '（詳細なし）') + '</div>' +
-      (b ? '<div class="ops-section-title" style="margin:4px 2px 8px">関連予約</div><div class="ops-card" style="margin:0 0 12px;padding:4px 14px">' +
-            kv('受付番号', b.ref) + kv('お客様', b.name ? b.name + '様' : '') + kv('サービス', b.service) + kv('引越し日', U.fmtDateFull(b.date)) +
-            kv('電話', b.phone) + kv('メール', b.email) + '</div>' : '') +
+      '<div class="ops-card" style="margin:0 0 12px;padding:10px 14px;font-size:.92rem">' + U.esc(n.text || t('notif.noDetail')) + '</div>' +
+      (b ? '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('notif.related') + '</div><div class="ops-card" style="margin:0 0 12px;padding:4px 14px">' +
+            kv(t('bookings.receiptNo'), b.ref) + kv(t('common.customer'), b.name ? b.name + t('common.honorific') : '') + kv(t('bookings.service'), b.service) + kv(t('bookings.moveDate'), U.fmtDateFull(b.date)) +
+            kv(t('bookings.phone'), b.phone) + kv(t('bookings.email'), b.email) + '</div>' : '') +
       (actions ? '<div class="ops-btn-row" style="margin-top:6px">' + actions + '</div>' : '') +
       '<div class="ops-btn-row" style="margin-top:8px">' +
-        '<button class="ops-btn ghost" data-act="toggle">' + (n.read ? '未読にする' : '既読にする') + '</button>' +
-        '<button class="ops-btn ghost" data-act="archive">' + (n.archived ? 'アーカイブ解除' : 'アーカイブ') + '</button>' +
+        '<button class="ops-btn ghost" data-act="toggle">' + (n.read ? t('notif.markUnread') : t('notif.markRead')) + '</button>' +
+        '<button class="ops-btn ghost" data-act="archive">' + (n.archived ? t('notif.unarchive') : t('notif.archive')) + '</button>' +
       '</div>' +
       '<div class="ops-btn-row" style="margin-top:8px">' +
-        '<button class="ops-btn ghost nc-danger" data-act="delete">削除</button>' +
+        '<button class="ops-btn ghost nc-danger" data-act="delete">' + t('common.delete') + '</button>' +
       '</div>';
 
     state.sheet.open(html);
     var el = state.sheet.el;
-    var lg = el.querySelector('#nc-log'); if (lg) lg.addEventListener('click', function () { UI.toast('システムログは管理画面で確認できます'); });
+    var lg = el.querySelector('#nc-log'); if (lg) lg.addEventListener('click', function () { UI.toast(t('notif.logHint')); });
     el.querySelector('[data-act="toggle"]').addEventListener('click', function () { setRead(id, !n.read); state.sheet.close(); refreshBadges(); render(); });
-    el.querySelector('[data-act="archive"]').addEventListener('click', function () { setArchived(id, !n.archived); state.sheet.close(); UI.toast(n.archived ? 'アーカイブを解除しました' : 'アーカイブしました'); refreshBadges(); render(); });
-    el.querySelector('[data-act="delete"]').addEventListener('click', function () { if (confirm('この通知を削除しますか？')) { removeOne(id); state.sheet.close(); refreshBadges(); render(); } });
+    el.querySelector('[data-act="archive"]').addEventListener('click', function () { setArchived(id, !n.archived); state.sheet.close(); UI.toast(n.archived ? t('notif.unarchivedMsg') : t('notif.archivedMsg')); refreshBadges(); render(); });
+    el.querySelector('[data-act="delete"]').addEventListener('click', function () { if (confirm(t('notif.deleteConfirm'))) { removeOne(id); state.sheet.close(); refreshBadges(); render(); } });
   }
 
   /* ── Settings sheet ────────────────────────────────────────────────────── */
@@ -262,19 +262,19 @@
       '<label class="nc-sw"><input type="checkbox" data-set="' + key + '"' + (S[key] ? ' checked' : '') + ' /><i></i></label></div>';
   }
   function openSettings() {
-    var pushLabel = Push.browserGranted() ? 'ブラウザ通知：有効' : (Push.browserReady() ? 'ブラウザ通知を有効にする' : 'ブラウザ通知は非対応');
+    var pushLabel = Push.browserGranted() ? t('notif.pushEnabled') : (Push.browserReady() ? t('notif.pushEnable') : t('notif.pushUnsupported'));
     var html =
-      '<h2>通知設定</h2>' +
+      '<h2>' + t('notif.settings') + '</h2>' +
       '<div class="ops-card" style="margin:0 0 14px;padding:2px 14px">' +
-        swRow('booking', '新しい予約', '新規予約が入ったとき') +
-        swRow('changes', '予約の変更', '日付・住所・荷物・キャンセル') +
-        swRow('messages', 'メッセージ', 'お客様からの新着メッセージ') +
-        swRow('reminders', 'リマインダー・予定', '本日／明日の引越し') +
-        swRow('system', 'システム通知', 'デプロイ・障害・警告') +
+        swRow('booking', t('notif.set.booking'), t('notif.set.bookingSub')) +
+        swRow('changes', t('notif.set.changes'), t('notif.set.changesSub')) +
+        swRow('messages', t('notif.set.messages'), t('notif.set.messagesSub')) +
+        swRow('reminders', t('notif.set.reminders'), t('notif.set.remindersSub')) +
+        swRow('system', t('notif.set.system'), t('notif.set.systemSub')) +
       '</div>' +
-      '<div class="ops-section-title" style="margin:4px 2px 8px">プッシュ通知</div>' +
+      '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('notif.push') + '</div>' +
       '<div class="ops-btn-row"><button class="ops-btn ghost" id="nc-push"' + (Push.browserReady() && !Push.browserGranted() ? '' : ' disabled') + '>' + UI.icon('bell') + pushLabel + '</button></div>' +
-      '<p class="ops-muted" style="font-size:.76rem;margin:8px 2px 0">LINE通知・モバイルプッシュは今後対応予定です（アダプター実装済み）。</p>';
+      '<p class="ops-muted" style="font-size:.76rem;margin:8px 2px 0">' + t('notif.pushFuture') + '</p>';
 
     state.setSheet.open(html);
     var el = state.setSheet.el;
@@ -282,7 +282,7 @@
       cb.addEventListener('change', function () { S[cb.getAttribute('data-set')] = cb.checked; saveSet(S); refreshBadges(); render(); });
     });
     var pb = el.querySelector('#nc-push');
-    if (pb && !pb.disabled) pb.addEventListener('click', function () { Push.enableBrowser().then(function (ok) { UI.toast(ok ? 'ブラウザ通知を有効にしました' : '通知が許可されませんでした'); openSettings(); }); });
+    if (pb && !pb.disabled) pb.addEventListener('click', function () { Push.enableBrowser().then(function (ok) { UI.toast(ok ? t('notif.pushOn') : t('notif.pushDenied')); openSettings(); }); });
   }
 
   /* ── Live badges (bell + bottom nav) ───────────────────────────────────── */
@@ -307,7 +307,7 @@
       var bookings = r[0].data || [];
       var inboxRows = r[1].data || [];
       if (r[0].error && !bookings.length && r[1].error && !inboxRows.length) {
-        systemNote('sys-conn-' + U.todayStr(), 'システム通知', 'サーバーに接続できませんでした。接続を確認してください。', 'high');
+        systemNote('sys-conn-' + U.todayStr(), t('notif.welcomeTitle'), t('notif.connErr'), 'high');
       }
       state.bookings = {}; bookings.forEach(function (b) { state.bookings[b.dbId] = b; });
       state.inbox = {}; inboxRows.forEach(function (m) { state.inbox[m.id] = m; });
@@ -318,7 +318,7 @@
       if (S.messages) N.syncMessages(inbound);
       // … then add the types it doesn't cover.
       derive(bookings);
-      if (first) systemNote('sys-welcome', 'システム通知', '通知センターが有効になりました。', 'low');
+      if (first) systemNote('sys-welcome', t('notif.welcomeTitle'), t('notif.systemReady'), 'low');
 
       Push.flush();
       render();
@@ -326,7 +326,7 @@
   }
 
   Ops.ready(function () {
-    UI.mountChrome({ active: '', title: '通知センター', back: true });
+    UI.mountChrome({ active: '', title: t('notif.title'), back: true });
     state.sheet = UI.sheet();
     state.setSheet = UI.sheet();
     render();          // instant paint from local store

@@ -10,7 +10,7 @@
   'use strict';
   var U = Ops.util, UI = Ops.UI, S = Ops.Settings;
 
-  function timeoutLabel(min) { return min === 0 ? '無効（自動ログアウトしない）' : min + ' 分'; }
+  function timeoutLabel(min) { return min === 0 ? t('settings.timeoutOffLong') : t('settings.minutes', { n: min }); }
 
   function render() {
     var el = document.getElementById('ops-content');
@@ -22,19 +22,19 @@
     }).join('');
 
     el.innerHTML =
-      '<div class="ops-section-title" style="margin-top:2px">セッション</div>' +
+      '<div class="ops-section-title" style="margin-top:2px">' + t('settings.session') + '</div>' +
       '<div class="ops-card">' +
         '<div class="ops-field">' +
           '<div class="ops-field-main">' +
-            '<div class="ops-field-label">自動ログアウト</div>' +
-            '<div class="ops-field-sub">操作がないまま経過するとログアウトします</div>' +
+            '<div class="ops-field-label">' + t('settings.autoLogout') + '</div>' +
+            '<div class="ops-field-sub">' + t('settings.autoLogoutSub') + '</div>' +
           '</div>' +
-          '<select class="ops-select" id="ops-set-timeout" aria-label="自動ログアウト時間">' + opts + '</select>' +
+          '<select class="ops-select" id="ops-set-timeout" aria-label="' + t('settings.autoLogoutAria') + '">' + opts + '</select>' +
         '</div>' +
         '<div class="ops-field">' +
           '<div class="ops-field-main">' +
-            '<div class="ops-field-label">事前に警告を表示</div>' +
-            '<div class="ops-field-sub">ログアウトの約1分前に通知します</div>' +
+            '<div class="ops-field-label">' + t('settings.warnLabel') + '</div>' +
+            '<div class="ops-field-sub">' + t('settings.warnSub') + '</div>' +
           '</div>' +
           '<label class="ops-switch">' +
             '<input type="checkbox" id="ops-set-warn"' + (s.warnEnabled ? ' checked' : '') + (s.sessionTimeoutMin === 0 ? ' disabled' : '') + ' />' +
@@ -42,18 +42,18 @@
           '</label>' +
         '</div>' +
       '</div>' +
-      '<p class="ops-muted" style="font-size:.76rem;margin:2px 4px 0">この設定はこの端末にのみ保存されます。</p>' +
+      '<p class="ops-muted" style="font-size:.76rem;margin:2px 4px 0">' + t('settings.deviceOnly') + '</p>' +
 
-      '<div class="ops-section-title">アカウント</div>' +
+      '<div class="ops-section-title">' + t('settings.account') + '</div>' +
       '<div class="ops-card" style="padding:12px 14px">' +
-        '<div class="ops-row-title" style="font-size:.92rem">' + U.esc(user.name || user.email || 'スタッフ') + '</div>' +
+        '<div class="ops-row-title" style="font-size:.92rem">' + U.esc(user.name || user.email || t('common.staff')) + '</div>' +
         (user.email ? '<div class="ops-row-sub" style="margin-bottom:12px">' + U.esc(user.email) + '</div>' : '<div style="height:12px"></div>') +
-        '<button class="ops-btn ghost" id="ops-set-logout">' + UI.icon('logout') + 'ログアウト</button>' +
+        '<button class="ops-btn ghost" id="ops-set-logout">' + UI.icon('logout') + t('chrome.logout') + '</button>' +
       '</div>' +
 
-      '<div class="ops-section-title">アプリ情報</div>' +
+      '<div class="ops-section-title">' + t('settings.appInfo') + '</div>' +
       '<div class="ops-card" style="padding:4px 14px">' +
-        '<div class="ops-kv"><span class="k">アプリ</span><span class="v">Hello Moving Ops</span></div>' +
+        '<div class="ops-kv"><span class="k">' + t('settings.appLabel') + '</span><span class="v">Hello Moving Ops</span></div>' +
         '<div class="ops-kv"><span class="k">API</span><span class="v" style="font-size:.78rem;word-break:break-all">' + U.esc(Ops.cfg.base) + '</span></div>' +
       '</div>';
 
@@ -65,21 +65,21 @@
       S.save({ sessionTimeoutMin: min });
       Ops.Auth._lastAct = Date.now();   // don't let a shorter value log the user out mid-edit
       warn.disabled = (min === 0);
-      UI.toast(min === 0 ? '自動ログアウトを無効にしました' : '自動ログアウトを ' + min + ' 分に設定しました');
+      UI.toast(min === 0 ? t('settings.timeoutDisabled') : t('settings.timeoutSet', { n: min }));
     });
 
     warn.addEventListener('change', function () {
       S.save({ warnEnabled: warn.checked });
-      UI.toast(warn.checked ? '警告を有効にしました' : '警告を無効にしました');
+      UI.toast(warn.checked ? t('settings.warnOn') : t('settings.warnOff'));
     });
 
     document.getElementById('ops-set-logout').addEventListener('click', function () {
-      if (confirm('ログアウトしますか？')) { this.disabled = true; this.innerHTML = '<span class="ops-spin"></span>'; Ops.Auth.logout(); }
+      if (confirm(t('chrome.logoutConfirm'))) { this.disabled = true; this.innerHTML = '<span class="ops-spin"></span>'; Ops.Auth.logout(); }
     });
   }
 
   Ops.ready(function () {
-    UI.mountChrome({ active: '', title: '設定', back: true });
+    UI.mountChrome({ active: '', title: t('settings.title'), back: true });
     render();
   });
 })();

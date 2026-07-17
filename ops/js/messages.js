@@ -29,7 +29,7 @@
     var out = !!l.outbound;
     return {
       id: m.id, out: out,
-      name: m.sender_name || m.sender || (out ? 'Hello Moving' : (m.email || 'お客様')),
+      name: m.sender_name || m.sender || (out ? 'Hello Moving' : (m.email || t('common.customer'))),
       text: l.deleted ? '' : (m.body_text || m.body || ''),
       deleted: !!l.deleted,
       channel: out ? (l.chat ? 'chat' : 'email') : 'chat',
@@ -64,7 +64,7 @@
         key: k, bookingId: g.bookingId, ref: g.ref || (bk && bk.ref) || '',
         name: name || custEmail || 'お客様', email: custEmail || (bk && bk.email) || '',
         canSend: !!g.bookingId, booking: bk || null, messages: msgs,
-        lastText: last.deleted ? '（削除されたメッセージ）' : last.text, lastTs: last.ts,
+        lastText: last.deleted ? t('chat.deleted') : last.text, lastTs: last.ts,
         unread: msgs.filter(function (x) { return !x.out && !x.read; }).length,
       };
     });
@@ -85,10 +85,10 @@
   var L = { convs: [], bookings: {}, tab: 'all', q: '', error: false, poll: null };
 
   var TABS = [
-    { k: 'all', l: 'すべて' },
-    { k: 'unread', l: '未読' },
-    { k: 'booking', l: '予約関連' },
-    { k: 'done', l: '完了' },
+    { k: 'all', l: 'chat.t.all' },
+    { k: 'unread', l: 'chat.t.unread' },
+    { k: 'booking', l: 'chat.t.booking' },
+    { k: 'done', l: 'chat.t.done' },
   ];
 
   function tabMatch(c, tab) {
@@ -109,12 +109,12 @@
   function totalUnread() { return L.convs.reduce(function (s, c) { return s + c.unread; }, 0); }
 
   function convCard(c) {
-    var preview = c.lastText ? U.esc(c.lastText.slice(0, 50)) : '（添付ファイル）';
+    var preview = c.lastText ? U.esc(c.lastText.slice(0, 50)) : t('chat.attachment');
     return '<a class="mc-conv' + (c.unread ? ' unread' : '') + '" href="message.html?id=' + encodeURIComponent(c.key) + '">' +
       '<div class="mc-conv-av">' + U.initials(c.name) + (c.unread ? '<span class="mc-dot"></span>' : '') + '</div>' +
       '<div class="mc-conv-main">' +
-        '<div class="mc-conv-top"><span class="mc-conv-name">' + U.esc(c.name) + 'さん</span><span class="mc-conv-time">' + U.relTime(c.lastTs) + '</span></div>' +
-        (c.ref ? '<div class="mc-conv-ref">予約ID: ' + U.esc(c.ref) + '</div>' : '') +
+        '<div class="mc-conv-top"><span class="mc-conv-name">' + U.esc(c.name) + t('common.san') + '</span><span class="mc-conv-time">' + U.relTime(c.lastTs) + '</span></div>' +
+        (c.ref ? '<div class="mc-conv-ref">' + t('chat.refPrefix') + U.esc(c.ref) + '</div>' : '') +
         '<div class="mc-conv-bottom"><span class="mc-conv-last">' + preview + '</span>' + (c.unread ? '<span class="mc-badge">' + c.unread + '</span>' : '') + '</div>' +
       '</div>' +
     '</a>';
@@ -131,15 +131,15 @@
   function listEmpty() {
     var filtered = L.q || L.tab !== 'all';
     return '<div class="ops-empty">' + UI.icon('chat') +
-      '<h3>まだメッセージはありません</h3>' +
-      '<p>' + (filtered ? '検索・フィルター条件を変えてお試しください' : 'お客様からのメッセージがここに表示されます') + '</p>' +
-      (!filtered ? '<a class="ops-btn ghost" href="index.html">ダッシュボードへ戻る</a>' : '') +
+      '<h3>' + t('chat.empty') + '</h3>' +
+      '<p>' + (filtered ? t('bookings.emptyFilteredSub') : t('chat.emptySub')) + '</p>' +
+      (!filtered ? '<a class="ops-btn ghost" href="index.html">' + t('dashboard.backToDashboard') + '</a>' : '') +
     '</div>';
   }
   function listError() {
     return '<div class="ops-empty">' + UI.icon('empty') +
-      '<h3>メッセージを取得できません</h3><p>接続を確認して、もう一度お試しください。</p>' +
-      '<button class="ops-btn" id="mc-retry" style="margin-top:14px">再試行</button></div>';
+      '<h3>' + t('chat.errorTitle') + '</h3><p>' + t('bookings.errorSub') + '</p>' +
+      '<button class="ops-btn" id="mc-retry" style="margin-top:14px">' + t('common.retry') + '</button></div>';
   }
 
   function renderListBody() {
@@ -147,7 +147,7 @@
     if (!host) return;
     var list = visibleConvs();
     host.innerHTML = list.length
-      ? '<div class="mc-count">' + list.length + ' 件の会話' + (totalUnread() ? ' · 未読 ' + totalUnread() : '') + '</div><div class="mc-list">' + list.map(convCard).join('') + '</div>'
+      ? '<div class="mc-count">' + t('chat.convCount', { n: list.length }) + (totalUnread() ? ' · ' + t('chat.unreadSuffix', { n: totalUnread() }) : '') + '</div><div class="mc-list">' + list.map(convCard).join('') + '</div>'
       : listEmpty();
   }
 
@@ -155,7 +155,7 @@
     var el = document.getElementById('ops-content');
     el.innerHTML =
       '<div class="mc-search">' + UI.icon('search') +
-        '<input id="mc-q" type="search" placeholder="名前・予約ID・本文で検索" autocomplete="off" />' +
+        '<input id="mc-q" type="search" placeholder="' + t('chat.searchPh') + '" autocomplete="off" />' +
       '</div>' +
       tabsHtml() +
       '<div id="mc-listhost"></div>';
@@ -204,7 +204,7 @@
   }
 
   function initList() {
-    UI.mountChrome({ active: 'chat', title: 'メッセージ' });
+    UI.mountChrome({ active: 'chat', title: t('chat.title') });
     loadList(true);
     L.poll = setInterval(function () { if (!L.error) loadList(false); }, Ops.cfg.POLL_MS);
   }
@@ -230,7 +230,7 @@
 
   function bubblesHtml(c) {
     if (!c.messages.length) {
-      return '<div class="ops-empty" style="padding:48px 20px">' + UI.icon('chat') + '<h3>まだメッセージはありません</h3><p>最初のメッセージを送信しましょう</p></div>';
+      return '<div class="ops-empty" style="padding:48px 20px">' + UI.icon('chat') + '<h3>' + t('chat.empty') + '</h3><p>' + t('chat.startFirst') + '</p></div>';
     }
     var lastDay = '';
     return c.messages.map(function (m) {
@@ -239,9 +239,9 @@
       if (day && day !== lastDay) { sep = '<div class="mc-day"><span>' + day + '</span></div>'; lastDay = day; }
       var av = m.out ? '' : '<div class="mc-row-av">' + U.initials(c.name) + '</div>';
       var inner = m.deleted
-        ? '<div class="mc-bubble deleted">削除されたメッセージ</div>'
+        ? '<div class="mc-bubble deleted">' + t('chat.deletedMsg') + '</div>'
         : '<div class="mc-bubble">' + U.esc(m.text).replace(/\n/g, '<br>') +
-            '<span class="mc-meta">' + U.fmtTime(m.ts) + (m.out ? (m.read ? ' · 既読' : ' · 送信済み') : '') + (m.out && m.channel === 'email' ? ' 📧' : '') + '</span>' +
+            '<span class="mc-meta">' + U.fmtTime(m.ts) + (m.out ? (m.read ? ' · ' + t('chat.read') : ' · ' + t('chat.sent')) : '') + (m.out && m.channel === 'email' ? ' 📧' : '') + '</span>' +
           '</div>';
       return sep + '<div class="mc-row ' + (m.out ? 'out' : 'in') + '">' + av + inner + '</div>';
     }).join('');
@@ -250,22 +250,22 @@
   function kv(k, v) { return v ? '<div class="mc-kv"><span class="k">' + k + '</span><span class="v">' + U.esc(v) + '</span></div>' : ''; }
 
   function inventoryHtml(items) {
-    if (!items || !items.length) return '<p class="mc-none">家具情報はありません</p>';
+    if (!items || !items.length) return '<p class="mc-none">' + t('furniture.none') + '</p>';
     return '<div class="mc-chips">' + items.map(function (it) { return '<span class="mc-chip">' + U.esc(it) + '</span>'; }).join('') + '</div>';
   }
 
   function detailTabHtml(c) {
     var b = c.booking;
-    if (!b) return '<div class="mc-scroll"><p class="mc-none">この会話には予約が紐づいていません。</p></div>';
-    var addr = (kv('現住所', b.fromAddr) + kv('引越し先', b.toAddr)) || '<p class="mc-none" style="margin:6px 0">住所情報はありません</p>';
+    if (!b) return '<div class="mc-scroll"><p class="mc-none">' + t('calendar.noBookingLinked') + '</p></div>';
+    var addr = (kv(t('customers.currentAddr'), b.fromAddr) + kv(t('customers.destAddr'), b.toAddr)) || '<p class="mc-none" style="margin:6px 0">' + t('customers.noAddr') + '</p>';
     return '<div class="mc-scroll">' +
-      '<div class="mc-sec">お客様</div>' +
-      '<div class="mc-card">' + kv('お名前', b.name ? b.name + '様' : '') + kv('電話', b.phone) + kv('メール', b.email) + '</div>' +
-      '<div class="mc-sec">引越し情報</div>' +
-      '<div class="mc-card">' + kv('サービス', b.service) + kv('引越し日', U.fmtDateFull(b.date)) + (b.time ? kv('時間帯', b.time) : '') + kv('ステータス', b.status) + '</div>' +
-      '<div class="mc-sec">住所</div>' +
+      '<div class="mc-sec">' + t('customers.customerInfo') + '</div>' +
+      '<div class="mc-card">' + kv(t('customers.name'), b.name ? b.name + t('common.honorific') : '') + kv(t('bookings.phone'), b.phone) + kv(t('bookings.email'), b.email) + '</div>' +
+      '<div class="mc-sec">' + t('chat.moving') + '</div>' +
+      '<div class="mc-card">' + kv(t('bookings.service'), b.service) + kv(t('bookings.moveDate'), U.fmtDateFull(b.date)) + (b.time ? kv(t('bookings.timeSlot'), b.time) : '') + kv(t('common.status'), t('status.' + Ops.toDbStatus(b.status))) + '</div>' +
+      '<div class="mc-sec">' + t('customers.addresses') + '</div>' +
       '<div class="mc-card">' + addr + '</div>' +
-      '<div class="mc-sec">搬送家具・荷物一覧</div>' +
+      '<div class="mc-sec">' + t('furniture.title') + '</div>' +
       inventoryHtml(b.items) +
     '</div>';
   }
@@ -274,7 +274,7 @@
     var b = c.booking;
     var price = b && (b.price || b.total_price || b.amount);   // bookings carry no price today → row hidden
     return '<div class="mc-summary">' +
-      '<span class="mc-s-ref">' + U.esc(c.ref || '予約なし') + '</span>' +
+      '<span class="mc-s-ref">' + U.esc(c.ref || t('chat.noBookingId')) + '</span>' +
       (b && b.service ? '<span class="mc-s-svc">' + U.esc(b.service) + '</span>' : '') +
       (b ? UI.statusBadge(b.status) : '') +
       (price ? '<span class="mc-s-price">' + U.esc(price) + '</span>' : '') +
@@ -288,11 +288,11 @@
 
   function composerHtml(c) {
     if (T.tab !== 'chat') return '';
-    if (!c.canSend) return '<div class="mc-locked">このスレッドはメール受信です。返信は管理画面をご利用ください。</div>';
+    if (!c.canSend) return '<div class="mc-locked">' + t('chat.locked') + '</div>';
     return '<div class="mc-composer">' +
-      '<button class="mc-attach" id="mc-attach" aria-label="添付">' + ATTACH_SVG + '</button>' +
-      '<textarea id="mc-input" rows="1" placeholder="メッセージを入力…"></textarea>' +
-      '<button class="mc-send" id="mc-send" aria-label="送信">' + UI.icon('send') + '</button>' +
+      '<button class="mc-attach" id="mc-attach" aria-label="' + t('chat.attachAria') + '">' + ATTACH_SVG + '</button>' +
+      '<textarea id="mc-input" rows="1" placeholder="' + t('chat.composerPh') + '"></textarea>' +
+      '<button class="mc-send" id="mc-send" aria-label="' + t('chat.sendAria') + '">' + UI.icon('send') + '</button>' +
     '</div>';
   }
 
@@ -305,14 +305,14 @@
         '<div class="mc-thd-hd">' +
           '<button class="mc-back" id="mc-back" aria-label="戻る">' + UI.icon('back') + '</button>' +
           '<div class="mc-hd-av">' + U.initials(c.name) + '</div>' +
-          '<div class="mc-hd-main"><div class="mc-hd-name">' + U.esc(c.name) + 'さん</div>' +
-            '<div class="mc-hd-sub">' + (c.ref ? '予約ID: ' + U.esc(c.ref) : U.esc(c.email || '')) + '</div></div>' +
+          '<div class="mc-hd-main"><div class="mc-hd-name">' + U.esc(c.name) + t('common.san') + '</div>' +
+            '<div class="mc-hd-sub">' + (c.ref ? t('chat.refPrefix') + U.esc(c.ref) : U.esc(c.email || '')) + '</div></div>' +
           (b && b.phone ? '<a class="mc-hd-call" href="tel:' + U.esc(b.phone) + '" aria-label="電話">' + UI.icon('phone') + '</a>' : '') +
         '</div>' +
         summaryHtml(c) +
         '<div class="mc-dtabs">' +
-          '<button class="mc-dtab' + (T.tab === 'chat' ? ' active' : '') + '" data-dtab="chat">チャット</button>' +
-          '<button class="mc-dtab' + (T.tab === 'detail' ? ' active' : '') + '" data-dtab="detail">予約詳細</button>' +
+          '<button class="mc-dtab' + (T.tab === 'chat' ? ' active' : '') + '" data-dtab="chat">' + t('chat.tab.chat') + '</button>' +
+          '<button class="mc-dtab' + (T.tab === 'detail' ? ' active' : '') + '" data-dtab="detail">' + t('chat.tab.detail') + '</button>' +
         '</div>' +
         '<div class="mc-body">' + bodyHtml(c) + '</div>' +
         composerHtml(c) +
@@ -332,7 +332,7 @@
     var input = document.getElementById('mc-input');
     var send = document.getElementById('mc-send');
     var attach = document.getElementById('mc-attach');
-    if (attach) attach.addEventListener('click', function () { UI.toast('添付機能は現在ご利用いただけません'); });
+    if (attach) attach.addEventListener('click', function () { UI.toast(t('chat.attachDisabled')); });
     if (input && send) {
       input.addEventListener('input', function () { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 96) + 'px'; });
       send.addEventListener('click', function () { doSend(T.conv || c); });   // T.conv stays fresh across polls
@@ -352,7 +352,7 @@
     btn.disabled = true;
     Api.sendChat(c.bookingId, text, c.ref, c.email).then(function (res) {
       btn.disabled = false;
-      if (!res.ok) { UI.toast('送信に失敗しました：' + ((res.error && res.error.message) || '')); return; }
+      if (!res.ok) { UI.toast(t('chat.sendFailed') + '：' + ((res.error && res.error.message) || '')); return; }
       if (input) { input.value = ''; input.style.height = 'auto'; }
       var now = new Date().toISOString();
       c.messages.push({ id: res.row.id, out: true, name: 'Hello Moving', text: text, deleted: false, channel: 'chat', ts: now, read: true });
@@ -390,9 +390,9 @@
     Promise.all([Api.listInbox(), Api.listBookings()]).then(function (r) {
       if ((r[0].error && !(r[0].data && r[0].data.length)) && (r[1].error && !(r[1].data && r[1].data.length))) {
         root.innerHTML = '<div class="ops-main" style="padding-top:70px"><div class="ops-empty">' + UI.icon('empty') +
-          '<h3>メッセージを取得できません</h3><p>接続を確認してください。</p>' +
-          '<button class="ops-btn" id="mc-retry" style="margin-top:14px">再試行</button>' +
-          '<a class="ops-btn ghost" href="messages.html" style="margin-top:8px">メッセージ一覧へ</a></div></div>';
+          '<h3>' + t('chat.errorTitle') + '</h3><p>' + t('bookings.errorSub') + '</p>' +
+          '<button class="ops-btn" id="mc-retry" style="margin-top:14px">' + t('common.retry') + '</button>' +
+          '<a class="ops-btn ghost" href="messages.html" style="margin-top:8px">' + t('chat.toList') + '</a></div></div>';
         var rt = document.getElementById('mc-retry'); if (rt) rt.addEventListener('click', loadThread);
         return;
       }
@@ -401,8 +401,8 @@
       var c = findConv(b.convs, b.bookings);
       if (!c) {
         root.innerHTML = '<div class="ops-main" style="padding-top:70px"><div class="ops-empty">' + UI.icon('chat') +
-          '<h3>会話が見つかりません</h3><p>一覧からもう一度お選びください。</p>' +
-          '<a class="ops-btn ghost" href="messages.html">メッセージ一覧へ</a></div></div>';
+          '<h3>' + t('chat.notFound') + '</h3><p>' + t('chat.notFoundSub') + '</p>' +
+          '<a class="ops-btn ghost" href="messages.html">' + t('chat.toList') + '</a></div></div>';
         return;
       }
       T.conv = c;

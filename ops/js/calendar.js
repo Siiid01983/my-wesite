@@ -21,11 +21,11 @@
 
   var STATUS_CLASS = { '新規': 'cst-pending', '確認中': 'cst-progress', '確定': 'cst-confirm', '完了': 'cst-done', 'キャンセル': 'cst-cancel', '却下': 'cst-cancel', '要修正': 'cst-progress' };
   var STATUS_FILTERS = [
-    { k: 'all', l: 'すべて' },
-    { k: '新規', l: '保留' },
-    { k: '確定', l: '確定' },
-    { k: '確認中', l: '進行中' },
-    { k: '完了', l: '完了' },
+    { k: 'all', l: 'calendar.f.all' },
+    { k: '新規', l: 'calendar.f.pending' },
+    { k: '確定', l: 'calendar.f.confirmed' },
+    { k: '確認中', l: 'calendar.f.progress' },
+    { k: '完了', l: 'calendar.f.completed' },
   ];
 
   var state = {
@@ -77,7 +77,7 @@
   function addBk(b) { if (b.status === 'キャンセル') return; (state.byDate[b.date] = state.byDate[b.date] || []).push(b); state.byDate[b.date].sort(function (x, y) { return sched(x).sMin - sched(y).sMin; }); }
 
   /* ── Filters ───────────────────────────────────────────────────────────── */
-  function staffOf(b) { return (b.workers && String(b.workers).trim()) || '未割当'; }
+  function staffOf(b) { return (b.workers && String(b.workers).trim()) || t('calendar.unassigned'); }
   function passesFilter(b) {
     if (state.status !== 'all' && b.status !== state.status) return false;
     if (state.staff !== 'all' && staffOf(b) !== state.staff) return false;
@@ -121,13 +121,13 @@
     el.innerHTML =
       summaryHtml() +
       '<div class="cal-views"><div class="cal-seg">' +
-        ['day', 'week', 'month'].map(function (v) { return '<button data-view="' + v + '" class="' + (state.view === v ? 'active' : '') + '">' + ({ day: '日', week: '週', month: '月' })[v] + '</button>'; }).join('') +
+        ['day', 'week', 'month'].map(function (v) { return '<button data-view="' + v + '" class="' + (state.view === v ? 'active' : '') + '">' + t('calendar.v.' + v) + '</button>'; }).join('') +
       '</div></div>' +
       '<div class="cal-toolbar">' +
         '<button class="cal-nav" id="cal-prev">' + UI.icon('chevronL') + '</button>' +
         '<div class="cal-title">' + U.esc(titleFor()) + '</div>' +
         '<button class="cal-nav" id="cal-next">' + UI.icon('chevronR') + '</button>' +
-        '<button class="cal-today" id="cal-today">今日</button>' +
+        '<button class="cal-today" id="cal-today">' + t('calendar.today') + '</button>' +
       '</div>' +
       filtersHtml() +
       '<div id="cal-body"></div>';
@@ -142,22 +142,22 @@
 
   function summaryHtml() {
     return '<div class="cal-summary">' +
-      '<div class="cal-badge">' + UI.icon('calendar') + '<div><b>' + todayCount() + '</b> <span>本日の予約</span></div></div>' +
-      '<div class="cal-badge warn">' + UI.icon('clock') + '<div><b>' + pendingCount() + '</b> <span>要確認（保留）</span></div></div>' +
+      '<div class="cal-badge">' + UI.icon('calendar') + '<div><b>' + todayCount() + '</b> <span>' + t('calendar.todayBookings') + '</span></div></div>' +
+      '<div class="cal-badge warn">' + UI.icon('clock') + '<div><b>' + pendingCount() + '</b> <span>' + t('calendar.pendingReview') + '</span></div></div>' +
     '</div>';
   }
 
   function filtersHtml() {
     var staff = staffOptions();
     return '<div class="cal-filters">' +
-      '<div class="cal-search">' + UI.icon('search') + '<input id="cal-q" type="search" placeholder="顧客・予約IDで検索" autocomplete="off" /></div>' +
+      '<div class="cal-search">' + UI.icon('search') + '<input id="cal-q" type="search" placeholder="' + t('calendar.searchPh') + '" autocomplete="off" /></div>' +
       '<div class="cal-chips">' +
-        STATUS_FILTERS.map(function (f) { return '<button class="cal-chip' + (state.status === f.k ? ' active' : '') + '" data-st="' + f.k + '">' + f.l + '</button>'; }).join('') +
-        '<select class="cal-staff-sel" id="cal-staff"><option value="all">全スタッフ</option>' +
+        STATUS_FILTERS.map(function (f) { return '<button class="cal-chip' + (state.status === f.k ? ' active' : '') + '" data-st="' + f.k + '">' + t(f.l) + '</button>'; }).join('') +
+        '<select class="cal-staff-sel" id="cal-staff"><option value="all">' + t('calendar.allStaff') + '</option>' +
           staff.map(function (s) { return '<option value="' + U.esc(s) + '"' + (state.staff === s ? ' selected' : '') + '>' + U.esc(s) + '</option>'; }).join('') +
         '</select>' +
       '</div>' +
-      '<label class="cal-toggle" style="margin-top:8px"><input type="checkbox" id="cal-staff-ov"' + (state.staffOverlay ? ' checked' : '') + ' /> スタッフ別に表示</label>' +
+      '<label class="cal-toggle" style="margin-top:8px"><input type="checkbox" id="cal-staff-ov"' + (state.staffOverlay ? ' checked' : '') + ' /> ' + t('calendar.staffOverlay') + '</label>' +
     '</div>';
   }
 
@@ -204,15 +204,15 @@
       var w = 100 / lanes, left = b._lane * w;
       return '<div class="cal-event ' + stClass(b) + '" data-open="' + U.esc(b.dbId) + '" data-drag="time" ' +
         'style="top:' + top + 'px;height:' + hgt + 'px;left:calc(' + left + '% + 2px);width:calc(' + w + '% - 4px)">' +
-        '<div class="e-name">' + U.esc(b.name) + '様</div>' +
-        '<div class="e-meta">' + U.esc(b.service || 'ご予約') + ' · ' + timeLabel(b) + '</div>' +
+        '<div class="e-name">' + U.esc(b.name) + t('common.honorific') + '</div>' +
+        '<div class="e-meta">' + U.esc(b.service || t('common.booking')) + ' · ' + timeLabel(b) + '</div>' +
         '<div class="cal-resize" data-resize="' + U.esc(b.dbId) + '"></div>' +
       '</div>';
     }).join('');
     var body = '<div class="cal-day"><div class="cal-hours">' + hours + '</div>' +
       '<div class="cal-timeline" style="height:' + ((H1 - H0 + 1) * HOUR_PX) + 'px">' + rows + events + '</div></div>';
-    if (!list.length) body += '<div class="cal-hint">この日の予約はありません</div>';
-    return body + '<div class="cal-hint">長押しでドラッグ → 時間変更／下端で長さ変更</div>';
+    if (!list.length) body += '<div class="cal-hint">' + t('calendar.noBookingsDay') + '</div>';
+    return body + '<div class="cal-hint">' + t('calendar.dragHint') + '</div>';
   }
   function bindDay(host) {
     host.querySelectorAll('[data-open]').forEach(function (el) {
@@ -233,7 +233,7 @@
       var dt = parse(d), list = dayList(d);
       var cards = list.map(function (b) {
         return '<div class="cal-wk-card ' + stClass(b) + '" data-open="' + U.esc(b.dbId) + '" data-drag="date">' +
-          '<div class="w-time">' + timeLabel(b) + '</div><div class="w-name">' + U.esc(b.name) + '様</div></div>';
+          '<div class="w-time">' + timeLabel(b) + '</div><div class="w-name">' + U.esc(b.name) + t('common.honorific') + '</div></div>';
       }).join('');
       return '<div class="cal-col" data-drop-date="' + d + '">' +
         '<div class="cal-col-hd' + (d === today ? ' today' : '') + '">' + WD[dt.getDay()] + '<small>' + (dt.getMonth() + 1) + '/' + dt.getDate() + '</small></div>' +
@@ -275,14 +275,14 @@
     var groups = {};
     currentRange().forEach(function (d) { dayList(d).forEach(function (b) { var s = staffOf(b); (groups[s] = groups[s] || []).push(b); }); });
     var keys = Object.keys(groups).sort();
-    if (!keys.length) return '<div class="cal-none">この期間の予約はありません</div>';
+    if (!keys.length) return '<div class="cal-none">' + t('calendar.noBookingsRange') + '</div>';
     return keys.map(function (k) {
       var items = groups[k].sort(function (a, b) { return (a.date + a._s).localeCompare ? String(a.date).localeCompare(String(b.date)) : 0; });
       var cards = items.map(function (b) {
         return '<div class="cal-wk-card ' + stClass(b) + '" data-open="' + U.esc(b.dbId) + '" style="margin-bottom:6px">' +
-          '<div class="w-time">' + U.fmtDate(b.date) + ' · ' + timeLabel(b) + '</div><div class="w-name">' + U.esc(b.name) + '様 · ' + U.esc(b.service || 'ご予約') + '</div></div>';
+          '<div class="w-time">' + U.fmtDate(b.date) + ' · ' + timeLabel(b) + '</div><div class="w-name">' + U.esc(b.name) + t('common.honorific') + ' · ' + U.esc(b.service || t('common.booking')) + '</div></div>';
       }).join('');
-      return '<div class="cal-staff-grp"><div class="cal-staff-hd">' + UI.icon('customers') + U.esc(k) + '<span class="n">' + items.length + '件</span></div>' + cards + '</div>';
+      return '<div class="cal-staff-grp"><div class="cal-staff-hd">' + UI.icon('customers') + U.esc(k) + '<span class="n">' + items.length + t('calendar.staffUnit') + '</span></div>' + cards + '</div>';
     }).join('');
   }
 
@@ -383,22 +383,22 @@
     else if (b.startAt) { b.startAt = newDate + ' ' + b.startAt.slice(11); if (b.endAt) b.endAt = newDate + ' ' + b.endAt.slice(11); }
     addBk(b);
     renderBody();
-    UI.toast('保存中…');
+    UI.toast(t('common.saving'));
 
     var values = { updated_at: nowSql(), booking_date: newDate };
     if (setTimes || b.startAt) { if (b.startAt) values.start_at = b.startAt; if (b.endAt) values.end_at = b.endAt; }
     Api.rest({ table: 'bookings', action: 'update', values: values, filters: [{ col: 'id', op: 'eq', val: b.dbId }] }).then(function (res) {
       if (res.error) {
         removeBk(b); b.date = prev.date; b.startAt = prev.startAt; b.endAt = prev.endAt; b.time = prev.time; addBk(b);
-        renderBody(); UI.toast('保存に失敗しました：' + ((res.error && res.error.message) || ''));
-      } else { UI.toast(b.name + '様の予約を更新しました'); }
+        renderBody(); UI.toast(t('common.saveFailed') + '：' + ((res.error && res.error.message) || ''));
+      } else { UI.toast(t('calendar.savedBk', { name: b.name })); }
     });
   }
 
   /* ── Detail modal ──────────────────────────────────────────────────────── */
   function kv(k, v) { return v ? '<div class="ops-kv"><span class="k">' + k + '</span><span class="v">' + U.esc(v) + '</span></div>' : ''; }
   function furnitureHtml(items) {
-    if (!items || !items.length) return '<div class="cal-none">家具情報はありません</div>';
+    if (!items || !items.length) return '<div class="cal-none">' + t('furniture.none') + '</div>';
     var agg = {}, order = [];
     items.forEach(function (it) { var n = String(it).trim(); if (!n) return; if (!(n in agg)) { agg[n] = 0; order.push(n); } agg[n]++; });
     return '<div class="cal-furni">' + order.map(function (n) {
@@ -409,32 +409,32 @@
   function openDetail(id) {
     var b = byId(id); if (!b) return;
     var price = b.price || b.amount || b.total_price;
-    var addr = (kv('現住所', b.fromAddr) + kv('引越し先', b.toAddr)) || '<p class="cal-none" style="margin:6px 0">住所情報はありません</p>';
+    var addr = (kv(t('customers.currentAddr'), b.fromAddr) + kv(t('customers.destAddr'), b.toAddr)) || '<p class="cal-none" style="margin:6px 0">' + t('customers.noAddr') + '</p>';
     var html =
-      '<h2>' + U.esc(b.name) + '様</h2>' +
-      '<div class="ops-muted" style="margin:0 0 12px;font-size:.86rem">受付番号 ' + U.esc(b.ref) + ' · <span class="cal-stbadge ' + stClass(b) + '">' + U.esc(b.status) + '</span></div>' +
+      '<h2>' + U.esc(b.name) + t('common.honorific') + '</h2>' +
+      '<div class="ops-muted" style="margin:0 0 12px;font-size:.86rem">' + t('bookings.receiptNo') + ' ' + U.esc(b.ref) + ' · <span class="cal-stbadge ' + stClass(b) + '">' + U.esc(t('status.' + Ops.toDbStatus(b.status))) + '</span></div>' +
       '<div class="ops-card" style="margin:0 0 12px;padding:4px 14px">' +
-        kv('サービス', b.service) + kv('引越し日', U.fmtDateFull(b.date)) + kv('時間', timeLabel(b)) +
-        kv('電話', b.phone) + kv('メール', b.email) +
-        kv('担当スタッフ', b.workers) + (price ? kv('料金', price) : '') +
+        kv(t('bookings.service'), b.service) + kv(t('bookings.moveDate'), U.fmtDateFull(b.date)) + kv(t('calendar.time'), timeLabel(b)) +
+        kv(t('bookings.phone'), b.phone) + kv(t('bookings.email'), b.email) +
+        kv(t('calendar.staff'), b.workers) + (price ? kv(t('calendar.price'), price) : '') +
       '</div>' +
-      '<div class="ops-section-title" style="margin:4px 2px 8px">住所</div><div class="ops-card" style="margin:0 0 12px;padding:4px 14px">' + addr + '</div>' +
-      (b.notes ? '<div class="ops-section-title" style="margin:4px 2px 8px">メモ</div><div class="ops-card" style="margin:0 0 12px;padding:10px 14px;font-size:.9rem">' + U.esc(b.notes) + '</div>' : '') +
-      '<div class="ops-section-title" style="margin:4px 2px 8px">搬送家具・荷物一覧</div>' + furnitureHtml(b.items) +
+      '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('customers.addresses') + '</div><div class="ops-card" style="margin:0 0 12px;padding:4px 14px">' + addr + '</div>' +
+      (b.notes ? '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('customers.memo') + '</div><div class="ops-card" style="margin:0 0 12px;padding:10px 14px;font-size:.9rem">' + U.esc(b.notes) + '</div>' : '') +
+      '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('furniture.title') + '</div>' + furnitureHtml(b.items) +
       '<div class="ops-btn-row" style="margin-top:14px">' +
-        '<a class="ops-btn ghost" href="customers.html">' + UI.icon('customers') + '顧客</a>' +
-        '<a class="ops-btn ghost" href="message.html?booking=' + encodeURIComponent(b.dbId) + '&ref=' + encodeURIComponent(b.ref) + '">' + UI.icon('chat') + 'チャット</a>' +
+        '<a class="ops-btn ghost" href="customers.html">' + UI.icon('customers') + t('calendar.customer') + '</a>' +
+        '<a class="ops-btn ghost" href="message.html?booking=' + encodeURIComponent(b.dbId) + '&ref=' + encodeURIComponent(b.ref) + '">' + UI.icon('chat') + t('bookings.chat') + '</a>' +
       '</div>' +
       '<div class="ops-btn-row" style="margin-top:8px">' +
-        '<a class="ops-btn sage" href="bookings.html?ref=' + encodeURIComponent(b.ref) + '">' + UI.icon('bookings') + '予約を編集</a>' +
+        '<a class="ops-btn sage" href="bookings.html?ref=' + encodeURIComponent(b.ref) + '">' + UI.icon('bookings') + t('calendar.editBooking') + '</a>' +
       '</div>';
     state.sheet.open(html);
   }
 
   /* ── Load / boot ───────────────────────────────────────────────────────── */
   function errorState() {
-    return '<div class="ops-empty">' + UI.icon('empty') + '<h3>予約情報を取得できません</h3>' +
-      '<p>接続を確認して、もう一度お試しください。</p><button class="ops-btn" id="cal-retry" style="margin-top:14px">再試行</button></div>';
+    return '<div class="ops-empty">' + UI.icon('empty') + '<h3>' + t('bookings.errorTitle') + '</h3>' +
+      '<p>' + t('bookings.errorSub') + '</p><button class="ops-btn" id="cal-retry" style="margin-top:14px">' + t('common.retry') + '</button></div>';
   }
   function load() {
     var el = document.getElementById('ops-content');
@@ -449,7 +449,7 @@
   }
 
   Ops.ready(function () {
-    UI.mountChrome({ active: 'calendar', title: 'カレンダー' });
+    UI.mountChrome({ active: 'calendar', title: t('calendar.title') });
     state.sheet = UI.sheet();
     load();
   });

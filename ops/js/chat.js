@@ -24,7 +24,7 @@
     var out = !!l.outbound;
     return {
       id: m.id, out: out,
-      name: m.sender_name || m.sender || (out ? 'Hello Moving' : (m.email || 'お客様')),
+      name: m.sender_name || m.sender || (out ? 'Hello Moving' : (m.email || t('common.customer'))),
       text: l.deleted ? '' : (m.body_text || m.body || ''),
       deleted: !!l.deleted,
       channel: out ? (l.chat ? 'chat' : 'email') : 'chat',
@@ -59,7 +59,7 @@
       var last = msgs[msgs.length - 1] || { text: '', ts: '' };
       return {
         key: k, bookingId: g.bookingId, ref: g.ref || (bk && bk.ref) || '',
-        name: name || custEmail || 'お客様', email: custEmail || (bk && bk.email) || '',
+        name: name || custEmail || t('common.customer'), email: custEmail || (bk && bk.email) || '',
         canSend: !!g.bookingId,
         messages: msgs,
         lastText: last.deleted ? '（削除されたメッセージ）' : last.text,
@@ -96,7 +96,7 @@
       '<div class="ops-muted" style="font-size:.78rem;font-weight:600;margin:0 2px 10px">' +
         chats.length + ' 件の会話' + (totalUnread() ? ' · 未読 ' + totalUnread() : '') + '</div>' +
       (chats.length ? '<div id="ops-list">' + chats.map(convRow).join('') + '</div>'
-                    : UI.empty('会話がありません', 'お客様からのメッセージがここに表示されます', 'chat'));
+                    : UI.empty(t('chat.empty'), t('chat.emptySub'), 'chat'));
     el.querySelectorAll('[data-open]').forEach(function (r) {
       r.addEventListener('click', function () { openThread(r.getAttribute('data-open')); });
     });
@@ -120,28 +120,28 @@
       var day = U.fmtDate(m.ts);
       var sep = '';
       if (day !== lastDay) { sep = '<div class="ops-chat-day">' + day + '</div>'; lastDay = day; }
-      if (m.deleted) return sep + '<div class="ops-msg ' + (m.out ? 'out' : 'in') + '" style="opacity:.6;font-style:italic">削除されたメッセージ</div>';
+      if (m.deleted) return sep + '<div class="ops-msg ' + (m.out ? 'out' : 'in') + '" style="opacity:.6;font-style:italic">' + t('chat.deletedMsg') + '</div>';
       return sep + '<div class="ops-msg ' + (m.out ? 'out' : 'in') + (m.channel === 'email' ? ' email' : '') + '">' +
         U.esc(m.text).replace(/\n/g, '<br>') +
         '<span class="ops-msg-time">' + (m.out ? (m.channel === 'email' ? '📧 ' : '') : '') + U.fmtTime(m.ts) + '</span>' +
       '</div>';
     }).join('');
-    if (!c.messages.length) body = '<div class="ops-empty" style="padding:60px 20px">' + UI.icon('chat') + '<h3>まだメッセージはありません</h3><p>最初のメッセージを送信しましょう</p></div>';
+    if (!c.messages.length) body = '<div class="ops-empty" style="padding:60px 20px">' + UI.icon('chat') + '<h3>' + t('chat.empty') + '</h3><p>' + t('chat.startFirst') + '</p></div>';
 
     var composer = c.canSend
       ? '<div class="ops-composer">' +
-          '<textarea id="ops-msg-input" rows="1" placeholder="メッセージを入力…"></textarea>' +
+          '<textarea id="ops-msg-input" rows="1" placeholder="' + t('chat.composerPh') + '"></textarea>' +
           '<button id="ops-msg-send" aria-label="送信">' + UI.icon('send') + '</button>' +
         '</div>'
-      : '<div class="ops-chat-locked">このスレッドはメール受信です。返信は管理画面をご利用ください。</div>';
+      : '<div class="ops-chat-locked">' + t('chat.locked') + '</div>';
 
     return '<div class="ops-chat-inner">' +
       '<div class="ops-chat-hd">' +
         '<button class="ops-back" id="ops-chat-back" aria-label="戻る">' + UI.icon('back') + '</button>' +
         '<div class="ops-avatar">' + U.initials(c.name) + '</div>' +
         '<div class="ops-chat-hd-main">' +
-          '<div class="ops-chat-hd-name">' + U.esc(c.name) + '様</div>' +
-          '<div class="ops-chat-hd-sub">' + (c.ref ? '予約 ' + U.esc(c.ref) : U.esc(c.email || '')) + '</div>' +
+          '<div class="ops-chat-hd-name">' + U.esc(c.name) + t('common.honorific') + '</div>' +
+          '<div class="ops-chat-hd-sub">' + (c.ref ? t('chat.refPrefix') + U.esc(c.ref) : U.esc(c.email || '')) + '</div>' +
         '</div>' +
         (c.email && state.bookings[c.bookingId] && state.bookings[c.bookingId].phone
           ? '<button class="ops-chat-call" onclick="location.href=\'tel:' + U.esc(state.bookings[c.bookingId].phone) + '\'">' + UI.icon('phone') + '</button>' : '') +
@@ -256,7 +256,7 @@
   }
 
   Ops.ready(function () {
-    UI.mountChrome({ active: 'chat', title: 'チャット' });
+    UI.mountChrome({ active: 'chat', title: t('chat.title') });
     load(true).then(function () {
       // Deep-link: ?booking=<dbId> opens (or starts) that room.
       var qp = new URLSearchParams(location.search);
