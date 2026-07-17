@@ -43,6 +43,7 @@ window.LOCALES.ja = {
   "bookings.changeTo": "{s}に変更", "bookings.makeCancel": "キャンセルにする",
   "bookings.cancelConfirm": "{name}様の予約をキャンセルにしますか？",
   "bookings.updated": "{name}様を「{s}」に変更しました",
+  "bookings.slotTaken": "この時間帯はすでに予約が入っています。確定できません。",
   "bookings.receiptNo": "受付番号", "bookings.moveDate": "引越し日", "bookings.timeSlot": "時間帯",
   "bookings.service": "サービス", "bookings.workers": "作業員", "bookings.from": "出発", "bookings.to": "到着",
   "bookings.items": "荷物", "bookings.email": "メール", "bookings.phone": "電話", "bookings.notes": "備考",

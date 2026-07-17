@@ -44,6 +44,7 @@ window.LOCALES.en = {
   "bookings.changeTo": "Change to {s}", "bookings.makeCancel": "Cancel booking",
   "bookings.cancelConfirm": "Cancel {name}'s booking?",
   "bookings.updated": "Changed {name} to “{s}”",
+  "bookings.slotTaken": "That time band is already booked — can’t confirm.",
   "bookings.receiptNo": "Ref no.", "bookings.moveDate": "Moving date", "bookings.timeSlot": "Time slot",
   "bookings.service": "Service", "bookings.workers": "Crew", "bookings.from": "From", "bookings.to": "To",
   "bookings.items": "Items", "bookings.email": "Email", "bookings.phone": "Phone", "bookings.notes": "Notes",

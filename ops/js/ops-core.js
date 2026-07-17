@@ -367,11 +367,35 @@
       });
     },
     updateBookingStatus: function (dbId, jpStatus) {
+      var db = Ops.toDbStatus(jpStatus);
+      // Confirm / cancel go through the lifecycle endpoint so the (date, band)
+      // slot is RESERVED / RELEASED via the canonical slot layer (_slots.php) —
+      // a confirmed booking blocks its band in availability + the calendar. Other
+      // transitions stay a lightweight direct status write.
+      if (db === 'confirmed' || db === 'cancelled') return Api.setBookingStatus(dbId, db);
       return Api.rest({
         table: 'bookings', action: 'update',
-        values: { status: Ops.toDbStatus(jpStatus), updated_at: new Date().toISOString().slice(0, 19).replace('T', ' ') },
+        values: { status: db, updated_at: new Date().toISOString().slice(0, 19).replace('T', ' ') },
         filters: [{ col: 'id', op: 'eq', val: dbId }],
       });
+    },
+    /* POST hm-api/booking-status.php (status + slot reserve/release + customer
+       notification). Normalises its {ok,error} reply to our {data,error} envelope
+       so callers treat it like Api.rest. A 409 surfaces error.code='slot_taken'. */
+    setBookingStatus: function (dbId, dbStatus) {
+      return fetch(cfg.base + '/booking-status.php', {
+        method: 'POST', headers: headers(true),
+        body: JSON.stringify({ booking_id: dbId, status: dbStatus }),
+      })
+        .then(function (r) {
+          return r.text().then(function (txt) {
+            var j = null; try { j = JSON.parse(txt); } catch (_) {}
+            if (j && j.ok) return { data: j, error: null };
+            var code = (j && j.error) || ('HTTP ' + r.status);
+            return { data: null, error: { message: String(code), code: String(code), status: r.status } };
+          });
+        })
+        .catch(function (e) { return { data: null, error: { message: (e && e.message) || 'network', isNetwork: true } }; });
     },
 
     /* Inbox / chat threads ------------------------------------------------- */

@@ -166,7 +166,10 @@
       if (res.error) {
         b.status = prev; b.statusRaw = prevRaw;                      // rollback
         renderList(); openDetail(b.dbId);
-        UI.toast(t('common.saveFailed') + '：' + (res.error.message || ''));
+        var msg = (res.error.code === 'slot_taken')
+          ? t('bookings.slotTaken')
+          : (t('common.saveFailed') + '：' + (res.error.message || ''));
+        UI.toast(msg);
       } else {
         UI.toast(t('bookings.updated', { name: b.name, s: t('status.' + Ops.toDbStatus(newStatus)) }));
       }

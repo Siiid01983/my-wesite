@@ -170,9 +170,13 @@ window.PortalV2 = (function () {
       '<div class="pv2-fields">' +
         _field('予約番号', refDisp) + _field('引越し日', fmtDate(r.booking_date)) + _field('時間帯', ex.time) +
         _field('サービス', svc) + _field('お名前', r.customer_name) + _field('メール', r.customer_email) +
-        _field('電話番号', r.customer_phone) + _field('現住所/作業場所', ex.from) + _field('引越し先', ex.to) +
+        _field('電話番号', r.customer_phone) +
+        _field('現住所/作業場所', (window.HMAddrPrivacy ? HMAddrPrivacy.addrText(ex.from, r.status) : ex.from)) +
+        _field('引越し先', (window.HMAddrPrivacy ? HMAddrPrivacy.addrText(ex.to, r.status) : ex.to)) +
         _field('受付日', (r.created_at ? fmtCreated(r.created_at).slice(0,10) : '—')) +
       '</div>' +
+      ((window.HMAddrPrivacy && !HMAddrPrivacy.confirmed(r.status) && (ex.from || ex.to))
+        ? '<div class="pv2-note" style="font-size:12px">' + esc(HMAddrPrivacy.HINT_JA) + '</div>' : '') +
       (ex.user ? '<div class="pv2-d-notes"><div class="pv2-f-k">ご要望・メモ</div><p>' + esc(ex.user) + '</p></div>' : '') +
       '<div class="pv2-d-tl"><div class="pv2-f-k">進捗</div>' + _timelineHtml(r.status) + '</div>' +
       '<div class="pv2-d-actions"><button class="pv2-rebook">同じ内容で再予約</button></div>';
