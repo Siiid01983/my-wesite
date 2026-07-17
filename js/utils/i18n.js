@@ -288,6 +288,54 @@ window.I18n = (function () {
 
     /* Topbar title mirror (set by go()) */
     'クイック操作':   'Quick Actions',
+
+    /* ── Sidebar sections + items not previously covered (i18n Phase 4) ── */
+    '運営':               'Operations',
+    '顧客・CRM':          'Customers & CRM',
+    '分析・自動化':       'Analytics & Automation',
+    'ウェブサイト':       'Website',
+    'フォーム予約':       'Form Bookings',
+    '受信トレイ':         'Inbox',
+    'CRM':                'CRM',
+    '顧客ポータル管理':   'Portal Users',
+    '高度分析':           'Advanced Analytics',
+    '自動化エンジン':     'Automation Engine',
+    '監査ログ':           'Audit Log',
+    'スタッフ管理':       'Staff',
+    'カメラ・写真':       'Camera & Photos',
+    'プッシュ通知設定':   'Push Notifications',
+    'モバイル業務アプリ': 'Mobile Ops App',
+    'ウェブサイト管理':   'Website Management',
+
+    /* ── Inbox / Communications (i18n Phase 4) ── */
+    '受信箱':             'Inbox',
+    'コミュニケーション': 'Communications',
+    'コミュニケーション履歴': 'Communication History',
+    'メッセージ':         'Messages',
+    '未読':               'Unread',
+    '既読':               'Read',
+    '返信':               'Reply',
+    '転送':               'Forward',
+    'アーカイブ':         'Archive',
+    'アーカイブ済み':     'Archived',
+    'スレッド':           'Thread',
+    '送信者':             'Sender',
+    '宛先':               'To',
+    '受信':               'Inbound',
+    'すべて既読にする':   'Mark all read',
+    '会話':               'Conversation',
+    'お客様からのメッセージ': 'Customer message',
+    '会社からのメッセージ':   'Company message',
+
+    /* ── Analytics extras (i18n Phase 4) ── */
+    '売上':               'Revenue',
+    '予約数':             'Bookings',
+    '平均単価':           'Avg. Value',
+    '成約率':             'Conversion',
+    'サービス別':         'By Service',
+    '期間別':             'By Period',
+    '前月比':             'vs Last Month',
+    '合計売上':           'Total Revenue',
   };
 
   /* ── Public: get / set language ──────────────────────── */
