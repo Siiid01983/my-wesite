@@ -176,3 +176,20 @@
 .mc-composer .mc-send:disabled { opacity: .5; }
 .mc-composer .mc-send svg { width: 20px; height: 20px; }
 .mc-locked { flex: 0 0 auto; padding: 14px; text-align: center; font-size: .82rem; color: var(--mc-mut); background: #fff; border-top: 1px solid var(--mc-line); }
+
+/* ── Chat attachments (M4 attachment wiring) ─────────────────────────────── */
+.mc-atts { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.mc-att-img { display: block; width: 150px; max-width: 60vw; border-radius: 10px; overflow: hidden; background: rgba(0,0,0,.05); }
+.mc-att-img img { display: block; width: 100%; height: auto; max-height: 220px; object-fit: cover; }
+.mc-att-file { display: inline-flex; align-items: center; gap: 6px; padding: 8px 11px; border-radius: 10px; background: rgba(0,0,0,.06); color: inherit; text-decoration: none; font-size: .82rem; font-weight: 600; max-width: 220px; }
+.mc-att-file svg { width: 16px; height: 16px; flex: 0 0 16px; }
+.mc-att-file span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mc-row.out .mc-att-file { background: rgba(255,255,255,.16); }
+
+/* Composer middle column + pending-upload chips */
+.mc-cmid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.mc-pending { display: flex; flex-wrap: wrap; gap: 6px; }
+.mc-pchip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px; background: #eef2e8; color: #2C3626; font-size: .76rem; font-weight: 600; max-width: 160px; }
+.mc-pchip > span:first-child { flex: 0 0 auto; }
+.mc-pchip button { appearance: none; border: none; background: none; color: #8a8f86; font-size: 1rem; line-height: 1; cursor: pointer; padding: 0 0 0 2px; }
+.mc-pchip.up { opacity: .7; }

@@ -332,24 +332,54 @@
     /* Append a company reply into a booking's chat room — identical row shape to
        admin Inbox _directChatSend (labels.outbound + labels.chat). Requires the
        admin token (rest.php gates inbox_messages writes to staff). */
-    sendChat: function (bookingId, text, ref, custEmail) {
+    sendChat: function (bookingId, text, ref, custEmail, attachments) {
       var uuid = (crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now() + '-' + Math.random().toString(16).slice(2));
+      var atts = (attachments || []).map(function (a) { return { path: a.path, name: a.name, mime: a.mime, size: a.size }; });
+      // Attachment-only message → placeholder body so the admin Inbox card / list
+      // is never blank (mirrors chat.php); the display layer hides this text.
+      var body = text || (atts.length ? '[' + atts.length + '件の添付ファイルを送信しました]' : '');
+      var labels = { outbound: true, chat: true, ref: ref || '' };
+      if (atts.length) labels.attachments = atts;
       var row = {
         id: uuid,
         sender: 'Hello Moving', sender_name: 'Hello Moving',
         email: custEmail || '',
         subject: 'チャット' + (ref ? '（予約番号 ' + ref + '）' : ''),
-        body: text, body_text: text,
+        body: body, body_text: body,
         booking_id: bookingId,
         mailbox: 'contact@hello-moving.com',
         message_id: '<chat-' + uuid + '@hello-moving.com>',
         thread_id: 'chat:' + bookingId,
-        labels: { outbound: true, chat: true, ref: ref || '' },
+        labels: labels,
         is_read: 1, status: 'open',
       };
       return Api.rest({ table: 'inbox_messages', action: 'insert', values: row }).then(function (res) {
         return { ok: !res.error, row: row, error: res.error };
       });
+    },
+
+    /* Chat attachment storage over the existing storage.php (private 'chat'
+       bucket). API-key gated; ops already carries cfg.key. Path is scoped to the
+       booking folder — chat.php / admin inbox enforce the same prefix. */
+    uploadChatFile: function (bookingId, file) {
+      var safe = String(file.name || 'file').replace(/[^\w.\-]+/g, '_').slice(-80) || 'file';
+      var path = bookingId + '/' + Date.now() + '-' + safe;
+      var fd = new FormData();
+      fd.append('bucket', 'chat'); fd.append('path', path); fd.append('file', file);
+      var h = {};
+      if (cfg.key) h['X-API-KEY'] = cfg.key;
+      if (window.__HM_ADMIN_TOKEN) h['X-ADMIN-TOKEN'] = window.__HM_ADMIN_TOKEN;
+      return fetch(cfg.base + '/storage.php?action=upload', { method: 'POST', headers: h, body: fd })
+        .then(function (r) { return r.json().catch(function () { return null; }); })
+        .then(function (j) {
+          if (!j || !j.ok || !j.data) return { ok: false, error: (j && j.error && (j.error.message || j.error)) || 'upload failed' };
+          return { ok: true, path: j.data.path, mime: j.data.mime || file.type || '', size: j.data.size || file.size || 0, name: file.name || 'file' };
+        })
+        .catch(function () { return { ok: false, error: 'network' }; });
+    },
+    signChatFile: function (path, ttl) {
+      return Api.getJSON('storage.php', { action: 'sign', bucket: 'chat', path: path, ttl: ttl || 600 })
+        .then(function (j) { return (j && j.ok && j.data && j.data.signedUrl) || null; });
     },
 
     /* Calendar / availability --------------------------------------------- */
