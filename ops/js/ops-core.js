@@ -146,8 +146,13 @@
       time: e.time || '',
       workers: e.workers || '',
       items: e.items ? e.items.split('|').filter(Boolean) : [],
-      status: BK_TO_LOCAL[r.status] || '新規',
-      statusRaw: r.status || 'pending',
+      // Production stores status inconsistently — some rows English (pending),
+      // some already Japanese (確定 / キャンセル). Tolerate BOTH: map English→JP,
+      // pass a known Japanese label through unchanged, else default to 新規.
+      // statusRaw is normalized back to the canonical English DB form regardless
+      // of how the row was stored, so status-change detection stays consistent.
+      status: BK_TO_LOCAL[r.status] || (BK_TO_DB[r.status] ? r.status : '新規'),
+      statusRaw: BK_TO_DB[r.status] || r.status || 'pending',
       notes: u.userNotes || '',
       createdAt: r.created_at || '',
       startAt: r.start_at || null,
