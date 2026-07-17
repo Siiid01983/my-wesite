@@ -1,0 +1,178 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   messages.css — M4 Chat / Message Center (/ops/messages.html + message.html)
+
+   Mobile-first, native-app feel: clean white surface, green accent, green active
+   tab underline, rounded bubbles, soft shadows. Additive — namespaced `.mc-*`,
+   reuses ops.css tokens/chrome. Bottom navigation is untouched.
+   ════════════════════════════════════════════════════════════════════════════ */
+:root {
+  --mc-green: #2C3626;
+  --mc-sage: #9AB57A;
+  --mc-line: #ececea;
+  --mc-ink: #1f241b;
+  --mc-mut: #8a8f86;
+  --mc-in-bg: #ffffff;
+  --mc-out-bg: #2C3626;
+  --mc-shadow: 0 1px 3px rgba(31, 36, 27, .08);
+}
+
+/* ── Search ─────────────────────────────────────────────────────────────── */
+.mc-search { position: relative; margin: 2px 0 12px; }
+.mc-search svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--mc-mut); }
+.mc-search input {
+  width: 100%; box-sizing: border-box; padding: 12px 14px 12px 42px;
+  border: 1px solid var(--mc-line); border-radius: 14px; background: #fff;
+  font: inherit; font-size: .95rem; color: var(--mc-ink); -webkit-appearance: none;
+}
+.mc-search input:focus { outline: none; border-color: var(--mc-sage); box-shadow: 0 0 0 3px rgba(154, 181, 122, .18); }
+
+/* ── Tabs (green active underline) ──────────────────────────────────────── */
+.mc-tabs {
+  display: flex; gap: 4px; margin: 0 -4px 14px; padding: 0 4px 2px;
+  border-bottom: 1px solid var(--mc-line); overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+.mc-tab {
+  flex: 0 0 auto; appearance: none; background: none; border: none;
+  padding: 10px 12px 12px; font: inherit; font-size: .9rem; font-weight: 600;
+  color: var(--mc-mut); position: relative; cursor: pointer; white-space: nowrap;
+}
+.mc-tab.active { color: var(--mc-green); }
+.mc-tab.active::after {
+  content: ''; position: absolute; left: 10px; right: 10px; bottom: -1px;
+  height: 3px; border-radius: 3px 3px 0 0; background: var(--mc-sage);
+}
+.mc-tab .mc-tabn {
+  display: inline-block; min-width: 18px; margin-left: 5px; padding: 1px 6px;
+  border-radius: 999px; background: #eef2e8; color: var(--mc-green);
+  font-size: .72rem; font-weight: 700; vertical-align: 1px;
+}
+.mc-tab.active .mc-tabn { background: var(--mc-sage); color: #fff; }
+
+/* ── Conversation cards ─────────────────────────────────────────────────── */
+.mc-list { display: flex; flex-direction: column; }
+.mc-conv {
+  display: flex; gap: 12px; align-items: center; text-decoration: none;
+  padding: 13px 6px; border-bottom: 1px solid var(--mc-line); color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.mc-conv:active { background: #f6f7f4; }
+.mc-conv-av {
+  position: relative; flex: 0 0 46px; width: 46px; height: 46px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: #eef2e8; color: var(--mc-green); font-weight: 700; font-size: 1.05rem;
+}
+.mc-conv-av .mc-dot { position: absolute; top: 1px; right: 1px; width: 11px; height: 11px; border-radius: 50%; background: var(--mc-sage); border: 2px solid #fff; }
+.mc-conv-main { flex: 1; min-width: 0; }
+.mc-conv-top { display: flex; align-items: baseline; gap: 8px; }
+.mc-conv-name { font-weight: 700; font-size: .96rem; color: var(--mc-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+.mc-conv-time { flex: 0 0 auto; font-size: .76rem; color: var(--mc-mut); }
+.mc-conv-ref { font-size: .78rem; color: var(--mc-sage); font-weight: 600; margin: 1px 0; }
+.mc-conv-bottom { display: flex; align-items: center; gap: 8px; }
+.mc-conv-last { flex: 1; min-width: 0; font-size: .86rem; color: var(--mc-mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mc-conv.unread .mc-conv-last { color: var(--mc-ink); font-weight: 500; }
+.mc-badge {
+  flex: 0 0 auto; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box;
+  border-radius: 999px; background: var(--mc-sage); color: #fff;
+  font-size: .74rem; font-weight: 700; display: flex; align-items: center; justify-content: center;
+}
+.mc-count { font-size: .78rem; font-weight: 600; color: var(--mc-mut); margin: 0 2px 10px; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   Conversation detail (message.html) — full-height focused screen, no bottom nav
+   ════════════════════════════════════════════════════════════════════════ */
+.mc-thd {
+  position: fixed; inset: 0; display: flex; flex-direction: column;
+  background: #f7f8f5; z-index: 10;
+}
+.mc-thd-hd {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 10px;
+  padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px 8px;
+  background: var(--mc-green); color: #fff;
+}
+.mc-thd-hd .mc-back {
+  appearance: none; background: rgba(255, 255, 255, .12); border: none; color: #fff;
+  width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.mc-thd-hd .mc-back svg { width: 20px; height: 20px; }
+.mc-thd-hd .mc-hd-av { flex: 0 0 38px; width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,.16); display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.mc-thd-hd .mc-hd-main { flex: 1; min-width: 0; }
+.mc-hd-name { font-weight: 700; font-size: .98rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mc-hd-sub { font-size: .76rem; opacity: .82; }
+.mc-thd-hd .mc-hd-call { appearance: none; background: rgba(255,255,255,.12); border: none; color: #fff; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; }
+.mc-thd-hd .mc-hd-call svg { width: 18px; height: 18px; }
+
+/* Booking summary card */
+.mc-summary {
+  flex: 0 0 auto; margin: 10px 12px 0; padding: 12px 14px; background: #fff;
+  border-radius: 14px; box-shadow: var(--mc-shadow); display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center;
+}
+.mc-summary .mc-s-ref { font-weight: 700; color: var(--mc-green); font-size: .9rem; }
+.mc-summary .mc-s-svc { font-size: .85rem; color: var(--mc-ink); }
+.mc-summary .mc-s-price { font-size: .85rem; color: var(--mc-ink); font-weight: 600; margin-left: auto; }
+
+/* Detail tabs */
+.mc-dtabs { flex: 0 0 auto; display: flex; gap: 4px; margin: 10px 12px 0; border-bottom: 1px solid var(--mc-line); }
+.mc-dtab {
+  appearance: none; background: none; border: none; padding: 9px 14px 11px;
+  font: inherit; font-size: .9rem; font-weight: 600; color: var(--mc-mut); position: relative; cursor: pointer;
+}
+.mc-dtab.active { color: var(--mc-green); }
+.mc-dtab.active::after { content: ''; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0; background: var(--mc-sage); }
+
+/* Scroll region (chat OR booking detail) */
+.mc-body { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.mc-scroll { padding: 14px 12px 18px; }
+
+/* Date separators */
+.mc-day { text-align: center; margin: 14px 0 12px; }
+.mc-day span { display: inline-block; padding: 4px 12px; border-radius: 999px; background: rgba(44, 54, 38, .07); color: var(--mc-mut); font-size: .74rem; font-weight: 600; }
+
+/* Bubbles */
+.mc-row { display: flex; align-items: flex-end; gap: 8px; margin: 6px 0; }
+.mc-row.in { justify-content: flex-start; }
+.mc-row.out { justify-content: flex-end; }
+.mc-row-av { flex: 0 0 30px; width: 30px; height: 30px; border-radius: 50%; background: #eef2e8; color: var(--mc-green); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .82rem; }
+.mc-bubble {
+  max-width: 76%; padding: 9px 13px; border-radius: 18px; font-size: .92rem; line-height: 1.45;
+  word-break: break-word; box-shadow: var(--mc-shadow);
+}
+.mc-row.in .mc-bubble { background: var(--mc-in-bg); color: var(--mc-ink); border: 1px solid var(--mc-line); border-bottom-left-radius: 6px; }
+.mc-row.out .mc-bubble { background: var(--mc-out-bg); color: #fff; border-bottom-right-radius: 6px; }
+.mc-bubble.deleted { font-style: italic; opacity: .6; }
+.mc-meta { display: block; margin-top: 4px; font-size: .68rem; opacity: .7; }
+.mc-row.out .mc-meta { text-align: right; }
+
+/* Booking-detail tab */
+.mc-sec { font-weight: 700; font-size: .82rem; color: var(--mc-green); margin: 16px 2px 8px; }
+.mc-card { background: #fff; border-radius: 14px; box-shadow: var(--mc-shadow); padding: 4px 14px; }
+.mc-kv { display: flex; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--mc-line); font-size: .9rem; }
+.mc-kv:last-child { border-bottom: none; }
+.mc-kv .k { flex: 0 0 92px; color: var(--mc-mut); }
+.mc-kv .v { flex: 1; color: var(--mc-ink); word-break: break-word; }
+.mc-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.mc-chip { display: inline-flex; padding: 7px 12px; border-radius: 999px; background: rgba(154,181,122,.16); border: 1px solid rgba(154,181,122,.42); color: var(--mc-green); font-size: .82rem; font-weight: 600; line-height: 1; }
+.mc-none { margin: 6px 2px; padding: 14px; text-align: center; font-size: .85rem; color: var(--mc-mut); background: rgba(0,0,0,.03); border-radius: 12px; }
+
+/* Composer */
+.mc-composer {
+  flex: 0 0 auto; display: flex; align-items: flex-end; gap: 8px;
+  padding: 8px 10px calc(env(safe-area-inset-bottom, 0px) + 8px);
+  background: #fff; border-top: 1px solid var(--mc-line);
+}
+.mc-composer .mc-attach {
+  appearance: none; background: none; border: none; color: var(--mc-mut);
+  width: 40px; height: 40px; flex: 0 0 40px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.mc-composer .mc-attach svg { width: 22px; height: 22px; }
+.mc-composer textarea {
+  flex: 1; resize: none; max-height: 96px; padding: 10px 14px; border: 1px solid var(--mc-line);
+  border-radius: 20px; font: inherit; font-size: .95rem; line-height: 1.4; background: #f7f8f5; color: var(--mc-ink);
+}
+.mc-composer textarea:focus { outline: none; border-color: var(--mc-sage); background: #fff; }
+.mc-composer .mc-send {
+  appearance: none; border: none; background: var(--mc-sage); color: #fff;
+  width: 42px; height: 42px; flex: 0 0 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.mc-composer .mc-send:disabled { opacity: .5; }
+.mc-composer .mc-send svg { width: 20px; height: 20px; }
+.mc-locked { flex: 0 0 auto; padding: 14px; text-align: center; font-size: .82rem; color: var(--mc-mut); background: #fff; border-top: 1px solid var(--mc-line); }

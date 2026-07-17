@@ -451,7 +451,7 @@
     { key: 'dashboard', href: 'index.html', label: 'ホーム', icon: 'dashboard' },
     { key: 'bookings', href: 'bookings.html', label: '予約', icon: 'bookings' },
     { key: 'customers', href: 'customers.html', label: '顧客', icon: 'customers' },
-    { key: 'chat', href: 'chat.html', label: 'チャット', icon: 'chat' },
+    { key: 'chat', href: 'messages.html', label: 'チャット', icon: 'chat' },
     { key: 'calendar', href: 'calendar.html', label: 'カレンダー', icon: 'calendar' },
   ];
 
