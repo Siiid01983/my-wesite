@@ -1,11 +1,11 @@
 /* ════════════════════════════════════════════════════════════════════════════
-   addressPrivacy.js — shared address-privacy helper (Admin + Customer surfaces)
+   addressPrivacy.js — shared address-privacy helper (staff surfaces)
 
-   Single source of truth for the "full address only after confirmation" rule so
-   the Admin panel (admin-bookings.js) and the customer Portal (portalV2.js) mask
-   identically. The Ops dispatch app (ops/js/ops-core.js) ships the SAME algorithm
-   inline (util.maskAddress / Ops.addrText) — keep the two in sync if either
-   changes. Load this BEFORE the consumer script.
+   Single source of truth for the "full address only after confirmation" rule on
+   the Admin panel (admin-bookings.js). The Ops dispatch app (ops/js/ops-core.js)
+   ships the SAME algorithm inline (util.maskAddress / Ops.addrText) — keep the two
+   in sync if either changes. The customer Portal intentionally does NOT mask (a
+   customer sees their own full address). Load this BEFORE the consumer script.
 
    Rule: before a booking is CONFIRMED (確定) or COMPLETED (完了) only the locality
    is shown — banchi / building / apartment are masked. Privacy-first: an uncertain
