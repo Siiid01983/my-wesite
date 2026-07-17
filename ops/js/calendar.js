@@ -34,6 +34,43 @@
     q: '', status: 'all', staff: 'all', staffOverlay: false, sheet: null,
   };
 
+  /* ── Debug overlay (opt-in via ?debug=1) ──────────────────────────────────
+     Logs the pointer-DnD lifecycle on-screen so a real-device failure can be
+     pinpointed. Zero cost / never rendered unless ?debug=1 is in the URL.
+     BUILD is a marker so you can confirm the device actually loaded THIS file
+     (vs a stale service-worker cache). Bump it whenever calendar.js changes. */
+  var BUILD = 'calendar-2026-07-17-threshold-start';
+  var DBG = /[?&]debug=1(?:&|$)/.test(location.search || '');
+  var _dbgEl = null, _dbgMoveT = 0, _dbgEnvDone = false;
+  function dbg(msg) {
+    if (!DBG) return;
+    try { console.log('[cal] ' + msg); } catch (_) {}
+    if (!_dbgEl) {
+      _dbgEl = document.createElement('div');
+      _dbgEl.id = 'cal-dbg';
+      _dbgEl.style.cssText = 'position:fixed;left:6px;right:6px;bottom:6px;max-height:40vh;overflow:auto;z-index:99999;background:rgba(20,24,18,.94);color:#c8f0a8;font:11px/1.35 ui-monospace,monospace;padding:8px 10px;border-radius:8px;white-space:pre-wrap;-webkit-user-select:text;user-select:text';
+      (document.body || document.documentElement).appendChild(_dbgEl);
+    }
+    var d = new Date();
+    var ts = ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2) + '.' + ('00' + d.getMilliseconds()).slice(-3);
+    _dbgEl.textContent = ts + '  ' + msg + '\n' + _dbgEl.textContent;
+    if (_dbgEl.textContent.length > 6000) _dbgEl.textContent = _dbgEl.textContent.slice(0, 6000);
+  }
+  function dbgTarget(t) {
+    if (!t) return 'NONE';
+    var h = t.getAttribute('data-drop-hour'); if (h != null) return 'hour ' + h;
+    var d = t.getAttribute('data-drop-date'); if (d != null) return 'date ' + d;
+    return t.className || t.tagName;
+  }
+  function dbgEnvOnce() {
+    if (!DBG || _dbgEnvDone) return; _dbgEnvDone = true;
+    dbg('BUILD ' + BUILD);
+    dbg('PointerEvent=' + (typeof window.PointerEvent !== 'undefined') + ' maxTouch=' + (navigator.maxTouchPoints || 0));
+    var card = document.querySelector('.cal-event, .cal-wk-card, .cal-chip-bk');
+    dbg('card touch-action=' + (card ? getComputedStyle(card).touchAction : 'NO CARD RENDERED') + ' view=' + state.view);
+    dbg('tap a booking to test — expect: pointerdown → BEGIN → move → drop → PERSIST');
+  }
+
   /* ── Date helpers ──────────────────────────────────────────────────────── */
   function parse(s) { var p = String(s).split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
   function fmt(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
@@ -215,6 +252,7 @@
     return body + '<div class="cal-hint">' + t('calendar.dragHint') + '</div>';
   }
   function bindDay(host) {
+    dbgEnvOnce();
     host.querySelectorAll('[data-open]').forEach(function (el) {
       el.addEventListener('click', function () { openDetail(el.getAttribute('data-open')); });
       var b = byId(el.getAttribute('data-open'));
@@ -323,6 +361,7 @@
     var pid = e.pointerId;
     function begin() {
       dragging = true; document.body.classList.add('cal-dnd'); el.classList.add('cal-dragging');
+      dbg('BEGIN drag mode=' + mode);
       if (mode !== 'resize') { ghost = el.cloneNode(true); ghost.className += ' cal-ghost'; ghost.style.width = el.offsetWidth + 'px'; document.body.appendChild(ghost); place(sx, sy); }
     }
     function place(x, y) { if (ghost) { ghost.style.left = (x - el.offsetWidth / 2) + 'px'; ghost.style.top = (y - 18) + 'px'; } }
@@ -342,8 +381,9 @@
         begin();
       }
       ev.preventDefault(); place(ev.clientX, ev.clientY); hot(ev.clientX, ev.clientY);
+      if (DBG && Date.now() - _dbgMoveT > 200) { _dbgMoveT = Date.now(); dbg('move dx=' + Math.round(ev.clientX - sx) + ' dy=' + Math.round(ev.clientY - sy)); }
     }
-    function up(ev) { var t = dragging ? dropAt(ev.clientX, ev.clientY, mode) : null; end(t); }
+    function up(ev) { var t = dragging ? dropAt(ev.clientX, ev.clientY, mode) : null; if (DBG) dbg('pointerup dragging=' + dragging + ' target=' + dbgTarget(t)); end(t); }
     function end(target) {
       document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', cancel);
       try { if (pid != null && el.releasePointerCapture) el.releasePointerCapture(pid); } catch (_) {}
@@ -359,7 +399,8 @@
       }
       dragging = false;
     }
-    function cancel() { end(null); }   // pointercancel (e.g. OS gesture) → abort cleanly
+    function cancel() { dbg('POINTERCANCEL → abort (dragging=' + dragging + ')'); end(null); }   // pointercancel (e.g. OS gesture)
+    dbg('pointerdown mode=' + mode + ' pid=' + pid);
     // Capture the pointer up-front (while the element still has pointer-events)
     // so move/up are delivered even once the finger leaves the card.
     try { if (pid != null && el.setPointerCapture) el.setPointerCapture(pid); } catch (_) {}
@@ -386,6 +427,7 @@
       var hr2 = +tgt.getAttribute('data-drop-hour'); eMin = (hr2 + 1) * 60; if (eMin <= sMin) eMin = sMin + 60; setTimes = true;
       if (eMin === cur.eMin) return;
     }
+    dbg('applyDrop mode=' + mode + ' → date=' + newDate + ' ' + min2hm(sMin) + '-' + min2hm(eMin));
     commit(b, newDate, sMin, eMin, setTimes);
   }
 
@@ -403,9 +445,10 @@
     if (setTimes || b.startAt) { if (b.startAt) values.start_at = b.startAt; if (b.endAt) values.end_at = b.endAt; }
     Api.rest({ table: 'bookings', action: 'update', values: values, filters: [{ col: 'id', op: 'eq', val: b.dbId }] }).then(function (res) {
       if (res.error) {
+        dbg('PERSIST FAIL: ' + ((res.error && res.error.message) || 'error'));
         removeBk(b); b.date = prev.date; b.startAt = prev.startAt; b.endAt = prev.endAt; b.time = prev.time; addBk(b);
         renderBody(); UI.toast(t('common.saveFailed') + '：' + ((res.error && res.error.message) || ''));
-      } else { UI.toast(t('calendar.savedBk', { name: b.name })); }
+      } else { dbg('PERSIST OK (booking_date=' + newDate + ')'); UI.toast(t('calendar.savedBk', { name: b.name })); }
     });
   }
 
