@@ -122,6 +122,11 @@ body.cal-dnd .cal-hour-row { background-clip: padding-box; }
 
 /* ── Drag & drop chrome ─────────────────────────────────────────────────── */
 body.cal-dnd .cal-event, body.cal-dnd .cal-chip-bk, body.cal-dnd .cal-wk-card { pointer-events: none; }
+/* Touch drag/resize fix: a pointer gesture that STARTS on a booking must be
+   handled by our pointer-DnD, not hijacked by the browser as a scroll. Only the
+   draggable elements opt out of native gestures; empty timeline/day areas keep
+   normal vertical scrolling. */
+.cal-event, .cal-event .cal-resize, .cal-wk-card, .cal-chip-bk { touch-action: none; }
 .cal-ghost { position: fixed; z-index: 9999; pointer-events: none; opacity: .92; transform: rotate(-1.5deg); box-shadow: 0 8px 24px rgba(0,0,0,.22); max-width: 220px; }
 
 /* ── Detail modal reuse (chips) ─────────────────────────────────────────── */

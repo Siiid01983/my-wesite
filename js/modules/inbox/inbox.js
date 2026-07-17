@@ -299,7 +299,11 @@
       s.textContent =
         '.pchat-stream.ibx-transcript{padding:12px 2px 2px}' +
         '.pchat-stream.ibx-transcript.long{max-height:440px;overflow-y:auto}' +
-        '.ibx-dc{display:flex;gap:8px;margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}' +
+        '.ibx-dc{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}' +
+        '.ibx-dc-attach{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 9px;cursor:pointer;font-size:15px;line-height:1}' +
+        '.ibx-dc-pending{width:100%;display:flex;flex-wrap:wrap;gap:6px}' +
+        '.ibx-dc-pchip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;background:var(--bg);border:1px solid var(--line);font-size:12px}' +
+        '.ibx-dc-pchip button{border:none;background:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0}' +
         '.ibx-dc-input{flex:1;padding:8px 13px;border:1px solid var(--line);border-radius:20px;font-size:13px;background:var(--bg);color:var(--ink)}' +
         '.ibx-dc-input:focus{outline:none;border-color:#06C755}' +
         '.ibx-dc-send{white-space:nowrap;background:#06C755;border-color:#06C755}' +
@@ -428,17 +432,53 @@
   function _directChatBar(t) {
     var bid = _esc(t.latest.booking_id || '');
     return '<div class="ibx-dc" data-booking="' + bid + '">' +
+      '<button class="ibx-dc-attach" type="button" title="添付">📎</button>' +
+      '<input class="ibx-dc-file" type="file" accept="image/*,application/pdf,.doc,.docx" multiple hidden>' +
       '<input class="ibx-dc-input" type="text" maxlength="2000" placeholder="チャットで返信（メール送信なし・アプリ内チャットに表示）…">' +
       '<button class="btn btn-primary btn-sm ibx-dc-send" type="button">チャット送信</button>' +
+      '<div class="ibx-dc-pending" style="display:none"></div>' +
       '</div>';
   }
+  // Direct Chat attachments: upload to the private 'chat' bucket (booking-scoped
+  // path), keep validated metadata in _dcPending until send. Reuses the existing
+  // window.api.storage seam; storage.php enforces MIME/size.
+  var _dcPending = {};   // bookingId -> [{path,name,mime,size} | {name,uploading}]
+  function _dcUpload(bar, files) {
+    if (!bar || !files || !window.api || !window.api.storage) return;
+    var bid = bar.getAttribute('data-booking'); if (!bid) return;
+    var list = _dcPending[bid] || (_dcPending[bid] = []);
+    Array.prototype.slice.call(files).forEach(function (f) {
+      if (list.length >= 10) return;
+      var tok = { name: f.name, uploading: true }; list.push(tok); _dcRenderPending(bar);
+      var safe = String(f.name || 'file').replace(/[^\w.\-]+/g, '_').slice(-80) || 'file';
+      var path = bid + '/' + Date.now() + '-' + safe;
+      window.api.storage.from('chat').upload(path, f, { contentType: f.type }).then(function (res) {
+        var i = list.indexOf(tok);
+        if (res && res.error) { if (i >= 0) list.splice(i, 1); _dcRenderPending(bar); _toast('アップロードに失敗しました：' + (res.error.message || '')); return; }
+        if (i >= 0) list[i] = { path: path, name: f.name, mime: f.type || '', size: f.size || 0 };
+        _dcRenderPending(bar);
+      });
+    });
+  }
+  function _dcRenderPending(bar) {
+    var host = bar && bar.querySelector('.ibx-dc-pending'); if (!host) return;
+    var list = _dcPending[bar.getAttribute('data-booking')] || [];
+    host.innerHTML = list.map(function (a, i) {
+      return '<span class="ibx-dc-pchip">' + _esc(a.name) + (a.uploading ? ' …' : '<button type="button" data-rm="' + i + '">×</button>') + '</span>';
+    }).join('');
+    host.style.display = list.length ? 'flex' : 'none';
+  }
+
   async function _directChatSend(btn) {
     var bar = btn.closest && btn.closest('.ibx-dc');
     if (!bar || !window.api) return;
     var input = bar.querySelector('.ibx-dc-input');
     var text = (input && input.value || '').trim();
     var bookingId = bar.getAttribute('data-booking');
-    if (!text || !bookingId) return;
+    var pend = _dcPending[bookingId] || [];
+    var atts = pend.filter(function (a) { return a.path && !a.uploading; });
+    if (pend.some(function (a) { return a.uploading; })) { _toast('アップロード中です'); return; }
+    if ((!text && !atts.length) || !bookingId) return;
 
     var custEmail = '', ref = '';
     _messages.forEach(function (m) {
@@ -449,23 +489,27 @@
     if (!ref) ref = _refMap[bookingId] || '';
 
     btn.disabled = true;
+    var body = text || ('[' + atts.length + '件の添付ファイルを送信しました]');
+    var labels = { outbound: true, chat: true, ref: ref };
+    if (atts.length) labels.attachments = atts.map(function (a) { return { path: a.path, name: a.name, mime: a.mime, size: a.size }; });
     var row = {
       id: _uuid(),
       sender: 'Hello Moving', sender_name: 'Hello Moving',
       email: custEmail || '',
       subject: 'チャット' + (ref ? '（予約番号 ' + ref + '）' : ''),
-      body: text, body_text: text,
+      body: body, body_text: body,
       booking_id: bookingId,
       mailbox: 'contact@hello-moving.com',
       message_id: '<chat-' + _uuid() + '@hello-moving.com>',
       thread_id: 'chat:' + bookingId,
-      labels: { outbound: true, chat: true, ref: ref },
+      labels: labels,
       is_read: 1, status: 'open',
     };
     var res = await window.api.from('inbox_messages').insert(row);
     btn.disabled = false;
     if (res && res.error) { _toast('送信に失敗しました：' + res.error.message); return; }
     if (input) input.value = '';
+    _dcPending[bookingId] = []; _dcRenderPending(bar);
     // Optimistic append (matches the inbox's optimistic write pattern; the poll
     // reconciles). Give it timestamps so it sorts to the bottom of the thread.
     var now = new Date().toISOString();
@@ -1271,8 +1315,18 @@
     if (md) { e.preventDefault(); _deleteMediaAdmin(md.getAttribute('data-ibx-delmid'), md.getAttribute('data-ibx-delmedia'), md); return; }
     var del = e.target.closest('[data-ibx-del]');   // text bubble corner trash + legacy
     if (del) { _ibxDeleteMsg(del.getAttribute('data-ibx-del')); return; }
+    var att = e.target.closest('.ibx-dc-attach');
+    if (att) { var bar0 = att.closest('.ibx-dc'); var f0 = bar0 && bar0.querySelector('.ibx-dc-file'); if (f0) f0.click(); return; }
+    var rm = e.target.closest('.ibx-dc-pchip [data-rm]');
+    if (rm) { var bar1 = rm.closest('.ibx-dc'); var list1 = _dcPending[bar1.getAttribute('data-booking')] || []; list1.splice(+rm.getAttribute('data-rm'), 1); _dcRenderPending(bar1); return; }
     var send = e.target.closest('.ibx-dc-send');
     if (send) { _directChatSend(send); return; }
+  });
+  document.addEventListener('change', function (e) {
+    var f = e.target.closest && e.target.closest('.ibx-dc-file');
+    if (!f) return;
+    var bar = f.closest('.ibx-dc');
+    _dcUpload(bar, f.files); f.value = '';
   });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('ibx-dc-input')) {

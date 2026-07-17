@@ -17,6 +17,7 @@ window.PortalV2 = (function () {
   var PER = 10;
   var _page = 1, _total = 0, _session = null, _panel = null, _obs = null;
   var _detail = null, _rebookPayload = null;
+  var _msgBookingId = '', _pvPending = [];   // chat attachments (customer)
 
   function isEnabled() { return window.CUSTOMER_PORTAL_V2_ENABLED === true; }
   function _base()     { return (window.API_BASE || '').replace(/\/+$/, ''); }
@@ -203,32 +204,76 @@ window.PortalV2 = (function () {
     } catch (e) { out = null; }
     host = _panel && _panel.querySelector('.pv2-msg-body'); if (!host) return;
     if (!out || !out.ok || !out.data) { host.innerHTML = '<div class="pv2-note pv2-err">メッセージを読み込めませんでした。</div>'; return; }
+    _msgBookingId = String(out.data.booking_id || '');   // needed to scope attachment uploads
     var msgs = out.data.messages || [];
     var listHtml = msgs.length
       ? '<div class="pv2-msg-list">' + msgs.map(function (m) {
           var mine = m.sender_type === 'customer' || m.direction === 'in' || m.direction === 'inbound';
           return '<div class="pv2-bubble ' + (mine ? 'mine' : 'them') + '">' +
             '<div class="pv2-bubble-meta">' + esc(m.sender_name || (mine ? 'あなた' : 'Hello Moving')) + ' · ' + fmtCreated(m.created || m.created_at) + '</div>' +
-            '<div class="pv2-bubble-text">' + esc(m.text || m.body || '') + '</div></div>';
+            _pvAttHtml(m.attachments) +
+            (m.text || m.body ? '<div class="pv2-bubble-text">' + esc(m.text || m.body || '') + '</div>' : '') + '</div>';
         }).join('') + '</div>'
       : '<div class="pv2-empty"><p class="pv2-empty-msg">まだメッセージはありません</p></div>';
     host.innerHTML = listHtml +
       '<div class="pv2-msg-compose">' +
-        '<textarea class="pv2-msg-input" rows="2" placeholder="メッセージを入力…"></textarea>' +
-        '<button class="pv2-msg-send">送信</button>' +
+        '<div class="pv2-msg-pending" style="display:none"></div>' +
+        '<div class="pv2-msg-row">' +
+          '<button class="pv2-msg-attach" type="button" title="添付（Attach）">📎</button>' +
+          '<input class="pv2-msg-file" type="file" accept="image/*,application/pdf,.doc,.docx" multiple hidden>' +
+          '<textarea class="pv2-msg-input" rows="2" placeholder="メッセージを入力…"></textarea>' +
+          '<button class="pv2-msg-send">送信</button>' +
+        '</div>' +
       '</div>';
+    _pvRenderPending();
     var listEl = host.querySelector('.pv2-msg-list'); if (listEl) listEl.scrollTop = listEl.scrollHeight;
+  }
+  // Attachments come from chat.php with a ready signed `url`.
+  function _pvAttHtml(atts) {
+    if (!atts || !atts.length) return '';
+    return '<div class="pv2-atts">' + atts.map(function (a) {
+      if (/^image\//.test(a.mime || '')) return '<a class="pv2-att-img" href="' + esc(a.url) + '" target="_blank" rel="noopener"><img src="' + esc(a.url) + '" alt="' + esc(a.name) + '"></a>';
+      return '<a class="pv2-att-file" href="' + esc(a.url) + '" target="_blank" rel="noopener" download>' + esc(a.name) + '</a>';
+    }).join('') + '</div>';
+  }
+  function _pvRenderPending() {
+    var host = _panel && _panel.querySelector('.pv2-msg-pending'); if (!host) return;
+    host.innerHTML = _pvPending.map(function (a, i) {
+      return '<span class="pv2-pchip">' + esc(a.name) + (a.uploading ? ' …' : '<button type="button" data-pvrm="' + i + '">×</button>') + '</span>';
+    }).join('');
+    host.style.display = _pvPending.length ? 'flex' : 'none';
+  }
+  function _pvUpload(files) {
+    var sb = window.api;
+    if (!sb || !sb.storage || !_msgBookingId || !files) return;
+    Array.prototype.slice.call(files).forEach(function (f) {
+      if (_pvPending.length >= 10) return;
+      var tok = { name: f.name, uploading: true }; _pvPending.push(tok); _pvRenderPending();
+      var dot = (f.name || '').lastIndexOf('.'); var ext = dot > 0 ? f.name.slice(dot + 1).toLowerCase().replace(/[^a-z0-9]/g, '') : 'dat';
+      var path = _msgBookingId + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+      sb.storage.from('chat').upload(path, f, { contentType: f.type, upsert: false }).then(function (res) {
+        var i = _pvPending.indexOf(tok);
+        if (res && res.error) { if (i >= 0) _pvPending.splice(i, 1); _pvRenderPending(); return; }
+        if (i >= 0) _pvPending[i] = { path: path, name: f.name, mime: f.type || '', size: f.size || 0 };
+        _pvRenderPending();
+      });
+    });
   }
   async function _sendMessage() {
     var host = _panel && _panel.querySelector('.pv2-msg-body'); var ta = host && host.querySelector('.pv2-msg-input');
-    if (!ta) return; var text = ta.value.trim(); if (!text) return;
+    if (!ta) return;
+    var text = ta.value.trim();
+    var atts = _pvPending.filter(function (a) { return a.path && !a.uploading; });
+    if ((!text && !atts.length) || _pvPending.some(function (a) { return a.uploading; })) return;
     ta.disabled = true;
     try {
       await fetch(_base() + '/chat.php?action=send', {
         method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, _key()),
-        body: JSON.stringify({ email: _session.email, reference: _session.ref, message: text })
+        body: JSON.stringify({ email: _session.email, reference: _session.ref, message: text,
+          attachments: atts.map(function (a) { return { path: a.path, name: a.name, mime: a.mime, size: a.size }; }) })
       });
     } catch (e) {}
+    _pvPending = [];
     await renderMessages();
   }
 
@@ -257,8 +302,16 @@ window.PortalV2 = (function () {
       if (t.classList && t.classList.contains('pv2-prev') && !t.disabled) { renderHistory(_page - 1); return; }
       if (t.classList && t.classList.contains('pv2-next') && !t.disabled) { renderHistory(_page + 1); return; }
       if (t.classList && t.classList.contains('pv2-msg-send')) { _sendMessage(); return; }
+      if (t.closest && t.closest('.pv2-msg-attach')) { var f = _panel.querySelector('.pv2-msg-file'); if (f) f.click(); return; }
+      var rm = t.closest ? t.closest('.pv2-pchip [data-pvrm]') : null;
+      if (rm) { _pvPending.splice(+rm.getAttribute('data-pvrm'), 1); _pvRenderPending(); return; }
       var row = t.closest ? t.closest('.pv2-row') : null;
       if (row && row.getAttribute('data-ref')) _openDetail(row.getAttribute('data-ref'));
+    });
+    _panel.addEventListener('change', function (e) {
+      var f = e.target.closest && e.target.closest('.pv2-msg-file');
+      if (!f) return;
+      _pvUpload(f.files); f.value = '';
     });
     _panel.addEventListener('keydown', function (e) {
       if (e.key !== 'Enter') return;

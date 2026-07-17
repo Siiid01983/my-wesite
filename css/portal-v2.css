@@ -224,3 +224,15 @@
 }
 .pv2 .pv2-msg-send:hover { opacity: .92; }
 .pv2 .pv2-messages .pv2-empty { border: none; }
+
+/* ── Chat attachments (customer) ─────────────────────────────────────────── */
+.pv2-atts { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.pv2-att-img { display: block; width: 150px; max-width: 60vw; border-radius: 10px; overflow: hidden; }
+.pv2-att-img img { display: block; width: 100%; height: auto; max-height: 220px; object-fit: cover; }
+.pv2-att-file { display: inline-flex; align-items: center; padding: 8px 11px; border-radius: 10px; background: rgba(0,0,0,.06); color: inherit; text-decoration: none; font-size: .82rem; font-weight: 600; }
+.pv2-msg-row { display: flex; align-items: flex-end; gap: 8px; }
+.pv2-msg-row .pv2-msg-input { flex: 1; }
+.pv2-msg-attach { background: none; border: 1px solid var(--pv2-line, #ddd); border-radius: 8px; padding: 6px 9px; cursor: pointer; font-size: 15px; line-height: 1; }
+.pv2-msg-pending { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.pv2-pchip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px; background: rgba(0,0,0,.05); font-size: 12px; }
+.pv2-pchip button { border: none; background: none; cursor: pointer; color: #888; font-size: 14px; padding: 0 0 0 2px; }

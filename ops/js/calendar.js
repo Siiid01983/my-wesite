@@ -320,8 +320,11 @@
   }
   function dragSession(e, el, b, mode) {
     var sx = e.clientX, sy = e.clientY, dragging = false, ghost = null, hold;
+    var pid = e.pointerId;
     function begin() {
       dragging = true; document.body.classList.add('cal-dnd'); el.classList.add('cal-dragging');
+      // Keep receiving move/up even if the finger drifts off the element.
+      try { if (pid != null && el.setPointerCapture) el.setPointerCapture(pid); } catch (_) {}
       if (mode !== 'resize') { ghost = el.cloneNode(true); ghost.className += ' cal-ghost'; ghost.style.width = el.offsetWidth + 'px'; document.body.appendChild(ghost); place(sx, sy); }
     }
     function place(x, y) { if (ghost) { ghost.style.left = (x - el.offsetWidth / 2) + 'px'; ghost.style.top = (y - 18) + 'px'; } }
@@ -336,7 +339,9 @@
     }
     function up(ev) { var t = dragging ? dropAt(ev.clientX, ev.clientY, mode) : null; end(t); }
     function end(target) {
-      clearTimeout(hold); document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up);
+      clearTimeout(hold);
+      document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', cancel);
+      try { if (pid != null && el.releasePointerCapture) el.releasePointerCapture(pid); } catch (_) {}
       if (ghost) ghost.remove();
       document.body.classList.remove('cal-dnd'); el.classList.remove('cal-dragging'); clearHot();
       if (dragging) {
@@ -349,9 +354,11 @@
       }
       dragging = false;
     }
+    function cancel() { end(null); }   // pointercancel (e.g. OS gesture) → abort cleanly
     hold = setTimeout(begin, 200);
     document.addEventListener('pointermove', move, { passive: false });
     document.addEventListener('pointerup', up);
+    document.addEventListener('pointercancel', cancel);
   }
   function dropAt(x, y, mode) {
     var el = document.elementFromPoint(x, y);
