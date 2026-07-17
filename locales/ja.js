@@ -176,4 +176,7 @@ window.LOCALES.ja = {
   "util.minAgo": "{n}分前",
   "util.hourAgo": "{n}時間前",
   "util.dayAgo": "{n}日前",
+  "privacy.hidden": "住所の詳細は予約確定後に表示されます",
+  "privacy.mapFrom": "出発地をマップで開く",
+  "privacy.mapTo": "到着地をマップで開く",
 };

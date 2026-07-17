@@ -287,14 +287,14 @@
   function detailTabHtml(c) {
     var b = c.booking;
     if (!b) return '<div class="mc-scroll"><p class="mc-none">' + t('calendar.noBookingLinked') + '</p></div>';
-    var addr = (kv(t('customers.currentAddr'), b.fromAddr) + kv(t('customers.destAddr'), b.toAddr)) || '<p class="mc-none" style="margin:6px 0">' + t('customers.noAddr') + '</p>';
+    var addr = (kv(t('customers.currentAddr'), Ops.addrText(b, 'from')) + kv(t('customers.destAddr'), Ops.addrText(b, 'to'))) || '<p class="mc-none" style="margin:6px 0">' + t('customers.noAddr') + '</p>';
     return '<div class="mc-scroll">' +
       '<div class="mc-sec">' + t('customers.customerInfo') + '</div>' +
       '<div class="mc-card">' + kv(t('customers.name'), b.name ? b.name + t('common.honorific') : '') + kv(t('bookings.phone'), b.phone) + kv(t('bookings.email'), b.email) + '</div>' +
       '<div class="mc-sec">' + t('chat.moving') + '</div>' +
       '<div class="mc-card">' + kv(t('bookings.service'), b.service) + kv(t('bookings.moveDate'), U.fmtDateFull(b.date)) + (b.time ? kv(t('bookings.timeSlot'), b.time) : '') + kv(t('common.status'), t('status.' + Ops.toDbStatus(b.status))) + '</div>' +
       '<div class="mc-sec">' + t('customers.addresses') + '</div>' +
-      '<div class="mc-card">' + addr + '</div>' +
+      '<div class="mc-card">' + addr + '</div>' + Ops.addrExtraHtml(b) +
       '<div class="mc-sec">' + t('furniture.title') + '</div>' +
       inventoryHtml(b.items) +
     '</div>';

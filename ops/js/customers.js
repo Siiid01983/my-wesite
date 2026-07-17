@@ -219,7 +219,8 @@
         (b.time ? kv(t('bookings.timeSlot'), b.time) : '') +
         kv(t('common.status'), t('status.' + Ops.toDbStatus(b.status)))) +
 
-      section(t('customers.addresses'), (kv(t('customers.currentAddr'), b.fromAddr) + kv(t('customers.destAddr'), b.toAddr)) || '<p class="cust-none" style="margin:6px 0">' + t('customers.noAddr') + '</p>') +
+      section(t('customers.addresses'), (kv(t('customers.currentAddr'), Ops.addrText(b, 'from')) + kv(t('customers.destAddr'), Ops.addrText(b, 'to'))) || '<p class="cust-none" style="margin:6px 0">' + t('customers.noAddr') + '</p>') +
+      Ops.addrExtraHtml(b) +
 
       ((b.notes || b.internalNotes)
         ? section(t('customers.memo'), kv(t('customers.custMemo'), b.notes) + kv(t('customers.internalMemo'), b.internalNotes))
