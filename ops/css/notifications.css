@@ -1,0 +1,78 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   notifications.css — M6 Notification Center (/ops/notifications.html)
+
+   Mobile-first center over the shared Ops.Notify store: tabs, filters, search,
+   type icons, priority indicator, detail modal, settings sheet. Additive,
+   namespaced .nc-* / .ntype-*; reuses ops.css chrome. White cards, green accent.
+   ════════════════════════════════════════════════════════════════════════════ */
+:root {
+  --nc-green: #2C3626; --nc-sage: #9AB57A; --nc-line: #ececea;
+  --nc-ink: #1f241b; --nc-mut: #8a8f86; --nc-shadow: 0 1px 3px rgba(31,36,27,.08);
+  --nc-high: #D9534F;
+}
+
+/* Tabs (green active underline) */
+.nc-tabs { display: flex; gap: 2px; margin: 0 -4px 12px; padding: 0 4px; border-bottom: 1px solid var(--nc-line); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.nc-tab { flex: 0 0 auto; appearance: none; background: none; border: none; padding: 10px 12px 12px; font: inherit; font-size: .88rem; font-weight: 600; color: var(--nc-mut); position: relative; cursor: pointer; white-space: nowrap; }
+.nc-tab.active { color: var(--nc-green); }
+.nc-tab.active::after { content: ''; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0; background: var(--nc-sage); }
+.nc-tab .nc-tn { display: inline-block; min-width: 17px; margin-left: 5px; padding: 1px 6px; border-radius: 999px; background: #eef2e8; color: var(--nc-green); font-size: .7rem; font-weight: 700; }
+.nc-tab.active .nc-tn { background: var(--nc-sage); color: #fff; }
+
+/* Toolbar */
+.nc-search { position: relative; margin: 0 0 10px; }
+.nc-search svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); width: 17px; height: 17px; color: var(--nc-mut); }
+.nc-search input { width: 100%; box-sizing: border-box; padding: 11px 13px 11px 40px; border: 1px solid var(--nc-line); border-radius: 13px; font: inherit; font-size: .93rem; -webkit-appearance: none; }
+.nc-search input:focus { outline: none; border-color: var(--nc-sage); }
+.nc-bar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 0 0 12px; }
+.nc-chip { appearance: none; border: 1px solid var(--nc-line); background: #fff; padding: 7px 12px; border-radius: 999px; font: inherit; font-size: .78rem; font-weight: 600; color: var(--nc-mut); cursor: pointer; }
+.nc-chip.active { background: var(--nc-green); border-color: var(--nc-green); color: #fff; }
+.nc-bar .sp { flex: 1; }
+.nc-iconbtn { appearance: none; border: 1px solid var(--nc-line); background: #fff; width: 36px; height: 36px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; color: var(--nc-green); cursor: pointer; }
+.nc-iconbtn svg { width: 18px; height: 18px; }
+
+/* Cards */
+.nc-list { display: flex; flex-direction: column; gap: 8px; }
+.nc-card { display: flex; gap: 12px; align-items: flex-start; background: #fff; border: 1px solid var(--nc-line); border-radius: 14px; padding: 12px 13px; box-shadow: var(--nc-shadow); cursor: pointer; position: relative; -webkit-tap-highlight-color: transparent; }
+.nc-card:active { background: #f7f8f5; }
+.nc-card.unread { border-left: 3px solid var(--nc-sage); }
+.nc-card.high { border-left: 3px solid var(--nc-high); }
+.nc-ico { flex: 0 0 40px; width: 40px; height: 40px; border-radius: 11px; display: flex; align-items: center; justify-content: center; }
+.nc-ico svg { width: 20px; height: 20px; }
+.nc-main { flex: 1; min-width: 0; }
+.nc-top { display: flex; align-items: baseline; gap: 8px; }
+.nc-title { font-weight: 700; font-size: .92rem; color: var(--nc-ink); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nc-time { flex: 0 0 auto; font-size: .74rem; color: var(--nc-mut); }
+.nc-desc { font-size: .84rem; color: var(--nc-mut); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.nc-card.unread .nc-desc { color: var(--nc-ink); }
+.nc-pri { display: inline-block; margin-top: 5px; padding: 1px 8px; border-radius: 999px; background: #f8dedd; color: var(--nc-high); font-size: .68rem; font-weight: 700; }
+.nc-dot { position: absolute; top: 12px; right: 12px; width: 9px; height: 9px; border-radius: 50%; background: var(--nc-sage); }
+
+/* Type icon palettes */
+.ntype-booking  { background: #e7f0fc; color: #3B82C4; }
+.ntype-update   { background: #fbf1dd; color: #C08A2E; }
+.ntype-status   { background: #fbf1dd; color: #C08A2E; }
+.ntype-cancel   { background: #fbe7e5; color: #D9534F; }
+.ntype-message  { background: #e4f3ea; color: #5E9A46; }
+.ntype-reminder { background: #eef0fb; color: #6A6FC4; }
+.ntype-calendar { background: #e7f0fc; color: #3B82C4; }
+.ntype-system   { background: #ecedea; color: #6b7168; }
+
+/* Detail / settings sheets reuse ops.sheet; local bits */
+.nc-kv { display: flex; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--nc-line); font-size: .9rem; }
+.nc-kv:last-child { border-bottom: none; }
+.nc-kv .k { flex: 0 0 96px; color: var(--nc-mut); }
+.nc-kv .v { flex: 1; color: var(--nc-ink); word-break: break-word; }
+.nc-set-row { display: flex; align-items: center; gap: 12px; padding: 13px 2px; border-bottom: 1px solid var(--nc-line); }
+.nc-set-row:last-child { border-bottom: none; }
+.nc-set-row .l { flex: 1; }
+.nc-set-row .l b { display: block; font-size: .92rem; color: var(--nc-ink); }
+.nc-set-row .l span { font-size: .78rem; color: var(--nc-mut); }
+/* iOS-style switch */
+.nc-sw { position: relative; flex: 0 0 46px; width: 46px; height: 28px; }
+.nc-sw input { opacity: 0; width: 0; height: 0; }
+.nc-sw i { position: absolute; inset: 0; background: #d8dad4; border-radius: 999px; transition: background .18s; }
+.nc-sw i::before { content: ''; position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: transform .18s; }
+.nc-sw input:checked + i { background: var(--nc-sage); }
+.nc-sw input:checked + i::before { transform: translateX(18px); }
+.nc-danger { color: var(--nc-high) !important; }
