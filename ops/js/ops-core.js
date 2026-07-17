@@ -379,13 +379,15 @@
         filters: [{ col: 'id', op: 'eq', val: dbId }],
       });
     },
-    /* POST hm-api/booking-status.php (status + slot reserve/release + customer
-       notification). Normalises its {ok,error} reply to our {data,error} envelope
-       so callers treat it like Api.rest. A 409 surfaces error.code='slot_taken'. */
+    /* POST hm-api/booking-status.php (status + slot reserve/release). Ops confirm/
+       cancel is an internal dispatch action, so notify=false — no customer inbox
+       notification is created (chat/mobile keep the default ON). Normalises its
+       {ok,error} reply to our {data,error} envelope so callers treat it like
+       Api.rest. A 409 surfaces error.code='slot_taken'. */
     setBookingStatus: function (dbId, dbStatus) {
       return fetch(cfg.base + '/booking-status.php', {
         method: 'POST', headers: headers(true),
-        body: JSON.stringify({ booking_id: dbId, status: dbStatus }),
+        body: JSON.stringify({ booking_id: dbId, status: dbStatus, notify: false }),
       })
         .then(function (r) {
           return r.text().then(function (txt) {
