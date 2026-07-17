@@ -284,10 +284,16 @@ self.addEventListener('fetch', event => {
        url.pathname.startsWith('/js/services/') ||
        url.pathname.startsWith('/js/core/')     ||
        url.pathname.startsWith('/js/lib/')      ||
-       url.pathname.startsWith('/js/portal/'))) {
+       url.pathname.startsWith('/js/portal/')   ||
+       url.pathname.startsWith('/ops/'))) {
     /* /js/portal holds the customer portal modules. The SW scope is '/', so an
        admin browser's SW also controls portal.html — these must be network-first
-       too, or a portal module update could be served stale from cache. */
+       too, or a portal module update could be served stale from cache.
+       /ops/ is the staff dispatch app (its own JS/CSS/HTML). It was cache-first,
+       which stranded shipped fixes (e.g. the calendar pointer-DnD fix) on devices
+       that had cached the old file — cache-first never re-hits the network while a
+       copy exists. Staff tooling must always run the latest code, so serve /ops/
+       network-first (cache still updated for offline). */
     event.respondWith(_networkFirst(event.request, STATIC_CACHE));
     return;
   }
