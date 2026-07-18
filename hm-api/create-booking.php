@@ -165,7 +165,13 @@ try {
   // and NO booking row is written. capacity_enabled OFF → byte-for-byte the prior
   // slot-lock behavior (hm_slot_lock_enabled path unchanged).
   $capOn    = hm_capacity_enabled();
-  $lockTime = (hm_slot_lock_enabled() || $capOn) ? hm_slot_time_from_notes($data['notes'] ?? '') : null;
+  // Reservation is DEFERRED to admin confirmation (booking-status.php reserves on
+  // 確定). A customer booking is a REQUEST/PREFERENCE only and must NOT reserve or
+  // block a slot at create time — the booking stays 新規 and the calendar/capacity
+  // are unchanged until an admin confirms. Set 'reserve_on_create' truthy in
+  // _config.php to restore the old create-time locking behaviour.
+  $reserveOnCreate = !empty(hm_config()['reserve_on_create']);
+  $lockTime = ($reserveOnCreate && (hm_slot_lock_enabled() || $capOn)) ? hm_slot_time_from_notes($data['notes'] ?? '') : null;
   $lockBand = $lockTime !== null ? hm_slot_band_id($lockTime) : null;
 
   if ($lockBand !== null) {

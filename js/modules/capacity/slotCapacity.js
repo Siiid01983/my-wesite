@@ -83,6 +83,8 @@ window.SlotCapacity = (function () {
     panel.innerHTML =
       '<div class="panel-head"><span class="panel-title">時間帯別キャパシティ</span>' +
         '<input type="date" id="hmScDate" class="price-input" style="margin-left:auto;width:auto">' +
+        '<button class="btn btn-ghost btn-sm" id="hmScCloseDay" type="button" title="この日を全時間帯休止">全日休止</button>' +
+        '<button class="btn btn-ghost btn-sm" id="hmScReopenDay" type="button" title="この日を全時間帯再開">全日再開</button>' +
         '<button class="btn btn-ghost btn-sm" id="hmScReload" type="button">更新</button>' +
       '</div>' +
       '<div class="panel-body">' +
@@ -97,6 +99,15 @@ window.SlotCapacity = (function () {
     dateEl.value = _today();
     dateEl.onchange = function () { _load(); };
     document.getElementById('hmScReload').onclick = function () { _load(); };
+    document.getElementById('hmScCloseDay').onclick = function () {
+      var r = window.prompt('この日を全時間帯 休止 にします。理由（任意・例: 祝日 / Holiday）', '');
+      if (r === null) return;                                   // cancelled
+      _post({ action: 'close-day', date: _date(), reason: r.trim() }, 'この日を全日休止にしました');
+    };
+    document.getElementById('hmScReopenDay').onclick = function () {
+      if (!window.confirm('この日を全時間帯 再開 しますか？')) return;
+      _post({ action: 'reopen-day', date: _date() }, 'この日を全日再開しました');
+    };
     _load();
     return true;
   }
@@ -128,7 +139,8 @@ window.SlotCapacity = (function () {
       var s = bands[b.id] || { status: 'available', capacity: 1, used: 0, remaining: 1, closed: false };
       var closed = !!s.closed;
       var badge = closed
-        ? '<span class="hm-sc-badge hm-sc-closed">休止 Closed</span>'
+        ? '<span class="hm-sc-badge hm-sc-closed">休止 Closed</span>' +
+          (s.reason ? '<small style="display:block;color:#9ca3af;font-size:11px;margin-top:2px">理由: ' + _esc(s.reason) + '</small>' : '')
         : '<span class="hm-sc-badge hm-sc-open">受付中 Open</span>';
       var remCls = s.remaining <= 0 ? 'hm-sc-full' : (s.status === 'limited' ? 'hm-sc-limited' : '');
       var cap = parseInt(s.capacity, 10) || 0;
@@ -171,7 +183,12 @@ window.SlotCapacity = (function () {
       .catch(function () { _msg('通信エラー', 'error'); });
   }
   function _set(band, cap)      { _post({ action: 'set',    date: _date(), band: band, capacity: cap }, '上限を更新しました'); }
-  function _toggle(band, closed) { _post({ action: closed ? 'reopen' : 'close', date: _date(), band: band }, closed ? '再開しました' : '休止しました'); }
+  function _toggle(band, closed) {
+    if (closed) { _post({ action: 'reopen', date: _date(), band: band }, '再開しました'); return; }
+    var reason = window.prompt('この時間帯を休止にします。理由（任意・例: 祝日 / Holiday）', '');
+    if (reason === null) return;                                // cancelled
+    _post({ action: 'close', date: _date(), band: band, reason: reason.trim() }, '休止しました');
+  }
 
   /* ── boot: mount when the capacity view exists ── */
   function _boot() {
