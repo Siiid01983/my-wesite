@@ -234,17 +234,29 @@
   function _attHtml(m) {
     var atts = _attachmentsOf(m);
     if (!atts.length) return '';
+    var mid = _esc(m.id || '');
+    // Admin override delete button (X in the corner) — deletes ANY attachment.
+    var adel = function (path) {
+      return '<button class="ibx-att-del" title="この添付を削除（管理者）" ' +
+        'onclick="inboxDeleteAttachment(\'' + mid + '\',\'' + _esc(path) + '\')" ' +
+        'style="position:absolute;top:3px;right:3px;width:20px;height:20px;border:none;border-radius:50%;cursor:pointer;background:rgba(11,15,23,.55);color:#fff;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center">×</button>';
+    };
     var items = atts.map(function (a) {
+      // Deleted attachment → placeholder; the message + slot stay (T1).
+      if (a && a.deleted) {
+        return '<span style="display:inline-flex;align-items:center;gap:6px;margin:6px 6px 0 0;padding:7px 11px;border:1px dashed var(--line);border-radius:8px;font-size:12.5px;color:var(--gray-2);font-style:italic">🗑 添付ファイルは削除されました</span>';
+      }
       var path = _esc(a.path || '');
       var name = _esc(a.name || 'ファイル');
       if (/^image\//.test(a.mime || '')) {
-        return '<a class="ibx-att" data-att-path="' + path + '" data-att-kind="img" href="#" target="_blank" rel="noopener" ' +
-          'style="display:inline-block;margin:6px 6px 0 0;vertical-align:top">' +
-          '<img alt="' + name + '" loading="lazy" style="max-width:150px;max-height:170px;border-radius:8px;border:1px solid var(--line);display:block;background:var(--bg-soft-2)"></a>';
+        return '<span style="position:relative;display:inline-block;margin:6px 6px 0 0;vertical-align:top">' +
+          '<a class="ibx-att" data-att-path="' + path + '" data-att-kind="img" href="#" target="_blank" rel="noopener" style="display:inline-block">' +
+          '<img alt="' + name + '" loading="lazy" style="max-width:150px;max-height:170px;border-radius:8px;border:1px solid var(--line);display:block;background:var(--bg-soft-2)"></a>' + adel(a.path || '') + '</span>';
       }
-      return '<a class="ibx-att" data-att-path="' + path + '" data-att-kind="file" href="#" target="_blank" rel="noopener" ' +
-        'style="display:inline-flex;align-items:center;gap:6px;margin:6px 6px 0 0;padding:7px 11px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;color:var(--blue);text-decoration:none">' +
-        '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>' + name + '</a>';
+      return '<span style="position:relative;display:inline-flex;margin:6px 6px 0 0">' +
+        '<a class="ibx-att" data-att-path="' + path + '" data-att-kind="file" href="#" target="_blank" rel="noopener" ' +
+        'style="display:inline-flex;align-items:center;gap:6px;padding:7px 24px 7px 11px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;color:var(--blue);text-decoration:none">' +
+        '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>' + name + '</a>' + adel(a.path || '') + '</span>';
     }).join('');
     return '<div class="ibx-atts" style="margin-top:8px">' + items + '</div>';
   }
@@ -1376,9 +1388,46 @@
     }
   });
 
+  /* ── Admin attachment delete (T1 override) ────────────────
+     Deletes ONE attachment from any chat message via chat.php?action=
+     admin-delete-media (X-ADMIN-TOKEN). The message + bubble stay; the slot shows
+     a placeholder. The server purges the file + writes an attachment_deleted audit
+     entry. Optimistic with revert on failure. */
+  async function inboxDeleteAttachment(id, path) {
+    var m = _byId[id]; if (!m) return;
+    if (!window.confirm('この添付ファイルを削除しますか？\n（元に戻せません）')) return;
+    var labels = _labelsOf(m);
+    var atts = Array.isArray(labels.attachments) ? labels.attachments : [];
+    var prev = JSON.parse(JSON.stringify(atts));
+    var found = false;
+    labels.attachments = atts.map(function (a) {
+      if (!found && !a.deleted && String(a.path || '') === String(path)) { found = true; return { deleted: true, name: a.name || 'file' }; }
+      return a;
+    });
+    if (!found) return;
+    m.labels = labels;                    // optimistic
+    _renderMessages();
+    try {
+      var base = (window.API_BASE || '').replace(/\/$/, '');
+      var res = await fetch(base + '/chat.php?action=admin-delete-media', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-KEY': window.API_KEY || '', 'X-ADMIN-TOKEN': window.__HM_ADMIN_TOKEN || '' },
+        body: JSON.stringify({ id: id, path: path }),
+      });
+      var out = await res.json().catch(function () { return null; });
+      if (!out || !out.ok) throw new Error((out && out.error) || ('HTTP ' + res.status));
+      _toast('添付ファイルを削除しました');
+    } catch (e) {
+      labels.attachments = prev; m.labels = labels;   // revert
+      _renderMessages();
+      _toast('削除に失敗しました：' + (e && e.message || ''));
+    }
+  }
+
   window.renderInbox      = renderInbox;
   window.inboxToggleRead  = inboxToggleRead;
   window.inboxDelete      = inboxDelete;
+  window.inboxDeleteAttachment = inboxDeleteAttachment;
   window.inboxOpenReply   = inboxOpenReply;
   window.inboxSendReply   = inboxSendReply;
   window.inboxCopyReply   = inboxCopyReply;

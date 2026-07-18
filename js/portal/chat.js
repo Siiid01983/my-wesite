@@ -113,6 +113,11 @@
   // `canDelete` (the customer's own media) adds a corner delete control that
   // removes just this one item; `msgId` ties it back to its message.
   function _mediaHtml(a, canDelete, msgId) {
+    // Deleted attachment → keep the bubble, show a placeholder (T1).
+    if (a && a.deleted) {
+      return '<span style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#8a8f82;font-style:italic;padding:4px 2px">'
+           + TRASH_ICON + '<span>添付ファイルは削除されました</span></span>';
+    }
     var del = (canDelete && a.path)
       ? '<button class="pchat-media-del" data-del-media="' + _esc(a.path) + '" data-del-mid="' + _esc(msgId || '') +
         '" title="この画像を削除" aria-label="削除">' + TRASH_ICON + '</button>'
