@@ -47,10 +47,14 @@ if (!function_exists('hm_cap_effective')) {
         time_band    VARCHAR(20) NOT NULL,   -- am|pm|ev|nt
         capacity     INT         NOT NULL DEFAULT 1,
         is_closed    TINYINT(1)  NOT NULL DEFAULT 0,
+        reason       VARCHAR(120) NOT NULL DEFAULT '',   -- closure reason (e.g. Holiday)
         updated_at   TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (booking_date, time_band)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
+    // Additive: add `reason` to a table created before this column existed. Wrapped
+    // so a duplicate-column error (already present) is a harmless no-op.
+    try { $db->exec("ALTER TABLE slot_capacity ADD COLUMN reason VARCHAR(120) NOT NULL DEFAULT ''"); } catch (Throwable $e) { /* column exists */ }
   }
 
   /**
@@ -61,7 +65,7 @@ if (!function_exists('hm_cap_effective')) {
    */
   function hm_cap_effective(PDO $db, string $date, string $band): array {
     try {
-      $st = $db->prepare('SELECT capacity, is_closed FROM slot_capacity WHERE booking_date = ? AND time_band = ? LIMIT 1');
+      $st = $db->prepare('SELECT capacity, is_closed, reason FROM slot_capacity WHERE booking_date = ? AND time_band = ? LIMIT 1');
       $st->execute([$date, $band]);
       $row = $st->fetch(PDO::FETCH_ASSOC);
       $source = 'override';
@@ -71,12 +75,13 @@ if (!function_exists('hm_cap_effective')) {
         $source = 'default';
       }
       if ($row) {
-        return ['capacity' => max(0, (int)$row['capacity']), 'closed' => (bool)(int)$row['is_closed'], 'source' => $source];
+        return ['capacity' => max(0, (int)$row['capacity']), 'closed' => (bool)(int)$row['is_closed'],
+                'reason' => (string)($row['reason'] ?? ''), 'source' => $source];
       }
     } catch (Throwable $e) {
       // table missing / query error → fall through to the back-compat default.
     }
-    return ['capacity' => 1, 'closed' => false, 'source' => 'fallback'];
+    return ['capacity' => 1, 'closed' => false, 'reason' => '', 'source' => 'fallback'];
   }
 
   /** Reserved slot count for a (date, band) — every booking_slots row counts. */
@@ -102,6 +107,7 @@ if (!function_exists('hm_cap_effective')) {
     return [
       'status' => $status, 'capacity' => $cap, 'used' => $used,
       'remaining' => $remaining, 'closed' => $eff['closed'],
+      'reason' => $eff['closed'] ? (string)($eff['reason'] ?? '') : '',
     ];
   }
 
@@ -160,17 +166,22 @@ if (!function_exists('hm_cap_effective')) {
     }
   }
 
-  /** Upsert a capacity/closed setting. $date = 'YYYY-MM-DD' or HM_CAP_DEFAULT ('*'). */
-  function hm_cap_set(PDO $db, string $date, string $band, ?int $capacity, ?bool $closed): void {
+  /** Upsert a capacity/closed setting. $date = 'YYYY-MM-DD' or HM_CAP_DEFAULT ('*').
+   *  $reason: closure reason to store when closing; null keeps the current reason,
+   *  and reopening (closed=false) clears it. */
+  function hm_cap_set(PDO $db, string $date, string $band, ?int $capacity, ?bool $closed, ?string $reason = null): void {
     hm_cap_ensure_table($db);
     $cur = hm_cap_effective($db, $date, $band);
     $cap = $capacity !== null ? max(0, $capacity) : (int)$cur['capacity'];
     $cl  = $closed   !== null ? ($closed ? 1 : 0)  : ($cur['closed'] ? 1 : 0);
+    // Reason: set on close; cleared on reopen; otherwise preserved.
+    $rsn = ($closed === false) ? ''
+         : ($reason !== null ? mb_substr($reason, 0, 120) : (string)($cur['reason'] ?? ''));
     $st = $db->prepare(
-      'INSERT INTO slot_capacity (booking_date, time_band, capacity, is_closed)
-       VALUES (?,?,?,?)
-       ON DUPLICATE KEY UPDATE capacity = VALUES(capacity), is_closed = VALUES(is_closed)'
+      'INSERT INTO slot_capacity (booking_date, time_band, capacity, is_closed, reason)
+       VALUES (?,?,?,?,?)
+       ON DUPLICATE KEY UPDATE capacity = VALUES(capacity), is_closed = VALUES(is_closed), reason = VALUES(reason)'
     );
-    $st->execute([$date, $band, $cap, $cl]);
+    $st->execute([$date, $band, $cap, $cl, $rsn]);
   }
 }

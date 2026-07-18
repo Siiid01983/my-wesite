@@ -117,8 +117,11 @@
      packed notes fallback (pref1/pref2). No new columns. Empty → returns ''. */
   function bandLabel(d, l) {
     var h = d.getHours();
-    if (lang(l) === 'en') return h < 12 ? 'Morning' : h < 15 ? 'Afternoon' : h < 18 ? 'Evening' : 'Night';
-    return h < 12 ? '午前' : h < 15 ? '午後' : h < 18 ? '夕方' : '夜間';
+    var i = h < 12 ? 0 : h < 15 ? 1 : h < 18 ? 2 : 3;
+    // Full time ranges on every surface (Portal / Ops / Admin / Inbox).
+    return (lang(l) === 'en')
+      ? ['Morning (09:00 - 12:00)', 'Afternoon (12:00 - 15:00)', 'Evening (15:00 - 18:00)', 'Night (18:00 - 21:00)'][i]
+      : ['午前（09:00〜12:00）', '午後（12:00〜15:00）', '夕方（15:00〜18:00）', '夜間（18:00〜21:00）'][i];
   }
   function pickPreferred(b) {
     b = b || {};

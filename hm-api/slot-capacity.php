@@ -11,10 +11,12 @@
 //    2. Fallback: admin_setup_token in _config.php as ?token=.  CLI always trusted.
 //
 //  ── Actions (JSON body / GET / POST) ────────────────────────────────────────
-//    get    { date }                     → per-band status for the date + defaults
-//    set    { date, band, capacity }     → set capacity (date='*' sets the default)
-//    close  { date, band }               → close the slot
-//    reopen { date, band }               → reopen the slot
+//    get        { date }                     → per-band status for the date + defaults
+//    set        { date, band, capacity }     → set capacity (date='*' sets the default)
+//    close      { date, band, reason? }      → close the slot (+ optional reason)
+//    reopen     { date, band }               → reopen the slot (clears reason)
+//    close-day  { date, reason? }            → close ALL bands for a date
+//    reopen-day { date }                     → reopen ALL bands for a date
 //        (increase/decrease = set with the new capacity; the UI does +/-.)
 //
 //  ── Response ────────────────────────────────────────────────────────────────
@@ -79,9 +81,10 @@ if (!$isCli) {
 }
 
 $action = strtolower(trim((string)($param('action') ?? 'get')));
-if (!in_array($action, ['get', 'set', 'close', 'reopen'], true)) {
-  sc_out(['ok' => false, 'error' => "invalid action — use 'get', 'set', 'close', or 'reopen'"], $isCli, 400);
+if (!in_array($action, ['get', 'set', 'close', 'reopen', 'close-day', 'reopen-day'], true)) {
+  sc_out(['ok' => false, 'error' => "invalid action — use get|set|close|reopen|close-day|reopen-day"], $isCli, 400);
 }
+$reason = trim((string)($param('reason') ?? ''));
 
 // Date: '*' (defaults) or strict YYYY-MM-DD.
 $date = trim((string)($param('date') ?? ''));
@@ -115,6 +118,17 @@ try {
     sc_out($snapshot($db, $date), $isCli);
   }
 
+  // Whole-day close / reopen — apply to all four bands atomically. A specific
+  // date only ('*' default not allowed here). Reason attaches to every band.
+  if ($action === 'close-day' || $action === 'reopen-day') {
+    if ($date === HM_CAP_DEFAULT) sc_out(['ok' => false, 'error' => "close-day/reopen-day need a specific date"], $isCli, 400);
+    $closing = ($action === 'close-day');
+    foreach (HM_CAP_BANDS as $b) hm_cap_set($db, $date, $b, null, $closing, $closing ? $reason : null);
+    $res = $snapshot($db, $date);
+    $res['action'] = $action;
+    sc_out($res, $isCli);
+  }
+
   // set / close / reopen all need a band.
   $band = strtolower(trim((string)($param('band') ?? '')));
   if (!in_array($band, HM_CAP_BANDS, true)) {
@@ -130,7 +144,7 @@ try {
     }
     hm_cap_set($db, $date, $band, (int)$capRaw, null);
   } elseif ($action === 'close') {
-    hm_cap_set($db, $date, $band, null, true);
+    hm_cap_set($db, $date, $band, null, true, $reason);
   } elseif ($action === 'reopen') {
     hm_cap_set($db, $date, $band, null, false);
   }
