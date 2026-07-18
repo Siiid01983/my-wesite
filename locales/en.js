@@ -75,6 +75,7 @@ window.LOCALES.en = {
   "calendar.allStaff": "All staff", "calendar.staffOverlay": "Group by staff", "calendar.unassigned": "Unassigned",
   "calendar.todayBookings": "Today's bookings", "calendar.pendingReview": "Needs review (pending)",
   "calendar.dragHint": "Long-press to drag → change time / bottom edge to resize", "calendar.noBookingsDay": "No bookings on this day",
+  "calendar.autoJumped": "No bookings today. Showing next scheduled booking date.",
   "calendar.noBookingsRange": "No bookings in this range", "calendar.noBookingLinked": "No booking is linked to this conversation.",
   "calendar.time": "Time", "calendar.staff": "Assigned crew", "calendar.price": "Price",
   "calendar.customer": "Customer", "calendar.editBooking": "Edit booking", "calendar.savedBk": "Updated {name}'s booking",

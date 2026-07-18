@@ -140,3 +140,5 @@ body.cal-dnd .cal-event, body.cal-dnd .cal-chip-bk, body.cal-dnd .cal-wk-card { 
 .cal-furni .f .fx { color: var(--cal-green); font-weight: 700; }
 .cal-none { padding: 14px; text-align: center; font-size: .85rem; color: var(--cal-mut); background: rgba(0,0,0,.03); border-radius: 12px; }
 .cal-hint { text-align: center; font-size: .72rem; color: var(--cal-mut); margin: 8px 0 2px; }
+/* Auto-jump notice: day view opened on the nearest booked date (today was empty). */
+.cal-hint.cal-autojump { color: #2C3626; background: rgba(154, 181, 122, .18); border-radius: 8px; padding: 7px 10px; margin: 2px 0 10px; font-weight: 600; }
