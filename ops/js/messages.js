@@ -30,7 +30,7 @@
     var l = parseLabels(m);
     var out = !!l.outbound;
     var atts = (!l.deleted && Array.isArray(l.attachments))
-      ? l.attachments.map(function (a) { return { path: a.path, name: a.name || 'file', mime: a.mime || '' }; }).filter(function (a) { return a.path; })
+      ? l.attachments.map(function (a) { return a && a.deleted ? { deleted: true, name: a.name || 'file' } : { path: a.path, name: a.name || 'file', mime: a.mime || '' }; }).filter(function (a) { return a.deleted || a.path; })
       : [];
     var text = l.deleted ? '' : (m.body_text || m.body || '');
     if (atts.length && isAttPlaceholder(text)) text = '';   // media-only → hide the placeholder
@@ -261,6 +261,7 @@
   function attsHtml(atts) {
     if (!atts || !atts.length) return '';
     return '<div class="mc-atts">' + atts.map(function (a) {
+      if (a && a.deleted) return '<span class="mc-att-gone" style="display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border:1px dashed var(--ops-line,#e6e7e2);border-radius:8px;font-size:12px;color:var(--ops-muted,#8a8f86);font-style:italic">🗑 添付ファイルは削除されました</span>';
       if (/^image\//.test(a.mime || '')) {
         return '<a class="mc-att-img" data-att="' + U.esc(a.path) + '" target="_blank" rel="noopener" title="' + U.esc(a.name) + '"><img alt="' + U.esc(a.name) + '" /></a>';
       }

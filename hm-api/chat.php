@@ -99,6 +99,49 @@ function chat_purge_files($atts, string $bookingId, array $cfg): void {
   }
 }
 
+// Append an audit_log row (append-only trail). Best-effort: an audit failure must
+// never break the delete. Ensures the table first (idempotent) so it works even
+// before the schema migration has been applied.
+function chat_audit(string $actor, string $action, string $msgId, string $bookingId, array $details): void {
+  try {
+    $db = hm_db();
+    $db->exec(
+      "CREATE TABLE IF NOT EXISTS audit_log (
+        id CHAR(36) NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        actor VARCHAR(191) NOT NULL DEFAULT 'system', action VARCHAR(40) NOT NULL DEFAULT 'other',
+        target_type VARCHAR(40) NOT NULL DEFAULT '-', target_id VARCHAR(191) NOT NULL DEFAULT '',
+        details TEXT, PRIMARY KEY (id), KEY idx_audit_action (action),
+        KEY idx_audit_target (target_type, target_id), KEY idx_audit_actor (actor)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+    );
+    $st = $db->prepare('INSERT INTO audit_log (id, actor, action, target_type, target_id, details) VALUES (?,?,?,?,?,?)');
+    $st->execute([
+      hm_uuid4(), mb_substr($actor, 0, 191), $action, 'inbox_message', mb_substr($msgId, 0, 191),
+      json_encode(array_merge(['booking_id' => $bookingId], $details), JSON_UNESCAPED_UNICODE),
+    ]);
+  } catch (Throwable $e) {
+    hm_log_error('chat audit failed', ['err' => $e->getMessage(), 'action' => $action, 'msg' => $msgId]);
+  }
+}
+
+// Replace the attachment at $path with a "deleted" tombstone — the message bubble
+// and its POSITION are kept; only the file reference (path/mime/size/url) is
+// dropped. Returns [newAttachments, targetOrNull]. Already-deleted markers pass
+// through untouched (idempotent).
+function chat_tombstone_attachment(array $atts, string $path): array {
+  $out = []; $target = null;
+  foreach ($atts as $a) {
+    if (!empty($a['deleted'])) { $out[] = $a; continue; }
+    if ($target === null && (string)($a['path'] ?? '') === $path) {
+      $target = $a;
+      $out[] = ['deleted' => true, 'name' => (string)($a['name'] ?? 'file')];
+    } else {
+      $out[] = $a;
+    }
+  }
+  return [$out, $target];
+}
+
 // Endpoint URL of storage.php on this same install (same dir as chat.php).
 function chat_storage_url(): string {
   $https  = (($_SERVER['HTTPS'] ?? '') === 'on') || (($_SERVER['SERVER_PORT'] ?? '') == 443);
@@ -179,6 +222,12 @@ if ($action === 'list') {
     $atts = [];
     if (!$deleted && !empty($labels['attachments']) && is_array($labels['attachments'])) {
       foreach ($labels['attachments'] as $a) {
+        // A deleted attachment keeps its slot as a placeholder ("Attachment
+        // deleted") — the bubble stays, the file is gone.
+        if (!empty($a['deleted'])) {
+          $atts[] = ['deleted' => true, 'name' => (string)($a['name'] ?? 'file')];
+          continue;
+        }
         $path = (string)($a['path'] ?? '');
         if ($path === '') continue;
         $atts[] = [
@@ -273,10 +322,10 @@ if ($action === 'send') {
 }
 
 // ── action=delete-media ──────────────────────────────────────────────────────
-// Customer deletes ONE image/file from their own message (not the whole message).
-// Scoped by email+reference + this booking's room + own (non-outbound) message.
-// Purges just that file, then updates labels.attachments; if the message has no
-// text and no attachments left, it becomes a tombstone.
+// Customer deletes ONE image/file from their OWN message. The message + bubble
+// are KEPT; the attachment is replaced with an "Attachment deleted" placeholder
+// and the physical file is purged. Ownership: scoped by email+reference to this
+// booking's room and refused on company (outbound) messages. Audited.
 if ($action === 'delete-media') {
   $v         = chat_verify_booking();
   $p         = $v['body'];
@@ -288,7 +337,7 @@ if ($action === 'delete-media') {
 
   try {
     $st = hm_db()->prepare(
-      'SELECT id, body, body_text, labels FROM inbox_messages WHERE id = ? AND booking_id = ? AND thread_id = ? LIMIT 1'
+      'SELECT id, labels FROM inbox_messages WHERE id = ? AND booking_id = ? AND thread_id = ? LIMIT 1'
     );
     $st->execute([$id, $bookingId, $thread]);
     $row = $st->fetch();
@@ -302,43 +351,85 @@ if ($action === 'delete-media') {
   if (!empty($row['labels'])) {
     $labels = is_array($row['labels']) ? $row['labels'] : (json_decode((string)$row['labels'], true) ?: []);
   }
+  // Ownership check — a customer may delete media only on their own (inbound) message.
   if (!empty($labels['outbound'])) hm_json(['ok' => false, 'data' => null, 'error' => 'forbidden'], 403);
 
   $atts = (isset($labels['attachments']) && is_array($labels['attachments'])) ? $labels['attachments'] : [];
-  $remaining = [];
-  $target = null;
-  foreach ($atts as $a) {
-    if ((string)($a['path'] ?? '') === $path) { $target = $a; }
-    else { $remaining[] = $a; }
-  }
+  [$newAtts, $target] = chat_tombstone_attachment($atts, $path);
   if ($target === null) hm_ok(['id' => $id, 'path' => $path, 'removed' => false]);   // idempotent
 
-  chat_purge_files([$target], $bookingId, $cfg);
-
-  $bodyText = (string)($row['body_text'] ?? $row['body'] ?? '');
-  $hasText  = ($bodyText !== '' && !chat_is_placeholder($bodyText));
-
+  chat_purge_files([$target], $bookingId, $cfg);   // remove the physical file
+  $labels['attachments'] = $newAtts;               // keep the message; tombstone the item
   try {
-    if (!$remaining && !$hasText) {
-      // Nothing left → tombstone (keeps thread context).
-      $tomb = ['ref' => (string)($labels['ref'] ?? $v['ref']), 'deleted' => true];
-      $st = hm_db()->prepare('UPDATE inbox_messages SET body = ?, body_text = ?, labels = ? WHERE id = ?');
-      $st->execute(['', '', json_encode($tomb, JSON_UNESCAPED_UNICODE), $id]);
-      hm_cache_invalidate_table('inbox_messages');
-      hm_ok(['id' => $id, 'removed' => true, 'deleted' => true]);
-    }
-    $newLabels = $labels;
-    if ($remaining) $newLabels['attachments'] = array_values($remaining);
-    else unset($newLabels['attachments']);
-    // Media-only message → keep the placeholder body in sync with the new count.
-    $newBody = $hasText ? (string)$row['body'] : ('[' . count($remaining) . '件の添付ファイルを送信しました]');
-    $st = hm_db()->prepare('UPDATE inbox_messages SET body = ?, body_text = ?, labels = ? WHERE id = ?');
-    $st->execute([$newBody, $newBody, json_encode($newLabels, JSON_UNESCAPED_UNICODE), $id]);
+    $st = hm_db()->prepare('UPDATE inbox_messages SET labels = ? WHERE id = ?');
+    $st->execute([json_encode($labels, JSON_UNESCAPED_UNICODE), $id]);
     hm_cache_invalidate_table('inbox_messages');
   } catch (Throwable $e) {
     hm_log_error('chat delete-media failed', ['err' => $e->getMessage(), 'id' => $id]);
     hm_json(['ok' => false, 'data' => null, 'error' => 'server'], 500);
   }
+  chat_audit($v['email'], 'attachment_deleted', $id, $bookingId,
+    ['path' => $path, 'name' => (string)($target['name'] ?? ''), 'via' => 'customer']);
+  hm_ok(['id' => $id, 'path' => $path, 'removed' => true, 'deleted' => false]);
+}
+
+// ── action=admin-delete-media ────────────────────────────────────────────────
+// ADMIN OVERRIDE: delete ANY attachment on ANY chat message (ownership bypass).
+// Authed by the admin session token (X-ADMIN-TOKEN), verified inline — the same
+// gate as booking-status.php / block-slot.php. Purges the file, tombstones the
+// attachment (message kept), and writes an attachment_deleted audit entry. The
+// file purge is still confined to the message's OWN booking folder (no traversal).
+if ($action === 'admin-delete-media') {
+  $adminOk = false; $adminActor = 'admin';
+  $tok = $_SERVER['HTTP_X_ADMIN_TOKEN'] ?? '';
+  if (is_string($tok) && $tok !== '' && function_exists('hm_admin_token_verify')) {
+    $pl = hm_admin_token_verify($tok);
+    if ($pl !== null && ($pl['role'] ?? '') === 'admin' && hm_admin_token_account_valid($pl)) {
+      $adminOk = true;
+      $adminActor = (string)($pl['email'] ?? ($pl['sub'] ?? 'admin'));
+    }
+  }
+  if (!$adminOk) {
+    if (function_exists('hm_log_auth_fail')) hm_log_auth_fail('chat_admin_delete');
+    hm_json(['ok' => false, 'data' => null, 'error' => 'forbidden'], 403);
+  }
+
+  $p    = hm_body();
+  $id   = trim((string)($p['id'] ?? ''));
+  $path = str_replace('\\', '/', trim((string)($p['path'] ?? '')));
+  if ($id === '' || $path === '') hm_json(['ok' => false, 'data' => null, 'error' => 'missing_param'], 400);
+
+  try {
+    $st = hm_db()->prepare('SELECT id, booking_id, labels FROM inbox_messages WHERE id = ? LIMIT 1');
+    $st->execute([$id]);
+    $row = $st->fetch();
+  } catch (Throwable $e) {
+    hm_log_error('chat admin-delete-media lookup failed', ['err' => $e->getMessage()]);
+    hm_json(['ok' => false, 'data' => null, 'error' => 'server'], 500);
+  }
+  if (!$row) hm_json(['ok' => false, 'data' => null, 'error' => 'not_found'], 404);
+
+  $bookingId = (string)($row['booking_id'] ?? '');
+  $labels = [];
+  if (!empty($row['labels'])) {
+    $labels = is_array($row['labels']) ? $row['labels'] : (json_decode((string)$row['labels'], true) ?: []);
+  }
+  $atts = (isset($labels['attachments']) && is_array($labels['attachments'])) ? $labels['attachments'] : [];
+  [$newAtts, $target] = chat_tombstone_attachment($atts, $path);
+  if ($target === null) hm_ok(['id' => $id, 'path' => $path, 'removed' => false]);
+
+  chat_purge_files([$target], $bookingId, $cfg);
+  $labels['attachments'] = $newAtts;
+  try {
+    $st = hm_db()->prepare('UPDATE inbox_messages SET labels = ? WHERE id = ?');
+    $st->execute([json_encode($labels, JSON_UNESCAPED_UNICODE), $id]);
+    hm_cache_invalidate_table('inbox_messages');
+  } catch (Throwable $e) {
+    hm_log_error('chat admin-delete-media failed', ['err' => $e->getMessage(), 'id' => $id]);
+    hm_json(['ok' => false, 'data' => null, 'error' => 'server'], 500);
+  }
+  chat_audit($adminActor, 'attachment_deleted', $id, $bookingId,
+    ['path' => $path, 'name' => (string)($target['name'] ?? ''), 'via' => 'admin']);
   hm_ok(['id' => $id, 'path' => $path, 'removed' => true, 'deleted' => false]);
 }
 
