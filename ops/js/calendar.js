@@ -39,7 +39,7 @@
      pinpointed. Zero cost / never rendered unless ?debug=1 is in the URL.
      BUILD is a marker so you can confirm the device actually loaded THIS file
      (vs a stale service-worker cache). Bump it whenever calendar.js changes. */
-  var BUILD = 'calendar-2026-07-18-dnd-diag';
+  var BUILD = 'calendar-2026-07-18c-render-diag';
   /* Enable diagnostics with ?debug=1 (also latched to localStorage so it survives
      the multi-page ops app navigation) or persistently via localStorage. Turn off
      with ?debug=0. Logs go to console AND an on-screen overlay for real-device use. */
@@ -237,6 +237,7 @@
   }
   function dayHtml() {
     var list = dayList(state.selected);
+    if (DBG) dbg('renderDayView(' + state.selected + ') cards=' + list.length);
     var hours = '';
     for (var h = H0; h <= H1; h++) hours += '<div class="cal-hour-lbl">' + pad(h) + ':00</div>';
     var rows = '';
@@ -531,8 +532,34 @@
       if (r.error && !(r.data && r.data.length)) { state.error = true; render(); return; }
       state.bookings = r.data || [];
       reindex();
+      if (DBG) diagPipeline(r);
       render();
     });
+  }
+
+  /* Render-pipeline diagnostics (?debug=1): report the booking count at every
+     stage so an empty day view can be traced to the exact drop-off point. */
+  function diagPipeline(r) {
+    var apiN = (r && r.data ? r.data.length : 0);          // raw rows from listBookings (already normalized)
+    var normN = state.bookings.length;                     // after normalizeBooking (1:1 map)
+    var dateKeys = Object.keys(state.byDate);
+    var indexedN = dateKeys.reduce(function (n, d) { return n + state.byDate[d].length; }, 0);
+    var sel = state.selected;
+    var selN = (state.byDate[sel] || []).length;           // after date filtering (this day, pre status/staff/q)
+    var dayN = dayList(sel).length;                        // passed into renderDayView (post all filters)
+    dbg('── RENDER PIPELINE ──────────────────────────');
+    dbg('API returned          : ' + apiN);
+    dbg('after normalizeBooking : ' + normN);
+    dbg('after date filtering   : ' + selN + '  (byDate["' + sel + '"])');
+    dbg('into renderDayView     : ' + dayN + '  (status=' + state.status + ' staff=' + state.staff + ' q="' + (state.q || '') + '")');
+    dbg('indexed (non-cancelled): ' + indexedN + ' over ' + dateKeys.length + ' date(s)');
+    dbg('today(local)=' + U.todayStr() + '  selected=' + sel);
+    dbg('date keys: ' + (dateKeys.slice(0, 10).join(', ') || '(none)'));
+    var s0 = state.bookings[0] || {};
+    dbg('sample b0: date=' + JSON.stringify(s0.date) + ' status=' + JSON.stringify(s0.status) + ' start=' + JSON.stringify(s0.startAt));
+    if (normN > 0 && indexedN === 0) dbg('⚠ every booking dropped at INDEXING — booking_date empty/malformed or all キャンセル. ROOT CAUSE HERE.');
+    else if (indexedN > 0 && selN === 0) dbg('⚠ data exists but NONE on the selected day — day view defaults to today; navigate to a date in "date keys" above. NOT A CODE BUG.');
+    else if (selN > 0 && dayN === 0) dbg('⚠ dropped by status/staff/search FILTER. ROOT CAUSE HERE.');
   }
 
   /* Live sync (P2): re-fetch on an interval so a confirmation / reschedule / new
