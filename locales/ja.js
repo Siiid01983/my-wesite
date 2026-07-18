@@ -94,7 +94,7 @@ window.LOCALES.ja = {
   "chat.deleted": "（削除されたメッセージ）",
   "chat.attachment": "（添付ファイル）",
   "chat.deletedMsg": "削除されたメッセージ",
-  "chat.attachAria": "添付",
+  "chat.attachAria": "添付", "chat.cameraAria": "カメラで撮影",
   "chat.sendAria": "送信",
 
   /* notifications (M6) */

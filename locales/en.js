@@ -95,7 +95,7 @@ window.LOCALES.en = {
   "chat.deleted": "(deleted message)",
   "chat.attachment": "(attachment)",
   "chat.deletedMsg": "Deleted message",
-  "chat.attachAria": "Attach",
+  "chat.attachAria": "Attach", "chat.cameraAria": "Take photo",
   "chat.sendAria": "Send",
 
   /* notifications (M6) */

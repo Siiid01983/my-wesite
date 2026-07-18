@@ -197,6 +197,7 @@
   /* ── Booking-details sheet (incl. mandatory inventory) ────────────────────── */
   function inventoryHtml(items) {
     if (!items || !items.length) return '<p class="cust-none">' + t('furniture.none') + '</p>';
+    if (window.HMFmt) return HMFmt.furnitureGrid(items);   // T4 — icon + name + ×qty cards
     return '<div class="cust-chips">' + items.map(function (it) {
       return '<span class="cust-chip">' + U.esc(it) + '</span>';
     }).join('') + '</div>';
@@ -218,6 +219,8 @@
         kv(t('bookings.moveDate'), U.fmtDateFull(b.date)) +
         (b.time ? kv(t('bookings.timeSlot'), b.time) : '') +
         kv(t('common.status'), t('status.' + Ops.toDbStatus(b.status)))) +
+
+      ((window.HMFmt && HMFmt.preferredOptions(b)) ? '<div class="ops-card" style="margin:0 0 12px;padding:10px 14px">' + HMFmt.preferredOptions(b) + '</div>' : '') +   // T5
 
       section(t('customers.addresses'), (kv(t('customers.currentAddr'), Ops.addrText(b, 'from')) + kv(t('customers.destAddr'), Ops.addrText(b, 'to'))) || '<p class="cust-none" style="margin:6px 0">' + t('customers.noAddr') + '</p>') +
       Ops.addrExtraHtml(b) +
