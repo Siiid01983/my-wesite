@@ -133,6 +133,22 @@
     });
     return { userNotes: userNotes, extra: extra };
   }
+  // Legacy furniture fallback: recover items from a "荷物: A・B×2" user-notes line
+  // (older bookings that predate the structured items column). Lossy for the
+  // ">3 kinds → 計N点" summary, but recovers the common ≤3-kinds case.
+  function parseLegacyItems(userNotes) {
+    var out = [];
+    String(userNotes || '').split(' / ').forEach(function (s) {
+      var t = s.trim();
+      if (t.indexOf('荷物:') === 0) {
+        var v = t.slice(t.indexOf(':') + 1).trim();
+        if (v && v !== '荷物を選択' && v.indexOf('計 ') !== 0) {
+          v.split(/[・、]/).forEach(function (i) { if (i.trim()) out.push(i.trim()); });
+        }
+      }
+    });
+    return out;
+  }
   // Pull a Japanese postal code (〒123-4567 or 123-4567) out of an address string.
   function extractPostal(s) {
     var m = String(s == null ? '' : s).match(/〒?\s*([0-9０-９]{3})[-‐ー－]?([0-9０-９]{4})/);
@@ -159,8 +175,9 @@
       items: (function () {
         var col = r.items;
         if (typeof col === 'string' && col) { try { var d = JSON.parse(col); if (Array.isArray(d)) col = d; } catch (_) {} }
-        if (Array.isArray(col) && col.length) return col;
-        return e.items ? e.items.split('|').filter(Boolean) : [];
+        if (Array.isArray(col) && col.length) return col;                 // structured items column
+        if (e.items) return e.items.split('|').filter(Boolean);           // notes items: key
+        return parseLegacyItems(u.userNotes);                             // legacy "荷物: …" free text
       })(),
       // Postal code parsed out of the saved address (〒NNN-NNNN). Shown only once
       // the full address is (post-確定) — the pre-確定 mask hides it, consistent
@@ -177,10 +194,11 @@
       createdAt: r.created_at || '',
       startAt: r.start_at || null,
       endAt: r.end_at || null,
-      // T5 — the two requested date/time-band options (existing columns; may be
-      // absent pre-migration). Display only; surfaced via HMFmt.preferredOptions.
-      preferred_start_1: r.preferred_start_1 || '',
-      preferred_start_2: r.preferred_start_2 || '',
+      // T5 — the two requested date/time-band options. Prefer the columns; fall
+      // back to the notes pref1/pref2 keys so they survive when the migration-gated
+      // columns are stripped. Display only; surfaced via HMFmt.preferredOptions.
+      preferred_start_1: r.preferred_start_1 || e.pref1 || '',
+      preferred_start_2: r.preferred_start_2 || e.pref2 || '',
     };
   }
   Ops.normalizeBooking = normalizeBooking;

@@ -3347,6 +3347,13 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 
   // ── Furniture ───────────────────────────────────────────
   // Build the summary label from current baCounts — no price logic, names only.
+  // Structured furniture list ["ベッド ×1", "椅子 ×4", …] — persisted to the booking
+  // `items` column so every surface renders the furniture grid (the notes summary
+  // below is lossy for >3 kinds and cannot be reconstructed).
+  function _baItemsArray() {
+    return BA_ITEMS.filter(function (k) { return baCounts[k] > 0; })
+      .map(function (k) { return BA_ITEM_NAMES[k] + ' ×' + baCounts[k]; });
+  }
   function _baItemsSummary() {
     var selected = BA_ITEMS.filter(function (k) { return baCounts[k] > 0; });
     if (selected.length === 0) return '荷物を選択';
@@ -3608,6 +3615,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
         locMode:   single ? 'single' : 'dual',
         date:      baState.dateISO || '',
         time:      baHourly ? '' : (baState.timeSlot || ''),
+        items:     _baItemsArray(),
         preferredStart1: baHourly ? (baState.preferredStart1 || '') : '',
         preferredStart2: baHourly ? (baState.preferredStart2 || '') : '',
         fromAddr:  baState.fromAddr,
