@@ -422,9 +422,13 @@
       var res = await window.api.from('bookings').select('id, notes, items').in('id', ids);
       if (res && res.data) {
         res.data.forEach(function (b) {
-          var mm = /ref:\s*([A-Za-z0-9][A-Za-z0-9-]*)/.exec(String(b.notes || ''));
+          var notes = String(b.notes || '');
+          var mm = /ref:\s*([A-Za-z0-9][A-Za-z0-9-]*)/.exec(notes);
           _refMap[b.id] = mm ? mm[1] : b.id;
-          _bookingCtx[b.id] = { items: _ctxItems(b.items) };   // T4 — furniture
+          var nx = function (k) { var m = new RegExp('^' + k + ':\\s*(.+)$', 'm').exec(notes); return m ? m[1].trim() : ''; };
+          var items = _ctxItems(b.items);                                  // items column
+          if (!items.length && nx('items')) items = nx('items').split('|').filter(Boolean);   // notes fallback
+          _bookingCtx[b.id] = { items: items, extra: { pref1: nx('pref1'), pref2: nx('pref2') } };
         });
       }
     } catch (_) {}

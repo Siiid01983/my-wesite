@@ -51,7 +51,8 @@ window.PortalV2 = (function () {
     var user = (idx >= 0 ? n.slice(0, idx) : n).replace(/\s+$/, '');
     var block = idx >= 0 ? n.slice(idx) : '';
     var f = function (k){ var m = new RegExp('^'+k+':\\s*(.+)$','m').exec(block); return m ? m[1].trim() : ''; };
-    return { user: user.trim(), from: f('from'), to: f('to'), time: f('time'), service: f('service') };
+    return { user: user.trim(), from: f('from'), to: f('to'), time: f('time'), service: f('service'),
+             items: f('items'), pref1: f('pref1'), pref2: f('pref2') };
   }
 
   /* ── PROFILE (Step 5) ─────────────────────────────────────────────────────── */
@@ -173,11 +174,19 @@ window.PortalV2 = (function () {
         _field('電話番号', r.customer_phone) + _field('現住所/作業場所', ex.from) + _field('引越し先', ex.to) +
         _field('受付日', (r.created_at ? fmtCreated(r.created_at).slice(0,10) : '—')) +
       '</div>' +
-      // T5 — the two requested date/time-band options (existing preferred_start_* data).
-      ((window.HMFmt && HMFmt.preferredOptions(r)) || '') +
-      // T4 — furniture as icon + name + quantity-badge cards.
-      ((window.HMFmt && r.items && r.items.length)
-        ? '<div class="pv2-d-notes"><div class="pv2-f-k">お荷物</div>' + HMFmt.furnitureGrid(r.items) + '</div>' : '') +
+      // T5 — the two requested date/time options. Columns first, then the notes
+      // pref1/pref2 fallback (survives migration-gated column stripping).
+      ((window.HMFmt && HMFmt.preferredOptions({
+        preferred_start_1: r.preferred_start_1, preferred_start_2: r.preferred_start_2,
+        extra: { pref1: ex.pref1, pref2: ex.pref2 }, date: r.booking_date, time: ex.time
+      })) || '') +
+      // T4 — furniture as icon + name + quantity-badge cards. Column → notes items:.
+      (function () {
+        var it = (Array.isArray(r.items) && r.items.length) ? r.items
+               : (ex.items ? ex.items.split('|').filter(Boolean) : []);
+        return (window.HMFmt && it.length)
+          ? '<div class="pv2-d-notes"><div class="pv2-f-k">お荷物</div>' + HMFmt.furnitureGrid(it) + '</div>' : '';
+      })() +
       (ex.user ? '<div class="pv2-d-notes"><div class="pv2-f-k">ご要望・メモ</div><p>' + esc(ex.user) + '</p></div>' : '') +
       '<div class="pv2-d-tl"><div class="pv2-f-k">進捗</div>' + _timelineHtml(r.status) + '</div>' +
       '<div class="pv2-d-actions"><button class="pv2-rebook">同じ内容で再予約</button></div>';

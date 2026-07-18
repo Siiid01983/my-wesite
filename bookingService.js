@@ -38,6 +38,10 @@ function _packNotes(b) {
   if (b.locMode)  extras.push(`locmode:${b.locMode}`);
   if (b.time)     extras.push(`time:${b.time}`);
   if (b.items && b.items.length) extras.push(`items:${b.items.join('|')}`);
+  // Preferred date+time options packed into notes too, so they survive even when
+  // create-booking.php strips the migration-gated preferred_start_* columns.
+  if (b.preferredStart1) extras.push(`pref1:${b.preferredStart1}`);
+  if (b.preferredStart2) extras.push(`pref2:${b.preferredStart2}`);
   if (b.workers)  extras.push(`workers:${b.workers}`);
   const block = extras.join('\n');
   const user  = b.notes || '';
@@ -90,6 +94,9 @@ function _bookingToRow(b) {
     notes:          _packNotes(b),
     created_at:     b.createdAt || new Date().toISOString(),
   };
+  // Structured furniture → the `items` column (create-booking.php JSON-encodes it),
+  // so every reader renders the grid instead of parsing a lossy notes summary.
+  if (Array.isArray(b.items) && b.items.length) row.items = b.items;
   // CLIENT-REQUEST model: the customer's two preferred appointment datetimes.
   // Sent only when present; create-booking.php stores them (status stays pending)
   // ONLY when hourly is live, and strips them otherwise — so this is safe to send
@@ -188,6 +195,7 @@ const BookingService = (() => {
       status,
       date:      move_date,
       time:      fields.time     || '',
+      items:     Array.isArray(fields.items) ? fields.items : [],
       preferredStart1: fields.preferredStart1 || '',
       preferredStart2: fields.preferredStart2 || '',
       fromAddr:  fromA,
