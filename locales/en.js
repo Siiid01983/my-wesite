@@ -179,7 +179,7 @@ window.LOCALES.en = {
   "util.minAgo": "{n}m ago",
   "util.hourAgo": "{n}h ago",
   "util.dayAgo": "{n}d ago",
-  "privacy.hidden": "Full address is shown after confirmation",
+  "privacy.hidden": "Full address will be visible after booking confirmation.",
   "privacy.mapFrom": "Open pickup in Maps",
   "privacy.mapTo": "Open dropoff in Maps",
 };
