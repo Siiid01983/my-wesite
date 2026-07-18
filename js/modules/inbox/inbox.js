@@ -431,7 +431,7 @@
     });
     if (!ids.length) return;
     try {
-      var res = await window.api.from('bookings').select('id, notes, items').in('id', ids);
+      var res = await window.api.from('bookings').select('id, notes, items, status').in('id', ids);
       if (res && res.data) {
         res.data.forEach(function (b) {
           var notes = String(b.notes || '');
@@ -440,7 +440,10 @@
           var nx = function (k) { var m = new RegExp('^' + k + ':\\s*(.+)$', 'm').exec(notes); return m ? m[1].trim() : ''; };
           var items = _ctxItems(b.items);                                  // items column
           if (!items.length && nx('items')) items = nx('items').split('|').filter(Boolean);   // notes fallback
-          _bookingCtx[b.id] = { items: items, extra: { pref1: nx('pref1'), pref2: nx('pref2') } };
+          // from/to + status carried so the context panel can show keyless Maps
+          // buttons ONLY once confirmed (full address exposed) — privacy preserved.
+          _bookingCtx[b.id] = { items: items, extra: { pref1: nx('pref1'), pref2: nx('pref2') },
+                                fromAddr: nx('from'), toAddr: nx('to'), status: String(b.status || '') };
         });
       }
     } catch (_) {}
@@ -466,9 +469,13 @@
     var ctx = _bookingCtx[t.latest && t.latest.booking_id]; if (!ctx) return '';
     var pref = HMFmt.preferredOptions(ctx);
     var furn = (ctx.items && ctx.items.length) ? HMFmt.furnitureGrid(ctx.items) : '';
-    if (!pref && !furn) return '';
+    // Keyless Google Maps buttons — only when the booking is confirmed (address unlocked).
+    var confirmed = window.HMAddrPrivacy && HMAddrPrivacy.confirmed(ctx.status);
+    var maps = (window.HMMaps && confirmed && (ctx.fromAddr || ctx.toAddr)) ? HMMaps.buttons(ctx.fromAddr, ctx.toAddr) : '';
+    if (!pref && !furn && !maps) return '';
     var inner = (pref || '') +
-      (furn ? '<div style="font-size:12px;color:var(--gray-1);font-weight:600;margin:8px 0 4px">お荷物</div>' + furn : '');
+      (furn ? '<div style="font-size:12px;color:var(--gray-1);font-weight:600;margin:8px 0 4px">お荷物</div>' + furn : '') +
+      (maps || '');
     return '<div class="ibx-ctx" style="margin:8px 0;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg-soft-2)">' + inner + '</div>';
   }
 

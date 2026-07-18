@@ -250,6 +250,9 @@
     if (!Ops.bookingConfirmed(b)) {
       return '<div style="font-size:.76rem;color:var(--hm-muted,#8a8f86);margin:6px 2px 0">' + util.esc(T('privacy.hidden')) + '</div>';
     }
+    // Confirmed → keyless Google Maps navigation buttons (standard URLs, no API key).
+    if (window.HMMaps) return HMMaps.buttons(b.fromAddr, b.toAddr);
+    // Fallback (lib not loaded): the two original "open in Maps" search links.
     var link = function (addr, key) {
       return addr ? '<a target="_blank" rel="noopener" href="' + Ops.maps.routeUrl(addr) + '" style="display:inline-flex;align-items:center;gap:5px;font-size:.8rem;font-weight:600;color:var(--hm-green,#2C3626);text-decoration:none;margin:6px 12px 0 2px">📍 ' + util.esc(T(key)) + '</a>' : '';
     };
