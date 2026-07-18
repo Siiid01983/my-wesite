@@ -39,8 +39,17 @@
      pinpointed. Zero cost / never rendered unless ?debug=1 is in the URL.
      BUILD is a marker so you can confirm the device actually loaded THIS file
      (vs a stale service-worker cache). Bump it whenever calendar.js changes. */
-  var BUILD = 'calendar-2026-07-17b-no-capture';
-  var DBG = /[?&]debug=1(?:&|$)/.test(location.search || '');
+  var BUILD = 'calendar-2026-07-18c-render-diag';
+  /* Enable diagnostics with ?debug=1 (also latched to localStorage so it survives
+     the multi-page ops app navigation) or persistently via localStorage. Turn off
+     with ?debug=0. Logs go to console AND an on-screen overlay for real-device use. */
+  var DBG = (function () {
+    try {
+      if (/[?&]debug=0(?:&|$)/.test(location.search || '')) { localStorage.removeItem('hm_cal_debug'); return false; }
+      if (/[?&]debug=1(?:&|$)/.test(location.search || '')) { localStorage.setItem('hm_cal_debug', '1'); return true; }
+      return localStorage.getItem('hm_cal_debug') === '1';
+    } catch (_) { return /[?&]debug=1(?:&|$)/.test(location.search || ''); }
+  })();
   var _dbgEl = null, _dbgMoveT = 0, _dbgEnvDone = false;
   function dbg(msg) {
     if (!DBG) return;
@@ -228,6 +237,7 @@
   }
   function dayHtml() {
     var list = dayList(state.selected);
+    if (DBG) dbg('renderDayView(' + state.selected + ') cards=' + list.length);
     var hours = '';
     for (var h = H0; h <= H1; h++) hours += '<div class="cal-hour-lbl">' + pad(h) + ':00</div>';
     var rows = '';
@@ -359,6 +369,7 @@
   function dragSession(e, el, b, mode) {
     var sx = e.clientX, sy = e.clientY, dragging = false, ghost = null;
     var pid = e.pointerId;
+    var moves = 0, downT = Date.now();          // diagnostics: count moves to locate where the chain stops
     function begin() {
       dragging = true; document.body.classList.add('cal-dnd'); el.classList.add('cal-dragging');
       dbg('BEGIN drag mode=' + mode);
@@ -371,6 +382,13 @@
       if (t) t.classList.add('cal-hot');
     }
     function move(ev) {
+      moves++;
+      // Log the first few moves ALWAYS (even sub-threshold) so a real-device trace
+      // shows whether pointermove is reaching us at all, then throttle.
+      if (DBG && (moves <= 3 || Date.now() - _dbgMoveT > 200)) {
+        _dbgMoveT = Date.now();
+        dbg('pointermove #' + moves + ' dx=' + Math.round(ev.clientX - sx) + ' dy=' + Math.round(ev.clientY - sy) + ' dragging=' + dragging);
+      }
       if (!dragging) {
         // Start the drag as soon as the pointer moves past a small threshold.
         // (The old 200ms hold + ">10px → cancel" gate aborted every real drag,
@@ -381,9 +399,15 @@
         begin();
       }
       ev.preventDefault(); place(ev.clientX, ev.clientY); hot(ev.clientX, ev.clientY);
-      if (DBG && Date.now() - _dbgMoveT > 200) { _dbgMoveT = Date.now(); dbg('move dx=' + Math.round(ev.clientX - sx) + ' dy=' + Math.round(ev.clientY - sy)); }
     }
-    function up(ev) { var t = dragging ? dropAt(ev.clientX, ev.clientY, mode) : null; if (DBG) dbg('pointerup dragging=' + dragging + ' target=' + dbgTarget(t)); end(t); }
+    function up(ev) {
+      var t = dragging ? dropAt(ev.clientX, ev.clientY, mode) : null;
+      if (DBG) {
+        dbg('pointerup moves=' + moves + ' dragging=' + dragging + ' dt=' + (Date.now() - downT) + 'ms target=' + dbgTarget(t));
+        if (moves === 0) dbg('⚠ NO pointermove between down→up — the gesture never reached us (browser hijacked it / touch-action not applied / stale cached build?). CHAIN STOPS HERE.');
+      }
+      end(t);
+    }
     function end(target) {
       document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', cancel);
       if (ghost) ghost.remove();
@@ -398,7 +422,12 @@
       }
       dragging = false;
     }
-    function cancel() { dbg('POINTERCANCEL → abort (dragging=' + dragging + ')'); end(null); }   // pointercancel (e.g. OS gesture)
+    function cancel() {
+      // pointercancel = the browser took the gesture (scroll/zoom/OS). If it fires
+      // with few/no moves, touch-action:none isn't taking effect on this element.
+      dbg('⚠ POINTERCANCEL after ' + moves + ' moves (dragging=' + dragging + ') — browser claimed the gesture. CHAIN STOPS HERE.');
+      end(null);
+    }
     dbg('pointerdown mode=' + mode + ' pid=' + pid);
     // NOTE: do NOT setPointerCapture here. On iOS/WebKit, calling it inside
     // pointerdown suppresses subsequent pointermove events (the drag never
@@ -444,9 +473,10 @@
 
     var values = { updated_at: nowSql(), booking_date: newDate };
     if (setTimes || b.startAt) { if (b.startAt) values.start_at = b.startAt; if (b.endAt) values.end_at = b.endAt; }
+    dbg('persistBooking → id=' + b.dbId + ' ' + JSON.stringify(values));
     Api.rest({ table: 'bookings', action: 'update', values: values, filters: [{ col: 'id', op: 'eq', val: b.dbId }] }).then(function (res) {
       if (res.error) {
-        dbg('PERSIST FAIL: ' + ((res.error && res.error.message) || 'error'));
+        dbg('⚠ PERSIST FAIL: ' + ((res.error && res.error.message) || 'error') + ' — reverting. CHAIN STOPS HERE.');
         removeBk(b); b.date = prev.date; b.startAt = prev.startAt; b.endAt = prev.endAt; b.time = prev.time; addBk(b);
         renderBody(); UI.toast(t('common.saveFailed') + '：' + ((res.error && res.error.message) || ''));
       } else { dbg('PERSIST OK (booking_date=' + newDate + ')'); UI.toast(t('calendar.savedBk', { name: b.name })); }
@@ -504,8 +534,34 @@
       if (r.error && !(r.data && r.data.length)) { state.error = true; render(); return; }
       state.bookings = r.data || [];
       reindex();
+      if (DBG) diagPipeline(r);
       render();
     });
+  }
+
+  /* Render-pipeline diagnostics (?debug=1): report the booking count at every
+     stage so an empty day view can be traced to the exact drop-off point. */
+  function diagPipeline(r) {
+    var apiN = (r && r.data ? r.data.length : 0);          // raw rows from listBookings (already normalized)
+    var normN = state.bookings.length;                     // after normalizeBooking (1:1 map)
+    var dateKeys = Object.keys(state.byDate);
+    var indexedN = dateKeys.reduce(function (n, d) { return n + state.byDate[d].length; }, 0);
+    var sel = state.selected;
+    var selN = (state.byDate[sel] || []).length;           // after date filtering (this day, pre status/staff/q)
+    var dayN = dayList(sel).length;                        // passed into renderDayView (post all filters)
+    dbg('── RENDER PIPELINE ──────────────────────────');
+    dbg('API returned          : ' + apiN);
+    dbg('after normalizeBooking : ' + normN);
+    dbg('after date filtering   : ' + selN + '  (byDate["' + sel + '"])');
+    dbg('into renderDayView     : ' + dayN + '  (status=' + state.status + ' staff=' + state.staff + ' q="' + (state.q || '') + '")');
+    dbg('indexed (non-cancelled): ' + indexedN + ' over ' + dateKeys.length + ' date(s)');
+    dbg('today(local)=' + U.todayStr() + '  selected=' + sel);
+    dbg('date keys: ' + (dateKeys.slice(0, 10).join(', ') || '(none)'));
+    var s0 = state.bookings[0] || {};
+    dbg('sample b0: date=' + JSON.stringify(s0.date) + ' status=' + JSON.stringify(s0.status) + ' start=' + JSON.stringify(s0.startAt));
+    if (normN > 0 && indexedN === 0) dbg('⚠ every booking dropped at INDEXING — booking_date empty/malformed or all キャンセル. ROOT CAUSE HERE.');
+    else if (indexedN > 0 && selN === 0) dbg('⚠ data exists but NONE on the selected day — day view defaults to today; navigate to a date in "date keys" above. NOT A CODE BUG.');
+    else if (selN > 0 && dayN === 0) dbg('⚠ dropped by status/staff/search FILTER. ROOT CAUSE HERE.');
   }
 
   /* Live sync (P2): re-fetch on an interval so a confirmation / reschedule / new
