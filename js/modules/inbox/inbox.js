@@ -392,6 +392,17 @@
      reference (HM-…) lives in bookings.notes as "ref:HM-…". Resolve it once per
      UUID (cached) so cards show the readable ID instead of the UUID. */
   var _refMap = {};
+  // Inbox Context Panel (T4/T5): per-booking furniture + preferred options, keyed
+  // by booking_id. Populated by _loadRefMap from the SAME query (display only).
+  var _bookingCtx = {};
+  function _ctxItems(v) {
+    if (Array.isArray(v)) return v;
+    if (typeof v === 'string' && v) {
+      try { var d = JSON.parse(v); if (Array.isArray(d)) return d; } catch (_) {}
+      return v.split(/[、,|]/).map(function (s) { return s.trim(); }).filter(Boolean);
+    }
+    return [];
+  }
   function _threadRef(t) {
     for (var i = 0; i < t.msgs.length; i++) { var r = _labelsOf(t.msgs[i]).ref; if (r) return r; }
     return '';
@@ -408,14 +419,41 @@
     });
     if (!ids.length) return;
     try {
-      var res = await window.api.from('bookings').select('id, notes').in('id', ids);
+      var res = await window.api.from('bookings').select('id, notes, items').in('id', ids);
       if (res && res.data) {
         res.data.forEach(function (b) {
           var mm = /ref:\s*([A-Za-z0-9][A-Za-z0-9-]*)/.exec(String(b.notes || ''));
           _refMap[b.id] = mm ? mm[1] : b.id;
+          _bookingCtx[b.id] = { items: _ctxItems(b.items) };   // T4 — furniture
         });
       }
     } catch (_) {}
+    // T5 — preferred_start_* are migration-gated columns; fetch them in a SEPARATE
+    // best-effort query so a missing column can never break the ref/context map.
+    try {
+      var pr = await window.api.from('bookings').select('id, preferred_start_1, preferred_start_2').in('id', ids);
+      if (pr && pr.data) {
+        pr.data.forEach(function (b) {
+          if (!_bookingCtx[b.id]) _bookingCtx[b.id] = {};
+          _bookingCtx[b.id].preferred_start_1 = b.preferred_start_1 || '';
+          _bookingCtx[b.id].preferred_start_2 = b.preferred_start_2 || '';
+        });
+      }
+    } catch (_) {}
+  }
+
+  /* Inbox Context Panel — furniture grid (T4) + the two preferred date/time-band
+     options (T5) for the thread's booking. Uses the shared HMFmt renderers so it
+     matches the Booking Details modal exactly. Hidden when no data / HMFmt absent. */
+  function _bookingCtxPanel(t) {
+    if (!window.HMFmt) return '';
+    var ctx = _bookingCtx[t.latest && t.latest.booking_id]; if (!ctx) return '';
+    var pref = HMFmt.preferredOptions(ctx);
+    var furn = (ctx.items && ctx.items.length) ? HMFmt.furnitureGrid(ctx.items) : '';
+    if (!pref && !furn) return '';
+    var inner = (pref || '') +
+      (furn ? '<div style="font-size:12px;color:var(--gray-1);font-weight:600;margin:8px 0 4px">お荷物</div>' + furn : '');
+    return '<div class="ibx-ctx" style="margin:8px 0;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg-soft-2)">' + inner + '</div>';
   }
 
   function _uuid() {
@@ -781,7 +819,7 @@
           '</div>' +
           '<div style="border-top:1px solid var(--line);margin-top:6px">' + _transcript(t) + '</div>' +
           '<div style="margin-top:8px;display:flex;justify-content:flex-end;border-top:1px dashed var(--line);padding-top:10px">' + _actionBtns(m) + '</div>' +
-          (m.booking_id ? _directChatBar(t) : '') +
+          (m.booking_id ? _bookingCtxPanel(t) + _directChatBar(t) : '') +
         '</div>';
     }).join('');
 
