@@ -32,6 +32,7 @@
     selected: U.todayStr(), anchor: U.todayStr(), view: 'day',
     bookings: [], byDate: {}, error: false,
     q: '', status: 'all', staff: 'all', staffOverlay: false, sheet: null,
+    autoJumped: false, autoJumpDone: false,   // day-view opens on nearest booked date when today is empty
   };
 
   /* ── Debug overlay (opt-in via ?debug=1) ──────────────────────────────────
@@ -154,6 +155,7 @@
     return a.getFullYear() + '年' + (a.getMonth() + 1) + '月';
   }
   function step(dir) {
+    state.autoJumped = false;                       // user navigated → drop the auto-jump notice
     if (state.view === 'day') { state.selected = fmt(addDays(parse(state.selected), dir)); state.anchor = state.selected; }
     else if (state.view === 'week') { state.anchor = fmt(addDays(parse(state.anchor), 7 * dir)); }
     else { var d = parse(state.anchor); d.setMonth(d.getMonth() + dir); state.anchor = fmt(d); }
@@ -238,6 +240,8 @@
   function dayHtml() {
     var list = dayList(state.selected);
     if (DBG) dbg('renderDayView(' + state.selected + ') cards=' + list.length);
+    var notice = (state.autoJumped && state.selected !== U.todayStr())
+      ? '<div class="cal-hint cal-autojump">' + t('calendar.autoJumped') + '</div>' : '';
     var hours = '';
     for (var h = H0; h <= H1; h++) hours += '<div class="cal-hour-lbl">' + pad(h) + ':00</div>';
     var rows = '';
@@ -259,7 +263,7 @@
     var body = '<div class="cal-day"><div class="cal-hours">' + hours + '</div>' +
       '<div class="cal-timeline" style="height:' + ((H1 - H0 + 1) * HOUR_PX) + 'px">' + rows + events + '</div></div>';
     if (!list.length) body += '<div class="cal-hint">' + t('calendar.noBookingsDay') + '</div>';
-    return body + '<div class="cal-hint">' + t('calendar.dragHint') + '</div>';
+    return notice + body + '<div class="cal-hint">' + t('calendar.dragHint') + '</div>';
   }
   function bindDay(host) {
     dbgEnvOnce();
@@ -534,9 +538,27 @@
       if (r.error && !(r.data && r.data.length)) { state.error = true; render(); return; }
       state.bookings = r.data || [];
       reindex();
+      autoJumpToNearest();
       if (DBG) diagPipeline(r);
       render();
     });
+  }
+
+  /* UX: the calendar opens on today. If today has no bookings, jump the DAY view
+     to the nearest date that DOES (future preferred, else most-recent past) and
+     flag it so a small notice explains the shift. Runs once, on the initial load.
+     No-op when today already has bookings or when there are none at all — the
+     existing empty-today behaviour is preserved. Day-view only; DnD untouched. */
+  function autoJumpToNearest() {
+    if (state.autoJumpDone) return;
+    state.autoJumpDone = true;
+    var today = U.todayStr();
+    if ((state.byDate[today] || []).length) return;                                  // today has bookings → stay
+    var dates = Object.keys(state.byDate).filter(function (d) { return state.byDate[d].length; }).sort();
+    if (!dates.length) return;                                                        // no bookings at all → stay
+    var future = dates.filter(function (d) { return d > today; });
+    var target = future.length ? future[0] : dates[dates.length - 1];                // nearest future, else nearest past
+    state.selected = target; state.anchor = target; state.autoJumped = true;
   }
 
   /* Render-pipeline diagnostics (?debug=1): report the booking count at every

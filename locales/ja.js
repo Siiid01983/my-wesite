@@ -74,6 +74,7 @@ window.LOCALES.ja = {
   "calendar.allStaff": "全スタッフ", "calendar.staffOverlay": "スタッフ別に表示", "calendar.unassigned": "未割当",
   "calendar.todayBookings": "本日の予約", "calendar.pendingReview": "要確認（保留）",
   "calendar.dragHint": "長押しでドラッグ → 時間変更／下端で長さ変更", "calendar.noBookingsDay": "この日の予約はありません",
+  "calendar.autoJumped": "本日の予約はありません。次の予約日を表示しています。",
   "calendar.noBookingsRange": "この期間の予約はありません", "calendar.noBookingLinked": "この会話には予約が紐づいていません。",
   "calendar.time": "時間", "calendar.staff": "担当スタッフ", "calendar.price": "料金",
   "calendar.customer": "顧客", "calendar.editBooking": "予約を編集", "calendar.savedBk": "{name}様の予約を更新しました",
