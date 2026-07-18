@@ -160,6 +160,10 @@
       createdAt: r.created_at || '',
       startAt: r.start_at || null,
       endAt: r.end_at || null,
+      // T5 — the two requested date/time-band options (existing columns; may be
+      // absent pre-migration). Display only; surfaced via HMFmt.preferredOptions.
+      preferred_start_1: r.preferred_start_1 || '',
+      preferred_start_2: r.preferred_start_2 || '',
     };
   }
   Ops.normalizeBooking = normalizeBooking;

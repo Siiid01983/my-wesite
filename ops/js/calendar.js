@@ -457,6 +457,7 @@
   function kv(k, v) { return v ? '<div class="ops-kv"><span class="k">' + k + '</span><span class="v">' + U.esc(v) + '</span></div>' : ''; }
   function furnitureHtml(items) {
     if (!items || !items.length) return '<div class="cal-none">' + t('furniture.none') + '</div>';
+    if (window.HMFmt) return HMFmt.furnitureGrid(items);   // T4 — icon + name + ×qty cards
     var agg = {}, order = [];
     items.forEach(function (it) { var n = String(it).trim(); if (!n) return; if (!(n in agg)) { agg[n] = 0; order.push(n); } agg[n]++; });
     return '<div class="cal-furni">' + order.map(function (n) {
@@ -478,6 +479,7 @@
       '</div>' +
       '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('customers.addresses') + '</div><div class="ops-card" style="margin:0 0 12px;padding:4px 14px">' + addr + '</div>' + Ops.addrExtraHtml(b) +
       (b.notes ? '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('customers.memo') + '</div><div class="ops-card" style="margin:0 0 12px;padding:10px 14px;font-size:.9rem">' + U.esc(b.notes) + '</div>' : '') +
+      ((window.HMFmt && HMFmt.preferredOptions(b)) ? '<div class="ops-card" style="margin:0 0 12px;padding:10px 14px">' + HMFmt.preferredOptions(b) + '</div>' : '') +   // T5
       '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('furniture.title') + '</div>' + furnitureHtml(b.items) +
       '<div class="ops-btn-row" style="margin-top:14px">' +
         '<a class="ops-btn ghost" href="customers.html">' + UI.icon('customers') + t('calendar.customer') + '</a>' +

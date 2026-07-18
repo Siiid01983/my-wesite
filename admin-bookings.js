@@ -620,12 +620,19 @@ function openDetail(id) {
   const addrHint = (window.HMAddrPrivacy && !HMAddrPrivacy.confirmed(b.status) && (b.fromAddr || b.toAddr))
     ? `<div style="font-size:11.5px;color:var(--gray-1);padding:6px 0 2px">${esc(HMAddrPrivacy.HINT_JA)}</div>`
     : '';
+  // T5 — the two requested date/time-band options (existing preferred_start_* data).
+  const prefHtml = (window.HMFmt && HMFmt.preferredOptions(b)) ? `<div style="padding:8px 0">${HMFmt.preferredOptions(b)}</div>` : '';
+  // T4 — furniture as icon + name + ×qty cards (fall back to the plain chips row).
+  const furnHtml = (window.HMFmt && b.items && b.items.length)
+    ? `<div style="padding:8px 0"><span style="font-size:12px;color:var(--gray-1);font-weight:500;display:block;margin-bottom:6px">お荷物</span>${HMFmt.furnitureGrid(b.items)}</div>`
+    : itemsRow;
   document.getElementById('detailBody').innerHTML =
     `<div style="margin-bottom:12px">${badge(b.status||'新規')}</div>` +
     r('サービス',b.service) + r('引越し日',fmtD(b.date)) + r('希望時間帯',b.time) +
     r('お客様名',b.name) + r('メール',b.email) +
     addrRows + addrHint +
-    itemsRow +
+    prefHtml +
+    furnHtml +
     r('備考',b.notes) + r('受付日時',fmtDT(b.createdAt));
   document.getElementById('detailPdfBtn').onclick   = () => downloadPDFBooking(id);
   document.getElementById('detailPrintBtn').onclick = () => printBooking(id);

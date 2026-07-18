@@ -173,6 +173,11 @@ window.PortalV2 = (function () {
         _field('電話番号', r.customer_phone) + _field('現住所/作業場所', ex.from) + _field('引越し先', ex.to) +
         _field('受付日', (r.created_at ? fmtCreated(r.created_at).slice(0,10) : '—')) +
       '</div>' +
+      // T5 — the two requested date/time-band options (existing preferred_start_* data).
+      ((window.HMFmt && HMFmt.preferredOptions(r)) || '') +
+      // T4 — furniture as icon + name + quantity-badge cards.
+      ((window.HMFmt && r.items && r.items.length)
+        ? '<div class="pv2-d-notes"><div class="pv2-f-k">お荷物</div>' + HMFmt.furnitureGrid(r.items) + '</div>' : '') +
       (ex.user ? '<div class="pv2-d-notes"><div class="pv2-f-k">ご要望・メモ</div><p>' + esc(ex.user) + '</p></div>' : '') +
       '<div class="pv2-d-tl"><div class="pv2-f-k">進捗</div>' + _timelineHtml(r.status) + '</div>' +
       '<div class="pv2-d-actions"><button class="pv2-rebook">同じ内容で再予約</button></div>';
