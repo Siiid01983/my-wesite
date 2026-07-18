@@ -26,18 +26,26 @@
         || raw === '確定' || raw === '完了';
   }
 
+  /* Before 確定, show only the SERVICE AREA — 都道府県 + the first 市/区/町/村
+     (e.g. 東京都新宿区 / 埼玉県川口市 / 神奈川県横浜市). Street/番地, building,
+     apartment, floor and postal code are dropped so dispatchers know the area
+     without seeing the exact address. */
   function maskAddress(a) {
     a = String(a == null ? '' : a).trim();
     if (!a) return '';
-    if (a.indexOf(',') >= 0) {                                   // western: keep last 2 locality parts
+    // Drop a leading postal code (〒123-4567 / 123-4567) — never shown pre-確定.
+    a = a.replace(/^〒?\s*[0-9０-９]{3}[-‐ー－]?[0-9０-９]{4}\s*/, '').trim();
+    // JP: 都道府県 (optional) + up to and including the FIRST 市/区/町/村.
+    var m = a.match(/^\s*([^0-9０-９]*?[都道府県])?\s*([^0-9０-９]*?[市区町村])/);
+    if (m && m[2]) return ((m[1] || '') + m[2]).replace(/\s+/g, '');
+    // Western fallback: keep the last two locality parts (city, region) — no street.
+    if (a.indexOf(',') >= 0) {
       var p = a.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
-      return (p.length > 2 ? p.slice(-2).join(', ') : p.join(', ')) + ' …';
+      return p.length > 2 ? p.slice(-2).join(', ') : p.join(', ');
     }
-    var m = a.match(/^(.*?[0-9０-９]+\s*丁目)/);                   // JP: keep through chōme
-    if (m) return m[1].trim() + ' …';
-    m = a.match(/^([^0-9０-９]+)/);                               // else keep up to the first number
-    if (m && m[1].trim().length >= 2) return m[1].trim() + ' …';
-    return a.slice(0, 6) + ' …';
+    // Last resort: keep text up to the first number (drops the street number on).
+    var n = a.match(/^([^0-9０-９]+)/);
+    return n && n[1].trim().length >= 2 ? n[1].trim() : '';
   }
 
   /* Full address only when confirmed; otherwise the masked locality. */
@@ -52,7 +60,7 @@
     maskAddress: maskAddress,
     addrText: addrText,
     /* i18n-free note strings (Admin/Portal are JP-first). */
-    HINT_JA: '住所の詳細は予約確定後に表示されます',
-    HINT_EN: 'Full address is shown after the booking is confirmed',
+    HINT_JA: '詳細住所は確定後に表示されます',
+    HINT_EN: 'Full address is shown after confirmation',
   };
 })();

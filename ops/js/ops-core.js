@@ -174,18 +174,21 @@
      (prefecture/city/ward/area); banchi, building and apartment are hidden.
      Privacy-first: uncertain parses mask MORE. (The customer's own portal keeps
      their full address — this gate is for the staff/dispatch context.) */
+  // Before 確定, show only the SERVICE AREA — 都道府県 + the first 市/区/町/村
+  // (東京都新宿区 / 埼玉県川口市 / 神奈川県横浜市). Street/番地, building, apartment,
+  // floor and postal code are dropped. Mirrors js/lib/addressPrivacy.js exactly.
   util.maskAddress = function (a) {
     a = String(a == null ? '' : a).trim();
     if (!a) return '';
+    a = a.replace(/^〒?\s*[0-9０-９]{3}[-‐ー－]?[0-9０-９]{4}\s*/, '').trim();   // drop postal code
+    var m = a.match(/^\s*([^0-9０-９]*?[都道府県])?\s*([^0-9０-９]*?[市区町村])/);
+    if (m && m[2]) return ((m[1] || '') + m[2]).replace(/\s+/g, '');
     if (a.indexOf(',') >= 0) {                                   // western: keep the last 2 locality parts
       var p = a.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
-      return (p.length > 2 ? p.slice(-2).join(', ') : p.join(', ')) + ' …';
+      return p.length > 2 ? p.slice(-2).join(', ') : p.join(', ');
     }
-    var m = a.match(/^(.*?[0-9０-９]+\s*丁目)/);                   // JP: keep through chōme
-    if (m) return m[1].trim() + ' …';
-    m = a.match(/^([^0-9０-９]+)/);                               // else keep up to the first number (drops banchi/building)
-    if (m && m[1].trim().length >= 2) return m[1].trim() + ' …';
-    return a.slice(0, 6) + ' …';
+    var n = a.match(/^([^0-9０-９]+)/);
+    return n && n[1].trim().length >= 2 ? n[1].trim() : '';
   };
   Ops.bookingConfirmed = function (b) { return !!b && (b.status === '確定' || b.status === '完了'); };
   Ops.addrText = function (b, which) {
