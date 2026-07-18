@@ -61,7 +61,7 @@ window.LOCALES.ja = {
   "customers.detailTitle": "予約詳細", "customers.customerInfo": "お客様情報", "customers.name": "お名前",
   "customers.movingInfo": "引越し情報", "customers.addresses": "住所", "customers.currentAddr": "現住所",
   "customers.destAddr": "引越し先", "customers.noAddr": "住所情報はありません", "customers.memo": "メモ",
-  "customers.custMemo": "お客様メモ", "customers.internalMemo": "社内メモ",
+  "customers.custMemo": "お客様メモ", "customers.internalMemo": "社内メモ", "customers.postal": "郵便番号",
 
   /* furniture (shared) */
   "furniture.title": "搬送家具・荷物一覧", "furniture.none": "家具情報はありません",

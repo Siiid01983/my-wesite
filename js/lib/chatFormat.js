@@ -144,6 +144,23 @@
         '</div>'
       );
     }
+    // Fallback when the two preferred_start columns are empty (e.g. pre-migration):
+    // show the primary requested date + time slot so the block still carries the
+    // date AND the time band. b.time is already a slot label (e.g. 午前（9:00〜12:00）);
+    // otherwise derive the band from the date.
+    if (!rows.length) {
+      var pd = toDate(b.date || b.booking_date);
+      var band = String(b.time || b.timeSlot || '').trim();
+      if (pd || band) {
+        rows.push(
+          '<div class="hm-pref-row">' +
+            '<span class="hm-pref-n">' + (en ? 'Requested' : 'ご希望') + '</span>' +
+            '<span class="hm-pref-d">' + esc(pd ? dateOnly(pd, l) : '—') + '</span>' +
+            '<span class="hm-pref-b">' + esc(band || (pd ? bandLabel(pd, l) : '')) + '</span>' +
+          '</div>'
+        );
+      }
+    }
     if (!rows.length) return '';
     var title = en ? 'Requested dates & times' : 'ご希望日時';
     return '<div class="hm-pref"><div class="hm-pref-h">' + title + '</div>' + rows.join('') + '</div>';

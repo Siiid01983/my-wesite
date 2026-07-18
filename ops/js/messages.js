@@ -280,6 +280,9 @@
   }
 
   function kv(k, v) { return v ? '<div class="mc-kv"><span class="k">' + k + '</span><span class="v">' + U.esc(v) + '</span></div>' : ''; }
+  // Always-render variant — shows a "—" placeholder when empty, so critical
+  // customer fields (phone, address) stay visible regardless of booking status.
+  function kvA(k, v) { return '<div class="mc-kv"><span class="k">' + k + '</span><span class="v">' + (v ? U.esc(v) : '—') + '</span></div>'; }
 
   function inventoryHtml(items) {
     if (!items || !items.length) return '<p class="mc-none">' + t('furniture.none') + '</p>';
@@ -290,15 +293,23 @@
   function detailTabHtml(c) {
     var b = c.booking;
     if (!b) return '<div class="mc-scroll"><p class="mc-none">' + t('calendar.noBookingLinked') + '</p></div>';
-    var addr = (kv(t('customers.currentAddr'), Ops.addrText(b, 'from')) + kv(t('customers.destAddr'), Ops.addrText(b, 'to'))) || '<p class="mc-none" style="margin:6px 0">' + t('customers.noAddr') + '</p>';
+    // Address always renders as its own card; empty → an explicit "no address" note.
+    var fromA = Ops.addrText(b, 'from'), toA = Ops.addrText(b, 'to');
+    var addr = (fromA || toA)
+      ? (kvA(t('customers.currentAddr'), fromA) + kv(t('customers.destAddr'), toA))
+      : '<p class="mc-none" style="margin:6px 0">' + t('customers.noAddr') + '</p>';
+    // Zip: only when the full address is exposed (post-確定) — the pre-確定 mask
+    // hides the postal code (address-privacy rule).
+    var zipRow = (Ops.bookingConfirmed(b) && b.postal) ? kv(t('customers.postal'), b.postal) : '';
     return '<div class="mc-scroll">' +
       '<div class="mc-sec">' + t('customers.customerInfo') + '</div>' +
-      '<div class="mc-card">' + kv(t('customers.name'), b.name ? b.name + t('common.honorific') : '') + kv(t('bookings.phone'), b.phone) + kv(t('bookings.email'), b.email) + '</div>' +
+      // Name / Phone / Email always visible (kvA), regardless of booking status.
+      '<div class="mc-card">' + kvA(t('customers.name'), b.name ? b.name + t('common.honorific') : '') + kvA(t('bookings.phone'), b.phone) + kvA(t('bookings.email'), b.email) + '</div>' +
       '<div class="mc-sec">' + t('chat.moving') + '</div>' +
       '<div class="mc-card">' + kv(t('bookings.service'), b.service) + kv(t('bookings.moveDate'), U.fmtDateFull(b.date)) + (b.time ? kv(t('bookings.timeSlot'), b.time) : '') + kv(t('common.status'), t('status.' + Ops.toDbStatus(b.status))) + '</div>' +
       ((window.HMFmt && HMFmt.preferredOptions(b)) ? '<div class="mc-card">' + HMFmt.preferredOptions(b) + '</div>' : '') +   // T5
       '<div class="mc-sec">' + t('customers.addresses') + '</div>' +
-      '<div class="mc-card">' + addr + '</div>' + Ops.addrExtraHtml(b) +
+      '<div class="mc-card">' + addr + zipRow + '</div>' + Ops.addrExtraHtml(b) +
       '<div class="mc-sec">' + t('furniture.title') + '</div>' +
       inventoryHtml(b.items) +
     '</div>';
