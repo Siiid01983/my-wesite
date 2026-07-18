@@ -61,6 +61,6 @@
     addrText: addrText,
     /* i18n-free note strings (Admin/Portal are JP-first). */
     HINT_JA: '詳細住所は確定後に表示されます',
-    HINT_EN: 'Full address is shown after confirmation',
+    HINT_EN: 'Full address will be visible after booking confirmation.',
   };
 })();

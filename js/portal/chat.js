@@ -303,6 +303,10 @@
     _err('');
     if (!window.api || !window.api.storage) { _err('アップロードを利用できません。'); return; }
 
+    // Downscale/recompress large photos client-side BEFORE the size check so big
+    // camera shots pass the 15MB limit and upload fast (mobile-first).
+    if (window.HMImageCompress) { try { picked = await HMImageCompress.processAll(picked, { maxEdge: 1600 }); } catch (_) {} }
+
     var skipped = 0;
     var files = picked.filter(function (f) {
       var ok = ALLOWED.indexOf(f.type) >= 0 && f.size <= MAX_BYTES;

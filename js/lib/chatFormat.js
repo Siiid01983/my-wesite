@@ -47,14 +47,13 @@
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   /* ── T3: message timestamp ──────────────────────────────────────────────────
-     JA → "2026/07/18 14:35"   EN → "Jul 18, 2026 2:35 PM"   (local browser TZ) */
+     JA → "2026/07/18 14:30"   EN → "2026-07-18 14:30"   (rendered in the viewer's
+     local browser timezone; stored value is parsed, historical data never shifted). */
   function msgTime(iso, l) {
     var d = toDate(iso); if (!d) return '';
-    if (lang(l) === 'en') {
-      var h = d.getHours(), ap = h < 12 ? 'AM' : 'PM', h12 = h % 12 || 12;
-      return MON[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear() + ' ' + h12 + ':' + p2(d.getMinutes()) + ' ' + ap;
-    }
-    return d.getFullYear() + '/' + p2(d.getMonth() + 1) + '/' + p2(d.getDate()) + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes());
+    var hm = ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes());
+    if (lang(l) === 'en') return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + hm;
+    return d.getFullYear() + '/' + p2(d.getMonth() + 1) + '/' + p2(d.getDate()) + hm;
   }
   /* Date only (for the two preferred options). */
   function dateOnly(d, l) {

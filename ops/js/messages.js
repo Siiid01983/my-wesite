@@ -402,15 +402,19 @@
   // T.pending until send. storage.php enforces MIME/size; chat rejects out-of-scope.
   function handleFiles(c, files) {
     if (!files || !c || !c.bookingId) return;
-    Array.prototype.slice.call(files).forEach(function (f) {
+    Array.prototype.slice.call(files).forEach(function (f0) {
       if (T.pending.length >= 10) { UI.toast(t('chat.sendFailed')); return; }
-      var tok = { name: f.name, uploading: true };
+      var tok = { name: f0.name, uploading: true };
       T.pending.push(tok); renderPending();
+      // Downscale/recompress large photos client-side before upload (mobile perf).
+      Promise.resolve(window.HMImageCompress ? HMImageCompress.process(f0) : f0).then(function (f) {
+      tok.name = f.name; renderPending();
       Api.uploadChatFile(c.bookingId, f).then(function (res) {
         var i = T.pending.indexOf(tok);
         if (!res.ok) { if (i >= 0) T.pending.splice(i, 1); renderPending(); UI.toast(t('chat.sendFailed') + '：' + (res.error || '')); return; }
         if (i >= 0) T.pending[i] = { path: res.path, name: res.name, mime: res.mime, size: res.size };
         renderPending();
+      });
       });
     });
   }

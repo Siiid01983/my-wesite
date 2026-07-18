@@ -475,7 +475,9 @@
   function _directChatBar(t) {
     var bid = _esc(t.latest.booking_id || '');
     return '<div class="ibx-dc" data-booking="' + bid + '">' +
-      '<button class="ibx-dc-attach" type="button" title="添付">📎</button>' +
+      '<button class="ibx-dc-attach ibx-dc-cam" type="button" title="カメラで撮影 / Camera">📷</button>' +
+      '<input class="ibx-dc-camfile" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" hidden>' +
+      '<button class="ibx-dc-attach" type="button" title="ファイル添付 / File">📎</button>' +
       '<input class="ibx-dc-file" type="file" accept="image/*,application/pdf,.doc,.docx" multiple hidden>' +
       '<input class="ibx-dc-input" type="text" maxlength="2000" placeholder="チャットで返信（メール送信なし・アプリ内チャットに表示）…">' +
       '<button class="btn btn-primary btn-sm ibx-dc-send" type="button">チャット送信</button>' +
@@ -490,9 +492,12 @@
     if (!bar || !files || !window.api || !window.api.storage) return;
     var bid = bar.getAttribute('data-booking'); if (!bid) return;
     var list = _dcPending[bid] || (_dcPending[bid] = []);
-    Array.prototype.slice.call(files).forEach(function (f) {
+    Array.prototype.slice.call(files).forEach(function (f0) {
       if (list.length >= 10) return;
-      var tok = { name: f.name, uploading: true }; list.push(tok); _dcRenderPending(bar);
+      var tok = { name: f0.name, uploading: true }; list.push(tok); _dcRenderPending(bar);
+      // Downscale/recompress large photos client-side before upload (mobile perf).
+      Promise.resolve(window.HMImageCompress ? HMImageCompress.process(f0) : f0).then(function (f) {
+      tok.name = f.name; _dcRenderPending(bar);
       var safe = String(f.name || 'file').replace(/[^\w.\-]+/g, '_').slice(-80) || 'file';
       var path = bid + '/' + Date.now() + '-' + safe;
       window.api.storage.from('chat').upload(path, f, { contentType: f.type }).then(function (res) {
@@ -500,6 +505,7 @@
         if (res && res.error) { if (i >= 0) list.splice(i, 1); _dcRenderPending(bar); _toast('アップロードに失敗しました：' + (res.error.message || '')); return; }
         if (i >= 0) list[i] = { path: path, name: f.name, mime: f.type || '', size: f.size || 0 };
         _dcRenderPending(bar);
+      });
       });
     });
   }
@@ -1358,6 +1364,8 @@
     if (md) { e.preventDefault(); _deleteMediaAdmin(md.getAttribute('data-ibx-delmid'), md.getAttribute('data-ibx-delmedia'), md); return; }
     var del = e.target.closest('[data-ibx-del]');   // text bubble corner trash + legacy
     if (del) { _ibxDeleteMsg(del.getAttribute('data-ibx-del')); return; }
+    var cam = e.target.closest('.ibx-dc-cam');
+    if (cam) { var barC = cam.closest('.ibx-dc'); var fc = barC && barC.querySelector('.ibx-dc-camfile'); if (fc) fc.click(); return; }
     var att = e.target.closest('.ibx-dc-attach');
     if (att) { var bar0 = att.closest('.ibx-dc'); var f0 = bar0 && bar0.querySelector('.ibx-dc-file'); if (f0) f0.click(); return; }
     var rm = e.target.closest('.ibx-dc-pchip [data-rm]');
@@ -1366,7 +1374,7 @@
     if (send) { _directChatSend(send); return; }
   });
   document.addEventListener('change', function (e) {
-    var f = e.target.closest && e.target.closest('.ibx-dc-file');
+    var f = e.target.closest && (e.target.closest('.ibx-dc-file') || e.target.closest('.ibx-dc-camfile'));
     if (!f) return;
     var bar = f.closest('.ibx-dc');
     _dcUpload(bar, f.files); f.value = '';
