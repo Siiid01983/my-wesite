@@ -41,6 +41,8 @@
   }
   function _fmtTime(iso) {
     if (!iso) return '';
+    // T3 — one consistent full timestamp across Portal / Ops / Admin (local TZ).
+    if (window.HMFmt) return HMFmt.msgTime(iso, 'ja');
     var d = new Date(iso.indexOf('T') > 0 ? iso : iso.replace(' ', 'T'));
     if (isNaN(d)) return '';
     var p = function (n) { return String(n).padStart(2, '0'); };
@@ -83,6 +85,7 @@
 
   var ATTACH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
   var SEND_ICON   = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
+  var CAMERA_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
   var FILE_ICON   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
   var TRASH_ICON  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
 
@@ -371,6 +374,8 @@
         '<div class="pchat-stream" aria-live="polite"><div class="pchat-empty">読み込み中…</div></div>' +
         '<div class="pchat-err" style="display:none"></div>' +
         '<div class="pchat-bar">' +
+          '<label class="pchat-attach pchat-cam" title="カメラで撮影">' + CAMERA_ICON +
+            '<input type="file" accept="image/jpeg,image/png,image/webp" capture="environment"></label>' +
           '<label class="pchat-attach" title="写真・PDFを添付（複数選択可）">' + ATTACH_ICON +
             '<input type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"></label>' +
           '<textarea class="pchat-input" rows="1" placeholder="メッセージを入力…" maxlength="4000"></textarea>' +
@@ -380,7 +385,8 @@
 
     var input  = container.querySelector('.pchat-input');
     var sendBt = container.querySelector('.pchat-send');
-    var fileIn = container.querySelector('.pchat-attach input');
+    var fileIn = container.querySelector('.pchat-attach:not(.pchat-cam) input');
+    var camIn  = container.querySelector('.pchat-cam input');   // T2 — camera (mobile) / file picker (desktop)
 
     // Auto-grow textarea + Enter-to-send (Shift+Enter = newline).
     input.addEventListener('input', function () {
@@ -392,6 +398,7 @@
     });
     sendBt.addEventListener('click', _sendText);
     fileIn.addEventListener('change', function () { _sendFiles(fileIn); });
+    if (camIn) camIn.addEventListener('change', function () { _sendFiles(camIn); });
     // Delegated delete (bubbles are re-rendered on every poll).
     container.addEventListener('click', function (e) {
       if (!e.target.closest) return;
