@@ -122,6 +122,9 @@ function _rowToBooking(r) {
     workers:   extra.workers || parsedWorkers,
     time:      extra.time    || '',
     createdAt: r.created_at  || new Date().toISOString(),
+    // T5 — the two requested date/time-band options (existing columns; display only).
+    preferred_start_1: r.preferred_start_1 || extra.pref1 || '',
+    preferred_start_2: r.preferred_start_2 || extra.pref2 || '',
   };
 }
 

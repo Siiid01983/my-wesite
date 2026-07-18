@@ -271,6 +271,7 @@
   /* ── Time / day formatting for the transcript ─────────── */
   function _fmtTimeShort(iso) {
     if (!iso) return '';
+    if (window.HMFmt) return HMFmt.msgTime(iso, 'ja');   // T3 — full consistent timestamp (local TZ)
     var d = new Date(iso);
     return isNaN(d) ? '' : d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
   }
