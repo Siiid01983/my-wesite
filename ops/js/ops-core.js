@@ -133,6 +133,11 @@
     });
     return { userNotes: userNotes, extra: extra };
   }
+  // Pull a Japanese postal code (〒123-4567 or 123-4567) out of an address string.
+  function extractPostal(s) {
+    var m = String(s == null ? '' : s).match(/〒?\s*([0-9０-９]{3})[-‐ー－]?([0-9０-９]{4})/);
+    return m ? '〒' + m[1] + '-' + m[2] : '';
+  }
   function normalizeBooking(r) {
     var u = unpackNotes(r.notes);
     var e = u.extra;
@@ -148,7 +153,19 @@
       service: r.service_id || e.service || '',
       time: e.time || '',
       workers: e.workers || '',
-      items: e.items ? e.items.split('|').filter(Boolean) : [],
+      // Furniture/items: prefer the `items` DB column (JSON array, what get-booking/
+      // rest.php return) and fall back to the packed notes list — mirrors the admin
+      // _rowToBooking so the ops detail renders items regardless of where they live.
+      items: (function () {
+        var col = r.items;
+        if (typeof col === 'string' && col) { try { var d = JSON.parse(col); if (Array.isArray(d)) col = d; } catch (_) {} }
+        if (Array.isArray(col) && col.length) return col;
+        return e.items ? e.items.split('|').filter(Boolean) : [];
+      })(),
+      // Postal code parsed out of the saved address (〒NNN-NNNN). Shown only once
+      // the full address is (post-確定) — the pre-確定 mask hides it, consistent
+      // with the address-privacy rule.
+      postal: extractPostal(e.from) || extractPostal(e.to) || '',
       // Production stores status inconsistently — some rows English (pending),
       // some already Japanese (確定 / キャンセル). Tolerate BOTH: map English→JP,
       // pass a known Japanese label through unchanged, else default to 新規.

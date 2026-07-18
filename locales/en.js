@@ -62,7 +62,7 @@ window.LOCALES.en = {
   "customers.detailTitle": "Booking details", "customers.customerInfo": "Customer", "customers.name": "Name",
   "customers.movingInfo": "Moving details", "customers.addresses": "Addresses", "customers.currentAddr": "From",
   "customers.destAddr": "To", "customers.noAddr": "No address on file", "customers.memo": "Notes",
-  "customers.custMemo": "Customer notes", "customers.internalMemo": "Internal notes",
+  "customers.custMemo": "Customer notes", "customers.internalMemo": "Internal notes", "customers.postal": "Postal code",
 
   /* furniture */
   "furniture.title": "Furniture & items", "furniture.none": "No furniture info",

@@ -363,7 +363,9 @@ window.MobileCal = (function () {
       if (typeof toast === 'function') toast('予約機能を初期化中です。再度お試しください');
       return;
     }
-    window.quickBookSlot({
+    // Booking is finalized ONLY here, on the explicit Confirm press — selection
+    // (date/slot) is held in local state (_sel + the modal) until this point.
+    var created = window.quickBookSlot({
       date:    _sel,
       time:    (document.getElementById('mcbSlot') || {}).value || '',
       name:    name,
@@ -371,7 +373,7 @@ window.MobileCal = (function () {
       service: (document.getElementById('mcbService') || {}).value || '単身引越し'
     });
     closeBook();
-    render(_sel);   // slot now shows the client + lock
+    if (created) render(_sel);   // reflect the slot ONLY once the booking is committed
   }
 
   /* ── Month-grid toggle (reveal the ○△× availability editor) ── */
