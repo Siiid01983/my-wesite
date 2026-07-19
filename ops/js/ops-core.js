@@ -237,14 +237,32 @@
     var n = a.match(/^([^0-9０-９]+)/);
     return n && n[1].trim().length >= 2 ? n[1].trim() : '';
   };
+  // Holds a reserved slot (confirmed OR completed) — used by the calendar reschedule
+  // routing / slot logic. NOT an address-reveal gate (completed hides its address).
   Ops.bookingConfirmed = function (b) { return !!b && (b.status === '確定' || b.status === '完了'); };
-  // Cancelled/rejected → privacy: hide contact + detail fields, show only identity
-  // (ref / name / city / service). Consumers gate phone/email/notes/furniture/maps.
-  Ops.bookingCancelled = function (b) { return !!b && (b.status === 'キャンセル' || b.status === '却下'); };
+  // Address / map reveal gate — CONFIRMED (確定) ONLY. A completed booking is
+  // terminal and privacy-restricted, so its exact address is NOT re-exposed.
+  Ops.addrReveal = function (b) { return !!b && b.status === '確定'; };
+  // Privacy-restricted (terminal) → hide contact + detail fields, show only identity
+  // (ref / name / city / service / status). CANCELLED / 却下 AND COMPLETED (完了).
+  // Consumers gate phone/email/notes/furniture/maps on this.
+  Ops.bookingCancelled = function (b) { return !!b && (b.status === 'キャンセル' || b.status === '却下' || b.status === '完了'); };
+  Ops.bookingRestricted = Ops.bookingCancelled;   // clearer alias for the extended (incl. 完了) rule
   Ops.addrText = function (b, which) {
     var full = (which === 'to') ? (b.toAddr || '') : (b.fromAddr || '');
     if (!full) return '';
-    return Ops.bookingConfirmed(b) ? full : util.maskAddress(full);
+    return Ops.addrReveal(b) ? full : util.maskAddress(full);
+  };
+  // Address cell HTML — once CONFIRMED the address text itself becomes a keyless
+  // Google Maps link (Issue 3/4: no buttons); otherwise the masked locality as
+  // plain (escaped) text. Returns '' for an empty address.
+  Ops.addrHtml = function (b, which) {
+    var full = (which === 'to') ? (b.toAddr || '') : (b.fromAddr || '');
+    if (!full) return '';
+    if (!Ops.addrReveal(b)) return util.esc(util.maskAddress(full));
+    var url = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(full);
+    return '<a href="' + util.esc(url) + '" target="_blank" rel="noopener" title="Google マップで開く" ' +
+      'style="color:inherit;text-decoration:underline;text-underline-offset:2px">' + util.esc(full) + '</a>';
   };
 
   /* Google Maps — keyless URL schemes work today (no API key). Static-map
@@ -259,19 +277,14 @@
         : null;   // placeholder until a key is provisioned
     },
   };
-  /* Address extras for a detail view: a "reveals after confirmation" note while
-     unconfirmed, or keyless Google Maps links once the full address is shown. */
+  /* Address extras for a detail view. Map BUTTONS were removed (Issue 3) — once
+     confirmed, the address text itself is the map link (Ops.addrHtml / Issue 4).
+     While unconfirmed this shows only the "reveals after confirmation" note; when
+     revealed it adds nothing (no buttons). Restricted (cancelled/completed) views
+     never call this. */
   Ops.addrExtraHtml = function (b) {
-    if (!Ops.bookingConfirmed(b)) {
-      return '<div style="font-size:.76rem;color:var(--hm-muted,#8a8f86);margin:6px 2px 0">' + util.esc(T('privacy.hidden')) + '</div>';
-    }
-    // Confirmed → keyless Google Maps navigation buttons (standard URLs, no API key).
-    if (window.HMMaps) return HMMaps.buttons(b.fromAddr, b.toAddr);
-    // Fallback (lib not loaded): the two original "open in Maps" search links.
-    var link = function (addr, key) {
-      return addr ? '<a target="_blank" rel="noopener" href="' + Ops.maps.routeUrl(addr) + '" style="display:inline-flex;align-items:center;gap:5px;font-size:.8rem;font-weight:600;color:var(--hm-green,#2C3626);text-decoration:none;margin:6px 12px 0 2px">📍 ' + util.esc(T(key)) + '</a>' : '';
-    };
-    return link(b.fromAddr, 'privacy.mapFrom') + link(b.toAddr, 'privacy.mapTo');
+    if (Ops.addrReveal(b)) return '';
+    return '<div style="font-size:.76rem;color:var(--hm-muted,#8a8f86);margin:6px 2px 0">' + util.esc(T('privacy.hidden')) + '</div>';
   };
 
   /* ── Auth (reuses hm-api/admin-login.php; hybrid session + HMAC token) ─────

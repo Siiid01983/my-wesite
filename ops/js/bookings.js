@@ -110,12 +110,14 @@
   }
 
   function kv(k, v) { return v ? '<div class="ops-kv"><span class="k">' + k + '</span><span class="v">' + U.esc(v) + '</span></div>' : ''; }
+  // Raw value = TRUSTED pre-built HTML (Ops.addrHtml escapes its own text) — clickable address (Issue 4).
+  function kvRaw(k, v) { return v ? '<div class="ops-kv"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>' : ''; }
 
   function openDetail(dbId) {
     var b = state.all.filter(function (x) { return String(x.dbId) === String(dbId); })[0];
     if (!b) return;
 
-    var addr = (b.fromAddr ? kv(t('bookings.from'), Ops.addrText(b, 'from')) : '') + (b.toAddr ? kv(t('bookings.to'), Ops.addrText(b, 'to')) : '');
+    var addr = (b.fromAddr ? kvRaw(t('bookings.from'), Ops.addrHtml(b, 'from')) : '') + (b.toAddr ? kvRaw(t('bookings.to'), Ops.addrHtml(b, 'to')) : '');
     var items = (b.items && b.items.length) ? kv(t('bookings.items'), b.items.join('、')) : '';
 
     var nexts = (NEXT[b.status] || []).slice();

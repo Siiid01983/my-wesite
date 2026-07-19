@@ -268,15 +268,24 @@
       return '<a class="mc-att-file" data-att="' + U.esc(a.path) + '" target="_blank" rel="noopener" download>' + UI.icon('inbox') + '<span>' + U.esc(a.name) + '</span></a>';
     }).join('') + '</div>';
   }
+  // Private `chat` bucket → resolve a fresh HMAC-signed URL per attachment (same as
+  // the customer portal). 1-hour TTL + img.onerror RE-SIGN-ONCE so an expired/stale
+  // thumbnail self-heals instead of showing a broken image (Issue 5).
   function hydrateAtts(root) {
     if (!root) return;
     root.querySelectorAll('[data-att]').forEach(function (el) {
       if (el.__hy) return; el.__hy = 1;
-      Api.signChatFile(el.getAttribute('data-att')).then(function (url) {
+      var path = el.getAttribute('data-att');
+      var apply = function (url) {
         if (!url) return;
         el.setAttribute('href', url);
-        var img = el.querySelector('img'); if (img) img.src = url;
-      });
+        var img = el.querySelector('img');
+        if (img) {
+          img.onerror = function () { img.onerror = null; Api.signChatFile(path, 3600).then(function (u2) { if (u2) { el.setAttribute('href', u2); img.src = u2; } }); };
+          img.src = url;
+        }
+      };
+      Api.signChatFile(path, 3600).then(apply);
     });
   }
 
@@ -284,6 +293,10 @@
   // Always-render variant — shows a "—" placeholder when empty, so critical
   // customer fields (phone, address) stay visible regardless of booking status.
   function kvA(k, v) { return '<div class="mc-kv"><span class="k">' + k + '</span><span class="v">' + (v ? U.esc(v) : '—') + '</span></div>'; }
+  // Raw variants — value is TRUSTED pre-built HTML (e.g. Ops.addrHtml, which
+  // escapes its own text). Used for the clickable-address cells (Issue 4).
+  function kvRaw(k, v) { return v ? '<div class="mc-kv"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>' : ''; }
+  function kvARaw(k, v) { return '<div class="mc-kv"><span class="k">' + k + '</span><span class="v">' + (v || '—') + '</span></div>'; }
 
   function inventoryHtml(items) {
     if (!items || !items.length) return '<p class="mc-none">' + t('furniture.none') + '</p>';
@@ -295,13 +308,13 @@
     var b = c.booking;
     if (!b) return '<div class="mc-scroll"><p class="mc-none">' + t('calendar.noBookingLinked') + '</p></div>';
     // Address always renders as its own card; empty → an explicit "no address" note.
-    var fromA = Ops.addrText(b, 'from'), toA = Ops.addrText(b, 'to');
-    var addr = (fromA || toA)
-      ? (kvA(t('customers.currentAddr'), fromA) + kv(t('customers.destAddr'), toA))
+    // Once confirmed the address text itself is a Google Maps link (Ops.addrHtml).
+    var addr = (b.fromAddr || b.toAddr)
+      ? (kvARaw(t('customers.currentAddr'), Ops.addrHtml(b, 'from')) + kvRaw(t('customers.destAddr'), Ops.addrHtml(b, 'to')))
       : '<p class="mc-none" style="margin:6px 0">' + t('customers.noAddr') + '</p>';
     // Zip: only when the full address is exposed (post-確定) — the pre-確定 mask
-    // hides the postal code (address-privacy rule).
-    var zipRow = (Ops.bookingConfirmed(b) && b.postal) ? kv(t('customers.postal'), b.postal) : '';
+    // hides the postal code (address-privacy rule). Completed/cancelled hide it too.
+    var zipRow = (Ops.addrReveal(b) && b.postal) ? kv(t('customers.postal'), b.postal) : '';
     // Cancelled/rejected → privacy: only identity (ref/name/city/service/status).
     // Contact, full address, Maps, furniture and preferred times are withheld.
     if (Ops.bookingCancelled(b)) {
