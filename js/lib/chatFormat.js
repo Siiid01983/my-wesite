@@ -102,8 +102,9 @@
       agg[it.name] += it.qty;
     });
     if (!order.length) return '';
-    return '<div class="hm-furn-grid">' + order.map(function (n) {
-      return '<div class="hm-furn-card">' +
+    // Readable LIST (one item per line, full text, wraps) — never truncates JP names.
+    return '<div class="hm-furn-list">' + order.map(function (n) {
+      return '<div class="hm-furn-row">' +
         '<span class="hm-furn-ic" aria-hidden="true">' + furnIcon(n) + '</span>' +
         '<span class="hm-furn-nm">' + esc(n) + '</span>' +
         '<span class="hm-furn-qty">×' + agg[n] + '</span>' +
@@ -175,11 +176,12 @@
     if (_cssDone) return; _cssDone = true;
     if (typeof document === 'undefined') return;
     var css =
-      '.hm-furn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin:4px 0}' +
-      '.hm-furn-card{display:flex;align-items:center;gap:8px;padding:9px 10px;background:#fff;border:1px solid #e6e7e2;border-radius:11px;box-shadow:0 1px 2px rgba(31,36,27,.05)}' +
-      '.hm-furn-ic{font-size:19px;line-height:1;flex:0 0 auto}' +
-      '.hm-furn-nm{flex:1;min-width:0;font-size:13px;font-weight:600;color:#2C3626;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-      '.hm-furn-qty{flex:0 0 auto;font-size:12px;font-weight:800;color:#3a4a32;background:rgba(154,181,122,.22);border-radius:999px;padding:2px 9px;font-variant-numeric:tabular-nums}' +
+      '.hm-furn-list{display:flex;flex-direction:column;gap:6px;margin:4px 0}' +
+      '.hm-furn-row{display:flex;align-items:flex-start;gap:9px;padding:8px 11px;background:#fff;border:1px solid #e6e7e2;border-radius:9px}' +
+      '.hm-furn-ic{font-size:18px;line-height:1.35;flex:0 0 auto}' +
+      /* full text, wraps to multiple lines, never truncated */
+      '.hm-furn-nm{flex:1;min-width:0;font-size:14px;font-weight:600;color:#2C3626;white-space:normal;word-break:break-word;line-height:1.35}' +
+      '.hm-furn-qty{flex:0 0 auto;font-size:13px;font-weight:800;color:#3a4a32;background:rgba(154,181,122,.22);border-radius:999px;padding:2px 10px;white-space:nowrap;font-variant-numeric:tabular-nums}' +
       '.hm-pref{margin:6px 0}' +
       '.hm-pref-h{font-size:12px;font-weight:700;color:#6f756a;margin:0 0 6px}' +
       '.hm-pref-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #e6e7e2;border-radius:10px;background:#fbfbf9;margin-bottom:6px}' +
@@ -187,7 +189,7 @@
       '.hm-pref-d{flex:1;font-size:13px;font-weight:600;color:#2C3626;font-variant-numeric:tabular-nums}' +
       '.hm-pref-b{flex:0 0 auto;font-size:12px;font-weight:700;color:#3a4a32;background:rgba(154,181,122,.18);border-radius:999px;padding:2px 10px}' +
       '@media (prefers-color-scheme:dark){' +
-        '.hm-furn-card{background:#20241d;border-color:#333a2c}.hm-furn-nm{color:#e8ede0}.hm-furn-qty{color:#c8e0a8;background:rgba(154,181,122,.16)}' +
+        '.hm-furn-row{background:#20241d;border-color:#333a2c}.hm-furn-nm{color:#e8ede0}.hm-furn-qty{color:#c8e0a8;background:rgba(154,181,122,.16)}' +
         '.hm-pref-row{background:#20241d;border-color:#333a2c}.hm-pref-d{color:#e8ede0}}';
     var st = document.createElement('style');
     st.id = 'hm-fmt-css';

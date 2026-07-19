@@ -629,14 +629,18 @@ function openDetail(id) {
   const furnHtml = (window.HMFmt && b.items && b.items.length)
     ? `<div style="padding:8px 0"><span style="font-size:12px;color:var(--gray-1);font-weight:500;display:block;margin-bottom:6px">お荷物</span>${HMFmt.furnitureGrid(b.items)}</div>`
     : itemsRow;
+  // Cancelled/rejected → privacy: withhold email, Maps, furniture, preferred times
+  // and notes; show only identity (name / service / city / status). Address stays
+  // masked (city/ward) since a cancelled booking is not confirmed.
+  const _cx = (b.status === 'キャンセル' || b.status === '却下');
   document.getElementById('detailBody').innerHTML =
     `<div style="margin-bottom:12px">${badge(b.status||'新規')}</div>` +
     r('サービス',b.service) + r('引越し日',fmtD(b.date)) + r('希望時間帯',b.time) +
-    r('お客様名',b.name) + r('メール',b.email) +
-    addrRows + addrHint + mapsBtns +
-    prefHtml +
-    furnHtml +
-    r('備考',b.notes) + r('受付日時',fmtDT(b.createdAt));
+    r('お客様名',b.name) + (_cx ? '' : r('メール',b.email)) +
+    addrRows + addrHint + (_cx ? '' : mapsBtns) +
+    (_cx ? '' : prefHtml) +
+    (_cx ? '' : furnHtml) +
+    (_cx ? '' : r('備考',b.notes)) + r('受付日時',fmtDT(b.createdAt));
   document.getElementById('detailPdfBtn').onclick   = () => downloadPDFBooking(id);
   document.getElementById('detailPrintBtn').onclick = () => printBooking(id);
   document.getElementById('detailInvBtn').onclick   = () => InvoiceManager.openModal(id);

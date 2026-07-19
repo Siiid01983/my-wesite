@@ -502,19 +502,21 @@
   function openDetail(id) {
     var b = byId(id); if (!b) return;
     var price = b.price || b.amount || b.total_price;
+    // Cancelled/rejected → privacy: withhold phone/email/staff, Maps, notes,
+    // preferred times and furniture; keep identity + masked city + service.
+    var cx = Ops.bookingCancelled(b);
     var addr = (kv(t('customers.currentAddr'), Ops.addrText(b, 'from')) + kv(t('customers.destAddr'), Ops.addrText(b, 'to'))) || '<p class="cal-none" style="margin:6px 0">' + t('customers.noAddr') + '</p>';
     var html =
       '<h2>' + U.esc(b.name) + t('common.honorific') + '</h2>' +
       '<div class="ops-muted" style="margin:0 0 12px;font-size:.86rem">' + t('bookings.receiptNo') + ' ' + U.esc(b.ref) + ' · <span class="cal-stbadge ' + stClass(b) + '">' + U.esc(t('status.' + Ops.toDbStatus(b.status))) + '</span></div>' +
       '<div class="ops-card" style="margin:0 0 12px;padding:4px 14px">' +
         kv(t('bookings.service'), b.service) + kv(t('bookings.moveDate'), U.fmtDateFull(b.date)) + kv(t('calendar.time'), timeLabel(b)) +
-        kv(t('bookings.phone'), b.phone) + kv(t('bookings.email'), b.email) +
-        kv(t('calendar.staff'), b.workers) + (price ? kv(t('calendar.price'), price) : '') +
+        (cx ? '' : kv(t('bookings.phone'), b.phone) + kv(t('bookings.email'), b.email) + kv(t('calendar.staff'), b.workers) + (price ? kv(t('calendar.price'), price) : '')) +
       '</div>' +
-      '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('customers.addresses') + '</div><div class="ops-card" style="margin:0 0 12px;padding:4px 14px">' + addr + '</div>' + Ops.addrExtraHtml(b) +
-      (b.notes ? '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('customers.memo') + '</div><div class="ops-card" style="margin:0 0 12px;padding:10px 14px;font-size:.9rem">' + U.esc(b.notes) + '</div>' : '') +
-      ((window.HMFmt && HMFmt.preferredOptions(b)) ? '<div class="ops-card" style="margin:0 0 12px;padding:10px 14px">' + HMFmt.preferredOptions(b) + '</div>' : '') +   // T5
-      '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('furniture.title') + '</div>' + furnitureHtml(b.items) +
+      '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('customers.addresses') + '</div><div class="ops-card" style="margin:0 0 12px;padding:4px 14px">' + addr + '</div>' + (cx ? '' : Ops.addrExtraHtml(b)) +
+      (!cx && b.notes ? '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('customers.memo') + '</div><div class="ops-card" style="margin:0 0 12px;padding:10px 14px;font-size:.9rem">' + U.esc(b.notes) + '</div>' : '') +
+      ((!cx && window.HMFmt && HMFmt.preferredOptions(b)) ? '<div class="ops-card" style="margin:0 0 12px;padding:10px 14px">' + HMFmt.preferredOptions(b) + '</div>' : '') +   // T5
+      (cx ? '' : '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('furniture.title') + '</div>' + furnitureHtml(b.items)) +
       '<div class="ops-btn-row" style="margin-top:14px">' +
         '<a class="ops-btn ghost" href="customers.html">' + UI.icon('customers') + t('calendar.customer') + '</a>' +
         '<a class="ops-btn ghost" href="message.html?booking=' + encodeURIComponent(b.dbId) + '&ref=' + encodeURIComponent(b.ref) + '">' + UI.icon('chat') + t('bookings.chat') + '</a>' +
