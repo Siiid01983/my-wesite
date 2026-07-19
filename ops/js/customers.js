@@ -119,6 +119,8 @@
   }
 
   function kv(k, v) { return v ? '<div class="ops-kv"><span class="k">' + k + '</span><span class="v">' + U.esc(v) + '</span></div>' : ''; }
+  // Raw value = TRUSTED pre-built HTML (Ops.addrHtml escapes its own text) — clickable address (Issue 4).
+  function kvRaw(k, v) { return v ? '<div class="ops-kv"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>' : ''; }
   function section(title, body) { return '<div class="ops-section-title" style="margin:16px 2px 8px">' + title + '</div><div class="ops-card" style="margin:0;padding:4px 14px">' + body + '</div>'; }
 
   /* ── Profile sheet ────────────────────────────────────────────────────────── */
@@ -223,7 +225,7 @@
 
       ((!Ops.bookingCancelled(b) && window.HMFmt && HMFmt.preferredOptions(b)) ? '<div class="ops-card" style="margin:0 0 12px;padding:10px 14px">' + HMFmt.preferredOptions(b) + '</div>' : '') +   // T5
 
-      section(t('customers.addresses'), (kv(t('customers.currentAddr'), Ops.addrText(b, 'from')) + kv(t('customers.destAddr'), Ops.addrText(b, 'to'))) || '<p class="cust-none" style="margin:6px 0">' + t('customers.noAddr') + '</p>') +
+      section(t('customers.addresses'), (kvRaw(t('customers.currentAddr'), Ops.addrHtml(b, 'from')) + kvRaw(t('customers.destAddr'), Ops.addrHtml(b, 'to'))) || '<p class="cust-none" style="margin:6px 0">' + t('customers.noAddr') + '</p>') +
       (Ops.bookingCancelled(b) ? '' : Ops.addrExtraHtml(b)) +
 
       ((!Ops.bookingCancelled(b) && (b.notes || b.internalNotes))

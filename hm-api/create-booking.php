@@ -19,6 +19,33 @@ hm_cors();
 hm_require_api_key();
 hm_rate_limit('booking', 5, 60);   // public submit: max 5 / IP / minute
 
+// Address privacy (server-side, mirrors js/lib/addressPrivacy.js maskAddress):
+// keep 都道府県 + the FIRST 市/区/町/村; drop postal / street / building / floor.
+// Privacy-first — an uncertain parse masks MORE.
+function hm_mask_address(string $a): string {
+  $a = trim($a);
+  if ($a === '') return '';
+  // Drop a leading postal code (〒123-4567 / 123-4567).
+  $a = trim(preg_replace('/^〒?\s*[0-9０-９]{3}[-‐ー－]?[0-9０-９]{4}\s*/u', '', $a));
+  if (preg_match('/^\s*([^0-9０-９]*?[都道府県])?\s*([^0-9０-９]*?[市区町村])/u', $a, $m) && ($m[2] ?? '') !== '') {
+    return preg_replace('/\s+/u', '', ($m[1] ?? '') . $m[2]);
+  }
+  if (strpos($a, ',') !== false) {                       // western: keep last two parts
+    $p = array_values(array_filter(array_map('trim', explode(',', $a))));
+    return count($p) > 2 ? implode(', ', array_slice($p, -2)) : implode(', ', $p);
+  }
+  if (preg_match('/^([^0-9０-９]+)/u', $a, $n) && mb_strlen(trim($n[1])) >= 2) return trim($n[1]);
+  return '';
+}
+// Rewrite the from:/to: address values inside a packed notes block to their masked
+// locality — used for the pre-confirmation admin notification body only.
+function hm_mask_notes_addresses(string $notes): string {
+  return preg_replace_callback('/^(from|to):\s*(.+)$/mu', function ($m) {
+    $masked = hm_mask_address($m[2]);
+    return $m[1] . ': ' . ($masked !== '' ? $masked : '（詳細は確定後に表示）');
+  }, $notes);
+}
+
 $p = hm_body(true);
 $ALLOWED = ['customer_name','customer_email','customer_phone','booking_date','service_id','status','notes','items','created_at','preferred_start_1','preferred_start_2'];
 
@@ -246,7 +273,12 @@ try {
           . "電話: {$phone}\n"
           . "日程: {$bdateStr}\n"
           . "受付ID: {$data['id']}";
-    if (!empty($data['notes'])) $body .= "\n---\n" . (string)$data['notes'];
+    // Privacy: a NEW booking is unconfirmed, so the admin Inbox/Chat notification
+    // must NOT expose the exact street address (banchi/building/floor/postal). Mask
+    // the from:/to: lines to the SERVICE AREA (都道府県 + first 市/区/町/村) here —
+    // this is the notification body only; the authoritative full address stays in
+    // bookings.notes and is revealed in Booking Details once the booking is 確定.
+    if (!empty($data['notes'])) $body .= "\n---\n" . hm_mask_notes_addresses((string)$data['notes']);
     $st = hm_db()->prepare(
       'INSERT INTO inbox_messages (id, sender, email, subject, body, body_text, booking_id, mailbox, sender_name, received_at)
        VALUES (?,?,?,?,?,?,?,?,?,NOW())'
@@ -265,6 +297,72 @@ try {
     hm_cache_invalidate_table('inbox_messages');
   } catch (Throwable $e) {
     hm_log_error('create-booking inbox row failed', ['err' => $e->getMessage(), 'booking' => $data['id']]);
+  }
+
+  // ── Customer "request received" EMAIL — the first lifecycle email ────────────
+  //  Parity with confirmed/rescheduled/cancelled (booking-status.php / reschedule.php):
+  //  a real email through the SAME EmailService/SMTP transport, telling the customer
+  //  their request was received and is UNDER REVIEW (status = 新規, no slot reserved).
+  //  Fire-and-forget (response already flushed) but ALWAYS logged — sent / failure
+  //  code / SMTP transport — never a silent failure. Independent of LINE / inbox row.
+  try {
+    if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+      // Pull display bits out of the packed notes block (bookingService._packNotes):
+      //   ref: / service: / time: / pref1: / pref2:  (all optional).
+      $nx = function (string $k) use ($block, $notes) {
+        foreach ([$block, $notes] as $hay) {
+          if (preg_match('/^' . $k . ':\s*(.+)$/m', $hay, $m)) return trim($m[1]);
+        }
+        return '';
+      };
+      $ref      = $nx('ref') ?: (string)$data['id'];
+      $service  = $nx('service');
+      $bdateStr = (string)($data['booking_date'] ?? '未定');
+      $timeBand = $nx('time');
+      $pref1    = $nx('pref1');
+      $pref2    = $nx('pref2');
+
+      $lines = [
+        '📩 ご予約リクエストを受け付けました',
+        '',
+        "{$name} 様",
+        '',
+        'この度はお問い合わせいただきありがとうございます。以下の内容でご予約リクエストを受け付けました。',
+        '担当者が確認のうえ、確定のご連絡をお送りします（現時点ではまだ確定していません）。',
+        '',
+        "予約番号: {$ref}",
+      ];
+      if ($service !== '')  $lines[] = "サービス: {$service}";
+      $lines[] = "ご希望日: {$bdateStr}" . ($timeBand !== '' ? "（{$timeBand}）" : '');
+      if ($pref1 !== '')    $lines[] = "第1希望: {$pref1}";
+      if ($pref2 !== '')    $lines[] = "第2希望: {$pref2}";
+      $lines[] = '';
+      $lines[] = '確定次第、あらためてメールでお知らせいたします。';
+      $msg = implode("\n", $lines);
+
+      $emailStatus = 'error';
+      require_once __DIR__ . '/EmailService.php';
+      if (class_exists('EmailService')) {
+        $cfg  = hm_config();
+        $acc  = EmailService::account($cfg, 'booking');
+        $html = EmailService::customerHtml($acc, $msg, $ref);
+        $er   = EmailService::deliver($cfg, ['account' => 'booking', 'to' => $email,
+                  'subject' => "【予約リクエスト受付 {$ref}】" . $name . ' 様', 'html' => $html, 'text' => $msg]);
+        if (!empty($er['ok'])) {
+          $emailStatus = 'sent';
+          hm_log_write('info.log', ['type' => 'new_booking_email', 'result' => 'sent',
+            'booking' => $data['id'], 'to' => $email, 'transport' => (string)($er['transport'] ?? '')]);
+        } else {
+          $emailStatus = (string)($er['code'] ?? 'error');
+          hm_log_error('new-booking email FAILED — customer not notified by email',
+            ['booking' => $data['id'], 'to' => $email, 'code' => (string)($er['code'] ?? 'unknown'), 'error' => (string)($er['error'] ?? '')]);
+        }
+      } else {
+        hm_log_error('new-booking email: EmailService.php unavailable', ['booking' => $data['id']]);
+      }
+    }
+  } catch (Throwable $e) {
+    hm_log_error('new-booking email exception', ['booking' => $data['id'], 'err' => $e->getMessage()]);
   }
   exit;
 } catch (Throwable $e) {

@@ -17,13 +17,46 @@
   'use strict';
   if (window.HMAddrPrivacy) return;
 
-  /* Accepts every status vocabulary in the codebase: canonical DB values
-     (confirmed|completed), Japanese labels (確定|完了), and 'done'. */
+  /* The full address (and a clickable map link) is revealed ONLY while a booking
+     is CONFIRMED (確定). Completed and cancelled bookings are terminal and privacy-
+     restricted — see restricted() — so they are intentionally EXCLUDED here. */
   function confirmed(status) {
     var raw = String(status == null ? '' : status).trim();
+    return raw.toLowerCase() === 'confirmed' || raw === '確定';
+  }
+
+  /* Privacy-restricted (terminal) states — CANCELLED or COMPLETED. These hide the
+     phone, email, full address, maps and notes across every staff surface; only the
+     identity (booking id / name / city / service / status) stays visible. */
+  function restricted(status) {
+    var raw = String(status == null ? '' : status).trim();
     var s = raw.toLowerCase();
-    return s === 'confirmed' || s === 'completed' || s === 'done'
-        || raw === '確定' || raw === '完了';
+    return s === 'cancelled' || s === 'canceled' || s === 'completed' || s === 'done'
+        || raw === 'キャンセル' || raw === '却下' || raw === '完了';
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  /* Keyless Google Maps search URL for an address (no API key, works everywhere). */
+  function mapsUrl(addr) {
+    return addr ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(addr) : '';
+  }
+  /* HTML for an address cell: once CONFIRMED the full address becomes a clickable
+     link that opens Google Maps (Issue 4 — no buttons, the text itself is the link);
+     before confirmation only the masked locality is shown as plain text. Returns ''
+     for an empty address so callers can omit the row. */
+  function addrHtml(fullAddr, status) {
+    var full = String(fullAddr == null ? '' : fullAddr);
+    if (!full) return '';
+    if (confirmed(status)) {
+      return '<a href="' + esc(mapsUrl(full)) + '" target="_blank" rel="noopener" ' +
+        'title="Google マップで開く" style="color:inherit;text-decoration:underline;text-underline-offset:2px">' +
+        esc(full) + '</a>';
+    }
+    return esc(maskAddress(full));
   }
 
   /* Before 確定, show only the SERVICE AREA — 都道府県 + the first 市/区/町/村
@@ -57,8 +90,11 @@
 
   window.HMAddrPrivacy = {
     confirmed: confirmed,
+    restricted: restricted,
     maskAddress: maskAddress,
     addrText: addrText,
+    addrHtml: addrHtml,
+    mapsUrl: mapsUrl,
     /* i18n-free note strings (Admin/Portal are JP-first). */
     HINT_JA: '詳細住所は確定後に表示されます',
     HINT_EN: 'Full address will be visible after booking confirmation.',

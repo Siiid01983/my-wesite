@@ -513,6 +513,8 @@
 
   /* ── Detail modal ──────────────────────────────────────────────────────── */
   function kv(k, v) { return v ? '<div class="ops-kv"><span class="k">' + k + '</span><span class="v">' + U.esc(v) + '</span></div>' : ''; }
+  // Raw value = TRUSTED pre-built HTML (Ops.addrHtml escapes its own text) — clickable address (Issue 4).
+  function kvRaw(k, v) { return v ? '<div class="ops-kv"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>' : ''; }
   function furnitureHtml(items) {
     if (!items || !items.length) return '<div class="cal-none">' + t('furniture.none') + '</div>';
     if (window.HMFmt) return HMFmt.furnitureGrid(items);   // T4 — icon + name + ×qty cards
@@ -529,7 +531,7 @@
     // Cancelled/rejected → privacy: withhold phone/email/staff, Maps, notes,
     // preferred times and furniture; keep identity + masked city + service.
     var cx = Ops.bookingCancelled(b);
-    var addr = (kv(t('customers.currentAddr'), Ops.addrText(b, 'from')) + kv(t('customers.destAddr'), Ops.addrText(b, 'to'))) || '<p class="cal-none" style="margin:6px 0">' + t('customers.noAddr') + '</p>';
+    var addr = (kvRaw(t('customers.currentAddr'), Ops.addrHtml(b, 'from')) + kvRaw(t('customers.destAddr'), Ops.addrHtml(b, 'to'))) || '<p class="cal-none" style="margin:6px 0">' + t('customers.noAddr') + '</p>';
     var html =
       '<h2>' + U.esc(b.name) + t('common.honorific') + '</h2>' +
       '<div class="ops-muted" style="margin:0 0 12px;font-size:.86rem">' + t('bookings.receiptNo') + ' ' + U.esc(b.ref) + ' · <span class="cal-stbadge ' + stClass(b) + '">' + U.esc(t('status.' + Ops.toDbStatus(b.status))) + '</span></div>' +

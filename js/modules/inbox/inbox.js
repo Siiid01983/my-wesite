@@ -261,6 +261,10 @@
     return '<div class="ibx-atts" style="margin-top:8px">' + items + '</div>';
   }
   // Resolve signed URLs for any not-yet-hydrated attachment placeholders in scope.
+  // The `chat` bucket is private, so admin reads need a fresh HMAC-signed URL just
+  // like the customer portal (which gets its URL from chat.php). A 1-hour TTL keeps
+  // thumbnails valid while a thread stays open, and img.onerror RE-SIGNS ONCE so a
+  // stale/expired URL self-heals instead of leaving a broken image (Issue 5).
   function _hydrateAttachments(scope) {
     var sb = window.api;
     if (!sb || !sb.storage || !scope) return;
@@ -268,15 +272,23 @@
     Array.prototype.forEach.call(nodes, function (el) {
       el.setAttribute('data-att-done', '1');
       var path = el.getAttribute('data-att-path');
-      sb.storage.from('chat').createSignedUrl(path, 300).then(function (r) {
-        var url = r && r.data && r.data.signedUrl;
-        if (!url) return;
+      var isImg = el.getAttribute('data-att-kind') === 'img';
+      var sign = function (cb) {
+        sb.storage.from('chat').createSignedUrl(path, 3600).then(function (r) {
+          var url = r && r.data && r.data.signedUrl;
+          if (url) cb(url);
+        }).catch(function () {});
+      };
+      sign(function (url) {
         el.href = url;
-        if (el.getAttribute('data-att-kind') === 'img') {
+        if (isImg) {
           var img = el.querySelector('img');
-          if (img) img.src = url;
+          if (img) {
+            img.onerror = function () { img.onerror = null; sign(function (u2) { el.href = u2; img.src = u2; }); };
+            img.src = url;
+          }
         }
-      }).catch(function () {});
+      });
     });
   }
 
@@ -469,13 +481,11 @@
     var ctx = _bookingCtx[t.latest && t.latest.booking_id]; if (!ctx) return '';
     var pref = HMFmt.preferredOptions(ctx);
     var furn = (ctx.items && ctx.items.length) ? HMFmt.furnitureGrid(ctx.items) : '';
-    // Keyless Google Maps buttons — only when the booking is confirmed (address unlocked).
-    var confirmed = window.HMAddrPrivacy && HMAddrPrivacy.confirmed(ctx.status);
-    var maps = (window.HMMaps && confirmed && (ctx.fromAddr || ctx.toAddr)) ? HMMaps.buttons(ctx.fromAddr, ctx.toAddr) : '';
-    if (!pref && !furn && !maps) return '';
+    // Map buttons removed (Issue 3). Address is never surfaced here pre-confirmation;
+    // the confirmed address (as a clickable Maps link) lives in Booking Details.
+    if (!pref && !furn) return '';
     var inner = (pref || '') +
-      (furn ? '<div style="font-size:12px;color:var(--gray-1);font-weight:600;margin:8px 0 4px">お荷物</div>' + furn : '') +
-      (maps || '');
+      (furn ? '<div style="font-size:12px;color:var(--gray-1);font-weight:600;margin:8px 0 4px">お荷物</div>' + furn : '');
     return '<div class="ibx-ctx" style="margin:8px 0;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg-soft-2)">' + inner + '</div>';
   }
 

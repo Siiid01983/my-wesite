@@ -599,6 +599,8 @@ function openDetail(id) {
   const b = BookingService.getBookings().find(b => b.id === id); if (!b) return;
   document.getElementById('detailRef').textContent = b.id;
   const r = (l,v) => `<div style="display:flex;padding:8px 0;border-bottom:1px solid var(--line-2);gap:12px"><span style="font-size:12px;color:var(--gray-1);font-weight:500;width:110px;flex-shrink:0">${l}</span><span style="font-size:13px;color:var(--ink);flex:1">${esc(String(v||'—'))}</span></div>`;
+  // Raw variant — value is TRUSTED pre-built HTML (HMAddrPrivacy.addrHtml escapes its own text) for the clickable address (Issue 4).
+  const rRaw = (l,v) => `<div style="display:flex;padding:8px 0;border-bottom:1px solid var(--line-2);gap:12px"><span style="font-size:12px;color:var(--gray-1);font-weight:500;width:110px;flex-shrink:0">${l}</span><span style="font-size:13px;color:var(--ink);flex:1">${v||'—'}</span></div>`;
   const itemsRow = (b.items && b.items.length)
     ? `<div style="display:flex;padding:8px 0;border-bottom:1px solid var(--line-2);gap:12px">
         <span style="font-size:12px;color:var(--gray-1);font-weight:500;width:110px;flex-shrink:0">お荷物</span>
@@ -612,17 +614,16 @@ function openDetail(id) {
   // 確定 / 完了; before that only the locality is exposed (shared helper — same
   // rule as Ops + Portal). Single-location services (junk removal / furniture
   // assembly) collect one 作業場所 instead of dual addresses.
-  const _mask = a => (window.HMAddrPrivacy ? HMAddrPrivacy.addrText(a, b.status) : a);
-  const _fa = _mask(b.fromAddr), _ta = _mask(b.toAddr);
+  // Once 確定, the address text itself is a keyless Google Maps link (Issue 4);
+  // before that only the masked locality (plain text). Map BUTTONS removed (Issue 3).
+  const _addrHtml = a => (window.HMAddrPrivacy ? HMAddrPrivacy.addrHtml(a, b.status) : esc(a || ''));
+  const _fa = _addrHtml(b.fromAddr), _ta = _addrHtml(b.toAddr);
   const addrRows = bkIsSingleLoc(b)
-    ? r('作業場所', _fa)
-    : r('引越し元', _fa) + r('引越し先', _ta);
-  const addrHint = (window.HMAddrPrivacy && !HMAddrPrivacy.confirmed(b.status) && (b.fromAddr || b.toAddr))
+    ? rRaw('作業場所', _fa)
+    : rRaw('引越し元', _fa) + rRaw('引越し先', _ta);
+  const addrHint = (window.HMAddrPrivacy && !HMAddrPrivacy.confirmed(b.status) && !HMAddrPrivacy.restricted(b.status) && (b.fromAddr || b.toAddr))
     ? `<div style="font-size:11.5px;color:var(--gray-1);padding:6px 0 2px">${esc(HMAddrPrivacy.HINT_JA)}</div>`
     : '';
-  // Keyless Google Maps navigation buttons — only once confirmed (full address shown).
-  const mapsBtns = (window.HMMaps && window.HMAddrPrivacy && HMAddrPrivacy.confirmed(b.status) && (b.fromAddr || b.toAddr))
-    ? HMMaps.buttons(b.fromAddr, b.toAddr) : '';
   // T5 — the two requested date/time-band options (existing preferred_start_* data).
   const prefHtml = (window.HMFmt && HMFmt.preferredOptions(b)) ? `<div style="padding:8px 0">${HMFmt.preferredOptions(b)}</div>` : '';
   // T4 — furniture as icon + name + ×qty cards (fall back to the plain chips row).
@@ -632,12 +633,14 @@ function openDetail(id) {
   // Cancelled/rejected → privacy: withhold email, Maps, furniture, preferred times
   // and notes; show only identity (name / service / city / status). Address stays
   // masked (city/ward) since a cancelled booking is not confirmed.
-  const _cx = (b.status === 'キャンセル' || b.status === '却下');
+  // Privacy-restricted (terminal): CANCELLED / 却下 AND COMPLETED (完了) hide
+  // email, notes, furniture, preferred times and the full address (masked to city).
+  const _cx = (b.status === 'キャンセル' || b.status === '却下' || b.status === '完了');
   document.getElementById('detailBody').innerHTML =
     `<div style="margin-bottom:12px">${badge(b.status||'新規')}</div>` +
     r('サービス',b.service) + r('引越し日',fmtD(b.date)) + r('希望時間帯',b.time) +
     r('お客様名',b.name) + (_cx ? '' : r('メール',b.email)) +
-    addrRows + addrHint + (_cx ? '' : mapsBtns) +
+    addrRows + addrHint +
     (_cx ? '' : prefHtml) +
     (_cx ? '' : furnHtml) +
     (_cx ? '' : r('備考',b.notes)) + r('受付日時',fmtDT(b.createdAt));
