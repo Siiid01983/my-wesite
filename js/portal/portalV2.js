@@ -46,6 +46,13 @@ window.PortalV2 = (function () {
     var p = function (n){ return String(n).padStart(2,'0'); };
     return d.getFullYear()+'/'+p(d.getMonth()+1)+'/'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
   }
+  // Scheduled-time label from start_at/end_at (calendar source of truth).
+  function _schedTime(startAt, endAt) {
+    if (!startAt) return '';
+    var hm = function (s) { var m = /(\d{1,2}):(\d{2})/.exec(String(s).slice(10)); return m ? (('0' + m[1]).slice(-2) + ':' + m[2]) : ''; };
+    var s = hm(startAt), e = endAt ? hm(endAt) : '';
+    return s ? (e ? s + '〜' + e : s) : '';
+  }
   function parseExtras(notes) {
     var n = String(notes || ''); var idx = n.indexOf('[HM_EXTRAS]');
     var user = (idx >= 0 ? n.slice(0, idx) : n).replace(/\s+$/, '');
@@ -169,7 +176,7 @@ window.PortalV2 = (function () {
     bodyEl.innerHTML =
       '<div class="pv2-d-status">' + badge(r.status) + '</div>' +
       '<div class="pv2-fields">' +
-        _field('予約番号', refDisp) + _field('引越し日', fmtDate(r.booking_date)) + _field('時間帯', ex.time) +
+        _field('予約番号', refDisp) + _field('引越し日', fmtDate(r.booking_date)) + _field('時間帯', _schedTime(r.start_at, r.end_at) || ex.time) +
         _field('サービス', svc) + _field('お名前', r.customer_name) + _field('メール', r.customer_email) +
         _field('電話番号', r.customer_phone) + _field('現住所/作業場所', ex.from) + _field('引越し先', ex.to) +
         _field('受付日', (r.created_at ? fmtCreated(r.created_at).slice(0,10) : '—')) +
