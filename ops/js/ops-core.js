@@ -149,6 +149,16 @@
     });
     return out;
   }
+  // Scheduled-time label from start_at/end_at (the calendar's source of truth), so
+  // a drag/resize that updates start_at propagates the TIME to every view. Falls
+  // back to the packed notes band when the booking has no scheduled start yet.
+  function schedTimeLabel(startAt, endAt, fallback) {
+    if (!startAt) return fallback || '';
+    var hm = function (s) { var m = /(\d{1,2}):(\d{2})/.exec(String(s).slice(10)); return m ? (('0' + m[1]).slice(-2) + ':' + m[2]) : ''; };
+    var s = hm(startAt), e = endAt ? hm(endAt) : '';
+    return s ? (e ? s + '〜' + e : s) : (fallback || '');
+  }
+  Ops.schedTimeLabel = schedTimeLabel;
   // Pull a Japanese postal code (〒123-4567 or 123-4567) out of an address string.
   function extractPostal(s) {
     var m = String(s == null ? '' : s).match(/〒?\s*([0-9０-９]{3})[-‐ー－]?([0-9０-９]{4})/);
@@ -167,7 +177,9 @@
       fromAddr: e.from || '',
       toAddr: e.to || '',
       service: r.service_id || e.service || '',
-      time: e.time || '',
+      // Prefer the SCHEDULED time (start_at/end_at — what the calendar edits) so a
+      // drag/resize propagates to every detail view; fall back to the notes band.
+      time: schedTimeLabel(r.start_at, r.end_at, e.time) || '',
       workers: e.workers || '',
       // Furniture/items: prefer the `items` DB column (JSON array, what get-booking/
       // rest.php return) and fall back to the packed notes list — mirrors the admin
@@ -416,11 +428,12 @@
     },
     updateBookingStatus: function (dbId, jpStatus) {
       var db = Ops.toDbStatus(jpStatus);
-      // Confirm / cancel go through the lifecycle endpoint so the (date, band)
-      // slot is RESERVED / RELEASED via the canonical slot layer (_slots.php) —
-      // a confirmed booking blocks its band in availability + the calendar. Other
-      // transitions stay a lightweight direct status write.
-      if (db === 'confirmed' || db === 'cancelled') return Api.setBookingStatus(dbId, db);
+      // Confirm / cancel / complete go through the lifecycle endpoint so the
+      // (date, band) slot is RESERVED / RELEASED via the canonical slot layer
+      // (confirm reserves, cancel releases, complete keeps) AND the customer
+      // lifecycle EMAIL is sent (booking-status.php). Other transitions stay a
+      // lightweight direct status write.
+      if (db === 'confirmed' || db === 'cancelled' || db === 'completed') return Api.setBookingStatus(dbId, db);
       return Api.rest({
         table: 'bookings', action: 'update',
         values: { status: db, updated_at: new Date().toISOString().slice(0, 19).replace('T', ' ') },

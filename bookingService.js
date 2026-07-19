@@ -83,6 +83,14 @@ function _parseItems(raw) {
 
 // ── Field mappers ─────────────────────────────────────────────────────────────
 
+// Scheduled-time label from start_at/end_at (the calendar's source of truth).
+function _schedTimeLabel(startAt, endAt) {
+  if (!startAt) return '';
+  const hm = s => { const m = /(\d{1,2}):(\d{2})/.exec(String(s).slice(10)); return m ? (('0' + m[1]).slice(-2) + ':' + m[2]) : ''; };
+  const s = hm(startAt), e = endAt ? hm(endAt) : '';
+  return s ? (e ? s + '〜' + e : s) : '';
+}
+
 function _bookingToRow(b) {
   const row = {
     customer_name:  b.name      || '',
@@ -127,7 +135,9 @@ function _rowToBooking(r) {
                || extraItems
                || parsedItems,
     workers:   extra.workers || parsedWorkers,
-    time:      extra.time    || '',
+    // Prefer the SCHEDULED time (start_at/end_at, edited by the calendar) so a
+    // reschedule propagates; fall back to the notes band.
+    time:      _schedTimeLabel(r.start_at, r.end_at) || extra.time || '',
     createdAt: r.created_at  || new Date().toISOString(),
     // T5 — the two requested date/time-band options (existing columns; display only).
     preferred_start_1: r.preferred_start_1 || extra.pref1 || '',

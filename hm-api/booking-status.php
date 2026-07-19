@@ -46,6 +46,8 @@ function bkst_out(array $payload, bool $isCli, int $status = 200): void {
 const HM_BKST_MAP = [
   'accepted'       => 'confirmed',
   'confirmed'      => 'confirmed',
+  'completed'      => 'completed',
+  'complete'       => 'completed',
   'cancelled'      => 'cancelled',
   'canceled'       => 'cancelled',
   'needs_revision' => 'needs_revision',
@@ -133,6 +135,7 @@ try {
   // Customer-facing message (clean, professional). Needs_Revision carries the note.
   $head = [
     'confirmed'      => '✅ ご予約が確定しました',
+    'completed'      => '🎉 引越しが完了しました。ご利用ありがとうございました',
     'cancelled'      => '❌ ご予約がキャンセルされました',
     'needs_revision' => '✏️ ご予約内容のご確認をお願いします',
     'pending'        => '🕒 ご予約を確認中です',
@@ -222,7 +225,40 @@ try {
     hm_cache_invalidate_table('inbox_messages');
   }
 
-  bkst_out(['ok' => true, 'booking_id' => $bookingId, 'status' => $status, 'notified' => $notifyCustomer], $isCli);
+  // ── Customer EMAIL (Phase B) — a real email for the lifecycle events, IN ADDITION
+  //    to the in-app inbox row. Sent regardless of the `notify` flag (which only
+  //    governs the inbox row): Ops confirm passes notify=false yet the customer must
+  //    still get the email. Non-fatal + ALWAYS logged (success / failure / SMTP
+  //    error) — never silently fails; a send error does not fail the status change.
+  $emailStatus = 'skipped';
+  if (in_array($status, ['confirmed', 'completed', 'cancelled'], true)
+      && $email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    $emailStatus = 'error';
+    try {
+      require_once __DIR__ . '/EmailService.php';
+      if (class_exists('EmailService')) {
+        $ecfg = hm_config();
+        $subj = "【予約 {$ref}】" . $head;
+        $acc  = EmailService::account($ecfg, 'booking');
+        $html = EmailService::customerHtml($acc, $msg, $ref);
+        $eres = EmailService::deliver($ecfg, ['account' => 'booking', 'to' => $email, 'subject' => $subj, 'html' => $html, 'text' => $msg]);
+        if (!empty($eres['ok'])) {
+          $emailStatus = 'sent';
+          if (function_exists('hm_log_write')) hm_log_write('info.log', ['type' => 'booking_status_email', 'result' => 'sent', 'status' => $status, 'booking' => $bookingId, 'to' => $email, 'transport' => (string)($eres['transport'] ?? '')]);
+        } else {
+          $emailStatus = (string)($eres['code'] ?? 'error');
+          if (function_exists('hm_log_error')) hm_log_error('booking-status email FAILED — customer not notified by email', ['status' => $status, 'booking' => $bookingId, 'to' => $email, 'code' => (string)($eres['code'] ?? 'unknown'), 'error' => (string)($eres['error'] ?? '')]);
+        }
+      } else {
+        $emailStatus = 'service_missing';
+        if (function_exists('hm_log_error')) hm_log_error('booking-status email: EmailService.php unavailable', ['status' => $status, 'booking' => $bookingId]);
+      }
+    } catch (Throwable $e) {
+      if (function_exists('hm_log_error')) hm_log_error('booking-status email exception', ['status' => $status, 'booking' => $bookingId, 'err' => $e->getMessage()]);
+    }
+  }
+
+  bkst_out(['ok' => true, 'booking_id' => $bookingId, 'status' => $status, 'notified' => $notifyCustomer, 'email' => $emailStatus], $isCli);
 
 } catch (HmSlotConflict $e) {
   // Confirmation refused: the time-band is full or closed (capacity exhausted).
