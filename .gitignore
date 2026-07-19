@@ -2,6 +2,7 @@ node_modules/
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 .claude/skills/
+.agents/
 *.png
 js/config/env.js
 
