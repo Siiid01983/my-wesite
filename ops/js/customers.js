@@ -211,7 +211,8 @@
       '<h2>' + t('customers.detailTitle') + '</h2>' +
       '<div class="ops-muted" style="margin:0 0 6px;font-size:.86rem">' + t('bookings.receiptNo') + ' ' + U.esc(b.ref) + ' · ' + UI.statusBadge(b.status) + '</div>' +
 
-      section(t('customers.customerInfo'), kv(t('customers.name'), (b.name || '') && b.name + t('common.honorific')) + kv(t('bookings.phone'), b.phone) + kv(t('bookings.email'), b.email)) +
+      // Cancelled/rejected → privacy: hide phone/email (+ notes/preferred/Maps/furniture below).
+      section(t('customers.customerInfo'), kv(t('customers.name'), (b.name || '') && b.name + t('common.honorific')) + (Ops.bookingCancelled(b) ? '' : kv(t('bookings.phone'), b.phone) + kv(t('bookings.email'), b.email))) +
 
       section(t('customers.movingInfo'),
         kv(t('bookings.receiptNo'), b.ref) +
@@ -220,17 +221,18 @@
         (b.time ? kv(t('bookings.timeSlot'), b.time) : '') +
         kv(t('common.status'), t('status.' + Ops.toDbStatus(b.status)))) +
 
-      ((window.HMFmt && HMFmt.preferredOptions(b)) ? '<div class="ops-card" style="margin:0 0 12px;padding:10px 14px">' + HMFmt.preferredOptions(b) + '</div>' : '') +   // T5
+      ((!Ops.bookingCancelled(b) && window.HMFmt && HMFmt.preferredOptions(b)) ? '<div class="ops-card" style="margin:0 0 12px;padding:10px 14px">' + HMFmt.preferredOptions(b) + '</div>' : '') +   // T5
 
       section(t('customers.addresses'), (kv(t('customers.currentAddr'), Ops.addrText(b, 'from')) + kv(t('customers.destAddr'), Ops.addrText(b, 'to'))) || '<p class="cust-none" style="margin:6px 0">' + t('customers.noAddr') + '</p>') +
-      Ops.addrExtraHtml(b) +
+      (Ops.bookingCancelled(b) ? '' : Ops.addrExtraHtml(b)) +
 
-      ((b.notes || b.internalNotes)
+      ((!Ops.bookingCancelled(b) && (b.notes || b.internalNotes))
         ? section(t('customers.memo'), kv(t('customers.custMemo'), b.notes) + kv(t('customers.internalMemo'), b.internalNotes))
         : '') +
 
-      '<div class="ops-section-title" style="margin:16px 2px 8px">' + t('furniture.title') + '</div>' +
-      inventoryHtml(b.items);
+      (Ops.bookingCancelled(b) ? '' :
+        '<div class="ops-section-title" style="margin:16px 2px 8px">' + t('furniture.title') + '</div>' +
+        inventoryHtml(b.items));
 
     detailSheet.open(html);
   }

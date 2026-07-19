@@ -133,14 +133,13 @@
         kv(t('bookings.service'), b.service) +
         (b.workers ? kv(t('bookings.workers'), b.workers) : '') +
         addr + (window.HMFmt ? '' : items) +
-        kv(t('bookings.email'), b.email) +
-        kv(t('bookings.phone'), b.phone) +
-        (b.notes ? kv(t('bookings.notes'), b.notes) : '') +
+        // Cancelled/rejected → hide contact + notes (privacy). Address stays masked (city).
+        (Ops.bookingCancelled(b) ? '' : kv(t('bookings.email'), b.email) + kv(t('bookings.phone'), b.phone) + (b.notes ? kv(t('bookings.notes'), b.notes) : '')) +
         kv(t('bookings.receivedAt'), U.fmtDateFull(b.createdAt)) +
       '</div>' +
-      Ops.addrExtraHtml(b) +
-      ((window.HMFmt && HMFmt.preferredOptions(b)) ? '<div class="ops-card" style="margin:0 0 14px;padding:10px 14px">' + HMFmt.preferredOptions(b) + '</div>' : '') +   // T5
-      ((window.HMFmt && b.items && b.items.length)   // T4 — furniture grid
+      (Ops.bookingCancelled(b) ? '' : Ops.addrExtraHtml(b)) +
+      ((!Ops.bookingCancelled(b) && window.HMFmt && HMFmt.preferredOptions(b)) ? '<div class="ops-card" style="margin:0 0 14px;padding:10px 14px">' + HMFmt.preferredOptions(b) + '</div>' : '') +   // T5
+      ((!Ops.bookingCancelled(b) && window.HMFmt && b.items && b.items.length)   // T4 — furniture grid
         ? '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('furniture.title') + '</div>' + HMFmt.furnitureGrid(b.items)
         : '') +
 

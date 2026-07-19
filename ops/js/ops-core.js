@@ -226,6 +226,9 @@
     return n && n[1].trim().length >= 2 ? n[1].trim() : '';
   };
   Ops.bookingConfirmed = function (b) { return !!b && (b.status === '確定' || b.status === '完了'); };
+  // Cancelled/rejected → privacy: hide contact + detail fields, show only identity
+  // (ref / name / city / service). Consumers gate phone/email/notes/furniture/maps.
+  Ops.bookingCancelled = function (b) { return !!b && (b.status === 'キャンセル' || b.status === '却下'); };
   Ops.addrText = function (b, which) {
     var full = (which === 'to') ? (b.toAddr || '') : (b.fromAddr || '');
     if (!full) return '';

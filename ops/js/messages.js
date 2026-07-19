@@ -302,6 +302,19 @@
     // Zip: only when the full address is exposed (post-確定) — the pre-確定 mask
     // hides the postal code (address-privacy rule).
     var zipRow = (Ops.bookingConfirmed(b) && b.postal) ? kv(t('customers.postal'), b.postal) : '';
+    // Cancelled/rejected → privacy: only identity (ref/name/city/service/status).
+    // Contact, full address, Maps, furniture and preferred times are withheld.
+    if (Ops.bookingCancelled(b)) {
+      return '<div class="mc-scroll">' +
+        '<div class="mc-sec">' + t('customers.customerInfo') + '</div>' +
+        '<div class="mc-card">' +
+          kvA(t('customers.name'), b.name ? b.name + t('common.honorific') : '') +
+          kv(t('bookings.service'), b.service) +
+          kv(t('customers.currentAddr'), Ops.addrText(b, 'from')) +   // masked → city/ward only
+          kv(t('common.status'), t('status.' + Ops.toDbStatus(b.status))) +
+        '</div>' +
+      '</div>';
+    }
     return '<div class="mc-scroll">' +
       '<div class="mc-sec">' + t('customers.customerInfo') + '</div>' +
       // Name / Phone / Email always visible (kvA), regardless of booking status.
