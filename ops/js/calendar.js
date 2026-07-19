@@ -475,15 +475,39 @@
     renderBody();
     UI.toast(t('common.saving'));
 
-    var values = { updated_at: nowSql(), booking_date: newDate };
-    if (setTimes || b.startAt) { if (b.startAt) values.start_at = b.startAt; if (b.endAt) values.end_at = b.endAt; }
-    dbg('persistBooking → id=' + b.dbId + ' ' + JSON.stringify(values));
-    Api.rest({ table: 'bookings', action: 'update', values: values, filters: [{ col: 'id', op: 'eq', val: b.dbId }] }).then(function (res) {
+    // A CONFIRMED booking holds a reserved slot, so a move must TRANSFER the
+    // reservation (release old + reserve new) and notify the customer — that's
+    // reschedule.php (Api.rescheduleBooking). A full/closed target → 409 slot_taken
+    // and the move is rolled back server-side, so we revert the UI too. Non-confirmed
+    // bookings hold no slot: a plain booking_date/start_at/end_at update is enough.
+    var confirmed = (typeof Ops !== 'undefined' && Ops.bookingConfirmed) ? Ops.bookingConfirmed(b) : false;
+    var persist;
+    if (confirmed && Api.rescheduleBooking) {
+      var fields = { booking_date: newDate };
+      if (b.startAt) fields.start_at = b.startAt;
+      if (b.endAt) fields.end_at = b.endAt;
+      dbg('reschedule (confirmed, slot transfer + email) → id=' + b.dbId + ' ' + JSON.stringify(fields));
+      persist = Api.rescheduleBooking(b.dbId, fields);
+    } else {
+      var values = { updated_at: nowSql(), booking_date: newDate };
+      if (setTimes || b.startAt) { if (b.startAt) values.start_at = b.startAt; if (b.endAt) values.end_at = b.endAt; }
+      dbg('persistBooking → id=' + b.dbId + ' ' + JSON.stringify(values));
+      persist = Api.rest({ table: 'bookings', action: 'update', values: values, filters: [{ col: 'id', op: 'eq', val: b.dbId }] });
+    }
+    persist.then(function (res) {
       if (res.error) {
-        dbg('⚠ PERSIST FAIL: ' + ((res.error && res.error.message) || 'error') + ' — reverting. CHAIN STOPS HERE.');
+        var code = (res.error && (res.error.code || res.error.message)) || 'error';
+        var full = String(code).indexOf('slot_taken') !== -1;
+        dbg('⚠ PERSIST FAIL: ' + code + ' — reverting. CHAIN STOPS HERE.');
         removeBk(b); b.date = prev.date; b.startAt = prev.startAt; b.endAt = prev.endAt; b.time = prev.time; addBk(b);
-        renderBody(); UI.toast(t('common.saveFailed') + '：' + ((res.error && res.error.message) || ''));
-      } else { dbg('PERSIST OK (booking_date=' + newDate + ')'); UI.toast(t('calendar.savedBk', { name: b.name })); }
+        renderBody();
+        UI.toast(full ? (t('calendar.slotTaken') || 'この時間帯は空きがありません') : (t('common.saveFailed') + '：' + code));
+      } else {
+        var moved = res.data && res.data.moved;
+        var mailed = res.data && res.data.email === 'sent';
+        dbg('PERSIST OK (booking_date=' + newDate + (moved ? ', slot moved' : '') + (mailed ? ', email sent' : '') + ')');
+        UI.toast(t('calendar.savedBk', { name: b.name }));
+      }
     });
   }
 
