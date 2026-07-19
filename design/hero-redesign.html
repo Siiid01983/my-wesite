@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hello Moving — Hero Redesign (standalone preview)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     Hello Moving — Hero redesign · standalone preview
+     Direction: "The Consignment Tag" — the customer's move as an
+     official routing tag; ministry license as an authenticating seal.
+     Brand-strict palette + one grounded kraft neutral.
+     Not wired into the live site. CTA maps to openBookingApp().
+     ============================================================ */
+
+  :root{
+    /* Brand-strict */
+    --forest:   #2C3626;   /* dark green — ink */
+    --forest-2: #384A2F;   /* depth */
+    --sage:     #9AB57A;   /* accent */
+    --sage-deep:#5F7C3F;   /* accent that passes contrast on paper */
+    --paper:    #F9F9F6;   /* off-white */
+    /* Grounded neutral — the literal material of moving, used ONLY on the tag */
+    --kraft:    #E7D8BB;
+    --kraft-2:  #DCC79E;
+    --kraft-ln: #C4AC7C;
+    --kraft-ink:#5E4B2C;
+    /* Derived text */
+    --ink-soft: #59634E;
+    --ink-mute: #7B8471;
+    --line:     rgba(44,54,38,.12);
+
+    /* Two brand fonts only. JP display falls back to the system Mincho
+       (DM Serif has no JP glyphs) — matches the live site's behaviour.
+       The "data" role is letter-spaced DM Sans, not a third family. */
+    --serif-en: "DM Serif Display", Georgia, serif;
+    --serif-jp: "DM Serif Display", "Yu Mincho", "Hiragino Mincho ProN", serif;
+    --sans:     "DM Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+    --sans-jp:  var(--sans);
+    --data:     var(--sans);
+  }
+
+  *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    font-family:var(--sans-jp);
+    color:var(--forest);
+    background:var(--paper);
+    /* faint paper warmth, not a texture gimmick */
+    background-image:
+      radial-gradient(1200px 600px at 85% -10%, rgba(154,181,122,.14), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(44,54,38,.05), transparent 55%);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .hero{
+    max-width:1140px;
+    margin-inline:auto;
+    padding:clamp(28px,6vw,64px) clamp(20px,5vw,48px) clamp(40px,7vw,80px);
+    display:grid;
+    grid-template-columns:1fr;
+    gap:clamp(36px,6vw,64px);
+    align-items:center;
+  }
+  @media(min-width:900px){
+    .hero{grid-template-columns:1.05fr .95fr; gap:clamp(48px,5vw,72px);
+          min-height:min(88vh,760px);}
+  }
+
+  /* ── Thesis column ─────────────────────────────── */
+  .lede{max-width:34rem}
+
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:.6em;
+    font-family:var(--data);
+    font-size:clamp(11px,2.6vw,12.5px);
+    letter-spacing:.14em; text-transform:uppercase;
+    color:var(--sage-deep);
+    margin:0 0 clamp(18px,3vw,26px);
+  }
+  .eyebrow::before{
+    content:""; width:26px; height:1px; background:currentColor; opacity:.6;
+  }
+
+  h1.thesis{
+    font-family:var(--serif-jp);
+    font-weight:700;
+    font-size:clamp(38px,8.2vw,74px);
+    line-height:1.08;
+    letter-spacing:.01em;
+    margin:0 0 clamp(16px,2.6vw,22px);
+    color:var(--forest);
+    text-wrap:balance;
+  }
+  h1.thesis .en{
+    display:block;
+    font-family:var(--serif-en);
+    font-style:italic;
+    font-weight:400;
+    font-size:clamp(15px,3.4vw,21px);
+    letter-spacing:.01em;
+    color:var(--sage-deep);
+    margin-top:.55em;
+    line-height:1.2;
+  }
+
+  .sub{
+    font-size:clamp(15px,3.4vw,17.5px);
+    color:var(--ink-soft);
+    margin:0 0 clamp(26px,4vw,34px);
+    max-width:30rem;
+  }
+
+  .cta-row{display:flex; flex-wrap:wrap; gap:12px; align-items:center}
+
+  .btn-primary{
+    --pad-y:15px;
+    display:inline-flex; align-items:center; gap:.7em;
+    font-family:var(--sans-jp); font-weight:700; font-size:16px;
+    padding:var(--pad-y) 30px;
+    color:var(--paper); background:var(--forest);
+    border:0; border-radius:999px; cursor:pointer;
+    text-decoration:none;
+    box-shadow:0 10px 24px -8px rgba(44,54,38,.55);
+    transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+  .btn-primary .arrow{transition:transform .22s ease}
+  .btn-primary:hover{background:var(--forest-2); transform:translateY(-2px);
+    box-shadow:0 16px 32px -10px rgba(44,54,38,.6);}
+  .btn-primary:hover .arrow{transform:translateX(4px)}
+
+  .btn-ghost{
+    display:inline-flex; align-items:center; gap:.55em;
+    font-family:var(--sans-jp); font-weight:600; font-size:14.5px;
+    padding:14px 20px;
+    color:var(--forest); background:transparent;
+    border:1.5px solid var(--line); border-radius:999px;
+    text-decoration:none; cursor:pointer;
+    transition:border-color .18s ease, background .18s ease;
+  }
+  .btn-ghost:hover{border-color:var(--sage); background:rgba(154,181,122,.1)}
+
+  :where(a,button):focus-visible{
+    outline:3px solid var(--sage-deep); outline-offset:3px; border-radius:999px;
+  }
+
+  .reassure{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    margin-top:clamp(22px,4vw,30px);
+    font-size:13px; color:var(--ink-mute);
+  }
+  .reassure .stars{color:var(--sage-deep); letter-spacing:2px; font-size:13px}
+  .reassure b{color:var(--forest); font-weight:700}
+  .dot{width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.5}
+
+  /* ── Signature: the consignment tag ────────────── */
+  .tag-stage{display:flex; justify-content:center; perspective:1200px}
+
+  .tag{
+    position:relative;
+    width:min(100%,380px);
+    background:
+      linear-gradient(155deg, var(--kraft) 0%, var(--kraft-2) 100%);
+    border:1px solid var(--kraft-ln);
+    border-radius:14px;
+    padding:26px 26px 22px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.5) inset,
+      0 30px 60px -28px rgba(44,54,38,.55),
+      0 8px 20px -12px rgba(44,54,38,.35);
+    transform-origin:32px -14px;
+    animation:tagSettle .9s cubic-bezier(.22,1,.36,1) both;
+  }
+  /* punch hole + string */
+  .tag::before{
+    content:""; position:absolute; top:16px; left:24px;
+    width:16px; height:16px; border-radius:50%;
+    background:var(--paper);
+    box-shadow:0 1px 2px rgba(44,54,38,.35) inset, 0 0 0 1px var(--kraft-ln);
+  }
+  .string{
+    position:absolute; left:32px; top:-46px; height:52px; width:2px;
+    background:linear-gradient(var(--sage-deep),var(--sage));
+    border-radius:2px; opacity:.75;
+    transform-origin:bottom center;
+    animation:stringSway .9s cubic-bezier(.22,1,.36,1) both;
+  }
+  .string::before{
+    content:""; position:absolute; top:-5px; left:-3px;
+    width:8px;height:8px;border-radius:50%;
+    background:var(--sage-deep);
+  }
+
+  .tag-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    gap:12px; padding-left:34px; margin-bottom:16px;
+  }
+  .tag-kicker{
+    font-family:var(--data); font-size:10.5px; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--kraft-ink); opacity:.8;
+  }
+  .tag-title{
+    font-family:var(--serif-jp); font-weight:700; font-size:19px;
+    color:var(--forest); line-height:1.2;
+  }
+  .tag-no{
+    font-family:var(--data); font-size:11px; color:var(--kraft-ink);
+    letter-spacing:.04em; white-space:nowrap;
+  }
+
+  .manifest{list-style:none; margin:0; padding:0;
+    border-top:1px dashed var(--kraft-ln); border-bottom:1px dashed var(--kraft-ln)}
+  .manifest li{
+    display:flex; align-items:center; gap:12px;
+    padding:12px 2px;
+    animation:rowIn .6s ease both;
+  }
+  .manifest li + li{border-top:1px dashed rgba(196,172,124,.55)}
+  .manifest li:nth-child(1){animation-delay:.30s}
+  .manifest li:nth-child(2){animation-delay:.40s}
+  .manifest li:nth-child(3){animation-delay:.50s}
+  .manifest li:nth-child(4){animation-delay:.60s}
+  .m-ico{
+    flex:0 0 auto; width:34px; height:34px; border-radius:9px;
+    display:grid; place-items:center;
+    background:rgba(95,124,63,.16); color:var(--sage-deep);
+    border:1px solid rgba(95,124,63,.25);
+  }
+  .m-ico svg{width:18px;height:18px}
+  .m-txt{display:flex; flex-direction:column; line-height:1.3}
+  .m-txt strong{font-family:var(--sans-jp); font-weight:700; font-size:14.5px; color:var(--forest)}
+  .m-txt span{font-size:11.5px; color:var(--kraft-ink); opacity:.85}
+  .m-idx{margin-left:auto; font-family:var(--data); font-size:11px;
+    color:var(--kraft-ink); opacity:.6}
+
+  /* authenticating seal */
+  .seal-row{
+    display:flex; align-items:center; gap:14px;
+    padding-top:16px; padding-left:34px;
+  }
+  .seal-copy{font-family:var(--data); font-size:10.5px; line-height:1.5;
+    color:var(--kraft-ink); letter-spacing:.03em}
+  .seal-copy b{color:var(--forest)}
+  .seal{
+    flex:0 0 auto; margin-left:auto;
+    width:78px; height:78px; border-radius:50%;
+    display:grid; place-items:center; text-align:center;
+    color:var(--sage-deep);
+    border:2px solid currentColor;
+    box-shadow:0 0 0 1.5px currentColor inset;
+    transform:rotate(-11deg);
+    opacity:.92;
+    animation:stamp .5s cubic-bezier(.2,1.4,.4,1) .75s both;
+  }
+  .seal span{font-family:var(--serif-jp); font-weight:700; font-size:17px;
+    letter-spacing:.06em; line-height:1}
+  .seal small{display:block; font-family:var(--data); font-size:7px;
+    letter-spacing:.14em; margin-top:3px; text-transform:uppercase}
+
+  /* ── Motion choreography ───────────────────────── */
+  @keyframes tagSettle{
+    0%{opacity:0; transform:rotate(7deg) translateY(-26px)}
+    60%{opacity:1; transform:rotate(-2.5deg) translateY(0)}
+    100%{opacity:1; transform:rotate(0deg) translateY(0)}
+  }
+  @keyframes stringSway{
+    0%{transform:rotate(10deg)} 60%{transform:rotate(-4deg)} 100%{transform:rotate(0)}
+  }
+  @keyframes rowIn{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+  @keyframes stamp{
+    0%{opacity:0; transform:rotate(-11deg) scale(1.5)}
+    100%{opacity:.92; transform:rotate(-11deg) scale(1)}
+  }
+  .lede > *{animation:ledeUp .7s ease both}
+  .lede > *:nth-child(1){animation-delay:.02s}
+  .lede > *:nth-child(2){animation-delay:.08s}
+  .lede > *:nth-child(3){animation-delay:.14s}
+  .lede > *:nth-child(4){animation-delay:.20s}
+  .lede > *:nth-child(5){animation-delay:.26s}
+  @keyframes ledeUp{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
+
+  @media(prefers-reduced-motion:reduce){
+    *{animation:none !important}
+  }
+
+  /* preview chrome (not part of the hero) */
+  .preview-note{
+    max-width:1140px; margin:0 auto; padding:14px clamp(20px,5vw,48px);
+    font-family:var(--data); font-size:11px; letter-spacing:.04em;
+    color:var(--ink-mute); border-top:1px dashed var(--line);
+  }
+</style>
+</head>
+<body>
+
+  <main class="hero" role="main">
+
+    <!-- Thesis column -->
+    <div class="lede">
+      <p class="eyebrow">東京 14年の実績 · 国土交通省 認可</p>
+
+      <h1 class="thesis" translate="no">
+        即日対応、<br>スマホで完結。
+        <span class="en">Same‑day moves, settled from your phone.</span>
+      </h1>
+
+      <p class="sub">
+        見積もりから予約まで、写真を送るだけ。仲介を通さない直接対応で、
+        東京・関東の引越しをその日のうちに。
+      </p>
+
+      <div class="cta-row">
+        <!-- Live site: maps to openBookingApp() -->
+        <a class="btn-primary" href="#" onclick="return false;">
+          無料見積もり依頼
+          <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6"/>
+          </svg>
+        </a>
+        <a class="btn-ghost" href="#" onclick="return false;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2C6.5 2 2 5.8 2 10.5c0 2.7 1.5 5.1 3.9 6.7-.2.7-.8 2.6-.9 3-.1.5.2.5.4.4.2-.1 2.6-1.8 3.7-2.5.9.2 1.9.3 2.9.3 5.5 0 10-3.8 10-8.5S17.5 2 12 2Z"/>
+          </svg>
+          LINEで相談
+        </a>
+      </div>
+
+      <p class="reassure">
+        <span class="stars">★★★★★</span>
+        <b>くらしのマーケット</b> 高評価
+        <span class="dot"></span>
+        14年・無事故の直接施工
+        <span class="dot"></span>
+        外国人対応 OK
+      </p>
+    </div>
+
+    <!-- Signature: the consignment tag -->
+    <div class="tag-stage">
+      <div class="tag" aria-label="引越し便 サービス内容タグ">
+        <span class="string" aria-hidden="true"></span>
+
+        <div class="tag-head">
+          <div>
+            <div class="tag-kicker">Consignment · 引越し便</div>
+            <div class="tag-title">お客様の引越し</div>
+          </div>
+          <div class="tag-no">NO. HM‑0142</div>
+        </div>
+
+        <ul class="manifest">
+          <li>
+            <span class="m-ico"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M15 4v7H5.17L4 12.17V4h11m1-2H3c-.55 0-1 .45-1 1v14l4-4h10c.55 0 1-.45 1-1V3c0-.55-.45-1-1-1zm5 4h-2v9H6v2c0 .55.45 1 1 1h11l4 4V7c0-.55-.45-1-1-1z"/></svg></span>
+            <span class="m-txt"><strong>直接対応</strong><span>仲介業者を通さない自社施工</span></span>
+            <span class="m-idx">01</span>
+          </li>
+          <li>
+            <span class="m-ico"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 15.2a3.2 3.2 0 100-6.4 3.2 3.2 0 000 6.4z"/><path fill="currentColor" d="M9 2 7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15a5 5 0 110-10 5 5 0 010 10z"/></svg></span>
+            <span class="m-txt"><strong>写真見積</strong><span>写真を送るだけで簡単に</span></span>
+            <span class="m-idx">02</span>
+          </li>
+          <li>
+            <span class="m-ico"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0a1 1 0 110 2 1 1 0 010-2zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></span>
+            <span class="m-txt"><strong>適正見積</strong><span>内容確認後の明確な料金</span></span>
+            <span class="m-idx">03</span>
+          </li>
+          <li>
+            <span class="m-ico"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg></span>
+            <span class="m-txt"><strong>個人情報保護</strong><span>お客様情報を厳重に管理</span></span>
+            <span class="m-idx">04</span>
+          </li>
+        </ul>
+
+        <div class="seal-row">
+          <div class="seal-copy">
+            国土交通省 認可<br>
+            <b>第431320058126号</b>
+          </div>
+          <div class="seal" aria-label="認可済">
+            <div><span>認可済</span><small>Licensed</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <p class="preview-note">
+    standalone preview · design/hero-redesign.html — not wired into index.html · primary CTA maps to openBookingApp()
+  </p>
+
+</body>
+</html>
