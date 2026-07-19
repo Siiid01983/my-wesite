@@ -3,6 +3,7 @@ node_modules/
 .claude/scheduled_tasks.lock
 .claude/skills/
 .agents/
+skills-lock.json
 *.png
 js/config/env.js
 
