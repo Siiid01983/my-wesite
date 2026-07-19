@@ -461,6 +461,25 @@
         .catch(function (e) { return { data: null, error: { message: (e && e.message) || 'network', isNetwork: true } }; });
     },
 
+    /* Reschedule a CONFIRMED booking (move/resize) — transfers the slot reservation
+       (release old + reserve new, atomic) AND emails the customer, via reschedule.php.
+       Normalises {ok,error} → {data,error}. 409 surfaces error.code='slot_taken'. */
+    rescheduleBooking: function (dbId, fields) {
+      return fetch(cfg.base + '/reschedule.php', {
+        method: 'POST', headers: headers(true),
+        body: JSON.stringify(Object.assign({ booking_id: dbId }, fields || {})),
+      })
+        .then(function (r) {
+          return r.text().then(function (txt) {
+            var j = null; try { j = JSON.parse(txt); } catch (_) {}
+            if (j && j.ok) return { data: j, error: null };
+            var code = (j && j.error) || ('HTTP ' + r.status);
+            return { data: null, error: { message: String(code), code: String(code), status: r.status } };
+          });
+        })
+        .catch(function (e) { return { data: null, error: { message: (e && e.message) || 'network', isNetwork: true } }; });
+    },
+
     /* Inbox / chat threads ------------------------------------------------- */
     listInbox: function () {
       return Api.rest({ table: 'inbox_messages', action: 'select', columns: '*', order: [{ col: 'created_at', ascending: false }], limit: 400 })
