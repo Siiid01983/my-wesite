@@ -84,10 +84,17 @@ if (!function_exists('hm_cap_effective')) {
     return ['capacity' => 1, 'closed' => false, 'reason' => '', 'source' => 'fallback'];
   }
 
-  /** Reserved slot count for a (date, band) — every booking_slots row counts. */
-  function hm_cap_count(PDO $db, string $date, string $band): int {
-    $st = $db->prepare('SELECT COUNT(*) FROM booking_slots WHERE booking_date = ? AND time_band = ?');
-    $st->execute([$date, $band]);
+  /** Reserved slot count for a (date, band) — every booking_slots row counts.
+   *  $excludeBookingId (optional) omits a booking's OWN reservation from the tally
+   *  so re-confirming a booking that already holds its slot isn't mis-counted. */
+  function hm_cap_count(PDO $db, string $date, string $band, string $excludeBookingId = ''): int {
+    if ($excludeBookingId !== '') {
+      $st = $db->prepare('SELECT COUNT(*) FROM booking_slots WHERE booking_date = ? AND time_band = ? AND booking_id <> ?');
+      $st->execute([$date, $band, $excludeBookingId]);
+    } else {
+      $st = $db->prepare('SELECT COUNT(*) FROM booking_slots WHERE booking_date = ? AND time_band = ?');
+      $st->execute([$date, $band]);
+    }
     return (int)$st->fetchColumn();
   }
 
@@ -115,6 +122,82 @@ if (!function_exists('hm_cap_effective')) {
   function hm_cap_day(PDO $db, string $date): array {
     $out = [];
     foreach (HM_CAP_BANDS as $b) $out[$b] = hm_cap_status($db, $date, $b);
+    return $out;
+  }
+
+  /**
+   * FULL-DAY closure state: a date is "closed" only when EVERY band is closed
+   * (the state written by the close-day admin action). Reason = the first non-empty
+   * band reason. Safe pre-migration (→ {closed:false}). This is the day-level view
+   * the calendar and the create-time guard use.
+   * @return array{closed:bool, reason:string}
+   */
+  function hm_cap_day_closed(PDO $db, string $date): array {
+    $reason = '';
+    foreach (HM_CAP_BANDS as $b) {
+      $eff = hm_cap_effective($db, $date, $b);
+      if (empty($eff['closed'])) return ['closed' => false, 'reason' => ''];
+      if ($reason === '' && !empty($eff['reason'])) $reason = (string)$eff['reason'];
+    }
+    return ['closed' => true, 'reason' => $reason];
+  }
+
+  /**
+   * SINGLE SOURCE OF TRUTH for pre-CONFIRM validation of a (date, band). Every
+   * confirm path funnels through here — Ops (booking-status.php), Admin
+   * (rest.php bookings update→confirmed), and Reschedule (reschedule.php) — so the
+   * business rules and the error taxonomy live in exactly one place. Non-mutating
+   * (validation only; the atomic reserve stays where it already is).
+   *
+   * Built from the same primitives availability.php uses (hm_cap_day_closed /
+   * hm_cap_effective / hm_cap_count), so no rule is duplicated. $band null/'' = a
+   * flexible / 時間指定なし booking → only the whole-day rule applies. $bookingId
+   * (optional) excludes the booking's OWN reservation from the capacity tally.
+   *
+   * @return array{ok:bool, reason?:string, detail?:string}
+   *   ok=true                              → may be confirmed
+   *   reason='day_closed'|'band_closed'    → closure (detail = the stored reason)
+   *   reason='slot_taken'                  → band capacity exhausted
+   */
+  function hm_cap_confirm_check(PDO $db, string $date, ?string $band, string $bookingId = ''): array {
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) return ['ok' => true];   // undated → nothing to enforce
+    // 1) whole-day closure (all bands closed)
+    $dc = hm_cap_day_closed($db, $date);
+    if (!empty($dc['closed'])) return ['ok' => false, 'reason' => 'day_closed', 'detail' => (string)($dc['reason'] ?? '')];
+    // 2) band-level closure / capacity — only when the booking carries a band
+    if ($band !== null && $band !== '' && in_array($band, HM_CAP_BANDS, true)) {
+      $eff = hm_cap_effective($db, $date, $band);
+      if (!empty($eff['closed'])) return ['ok' => false, 'reason' => 'band_closed', 'detail' => (string)($eff['reason'] ?? '')];
+      $remaining = (int)$eff['capacity'] - hm_cap_count($db, $date, $band, $bookingId);
+      if ($remaining <= 0) return ['ok' => false, 'reason' => 'slot_taken', 'detail' => ''];
+    }
+    return ['ok' => true];
+  }
+
+  /**
+   * Fully-closed days in [from, to] → { 'YYYY-MM-DD' => reason, … }. Candidate
+   * dates are specific-date rows flagged closed (what close-day writes); each is
+   * re-checked with hm_cap_day_closed so PARTIAL band closures are excluded — only
+   * whole-day closures paint red on the calendar. Bounded by the caller's range.
+   * Safe if the table doesn't exist yet (→ []).
+   */
+  function hm_cap_closed_range(PDO $db, string $from, string $to): array {
+    $out = [];
+    try {
+      $st = $db->prepare(
+        "SELECT DISTINCT booking_date FROM slot_capacity
+         WHERE is_closed = 1 AND booking_date <> ? AND booking_date BETWEEN ? AND ?"
+      );
+      $st->execute([HM_CAP_DEFAULT, $from, $to]);
+      foreach ($st as $r) {
+        $d  = (string)($r['booking_date'] ?? '');
+        if ($d === '') continue;
+        $dc = hm_cap_day_closed($db, $d);
+        if ($dc['closed']) $out[$d] = $dc['reason'];
+      }
+    } catch (Throwable $e) {
+      // table missing / query error → no closed days
+    }
     return $out;
   }
 

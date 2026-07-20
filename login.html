@@ -325,15 +325,22 @@
       });
     })();
 
-    // Deep-link prefill: the post-booking「チャットで相談する」CTA sends the
-    // just-booked customer here as login.html?ref=<reference>. Prefill the
-    // reference field so they only need to add their email (the chat intent is
-    // carried separately in sessionStorage and honoured by portal.html).
+    // Deep-link prefill: the post-booking「チャットで相談する」CTA — and the
+    // 「担当者とチャットする」button in lifecycle emails — send the customer here
+    // as login.html?ref=<reference>[&view=chat]. Prefill the reference field so
+    // they only need to add their email; when view=chat is present, stash the
+    // chat intent in sessionStorage (the SAME keys the success-screen CTA uses)
+    // so portal.html opens the Chat tab straight after login.
     (function prefillReferenceFromQuery() {
       try {
-        var qref = new URLSearchParams(location.search).get('ref');
+        var qs    = new URLSearchParams(location.search);
+        var qref  = qs.get('ref');
         var refEl = document.getElementById('reference');
         if (qref && refEl && !refEl.value) { refEl.value = qref.trim(); if (emailEl) emailEl.focus(); }
+        if ((qs.get('view') || '').toLowerCase() === 'chat') {
+          sessionStorage.setItem('hm_after_login_view', 'chat');
+          if (qref) sessionStorage.setItem('hm_after_login_ref', qref.trim());
+        }
       } catch (_) {}
     })();
 

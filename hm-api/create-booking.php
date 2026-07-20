@@ -178,6 +178,28 @@ try {
   $ph   = implode(',', array_fill(0, count($keys), '?'));
   $sql  = 'INSERT INTO bookings (' . implode(',', array_map(fn($c) => "`$c`", $keys)) . ") VALUES ($ph)";
 
+  // ── Full-day closure guard (hard stop, flag-independent) ────────────────────
+  //  A manually CLOSED day (admin close-day → all bands closed) must never accept
+  //  a booking request, even though the reserve is otherwise deferred to admin
+  //  confirmation. availability.php already hides closed days from the UI; this is
+  //  the server-side backstop against a direct/stale-client POST. Rejects with the
+  //  same 409 'slot_taken' contract the frontend already handles (reason=closed).
+  //  Defensive: a closed-check hiccup never blocks a booking on an open day.
+  $__bd = substr((string)($data['booking_date'] ?? ''), 0, 10);
+  if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $__bd)) {
+    try {
+      $__dc = hm_cap_day_closed($db, $__bd);
+      if (!empty($__dc['closed'])) {
+        hm_log_write('info.log', ['type' => 'day_closed_reject', 'endpoint' => 'create-booking',
+          'date' => $__bd, 'reason' => (string)($__dc['reason'] ?? '')]);
+        hm_json(['ok' => false, 'data' => null, 'error' => 'slot_taken', 'reason' => 'closed',
+                 'closed_reason' => (string)($__dc['reason'] ?? '')], 409);
+      }
+    } catch (Throwable $__e) {
+      hm_log_error('create-booking day-closed check failed (non-fatal)', ['err' => $__e->getMessage(), 'date' => $__bd]);
+    }
+  }
+
   // ── Phase 2: server-side slot lock (SLOT_LOCK_ENABLED, OFF by default) ──────
   //  When the flag is ON *and* this booking carries a canonical band, reserve
   //  the slot ATOMICALLY with the booking insert, BEFORE the success response is
@@ -345,7 +367,7 @@ try {
       if (class_exists('EmailService')) {
         $cfg  = hm_config();
         $acc  = EmailService::account($cfg, 'booking');
-        $html = EmailService::customerHtml($acc, $msg, $ref);
+        $html = EmailService::customerHtml($acc, $msg, $ref, EmailService::chatUrl($cfg, $ref));
         $er   = EmailService::deliver($cfg, ['account' => 'booking', 'to' => $email,
                   'subject' => "【予約リクエスト受付 {$ref}】" . $name . ' 様', 'html' => $html, 'text' => $msg]);
         if (!empty($er['ok'])) {

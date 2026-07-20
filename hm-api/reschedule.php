@@ -86,6 +86,15 @@ try {
   $newBand   = $bandOf($newStart, $bk['notes']);
   $moved = false;
 
+  // SINGLE-SOURCE validation of the TARGET slot — the SAME hm_cap_confirm_check()
+  // the Ops + admin confirm paths use. Covers a whole-day closure even for a
+  // band-less booking (the reserve below only guards band closed/full). Excludes
+  // this booking's own reservation so moving within a band isn't self-blocked.
+  if ($confirmed) {
+    $chk = hm_cap_confirm_check($db, $newDate, $newBand, $bookingId);
+    if (empty($chk['ok'])) rs_out(['ok' => false, 'error' => 'slot_taken', 'reason' => (string)($chk['reason'] ?? 'slot_taken')], $isCli, 409);
+  }
+
   hm_slot_ensure_table($db);
   $db->beginTransaction();
   try {
@@ -131,7 +140,7 @@ try {
       if (class_exists('EmailService')) {
         $cfg = hm_config();
         $acc = EmailService::account($cfg, 'booking');
-        $html = EmailService::customerHtml($acc, $msg, $ref);
+        $html = EmailService::customerHtml($acc, $msg, $ref, EmailService::chatUrl($cfg, $ref));
         $er = EmailService::deliver($cfg, ['account' => 'booking', 'to' => $email, 'subject' => "【予約 {$ref}】" . $head, 'html' => $html, 'text' => $msg]);
         if (!empty($er['ok'])) { $emailStatus = 'sent'; if (function_exists('hm_log_write')) hm_log_write('info.log', ['type' => 'reschedule_email', 'result' => 'sent', 'booking' => $bookingId, 'to' => $email, 'transport' => (string)($er['transport'] ?? '')]); }
         else { $emailStatus = (string)($er['code'] ?? 'error'); if (function_exists('hm_log_error')) hm_log_error('reschedule email FAILED', ['booking' => $bookingId, 'to' => $email, 'code' => (string)($er['code'] ?? ''), 'error' => (string)($er['error'] ?? '')]); }

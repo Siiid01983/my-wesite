@@ -154,6 +154,9 @@ return [
   //     GET <API_BASE>/send-email.php?action=selftest          (connect+auth)
   //     GET <API_BASE>/send-email.php?action=selftest&send=1    (+ test email to smtp_user)
   'mail_mode'  => 'mail',
+  // Public site origin for customer deep-links in emails (chat CTA). No trailing
+  // slash; defaults to https://hello-moving.com when omitted.
+  'site_url'   => 'https://hello-moving.com',
   'mail_from_booking' => 'booking@hello-moving.com',
   'mail_from_support' => 'support@hello-moving.com',
   'mail_from_contact' => 'contact@hello-moving.com',

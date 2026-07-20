@@ -165,6 +165,14 @@ try {
     //     Flexible / 時間指定なし bookings resolve to no band → nothing is locked.
     if ($status === 'confirmed') {
       $band = hm_slot_band_from_notes($bk['notes']);
+      // SINGLE-SOURCE pre-confirm validation (day closed / band closed / capacity)
+      // — the SAME hm_cap_confirm_check() the admin rest.php + reschedule paths use.
+      // Catches flexible / 時間指定なし bookings (no band → day rule only). Excludes
+      // this booking's own slot. Reopen the day (全日再開) to confirm a closed day.
+      $chk = hm_cap_confirm_check($db, (string)$bdate, $band, $bookingId);
+      if (empty($chk['ok'])) {
+        $c = new HmSlotConflict((string)($chk['reason'] ?? 'slot_taken')); $c->band = (string)($band ?? ''); throw $c;
+      }
       if ($band !== null) {
         hm_slot_ensure_table($db);
         // Already reserved for THIS booking (the normal case when capacity_enabled
@@ -240,7 +248,7 @@ try {
         $ecfg = hm_config();
         $subj = "【予約 {$ref}】" . $head;
         $acc  = EmailService::account($ecfg, 'booking');
-        $html = EmailService::customerHtml($acc, $msg, $ref);
+        $html = EmailService::customerHtml($acc, $msg, $ref, EmailService::chatUrl($ecfg, $ref));
         $eres = EmailService::deliver($ecfg, ['account' => 'booking', 'to' => $email, 'subject' => $subj, 'html' => $html, 'text' => $msg]);
         if (!empty($eres['ok'])) {
           $emailStatus = 'sent';

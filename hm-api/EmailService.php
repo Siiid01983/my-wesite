@@ -76,6 +76,39 @@ class EmailService {
     return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
   }
 
+  // ── Chat deep-link ───────────────────────────────────────────────────────────
+  //  Build the customer's "chat with our team" URL from the booking reference.
+  //  There is NO zero-auth portalV2.html; the real authenticated entry is
+  //  login.html, which prefills the reference (?ref=) and — via ?view=chat — is
+  //  honoured by portal.html to open the Chat tab straight after login. The base
+  //  host comes from config (site_url), defaulting to the production domain.
+  public static function chatUrl(array $cfg, string $ref): string {
+    $ref  = trim($ref);
+    if ($ref === '') return '';
+    $base = rtrim((string)($cfg['site_url'] ?? 'https://hello-moving.com'), '/');
+    return $base . '/login.html?ref=' . rawurlencode($ref) . '&view=chat';
+  }
+
+  //  Bulletproof CTA button (Gmail / Outlook desktop-VML / Apple Mail / mobile).
+  //  Fixed 320px width for Outlook via VML roundrect; the non-MSO anchor adds
+  //  max-width:80% so it stays inside narrow mobile viewports. $url is assumed
+  //  pre-validated (built by chatUrl from the booking ref) and is attribute-escaped.
+  private static function chatButton(string $url): string {
+    $u = self::esc($url);
+    return
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 20px"><tr><td align="center">'
+      . '<!--[if mso]>'
+      . '<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="' . $u . '" style="height:50px;v-text-anchor:middle;width:320px;" arcsize="16%" strokecolor="#1d4ed8" fillcolor="#1d4ed8">'
+      . '<w:anchorlock/><center style="color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:bold;">&#128172; 担当者とチャットする</center>'
+      . '</v:roundrect>'
+      . '<![endif]-->'
+      . '<!--[if !mso]><!-- -->'
+      . '<a href="' . $u . '" style="display:inline-block;background:#1d4ed8;color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:700;line-height:50px;text-align:center;text-decoration:none;width:320px;max-width:80%;border-radius:8px;mso-hide:all">&#128172; 担当者とチャットする</a>'
+      . '<!--<![endif]-->'
+      . '<div style="margin-top:8px;font-size:12px;color:#94a3b8;font-family:sans-serif">Chat with our team about your booking</div>'
+      . '</td></tr></table>';
+  }
+
   // ── Send. Returns a result array (never throws). ────────────────────────────
   //  $p: ['account','to','subject','html','text','replyTo'?,'inReplyTo'?,'references'?]
   //  inReplyTo/references thread a reply to an inbound message (In-Reply-To / References).
@@ -191,11 +224,14 @@ class EmailService {
   // ── Templates ───────────────────────────────────────────────────────────────
   //  Branded customer email (moved verbatim from send-email.php). $acc supplies
   //  the "返信先" footer address; $bookingId adds the reference row when present.
-  public static function customerHtml(array $acc, string $message, string $bookingId = ''): string {
+  public static function customerHtml(array $acc, string $message, string $bookingId = '', string $chatUrl = ''): string {
     $msgHtml    = nl2br(self::esc(trim($message)));
     $bookingRow = $bookingId
       ? '<tr><td style="padding:10px 16px;border-top:1px solid #e8e8e4;font-size:12px;font-weight:600;color:#666;width:130px">受付番号</td><td style="padding:10px 16px;border-top:1px solid #e8e8e4;font-size:13px;font-weight:700;color:#1d4ed8">' . self::esc($bookingId) . '</td></tr>'
       : '';
+    // Optional chat CTA — rendered only when a chat URL is supplied (lifecycle
+    // emails pass it; generic admin sends do not).
+    $chatCta = $chatUrl !== '' ? self::chatButton($chatUrl) : '';
 
     return '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"></head>'
       . '<body style="margin:0;padding:0;background:#f2f2ef;font-family:sans-serif">'
@@ -205,6 +241,7 @@ class EmailService {
       . '<p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,.55)">TOKYO MOVING SERVICE</p></td></tr>'
       . '<tr><td style="padding:36px"><p style="margin:0 0 20px;font-size:14px;line-height:1.9;color:#0b0f17">' . $msgHtml . '</p>'
       . ($bookingId ? '<table width="100%" style="border:1px solid #e8e8e4;border-radius:8px;margin-bottom:20px">' . $bookingRow . '</table>' : '')
+      . $chatCta
       . '</td></tr>'
       . '<tr><td style="background:#f7f7f4;padding:18px 36px;border-top:1px solid #e8e8e4"><p style="margin:0;font-size:11px;color:#aaa">'
       . 'このメールは Hello Moving より送信されています。<br>返信先: ' . self::esc($acc['email']) . '</p></td></tr>'

@@ -83,8 +83,10 @@ window.SlotCapacity = (function () {
     panel.innerHTML =
       '<div class="panel-head"><span class="panel-title">時間帯別キャパシティ</span>' +
         '<input type="date" id="hmScDate" class="price-input" style="margin-left:auto;width:auto">' +
-        '<button class="btn btn-ghost btn-sm" id="hmScCloseDay" type="button" title="この日を全時間帯休止">全日休止</button>' +
-        '<button class="btn btn-ghost btn-sm" id="hmScReopenDay" type="button" title="この日を全時間帯再開">全日再開</button>' +
+        '<span style="font-size:12px;color:#6b7280">〜</span>' +
+        '<input type="date" id="hmScDateTo" class="price-input" style="width:auto" title="終了日（連続休止の範囲・任意）">' +
+        '<button class="btn btn-ghost btn-sm" id="hmScCloseDay" type="button" title="この日（または範囲）を全時間帯休止">全日休止</button>' +
+        '<button class="btn btn-ghost btn-sm" id="hmScReopenDay" type="button" title="この日（または範囲）を全時間帯再開">全日再開</button>' +
         '<button class="btn btn-ghost btn-sm" id="hmScReload" type="button">更新</button>' +
       '</div>' +
       '<div class="panel-body">' +
@@ -100,13 +102,19 @@ window.SlotCapacity = (function () {
     dateEl.onchange = function () { _load(); };
     document.getElementById('hmScReload').onclick = function () { _load(); };
     document.getElementById('hmScCloseDay').onclick = function () {
-      var r = window.prompt('この日を全時間帯 休止 にします。理由（任意・例: 祝日 / Holiday）', '');
+      var span = _rangeLabel();
+      var r = window.prompt(span + 'を全時間帯 休止 にします。理由（任意・例: 祝日 / お盆 / Holiday）', '');
       if (r === null) return;                                   // cancelled
-      _post({ action: 'close-day', date: _date(), reason: r.trim() }, 'この日を全日休止にしました');
+      var payload = { action: 'close-day', date: _date(), reason: r.trim() };
+      var to = _dateTo(); if (to) payload.to = to;
+      _post(payload, span + 'を全日休止にしました');
     };
     document.getElementById('hmScReopenDay').onclick = function () {
-      if (!window.confirm('この日を全時間帯 再開 しますか？')) return;
-      _post({ action: 'reopen-day', date: _date() }, 'この日を全日再開しました');
+      var span = _rangeLabel();
+      if (!window.confirm(span + 'を全時間帯 再開 しますか？')) return;
+      var payload = { action: 'reopen-day', date: _date() };
+      var to = _dateTo(); if (to) payload.to = to;
+      _post(payload, span + 'を全日再開しました');
     };
     _load();
     return true;
@@ -118,6 +126,13 @@ window.SlotCapacity = (function () {
     el.style.color = kind === 'error' ? '#b91c1c' : kind === 'ok' ? '#059669' : '#6b7280';
   }
   function _date() { var el = document.getElementById('hmScDate'); return (el && el.value) || _today(); }
+  // Optional range end. Honoured only when set AND on/after the start date.
+  function _dateTo() {
+    var el = document.getElementById('hmScDateTo');
+    var v = (el && el.value) || '';
+    return (v && v >= _date()) ? v : '';   // ISO YYYY-MM-DD compares lexicographically
+  }
+  function _rangeLabel() { var to = _dateTo(); return to ? ('この期間（' + _date() + '〜' + to + '）') : 'この日'; }
 
   /* ── read: per-band status for the selected date ── */
   function _load() {
