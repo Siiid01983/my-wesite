@@ -240,6 +240,8 @@ window.PortalV2 = (function () {
       '<div class="pv2-msg-compose">' +
         '<div class="pv2-msg-pending" style="display:none"></div>' +
         '<div class="pv2-msg-row">' +
+          '<button class="pv2-msg-cam" type="button" title="カメラ（Camera）">📷</button>' +
+          '<input class="pv2-msg-camfile" type="file" accept="image/*" capture="environment" hidden>' +
           '<button class="pv2-msg-attach" type="button" title="添付（Attach）">📎</button>' +
           '<input class="pv2-msg-file" type="file" accept="image/*,application/pdf,.doc,.docx" multiple hidden>' +
           '<textarea class="pv2-msg-input" rows="2" placeholder="メッセージを入力…"></textarea>' +
@@ -324,13 +326,14 @@ window.PortalV2 = (function () {
       if (t.classList && t.classList.contains('pv2-next') && !t.disabled) { renderHistory(_page + 1); return; }
       if (t.classList && t.classList.contains('pv2-msg-send')) { _sendMessage(); return; }
       if (t.closest && t.closest('.pv2-msg-attach')) { var f = _panel.querySelector('.pv2-msg-file'); if (f) f.click(); return; }
+      if (t.closest && t.closest('.pv2-msg-cam')) { var cf = _panel.querySelector('.pv2-msg-camfile'); if (cf) cf.click(); return; }
       var rm = t.closest ? t.closest('.pv2-pchip [data-pvrm]') : null;
       if (rm) { _pvPending.splice(+rm.getAttribute('data-pvrm'), 1); _pvRenderPending(); return; }
       var row = t.closest ? t.closest('.pv2-row') : null;
       if (row && row.getAttribute('data-ref')) _openDetail(row.getAttribute('data-ref'));
     });
     _panel.addEventListener('change', function (e) {
-      var f = e.target.closest && e.target.closest('.pv2-msg-file');
+      var f = e.target.closest && (e.target.closest('.pv2-msg-file') || e.target.closest('.pv2-msg-camfile'));
       if (!f) return;
       _pvUpload(f.files); f.value = '';
     });
