@@ -86,6 +86,18 @@ try {
     hm_log_error('availability capacity read failed (non-fatal)', ['err' => $ce->getMessage(), 'date' => $date]);
   }
 
+  // Fold CLOSED bands into the `bands` unavailability signal. A closed (or
+  // capacity-exhausted) band has NO booking_slots row, so it would otherwise
+  // report 'available'. The public booking overlay treats any non-'available'
+  // band as not-selectable, so this is what hides a manually closed day (all four
+  // bands closed → the whole day is unbookable) from customers — no client change
+  // needed. The precise closed+reason detail stays in `capacity` for richer UIs.
+  if (is_array($capacity)) {
+    foreach ($capacity as $b => $st2) {
+      if (array_key_exists($b, $bands) && !empty($st2['closed'])) $bands[$b] = 'reserved';
+    }
+  }
+
   hm_json(['ok' => true, 'date' => $date, 'bands' => $bands, 'intervals' => $intervals, 'hourly' => $hourly, 'capacity' => $capacity]);
 } catch (Throwable $e) {
   hm_log_error('availability failed', ['err' => $e->getMessage(), 'date' => $date]);

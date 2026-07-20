@@ -81,10 +81,18 @@ if (!$isCli) {
 }
 
 $action = strtolower(trim((string)($param('action') ?? 'get')));
-if (!in_array($action, ['get', 'set', 'close', 'reopen', 'close-day', 'reopen-day'], true)) {
-  sc_out(['ok' => false, 'error' => "invalid action — use get|set|close|reopen|close-day|reopen-day"], $isCli, 400);
+if (!in_array($action, ['get', 'set', 'close', 'reopen', 'close-day', 'reopen-day', 'closed-days'], true)) {
+  sc_out(['ok' => false, 'error' => "invalid action — use get|set|close|reopen|close-day|reopen-day|closed-days"], $isCli, 400);
 }
 $reason = trim((string)($param('reason') ?? ''));
+
+// Strict YYYY-MM-DD validator (returns the date or null).
+$validDay = function (string $d): ?string {
+  $p = DateTime::createFromFormat('!Y-m-d', $d);
+  $e = DateTime::getLastErrors();
+  $ok = $p instanceof DateTime && $p->format('Y-m-d') === $d && (($e['warning_count'] ?? 0) === 0) && (($e['error_count'] ?? 0) === 0);
+  return $ok ? $d : null;
+};
 
 // Date: '*' (defaults) or strict YYYY-MM-DD.
 $date = trim((string)($param('date') ?? ''));
@@ -118,14 +126,35 @@ try {
     sc_out($snapshot($db, $date), $isCli);
   }
 
-  // Whole-day close / reopen — apply to all four bands atomically. A specific
-  // date only ('*' default not allowed here). Reason attaches to every band.
+  // Range read: fully-closed days in [from, to] → { date: reason }. Powers the
+  // calendar's red closed-day markers. Read-only; caps the span at 366 days.
+  if ($action === 'closed-days') {
+    $from = $validDay(trim((string)($param('from') ?? '')));
+    $to   = $validDay(trim((string)($param('to') ?? '')));
+    if ($from === null || $to === null) sc_out(['ok' => false, 'error' => 'from/to required — YYYY-MM-DD'], $isCli, 400);
+    if (strcmp($from, $to) > 0) { $t = $from; $from = $to; $to = $t; }   // normalise order
+    if ((strtotime($to) - strtotime($from)) / 86400 > 366) sc_out(['ok' => false, 'error' => 'range too large (max 366 days)'], $isCli, 400);
+    sc_out(['ok' => true, 'action' => 'closed-days', 'from' => $from, 'to' => $to, 'closed' => hm_cap_closed_range($db, $from, $to)], $isCli);
+  }
+
+  // Whole-day close / reopen — apply to all four bands. A specific date is
+  // required ('*' default not allowed). Reason attaches to every band. An optional
+  // `to` closes/reopens an inclusive MULTI-DAY range (e.g. Obon 8/13–8/15); the
+  // span is capped at 62 days so a typo can't fan out unbounded writes.
   if ($action === 'close-day' || $action === 'reopen-day') {
-    if ($date === HM_CAP_DEFAULT) sc_out(['ok' => false, 'error' => "close-day/reopen-day need a specific date"], $isCli, 400);
+    if ($date === HM_CAP_DEFAULT || $validDay($date) === null) sc_out(['ok' => false, 'error' => "close-day/reopen-day need a specific date (YYYY-MM-DD)"], $isCli, 400);
     $closing = ($action === 'close-day');
-    foreach (HM_CAP_BANDS as $b) hm_cap_set($db, $date, $b, null, $closing, $closing ? $reason : null);
-    $res = $snapshot($db, $date);
+    $end = $validDay(trim((string)($param('to') ?? ''))) ?? $date;   // single day when `to` absent/invalid
+    if (strcmp($end, $date) < 0) $end = $date;                        // never go backwards
+    if ((strtotime($end) - strtotime($date)) / 86400 > 62) sc_out(['ok' => false, 'error' => 'range too large (max 62 days)'], $isCli, 400);
+    $dates = [];
+    for ($d = $date; strcmp($d, $end) <= 0; $d = date('Y-m-d', strtotime($d . ' +1 day'))) $dates[] = $d;
+    foreach ($dates as $d) {
+      foreach (HM_CAP_BANDS as $b) hm_cap_set($db, $d, $b, null, $closing, $closing ? $reason : null);
+    }
+    $res = $snapshot($db, $date);           // snapshot the anchor date for the UI
     $res['action'] = $action;
+    $res['dates']  = $dates;                 // every date affected (single or range)
     sc_out($res, $isCli);
   }
 

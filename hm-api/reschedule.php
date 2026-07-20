@@ -131,7 +131,7 @@ try {
       if (class_exists('EmailService')) {
         $cfg = hm_config();
         $acc = EmailService::account($cfg, 'booking');
-        $html = EmailService::customerHtml($acc, $msg, $ref);
+        $html = EmailService::customerHtml($acc, $msg, $ref, EmailService::chatUrl($cfg, $ref));
         $er = EmailService::deliver($cfg, ['account' => 'booking', 'to' => $email, 'subject' => "【予約 {$ref}】" . $head, 'html' => $html, 'text' => $msg]);
         if (!empty($er['ok'])) { $emailStatus = 'sent'; if (function_exists('hm_log_write')) hm_log_write('info.log', ['type' => 'reschedule_email', 'result' => 'sent', 'booking' => $bookingId, 'to' => $email, 'transport' => (string)($er['transport'] ?? '')]); }
         else { $emailStatus = (string)($er['code'] ?? 'error'); if (function_exists('hm_log_error')) hm_log_error('reschedule email FAILED', ['booking' => $bookingId, 'to' => $email, 'code' => (string)($er['code'] ?? ''), 'error' => (string)($er['error'] ?? '')]); }

@@ -119,6 +119,50 @@ if (!function_exists('hm_cap_effective')) {
   }
 
   /**
+   * FULL-DAY closure state: a date is "closed" only when EVERY band is closed
+   * (the state written by the close-day admin action). Reason = the first non-empty
+   * band reason. Safe pre-migration (→ {closed:false}). This is the day-level view
+   * the calendar and the create-time guard use.
+   * @return array{closed:bool, reason:string}
+   */
+  function hm_cap_day_closed(PDO $db, string $date): array {
+    $reason = '';
+    foreach (HM_CAP_BANDS as $b) {
+      $eff = hm_cap_effective($db, $date, $b);
+      if (empty($eff['closed'])) return ['closed' => false, 'reason' => ''];
+      if ($reason === '' && !empty($eff['reason'])) $reason = (string)$eff['reason'];
+    }
+    return ['closed' => true, 'reason' => $reason];
+  }
+
+  /**
+   * Fully-closed days in [from, to] → { 'YYYY-MM-DD' => reason, … }. Candidate
+   * dates are specific-date rows flagged closed (what close-day writes); each is
+   * re-checked with hm_cap_day_closed so PARTIAL band closures are excluded — only
+   * whole-day closures paint red on the calendar. Bounded by the caller's range.
+   * Safe if the table doesn't exist yet (→ []).
+   */
+  function hm_cap_closed_range(PDO $db, string $from, string $to): array {
+    $out = [];
+    try {
+      $st = $db->prepare(
+        "SELECT DISTINCT booking_date FROM slot_capacity
+         WHERE is_closed = 1 AND booking_date <> ? AND booking_date BETWEEN ? AND ?"
+      );
+      $st->execute([HM_CAP_DEFAULT, $from, $to]);
+      foreach ($st as $r) {
+        $d  = (string)($r['booking_date'] ?? '');
+        if ($d === '') continue;
+        $dc = hm_cap_day_closed($db, $d);
+        if ($dc['closed']) $out[$d] = $dc['reason'];
+      }
+    } catch (Throwable $e) {
+      // table missing / query error → no closed days
+    }
+    return $out;
+  }
+
+  /**
    * Capacity-aware reserve for (date, band): claim the lowest free slot_index in
    * [0, capacity). Runs in the caller's transaction if open, else its own; a
    * SELECT … FOR UPDATE serialises concurrent reservers and the UNIQUE key is the
