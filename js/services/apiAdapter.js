@@ -434,6 +434,64 @@
       }
     },
 
+    /* ── Lifecycle status via the CANONICAL reservation endpoint ──────────────
+       Confirmed / Completed / Cancelled route through booking-status.php so the
+       (date,band) slot is RESERVED (confirm) / RELEASED (cancel) atomically, the
+       customer lifecycle email is sent, and the closed-day / capacity validation
+       (hm_cap_confirm_check) runs server-side — byte-for-byte the SAME path the
+       Ops app uses. This is what makes "Confirmed = Reserved" hold from admin.html
+       (and any future admin workflow that calls this) — no capacity logic is
+       duplicated in the client.
+       Returns Promise<{ ok, reason?, error?, httpStatus? }>. The optimistic local
+       status is written first (instant UI) and REVERTED if the server refuses
+       (409 day_closed | band_closed | slot_taken). Non-lifecycle statuses, or a
+       booking not yet synced to the server (no _dbId), fall back to the plain
+       update — no server reservation is possible for those. */
+    setBookingStatus(id, jpStatus) {
+      if (!_checkCanWrite()) return Promise.resolve({ ok: false, error: 'readonly' });
+      const list = this.getBookings();
+      const bk = list.find(b => b.id === id);
+      if (!bk) return Promise.resolve({ ok: false, error: 'not_found' });
+      const prevStatus = bk.status;
+      const dbStatus = BK_TO_DB[jpStatus] || String(jpStatus || '');
+      const isLifecycle = ['confirmed', 'completed', 'cancelled'].includes(dbStatus);
+
+      // Optimistic local write (instant UI) on the same list we persist.
+      bk.status = jpStatus;
+      _set(K.bk, list);
+      if (window.DataProvider) DataProvider.invalidate('bookings');
+
+      // Fallback: non-lifecycle transition, or an unsynced booking → generic update.
+      if (!isLifecycle || !bk._dbId || !_api) {
+        if (bk._dbId && _api) {
+          const { created_at, ...fields } = bookingToRow(bk);
+          _api.from('bookings').update({ ...fields, updated_at: new Date().toISOString() }).eq('id', bk._dbId)
+            .then(({ error }) => { if (error) console.error('[API ERROR] bookings update failed:', error.message); });
+        }
+        return Promise.resolve({ ok: true, local: true });
+      }
+
+      const base = String((_api && _api.apiBase) || window.API_BASE || '').replace(/\/+$/, '');
+      const headers = { 'Content-Type': 'application/json', 'X-API-KEY': window.API_KEY || '' };
+      if (window.__HM_ADMIN_TOKEN) headers['X-ADMIN-TOKEN'] = window.__HM_ADMIN_TOKEN;
+      const revert = () => {
+        const l2 = this.getBookings(); const b2 = l2.find(b => b.id === id);
+        if (b2) { b2.status = prevStatus; _set(K.bk, l2); if (window.DataProvider) DataProvider.invalidate('bookings'); }
+      };
+      return fetch(base + '/booking-status.php', {
+        method: 'POST', headers,
+        body: JSON.stringify({ booking_id: bk._dbId, status: dbStatus, notify: false }),
+      })
+        .then(r => r.text().then(t => { let j = null; try { j = JSON.parse(t); } catch (_) {} return { http: r.status, j }; }))
+        .then(({ http, j }) => {
+          if (j && j.ok) { if (window.DataProvider) DataProvider.invalidate('bookings'); return { ok: true }; }
+          revert();
+          const reason = String((j && (j.reason || j.error)) || ('HTTP ' + http));
+          return { ok: false, reason, error: String((j && j.error) || reason), httpStatus: http };
+        })
+        .catch(e => { revert(); return { ok: false, reason: 'network', error: (e && e.message) || 'network' }; });
+    },
+
     deleteBooking(id) {
       if (!_checkCanWrite()) return;
       const bk = this.getBookings().find(b => b.id === id);

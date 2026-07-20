@@ -123,11 +123,50 @@ const BookingService = {
 
   getBookings() { return Adapter.getBookings(); },
 
+  // Lifecycle statuses that MUST reserve/release a slot server-side (Confirmed =
+  // Reserved). Kept in sync with booking-status.php's HM_BKST_MAP.
+  _LIFECYCLE: ['確定', '完了', 'キャンセル'],
+
   // id + patch object — replaces the old (prev, next) signature.
-  // API hook point: await adapter.update(id, patch) here.
+  // A transition to a lifecycle status routes through the canonical reservation
+  // endpoint (Adapter.setBookingStatus → booking-status.php) so the slot is
+  // reserved/released and the closed-day/capacity validation runs — identical to
+  // the Ops path. Returns a Promise<{ok,reason?}> for those; a plain next-object
+  // for ordinary field/status edits (unchanged behaviour).
   updateBooking(id, patch) {
     const prev = Adapter.getBookings().find(b => b.id === id);
     if (!prev) return null;
+
+    if (patch && patch.status && this._LIFECYCLE.includes(patch.status)) {
+      // Apply any NON-status fields via the generic path (address/notes/etc);
+      // the reservation endpoint only owns status + slot + email.
+      const { status, ...rest } = patch;
+      if (Object.keys(rest).length) Adapter.updateBooking(id, rest);
+      return Adapter.setBookingStatus(id, status).then(res => {
+        if (!res || res.ok === false) {
+          document.dispatchEvent(new CustomEvent('booking:status-rejected', {
+            detail: { bookingId: id, status, reason: (res && (res.reason || res.error)) || 'error' }
+          }));
+          return res || { ok: false, reason: 'error' };
+        }
+        const next = { ...prev, ...patch };
+        const dateChanged   = prev.date !== next.date;
+        const activeChanged = this._occupies(prev) !== this._occupies(next);
+        if (dateChanged || activeChanged) {
+          if (this._occupies(prev)) this._adjustCount(prev.date, -1);
+          if (this._occupies(next)) this._adjustCount(next.date,  1);
+          [...new Set([prev.date, next.date].filter(Boolean))].forEach(date => {
+            const st = this._syncDate(date);
+            document.dispatchEvent(new CustomEvent('calendar:updated', { detail: { date, status: st, source: 'booking' } }));
+          });
+        }
+        document.dispatchEvent(new CustomEvent('booking:updated', {
+          detail: { bookingId: id, move_date: next.date, status: next.status }
+        }));
+        return { ok: true };
+      });
+    }
+
     Adapter.updateBooking(id, patch);
     const next = { ...prev, ...patch };
     const dateChanged  = prev.date   !== next.date;
@@ -148,23 +187,29 @@ const BookingService = {
     return next;
   },
 
-  // Sets status to キャンセル, releases the calendar slot, dispatches booking:cancelled.
-  // API hook point: await adapter.update(id, { status: 'キャンセル' }) here.
+  // Cancels via the canonical endpoint so the reserved (date,band) slot is
+  // RELEASED server-side (booking-status.php → hm_slot_release) — otherwise an
+  // admin.html-confirmed booking would strand its slot. Returns Promise<{ok}>.
   cancelBooking(id) {
     const bk = Adapter.getBookings().find(b => b.id === id);
     if (!bk) return null;
-    Adapter.updateBooking(id, { status: 'キャンセル' });
-    if (this._occupies(bk)) {
-      this._adjustCount(bk.date, -1);
-      const status = this._syncDate(bk.date);
-      document.dispatchEvent(new CustomEvent('calendar:updated', {
-        detail: { date: bk.date, status, source: 'booking' }
+    return Adapter.setBookingStatus(id, 'キャンセル').then(res => {
+      if (!res || res.ok === false) {
+        document.dispatchEvent(new CustomEvent('booking:status-rejected', {
+          detail: { bookingId: id, status: 'キャンセル', reason: (res && (res.reason || res.error)) || 'error' }
+        }));
+        return res || { ok: false, reason: 'error' };
+      }
+      if (this._occupies(bk)) {
+        this._adjustCount(bk.date, -1);
+        const status = this._syncDate(bk.date);
+        document.dispatchEvent(new CustomEvent('calendar:updated', { detail: { date: bk.date, status, source: 'booking' } }));
+      }
+      document.dispatchEvent(new CustomEvent('booking:cancelled', {
+        detail: { bookingId: id, move_date: bk.date, status: 'キャンセル' }
       }));
-    }
-    document.dispatchEvent(new CustomEvent('booking:cancelled', {
-      detail: { bookingId: id, move_date: bk.date, status: 'キャンセル' }
-    }));
-    return { ...bk, status: 'キャンセル' };
+      return { ok: true };
+    });
   },
 
   recomputeAll() {
@@ -287,14 +332,30 @@ function buildTable(bk, compact) {
 
 /* emptyHTML() promoted to js/utils/dom.js (shared by admin + Website CMS). */
 
-function quickStatus(id, status) {
-  if (status === 'キャンセル') {
-    BookingService.cancelBooking(id);
-  } else {
-    BookingService.updateBooking(id, { status });
+// Friendly, per-reason copy for a refused confirmation (server 409).
+function _statusRejectMsg(reason) {
+  switch (String(reason || '')) {
+    case 'day_closed':  return 'この日は全日休止のため確定できません。休止を解除してください。';
+    case 'band_closed': return 'この時間帯は休止中のため確定できません。';
+    case 'slot_taken':  return 'この時間帯は満席のため確定できません。';
+    case 'network':     return '通信エラーのため変更できませんでした。';
+    default:            return '確定できませんでした（' + reason + '）。';
   }
-  toast('ステータスを更新しました');
-  renderDash();
+}
+
+async function quickStatus(id, status) {
+  // Lifecycle transitions resolve to {ok,reason}; ordinary edits return a truthy
+  // object. Await both (await on a non-Promise is a no-op) so a server refusal is
+  // surfaced with the right message instead of a misleading success toast.
+  const res = (status === 'キャンセル')
+    ? await BookingService.cancelBooking(id)
+    : await BookingService.updateBooking(id, { status });
+  if (res && res.ok === false) {
+    toast(_statusRejectMsg(res.reason || res.error));
+  } else {
+    toast('ステータスを更新しました');
+  }
+  renderBookings(); renderDash();
 }
 
 function delBooking(id) {
@@ -318,6 +379,16 @@ function filterToday() {
     if (document.getElementById('view-bookings').classList.contains('active')) renderBookings();
     renderDash();
   });
+});
+
+/* ── Server refused a lifecycle transition (closed day/band, full slot, network).
+   The optimistic local status was already reverted in Adapter.setBookingStatus;
+   re-render to reflect the true state and explain why. Fires for callers that do
+   not await (bulk apply, edit-save). ── */
+document.addEventListener('booking:status-rejected', e => {
+  toast(_statusRejectMsg((e.detail && (e.detail.reason)) || 'error'));
+  if (document.getElementById('view-bookings')?.classList.contains('active')) renderBookings();
+  renderDash();
 });
 
 /* ════════════════════════════════════════════════════════
@@ -388,16 +459,19 @@ function _renderBkBulkBar() {
     <button class="btn btn-ghost btn-sm" onclick="_bkClearSelection()" style="margin-left:auto">✕ 選択解除</button>`;
 }
 
-function _bkApplyStatus() {
+async function _bkApplyStatus() {
   const status = document.getElementById('bkBulkStatus')?.value;
   if (!status) return;
   const ids = [..._bkBulkSel];
-  ids.forEach(id => {
-    if (status === 'キャンセル') BookingService.cancelBooking(id);
-    else BookingService.updateBooking(id, { status });
-  });
+  // Await each so lifecycle transitions (which reserve/release server-side) can
+  // report per-booking refusals instead of silently failing.
+  const results = await Promise.all(ids.map(id =>
+    status === 'キャンセル' ? BookingService.cancelBooking(id) : BookingService.updateBooking(id, { status })
+  ));
+  const failed = results.filter(r => r && r.ok === false).length;
   _bkBulkSel.clear();
-  toast(`${ids.length}件を「${status}」に変更しました`);
+  if (failed) toast(`${ids.length - failed}件を「${status}」に変更しました（${failed}件は確定できませんでした）`);
+  else        toast(`${ids.length}件を「${status}」に変更しました`);
   renderBookings(); renderDash();
 }
 
@@ -521,15 +595,19 @@ function saveBooking() {
     BookingService.updateBooking(_editId, b);
     toast('予約を更新しました');
     if (prev && prev.status !== b.status) {
+      // NOTE: the CUSTOMER confirm/complete email is now sent server-side by
+      // booking-status.php (routed via BookingService.updateBooking →
+      // Adapter.setBookingStatus), so the former client _sendBookingEmail() calls
+      // were removed here to avoid a DUPLICATE customer email. The admin-facing
+      // LINE + email notifications (sendLineNotif / sendEmailNotif → admin mailbox)
+      // are unchanged.
       if (b.status === '確定') {
         sendLineNotif(`✅ 予約確定\n${b.name}様 (${b.id})\nサービス: ${b.service}\n日程: ${b.date}`,'statusConfirmed');
         sendEmailNotif({ subject:`[Hello Moving] 予約確定 - ${b.name}様`, trigger_type:'予約確定', ...bkEmailParams(b) },'statusConfirmed');
-        _sendBookingEmail(b, 'statusConfirmed');
       }
       if (b.status === '完了') {
         sendLineNotif(`🎉 引越し完了\n${b.name}様 (${b.id})\nサービス: ${b.service}`,'statusComplete');
         sendEmailNotif({ subject:`[Hello Moving] 引越し完了 - ${b.name}様`, trigger_type:'引越し完了', ...bkEmailParams(b) },'statusComplete');
-        _sendBookingEmail(b, 'statusComplete');
       }
     }
   } else {
