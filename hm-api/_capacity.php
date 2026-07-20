@@ -84,10 +84,17 @@ if (!function_exists('hm_cap_effective')) {
     return ['capacity' => 1, 'closed' => false, 'reason' => '', 'source' => 'fallback'];
   }
 
-  /** Reserved slot count for a (date, band) — every booking_slots row counts. */
-  function hm_cap_count(PDO $db, string $date, string $band): int {
-    $st = $db->prepare('SELECT COUNT(*) FROM booking_slots WHERE booking_date = ? AND time_band = ?');
-    $st->execute([$date, $band]);
+  /** Reserved slot count for a (date, band) — every booking_slots row counts.
+   *  $excludeBookingId (optional) omits a booking's OWN reservation from the tally
+   *  so re-confirming a booking that already holds its slot isn't mis-counted. */
+  function hm_cap_count(PDO $db, string $date, string $band, string $excludeBookingId = ''): int {
+    if ($excludeBookingId !== '') {
+      $st = $db->prepare('SELECT COUNT(*) FROM booking_slots WHERE booking_date = ? AND time_band = ? AND booking_id <> ?');
+      $st->execute([$date, $band, $excludeBookingId]);
+    } else {
+      $st = $db->prepare('SELECT COUNT(*) FROM booking_slots WHERE booking_date = ? AND time_band = ?');
+      $st->execute([$date, $band]);
+    }
     return (int)$st->fetchColumn();
   }
 
@@ -133,6 +140,38 @@ if (!function_exists('hm_cap_effective')) {
       if ($reason === '' && !empty($eff['reason'])) $reason = (string)$eff['reason'];
     }
     return ['closed' => true, 'reason' => $reason];
+  }
+
+  /**
+   * SINGLE SOURCE OF TRUTH for pre-CONFIRM validation of a (date, band). Every
+   * confirm path funnels through here — Ops (booking-status.php), Admin
+   * (rest.php bookings update→confirmed), and Reschedule (reschedule.php) — so the
+   * business rules and the error taxonomy live in exactly one place. Non-mutating
+   * (validation only; the atomic reserve stays where it already is).
+   *
+   * Built from the same primitives availability.php uses (hm_cap_day_closed /
+   * hm_cap_effective / hm_cap_count), so no rule is duplicated. $band null/'' = a
+   * flexible / 時間指定なし booking → only the whole-day rule applies. $bookingId
+   * (optional) excludes the booking's OWN reservation from the capacity tally.
+   *
+   * @return array{ok:bool, reason?:string, detail?:string}
+   *   ok=true                              → may be confirmed
+   *   reason='day_closed'|'band_closed'    → closure (detail = the stored reason)
+   *   reason='slot_taken'                  → band capacity exhausted
+   */
+  function hm_cap_confirm_check(PDO $db, string $date, ?string $band, string $bookingId = ''): array {
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) return ['ok' => true];   // undated → nothing to enforce
+    // 1) whole-day closure (all bands closed)
+    $dc = hm_cap_day_closed($db, $date);
+    if (!empty($dc['closed'])) return ['ok' => false, 'reason' => 'day_closed', 'detail' => (string)($dc['reason'] ?? '')];
+    // 2) band-level closure / capacity — only when the booking carries a band
+    if ($band !== null && $band !== '' && in_array($band, HM_CAP_BANDS, true)) {
+      $eff = hm_cap_effective($db, $date, $band);
+      if (!empty($eff['closed'])) return ['ok' => false, 'reason' => 'band_closed', 'detail' => (string)($eff['reason'] ?? '')];
+      $remaining = (int)$eff['capacity'] - hm_cap_count($db, $date, $band, $bookingId);
+      if ($remaining <= 0) return ['ok' => false, 'reason' => 'slot_taken', 'detail' => ''];
+    }
+    return ['ok' => true];
   }
 
   /**

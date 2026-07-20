@@ -292,6 +292,25 @@ try {
     [$where, $whereParams] = build_where($req['filters'] ?? [], $S, $OPS, $qid, $valid_col);
     if ($where === '') hm_err('UPDATE requires a filter', 400, 'no_filter');
 
+    // ── Admin CONFIRM backstop (single source of truth) ────────────────────────
+    //  ANY transition of a booking to 'confirmed' via rest.php — the admin.html
+    //  status dropdown and any future admin workflow — must pass the SAME
+    //  day/band/capacity validation as the Ops (booking-status.php) and reschedule
+    //  paths. It runs BEFORE the UPDATE and writes nothing on failure. Enforced
+    //  regardless of slot_lock_enabled (that flag only governs the reserve/mutation
+    //  below, not this validation). Non-confirm updates are untouched.
+    if ($table === 'bookings' && array_key_exists('status', $patch)
+        && in_array((string)$patch['status'], ['confirmed', '確定'], true)) {
+      require_once __DIR__ . '/_capacity.php';
+      $chkSel = $db->prepare('SELECT `id`,`booking_date`,`notes` FROM ' . $qid($table) . $where);
+      $chkSel->execute($whereParams);
+      foreach ($chkSel->fetchAll() as $b) {
+        $bBand = hm_slot_band_from_notes((string)($b['notes'] ?? ''));
+        $chk   = hm_cap_confirm_check($db, (string)($b['booking_date'] ?? ''), $bBand, (string)($b['id'] ?? ''));
+        if (empty($chk['ok'])) hm_err((string)$chk['reason'], 409, (string)$chk['reason']);   // day_closed | band_closed | slot_taken
+      }
+    }
+
     if ($slotSync) {
       // Reschedule lock-move (+ cancel release), atomic per affected booking:
       //   release old slot → reserve new slot → UPDATE booking → commit.

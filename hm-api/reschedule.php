@@ -86,6 +86,15 @@ try {
   $newBand   = $bandOf($newStart, $bk['notes']);
   $moved = false;
 
+  // SINGLE-SOURCE validation of the TARGET slot — the SAME hm_cap_confirm_check()
+  // the Ops + admin confirm paths use. Covers a whole-day closure even for a
+  // band-less booking (the reserve below only guards band closed/full). Excludes
+  // this booking's own reservation so moving within a band isn't self-blocked.
+  if ($confirmed) {
+    $chk = hm_cap_confirm_check($db, $newDate, $newBand, $bookingId);
+    if (empty($chk['ok'])) rs_out(['ok' => false, 'error' => 'slot_taken', 'reason' => (string)($chk['reason'] ?? 'slot_taken')], $isCli, 409);
+  }
+
   hm_slot_ensure_table($db);
   $db->beginTransaction();
   try {

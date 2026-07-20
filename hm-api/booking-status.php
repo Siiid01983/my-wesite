@@ -164,17 +164,15 @@ try {
     //     Independent of slot_lock_enabled: confirmation ALWAYS records the slot.
     //     Flexible / 時間指定なし bookings resolve to no band → nothing is locked.
     if ($status === 'confirmed') {
-      // Full-day closure guard: a manually closed day cannot be confirmed (spec).
-      // Independent of whether the booking carries a band — catches flexible /
-      // 時間指定なし bookings too. Reopen the day (全日再開) to confirm. The band
-      // reserve below still enforces per-band closed/full for dated bookings.
-      if (preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$bdate)) {
-        $dc = hm_cap_day_closed($db, (string)$bdate);
-        if (!empty($dc['closed'])) {
-          $c = new HmSlotConflict('closed'); $c->band = ''; throw $c;
-        }
-      }
       $band = hm_slot_band_from_notes($bk['notes']);
+      // SINGLE-SOURCE pre-confirm validation (day closed / band closed / capacity)
+      // — the SAME hm_cap_confirm_check() the admin rest.php + reschedule paths use.
+      // Catches flexible / 時間指定なし bookings (no band → day rule only). Excludes
+      // this booking's own slot. Reopen the day (全日再開) to confirm a closed day.
+      $chk = hm_cap_confirm_check($db, (string)$bdate, $band, $bookingId);
+      if (empty($chk['ok'])) {
+        $c = new HmSlotConflict((string)($chk['reason'] ?? 'slot_taken')); $c->band = (string)($band ?? ''); throw $c;
+      }
       if ($band !== null) {
         hm_slot_ensure_table($db);
         // Already reserved for THIS booking (the normal case when capacity_enabled
