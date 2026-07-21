@@ -104,7 +104,7 @@ function go(view) {
   Auth.touch();
   if (view==='dashboard') renderDash();
   if (view==='bookings') renderBookings();
-  if (view==='calendar') { refreshCalendarUI(); renderGCalPanel(); _syncCalendarFromApi(); }
+  if (view==='calendar') { refreshCalendarUI(); renderGCalPanel(); _syncCalendarFromApi(); if (typeof _loadSlotCapClosed==='function') _loadSlotCapClosed(refreshCalendarUI); }
   if (view==='analytics') renderAnalytics();
   if (view==='capacity') { loadCapacity(); _syncCapacityFromApi(); }
   if (view==='pricing') { renderPricing(); _syncPricingFromApi(); }
