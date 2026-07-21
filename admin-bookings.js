@@ -25,11 +25,21 @@ const CalendarService = {
         ? manual : countStatus;
       if (effective) result[date] = effective;
     });
+    // SINGLE SOURCE OF TRUTH overlay — slot_capacity day-closures. A day fully
+    // closed in slot_capacity (the booking engine's table) ALWAYS renders × here,
+    // no matter which surface closed it (this month calendar OR the 時間帯別
+    // キャパシティ panel). This is what keeps the two admin surfaces in sync.
+    // Cache is refreshed from slot-capacity.php (action=closed-days) by the calendar
+    // module; syncDayClosure() keeps it optimistically current on each click.
+    let slotClosed = {};
+    try { slotClosed = JSON.parse(localStorage.getItem('hm_slotcap_closed') || '{}'); } catch(e) {}
+    Object.keys(slotClosed).forEach(date => { result[date] = 'booked'; });
     return result;
   },
 
   updateAvailability(date, status) {
     Adapter.setDate(date, status);
+    this.syncDayClosure(date, status);
     this.saveAvailability();
     document.dispatchEvent(new CustomEvent('calendar:updated', {
       detail: { date, status, availability: this.getAvailability() }
@@ -37,11 +47,58 @@ const CalendarService = {
   },
 
   setBlockedDates(dates, status) {
-    dates.forEach(date => Adapter.setDate(date, status));
+    dates.forEach(date => { Adapter.setDate(date, status); this.syncDayClosure(date, status); });
     this.saveAvailability();
     document.dispatchEvent(new CustomEvent('calendar:blocked', {
       detail: { dates, status, availability: this.getAvailability() }
     }));
+  },
+
+  /* Route a WHOLE-DAY open/close through the authoritative capacity engine
+     (hm-api/slot-capacity.php) — the SAME table (slot_capacity) that availability.php,
+     create-booking.php and booking-status.php read. This is the SINGLE backend path;
+     the month calendar and the 時間帯別キャパシティ panel now write the same store, so
+     they can no longer disagree. calendar_availability remains only a public-marketing
+     display cache (no enforcement authority).
+
+     Day-state → slot_capacity action:
+       'booked'    (Full / Closed)          → close-day  (全日休止 — every band closed)
+       'available' (Reopened / Preferred-open) → reopen-day (全日再開 — every band reopened)
+       'limited'   (soft "残りわずか" hint)   → no engine equivalent → no slot_capacity write
+
+     Optimistically updates the hm_slotcap_closed cache so getAvailability() reflects
+     the change immediately (before the fetch resolves); the calendar module reconciles
+     it from the server on the next load. Best-effort + non-blocking: a server failure is
+     toasted but never throws. Auth mirrors slotCapacity.js (X-API-KEY + X-ADMIN-TOKEN). */
+  syncDayClosure(date, status) {
+    if (!date || (status !== 'booked' && status !== 'available')) return;
+    // Optimistic cache: close → mark closed; reopen → clear. Keeps the grid honest
+    // between the click and the server round-trip / next closed-days refresh.
+    try {
+      const m = JSON.parse(localStorage.getItem('hm_slotcap_closed') || '{}');
+      if (status === 'booked') m[date] = '管理カレンダーより休止'; else delete m[date];
+      localStorage.setItem('hm_slotcap_closed', JSON.stringify(m));
+    } catch(e) {}
+
+    const base = (window.API_BASE || '').replace(/\/+$/, '');
+    if (!base) return;   // no backend configured (pure-local fallback) → skip silently
+    const headers = { 'Content-Type': 'application/json', 'X-API-KEY': window.API_KEY || '' };
+    if (window.__HM_ADMIN_TOKEN) headers['X-ADMIN-TOKEN'] = window.__HM_ADMIN_TOKEN;
+    const payload = status === 'booked'
+      ? { action: 'close-day', date, reason: '管理カレンダーより休止' }
+      : { action: 'reopen-day', date };
+    fetch(base + '/slot-capacity.php', { method: 'POST', headers, body: JSON.stringify(payload) })
+      .then(r => r.json().catch(() => ({ ok: false })))
+      .then(j => {
+        if (!j || !j.ok) {
+          console.error('[CalendarService] syncDayClosure failed', payload.action, date, j && j.error);
+          if (typeof toast === 'function') toast('休止設定をサーバーに保存できませんでした');
+        }
+      })
+      .catch(err => {
+        console.error('[CalendarService] syncDayClosure network error', err && err.message);
+        if (typeof toast === 'function') toast('通信エラー：休止設定を保存できませんでした');
+      });
   },
 
   setCapacity(max, limited) {

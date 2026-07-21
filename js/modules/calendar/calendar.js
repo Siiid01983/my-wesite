@@ -46,6 +46,31 @@ function renderCalendar() {
 
 function refreshCalendarUI() { renderCalendar(); }
 
+/* Pull slot_capacity day-closures (the booking engine's source of truth) for the
+   VISIBLE month and cache them in localStorage hm_slotcap_closed. CalendarService
+   .getAvailability() overlays this cache, so a day closed on EITHER admin surface
+   — this month calendar OR the 時間帯別キャパシティ panel — paints × here. Read-only;
+   overwrites the cache with exactly the visible month's closed set (no stale
+   accumulation). Best-effort: on any error the previous cache is kept. */
+function _loadSlotCapClosed(then) {
+  var base = (window.API_BASE || '').replace(/\/+$/, '');
+  if (!base) { if (then) then(); return; }
+  var y = _calV.getFullYear(), m = _calV.getMonth();
+  var total = new Date(y, m + 1, 0).getDate();
+  var from = y + '-' + pad(m + 1) + '-01';
+  var to   = y + '-' + pad(m + 1) + '-' + pad(total);
+  var headers = { 'X-API-KEY': window.API_KEY || '' };
+  if (window.__HM_ADMIN_TOKEN) headers['X-ADMIN-TOKEN'] = window.__HM_ADMIN_TOKEN;
+  fetch(base + '/slot-capacity.php?action=closed-days&from=' + from + '&to=' + to, { headers: headers })
+    .then(function (r) { return r.json(); })
+    .then(function (out) {
+      var closed = (out && out.ok && out.closed && typeof out.closed === 'object') ? out.closed : {};
+      try { localStorage.setItem('hm_slotcap_closed', JSON.stringify(closed)); } catch (e) {}
+    })
+    .catch(function () { /* keep last cache */ })
+    .then(function () { if (then) then(); });
+}
+
 /* Sync calendar_availability + bookings from API, rebuild counts, re-render.
    Called only on navigation to the calendar view — not on every date-click event. */
 function _syncCalendarFromApi() {
@@ -72,6 +97,7 @@ function _syncCalendarFromApi() {
         try { localStorage.setItem('hm_counts', JSON.stringify(counts)); } catch(e) {}
       }
       renderCalendar();
+      _loadSlotCapClosed(renderCalendar);   // overlay slot_capacity closures (both surfaces)
     });
   });
 }
@@ -99,7 +125,7 @@ function calClick(ds) {
   if (window.GCalSync) GCalSync.pushDate(ds, next).catch(console.warn);
 }
 
-function calMove(dir) { _calV.setMonth(_calV.getMonth()+dir); refreshCalendarUI(); }
+function calMove(dir) { _calV.setMonth(_calV.getMonth()+dir); renderCalendar(); _loadSlotCapClosed(renderCalendar); }
 
 function printCalendar() {
   const avail  = Adapter.getAvail();
