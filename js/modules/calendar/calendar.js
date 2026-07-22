@@ -42,6 +42,10 @@ function renderCalendar() {
   }
   document.getElementById('calGrid').innerHTML = h;
   updateCalendarCounters();
+  // Keep the hint honest with the new open/close toggle (admin.html ships the
+  // legacy ○→△→× copy). Only when not in bulk mode — toggleBulk owns it then.
+  var hintEl = document.getElementById('calHint');
+  if (hintEl && !_bulkMode) hintEl.textContent = 'クリックで休止（×）と再開（○）を切り替え';
 }
 
 function refreshCalendarUI() { renderCalendar(); }
@@ -65,6 +69,23 @@ function _loadSlotCapClosed(then) {
     .then(function (r) { return r.json(); })
     .then(function (out) {
       var closed = (out && out.ok && out.closed && typeof out.closed === 'object') ? out.closed : {};
+      // Reconcile race guard: a close/reopen POST fired from syncDayClosure may not
+      // have committed by the time this month refresh returns. Re-apply any PENDING
+      // write still within its TTL so we don't clobber it with stale server state;
+      // expired markers are forgotten (the server is authoritative again).
+      var PENDING_TTL = 15000;
+      try {
+        var pend = JSON.parse(localStorage.getItem('hm_slotcap_pending') || '{}');
+        var nowT = Date.now(), keep = {};
+        Object.keys(pend).forEach(function (d) {
+          var p = pend[d];
+          if (!p || (nowT - (p.at || 0)) > PENDING_TTL) return;   // expired → drop
+          keep[d] = p;
+          if (p.closed) { if (!closed[d]) closed[d] = '管理カレンダーより休止'; }
+          else delete closed[d];
+        });
+        localStorage.setItem('hm_slotcap_pending', JSON.stringify(keep));
+      } catch (e) {}
       try { localStorage.setItem('hm_slotcap_closed', JSON.stringify(closed)); } catch (e) {}
     })
     .catch(function () { /* keep last cache */ })
@@ -117,11 +138,18 @@ function calClick(ds) {
     if (_bulkSel.has(ds)) _bulkSel.delete(ds); else _bulkSel.add(ds);
     refreshCalendarUI(); return;
   }
+  // Two-state toggle: OPEN (○) ⇄ CLOSED (×). Every click drives a real
+  // slot_capacity write (close-day / reopen-day) via updateAvailability →
+  // syncDayClosure. The old three-way cycle inserted a △ "limited" step that
+  // wrote NOTHING to the booking engine (a no-op that looked like control) — it
+  // has been removed. △ is still shown, but ONLY when the booking COUNT reaches
+  // the "limited" threshold (an automatic, informational state), never as a
+  // manual click target.
   const avail = CalendarService.getAvailability();
-  const cur = avail[ds]||'available';
-  const next = cur==='available'?'limited':cur==='limited'?'booked':'available';
+  const isClosed = (avail[ds] === 'booked');
+  const next = isClosed ? 'available' : 'booked';
   CalendarService.updateAvailability(ds, next);
-  toast(`${ds}: ${next==='available'?'空き':next==='limited'?'残りわずか':'満了'}`);
+  toast(`${ds}: ${next==='available' ? '空きに再開しました' : '休止（満了）にしました'}`);
   if (window.GCalSync) GCalSync.pushDate(ds, next).catch(console.warn);
 }
 

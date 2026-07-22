@@ -22,6 +22,12 @@ function hm_db(): PDO {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES   => false,
       ]);
+      // Pin the MySQL session timezone to JST so NOW() / CURRENT_TIMESTAMP defaults
+      // agree with the PHP layer (date_default_timezone_set in _lib.php) and the
+      // JST-aware client parsing. Offset form ('+09:00') is used because named
+      // zones ('Asia/Tokyo') require the mysql tz tables, which shared hosting
+      // often omits. Best-effort: never fail the connection over this.
+      try { $pdo->exec("SET time_zone = '+09:00'"); } catch (Throwable $tzE) { /* keep server default */ }
     } catch (Throwable $e) {
       hm_log_error('DB connection failed', ['err' => $e->getMessage()]);
       hm_json(['ok' => false, 'db' => false, 'error' => 'DB connection failed'], 503);

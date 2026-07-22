@@ -16,6 +16,15 @@
   var U = Ops.util, UI = Ops.UI, Api = Ops.Api;
   var PAGE = document.body.getAttribute('data-ops-page');
 
+  /* Numeric (epoch-ms) sort key — never sort messages lexically (space<'T' makes a
+     string sort order by timestamp FORMAT, not by time). Uses the shared JST-aware
+     parser. */
+  function tsMs(v) {
+    if (window.HMFmt && HMFmt.tsMs) return HMFmt.tsMs(v);
+    var d = new Date(String(v || '').replace(' ', 'T'));
+    return isNaN(d.getTime()) ? 0 : d.getTime();
+  }
+
   var ATTACH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
   var CAM_SVG    = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
 
@@ -61,7 +70,7 @@
 
     var convs = Object.keys(groups).map(function (k) {
       var g = groups[k];
-      var msgs = g.rows.map(normMsg).sort(function (a, b) { return String(a.ts).localeCompare(String(b.ts)); });
+      var msgs = g.rows.map(normMsg).sort(function (a, b) { return tsMs(a.ts) - tsMs(b.ts); });
       var bk = bmap[g.bookingId];
       var custEmail = '';
       g.rows.forEach(function (m) { var l = parseLabels(m); if (!l.outbound && m.email && !custEmail) custEmail = m.email; });
@@ -76,7 +85,7 @@
         unread: msgs.filter(function (x) { return !x.out && !x.read; }).length,
       };
     });
-    convs.sort(function (a, b) { return String(b.lastTs).localeCompare(String(a.lastTs)); });
+    convs.sort(function (a, b) { return tsMs(b.lastTs) - tsMs(a.lastTs); });
     return { convs: convs, bookings: bmap };
   }
 
