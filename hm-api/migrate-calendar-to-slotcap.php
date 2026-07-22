@@ -49,7 +49,12 @@ function mig_out(array $payload, bool $isCli, int $status = 200): void {
   exit;
 }
 
-// ── Access control: CLI trusted; HTTP requires the one-time setup token ───────
+// ── Access control: CLI trusted; over HTTP accept EITHER a logged-in admin
+//    session (X-ADMIN-TOKEN — so any authenticated admin can run the one-time
+//    backfill from the console, no server shell needed) OR the admin_setup_token
+//    as ?token= (bootstrap / no active session). This is why the backfill was
+//    never run before: it demanded the setup token, which the day-to-day admin
+//    session does not carry. ─────────────────────────────────────────────────
 $mode = 'dry-run';
 if ($isCli) {
   $args = array_slice($argv, 1);
@@ -58,13 +63,32 @@ if ($isCli) {
 } else {
   require_once __DIR__ . '/_ratelimit.php';
   hm_rate_limit('migrate_cal_slotcap', 5, 60);
-  $setup = (string)(hm_config()['admin_setup_token'] ?? '');
-  $sent  = (string)($_GET['token'] ?? '');
-  if ($setup === '' || !hash_equals($setup, $sent)) {
-    mig_out(['ok' => false, 'error' => 'forbidden — set admin_setup_token in _config.php and pass ?token='], false, 403);
+
+  $authed = false;
+  // 1) Admin session token (same verification as slot-capacity.php).
+  $tok = $_SERVER['HTTP_X_ADMIN_TOKEN'] ?? '';
+  if (is_string($tok) && $tok !== '' && function_exists('hm_admin_token_verify')) {
+    $pl = hm_admin_token_verify($tok);
+    if ($pl !== null && ($pl['role'] ?? '') === 'admin'
+        && (!function_exists('hm_admin_token_account_valid') || hm_admin_token_account_valid($pl))) {
+      $authed = true;
+    }
   }
-  if (($_GET['apply'] ?? '') === '1')          $mode = 'apply';
-  elseif (($_GET['rollback'] ?? '') === '1')   $mode = 'rollback';
+  // 2) Fallback: the one-time admin_setup_token as ?token=.
+  if (!$authed) {
+    $setup = (string)(hm_config()['admin_setup_token'] ?? '');
+    $sent  = (string)($_GET['token'] ?? ($_POST['token'] ?? ''));
+    if ($setup !== '' && hash_equals($setup, $sent)) $authed = true;
+  }
+  if (!$authed) {
+    mig_out(['ok' => false, 'error' => 'forbidden — admin session (X-ADMIN-TOKEN) or ?token= (admin_setup_token) required'], false, 403);
+  }
+
+  // apply / rollback may arrive via GET or POST body (console fetch friendly).
+  $apply    = ($_GET['apply'] ?? ($_POST['apply'] ?? '')) === '1';
+  $rollback = ($_GET['rollback'] ?? ($_POST['rollback'] ?? '')) === '1';
+  if ($apply)         $mode = 'apply';
+  elseif ($rollback)  $mode = 'rollback';
 }
 
 // Closure reason stamped on backfilled bands (self-documenting in the admin UI).

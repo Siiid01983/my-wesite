@@ -634,9 +634,29 @@
     });
   }
 
+  /* Deep-link: calendar.html?date=YYYY-MM-DD opens the DAY view on exactly that
+     date (e.g. from a booking's 予約枠 button in bookings.js). An explicit date
+     always wins over the empty-today auto-jump, so clicking a booking lands on
+     the booking's date — not the nearest-booked fallback. Invalid/absent → no-op
+     (normal today + auto-jump behaviour). Returns true when a date was applied. */
+  function applyDateDeepLink() {
+    var d = '';
+    try { d = new URLSearchParams(location.search || '').get('date') || ''; } catch (_) { d = ''; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+    // Reject impossible dates (e.g. 2026-02-31) — round-trip through the parser.
+    var pd = parse(d);
+    if (isNaN(pd.getTime()) || fmt(pd) !== d) return false;
+    state.selected = d;
+    state.anchor = d;
+    state.view = 'day';
+    state.autoJumpDone = true;   // suppress autoJumpToNearest — the explicit date wins
+    return true;
+  }
+
   Ops.ready(function () {
     UI.mountChrome({ active: 'calendar', title: t('calendar.title') });
     state.sheet = UI.sheet();
+    applyDateDeepLink();
     load();
     setInterval(refresh, Ops.cfg.POLL_MS);
   });

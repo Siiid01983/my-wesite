@@ -72,32 +72,63 @@ const CalendarService = {
      toasted but never throws. Auth mirrors slotCapacity.js (X-API-KEY + X-ADMIN-TOKEN). */
   syncDayClosure(date, status) {
     if (!date || (status !== 'booked' && status !== 'available')) return;
-    // Optimistic cache: close → mark closed; reopen → clear. Keeps the grid honest
-    // between the click and the server round-trip / next closed-days refresh.
-    try {
-      const m = JSON.parse(localStorage.getItem('hm_slotcap_closed') || '{}');
-      if (status === 'booked') m[date] = '管理カレンダーより休止'; else delete m[date];
-      localStorage.setItem('hm_slotcap_closed', JSON.stringify(m));
-    } catch(e) {}
+    const CLOSED_KEY = 'hm_slotcap_closed';
+    const PENDING_KEY = 'hm_slotcap_pending';
+    const REASON = '管理カレンダーより休止';
+    const wantClosed = (status === 'booked');
+
+    // Snapshot the pre-click cache so we can ROLL BACK if the server rejects the
+    // write (e.g. 403 when __HM_ADMIN_TOKEN is missing/expired). The grid must
+    // never keep showing a closure/reopen that did not actually persist.
+    let prev = {};
+    try { prev = JSON.parse(localStorage.getItem(CLOSED_KEY) || '{}'); } catch (e) {}
+
+    const writeClosed = (map) => { try { localStorage.setItem(CLOSED_KEY, JSON.stringify(map)); } catch (e) {} };
+    const setPending = (val) => {
+      try {
+        const pend = JSON.parse(localStorage.getItem(PENDING_KEY) || '{}');
+        if (val) pend[date] = { closed: wantClosed, at: Date.now() }; else delete pend[date];
+        localStorage.setItem(PENDING_KEY, JSON.stringify(pend));
+      } catch (e) {}
+    };
+
+    // Optimistic cache + a PENDING marker (timestamped). The pending marker lets a
+    // concurrent closed-days refresh (_loadSlotCapClosed) know this write is still
+    // in flight, so it re-applies it instead of clobbering it with not-yet-committed
+    // server state (the reconcile race).
+    const next = Object.assign({}, prev);
+    if (wantClosed) next[date] = REASON; else delete next[date];
+    writeClosed(next);
+    setPending(true);
+
+    const rollback = (msg) => {
+      // Restore the pre-click cache, drop the pending marker, and re-render so the
+      // grid reflects the TRUE (server) state — no fake success left on screen.
+      writeClosed(prev);
+      setPending(false);
+      if (typeof refreshCalendarUI === 'function') refreshCalendarUI();
+      if (typeof toast === 'function') toast(msg);
+    };
 
     const base = (window.API_BASE || '').replace(/\/+$/, '');
-    if (!base) return;   // no backend configured (pure-local fallback) → skip silently
+    if (!base) { setPending(false); return; }   // pure-local fallback: nothing to persist
     const headers = { 'Content-Type': 'application/json', 'X-API-KEY': window.API_KEY || '' };
     if (window.__HM_ADMIN_TOKEN) headers['X-ADMIN-TOKEN'] = window.__HM_ADMIN_TOKEN;
-    const payload = status === 'booked'
-      ? { action: 'close-day', date, reason: '管理カレンダーより休止' }
+    const payload = wantClosed
+      ? { action: 'close-day', date, reason: REASON }
       : { action: 'reopen-day', date };
     fetch(base + '/slot-capacity.php', { method: 'POST', headers, body: JSON.stringify(payload) })
-      .then(r => r.json().catch(() => ({ ok: false })))
-      .then(j => {
-        if (!j || !j.ok) {
-          console.error('[CalendarService] syncDayClosure failed', payload.action, date, j && j.error);
-          if (typeof toast === 'function') toast('休止設定をサーバーに保存できませんでした');
-        }
+      .then(r => r.json().then(j => ({ httpOk: r.ok, code: r.status, j }), () => ({ httpOk: false, code: r.status, j: null })))
+      .then(res => {
+        if (res.httpOk && res.j && res.j.ok) { setPending(false); return; }   // committed → drop pending
+        console.error('[CalendarService] syncDayClosure failed', payload.action, date, res.code, res.j && res.j.error);
+        rollback(res.code === 403
+          ? '権限エラー：休止設定は保存されませんでした。再ログインしてください'
+          : '休止設定をサーバーに保存できませんでした（変更を取り消しました）');
       })
       .catch(err => {
         console.error('[CalendarService] syncDayClosure network error', err && err.message);
-        if (typeof toast === 'function') toast('通信エラー：休止設定を保存できませんでした');
+        rollback('通信エラー：休止設定を保存できませんでした（変更を取り消しました）');
       });
   },
 

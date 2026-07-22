@@ -35,14 +35,35 @@
     return String(l).slice(0, 2).toLowerCase() === 'en' ? 'en' : 'ja';
   }
 
-  /* Parse a DB/ISO timestamp. Accepts 'YYYY-MM-DD HH:MM:SS', ISO with 'T', and
-     values carrying 'Z'/offset (which JS converts to local automatically). */
+  /* Parse a DB/ISO timestamp to an absolute instant. Accepts:
+       • values carrying 'Z' or a ±HH:MM offset → parsed as the absolute instant;
+       • naive 'YYYY-MM-DD HH:MM:SS' / ISO-without-tz → interpreted as JST (the
+         server timezone, pinned in hm-api/_lib.php + _db.php), NOT the viewer's
+         browser timezone. This is what makes ordering and displayed times
+         CONSISTENT across surfaces and independent of where they are viewed —
+         previously a naive string was parsed as browser-local, so a tz mismatch
+         between the storage clock and the viewer surfaced as wrong/jumbled times.
+       Returns a Date, or null when unparseable. */
   function toDate(iso) {
     if (!iso) return null;
-    var s = String(iso);
-    var d = new Date(s.indexOf('T') > 0 ? s : s.replace(' ', 'T'));
+    var s = String(iso).trim();
+    if (!s) return null;
+    var hasTz = /[zZ]$/.test(s) || /[+\-]\d{2}:?\d{2}$/.test(s);
+    var norm = s.indexOf('T') > 0 ? s : s.replace(' ', 'T');
+    if (!hasTz) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(norm)) norm += 'T00:00:00+09:00';        // date-only → JST midnight
+      else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(norm)) norm += '+09:00'; // naive datetime → JST
+    }
+    var d = new Date(norm);
     return isNaN(d.getTime()) ? null : d;
   }
+
+  /* Numeric sort key (epoch ms) for a timestamp — ALWAYS sort chat/message lists
+     with this, never a lexical String.localeCompare: the raw values mix formats
+     (MySQL 'YYYY-MM-DD HH:MM:SS' vs ISO 'YYYY-MM-DDTHH:MM:SS.sssZ') and the space
+     char sorts before 'T', so a string sort orders by FORMAT, not by time.
+     Unparseable → 0 (sorts oldest). */
+  function tsMs(iso) { var d = toDate(iso); return d ? d.getTime() : 0; }
 
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -200,6 +221,8 @@
   window.HMFmt = {
     esc: esc,
     msgTime: msgTime,
+    tsMs: tsMs,
+    toDate: toDate,
     dateOnly: function (iso, l) { var d = toDate(iso); return d ? dateOnly(d, l) : ''; },
     furnitureGrid: furnitureGrid,
     preferredOptions: preferredOptions,

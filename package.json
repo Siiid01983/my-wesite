@@ -6,6 +6,7 @@
     "test:arch":   "node --test tests/architecture-lock.test.js",
     "test:inbox-reply": "node tests/inbox-reply-flow.verify.js",
     "test:booking-loc": "node tests/booking-service-location.verify.js",
+    "test:fixes":  "node --test tests/calendar-timestamp-fixes.verify.js",
     "test:all":    "node --test tests/dataProvider.test.js tests/smoke.test.js tests/portalSelfService.test.js tests/architecture-lock.test.js"
   },
   "dependencies": {
