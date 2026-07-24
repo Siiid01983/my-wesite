@@ -144,7 +144,7 @@ window.SlotCalendar = (function () {
         '<span><b class="bd-closed"></b>休止</span>' +
         '<span style="margin-left:auto">○ 全枠受付 · △ 一部制限 · × 全枠休止/満枠</span>' +
       '</div>' +
-      '<div class="slotcal-editor-note">選択した日の時間帯を編集：</div>' +
+      '<div class="slotcal-editor-note" id="slotcalEditNote">日付を選択して時間帯を編集</div>' +
       '<div id="slotcalEditorHost"></div>';
 
     view.insertBefore(screen, view.firstChild);
@@ -172,6 +172,14 @@ window.SlotCalendar = (function () {
     document.getElementById('slotcalToday').onclick  = function () { state.view = parse(today()); state.view.setDate(1); selectDay(today()); loadMonth(); };
     document.getElementById('slotcalReload').onclick = function () { loadMonth(); };
     document.getElementById('slotcalBulk').onclick   = function () { _toggleBulk(); };
+
+    // When the per-band editor writes a change (SlotCapacity._post → slotcap:changed),
+    // refresh the month grid so the day's colouring/roll-up updates immediately.
+    document.addEventListener('slotcap:changed', function (e) {
+      var d = e && e.detail && e.detail.date;
+      if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) state.selected = d;
+      loadMonth();
+    });
 
     _built = true;
     return true;
@@ -252,6 +260,8 @@ window.SlotCalendar = (function () {
   function selectDay(ds) {
     state.selected = ds;
     renderGrid();
+    var note = document.getElementById('slotcalEditNote');
+    if (note) note.textContent = ds + ' の時間帯を編集（受付上限・休止/再開・範囲）';
     var dateEl = document.getElementById('hmScDate');
     if (dateEl) { dateEl.value = ds; }
     if (window.SlotCapacity && SlotCapacity.reload) SlotCapacity.reload();
