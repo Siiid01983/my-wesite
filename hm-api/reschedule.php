@@ -130,8 +130,14 @@ try {
   $emailStatus = 'skipped';
   if ($confirmed && $email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
     $emailStatus = 'error';
-    $oldStr = $oldDate . ($oldTime ? ' ' . $oldTime : '');
-    $newStr = $newDate . ($newTime ? ' ' . $newTime : '');
+    // Slot (time-band) labels for old → new, so the customer sees the schedule
+    // change at slot granularity, not only the date. Additive to the existing
+    // date/time strings; a band-less (時間指定なし) booking simply omits the label.
+    $oldBand    = $bandOf($bk['start_at'], $bk['notes']);
+    $oldBandLbl = ($oldBand !== null && $oldBand !== '') ? hm_slot_band_label($oldBand) : '';
+    $newBandLbl = ($newBand !== null && $newBand !== '') ? hm_slot_band_label($newBand) : '';
+    $oldStr = $oldDate . ($oldTime ? ' ' . $oldTime : '') . ($oldBandLbl ? '（' . $oldBandLbl . '）' : '');
+    $newStr = $newDate . ($newTime ? ' ' . $newTime : '') . ($newBandLbl ? '（' . $newBandLbl . '）' : '');
     $head = '🔁 ご予約の日時が変更されました';
     $msg  = implode("\n", [$head, '', "予約番号: {$ref}", "お名前: " . (string)($bk['customer_name'] ?? '') . " 様",
                            "変更前: {$oldStr}", "変更後: {$newStr}"]);
