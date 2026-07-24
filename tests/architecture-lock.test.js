@@ -178,3 +178,70 @@ describe('API connectivity / origin consistency', () => {
     assert.ok(ok, `allowed_origin must include both ${APEX} and ${WWW} (got "${list}")`);
   });
 });
+
+// ── 6. Slot-capacity is the SINGLE booking/availability engine (locked) ───────
+//   slot_capacity + booking_slots are the only source of truth for availability,
+//   confirmation, and rescheduling. calendar_availability stays display-only.
+//   Do NOT reintroduce a second availability authority.
+describe('Slot-capacity engine (locked)', () => {
+  const capacity      = read('hm-api/_capacity.php');
+  const availability  = read('hm-api/availability.php');
+  const slotCapApi    = read('hm-api/slot-capacity.php');
+  const bookingStatus = read('hm-api/booking-status.php');
+  const reschedule    = read('hm-api/reschedule.php');
+  const createBooking = read('hm-api/create-booking.php');
+
+  it('_capacity.php defines the engine primitives', () => {
+    for (const fn of ['hm_cap_effective', 'hm_cap_reserve', 'hm_cap_confirm_check', 'hm_cap_day_closed', 'hm_cap_month', 'hm_cap_state']) {
+      assert.ok(new RegExp('function\\s+' + fn + '\\s*\\(').test(capacity), `_capacity.php must define ${fn}()`);
+    }
+    assert.ok(/CREATE TABLE IF NOT EXISTS slot_capacity/.test(capacity), '_capacity.php owns the slot_capacity table');
+  });
+
+  it('availability.php derives availability from the capacity engine (not calendar_availability)', () => {
+    assert.ok(/require_once __DIR__ \. '\/_capacity\.php'/.test(availability), 'availability.php must include _capacity.php');
+    assert.ok(/hm_cap_day\s*\(/.test(availability), 'availability.php must read per-band capacity via hm_cap_day()');
+    assert.ok(/booking_slots/.test(availability), 'availability.php reads reserved slots from booking_slots');
+    assert.ok(!/\bcalendar_availability\b/.test(availability), 'availability.php must NOT read calendar_availability (display-only table)');
+  });
+
+  it('confirm + reschedule funnel through the single-source validation/reserve', () => {
+    assert.ok(/hm_cap_confirm_check\s*\(/.test(bookingStatus), 'booking-status.php must validate via hm_cap_confirm_check()');
+    assert.ok(/hm_cap_reserve\s*\(/.test(bookingStatus), 'confirm must reserve the slot (hm_cap_reserve)');
+    assert.ok(/hm_slot_release\s*\(/.test(reschedule) && /hm_cap_reserve\s*\(/.test(reschedule), 'reschedule.php must release-old + reserve-new (atomic transfer)');
+    assert.ok(/beginTransaction\s*\(/.test(reschedule) && /slot_taken/.test(reschedule), 'reschedule.php must be transactional with a slot_taken rollback');
+  });
+
+  it('create-booking hard-stops a fully closed day via the engine', () => {
+    assert.ok(/hm_cap_day_closed\s*\(/.test(createBooking), 'create-booking.php must guard closed days with hm_cap_day_closed()');
+  });
+
+  it('slot-capacity.php exposes the read-only month-status action', () => {
+    assert.ok(/'month-status'/.test(slotCapApi), "slot-capacity.php must allow the 'month-status' action");
+    assert.ok(/hm_cap_month\s*\(/.test(slotCapApi), 'month-status must serve hm_cap_month()');
+  });
+});
+
+// ── 7. Admin slot-only availability UI (空き枠管理) is present + wired ─────────
+describe('Admin slot calendar UI (locked)', () => {
+  const slotCal   = read('js/modules/calendar/slotCalendar.js');
+  const adminHtml  = read('admin.html');
+  const navJs      = read('js/core/navigation.js');
+
+  it('slotCalendar.js exists, reads ONLY month-status, and is flag-gated', () => {
+    assert.ok(/month-status/.test(slotCal), 'slotCalendar.js must read the month-status endpoint');
+    assert.ok(/hm_admin_slot_ui/.test(slotCal), 'slotCalendar.js must honour the hm_admin_slot_ui flag');
+    assert.ok(/function\s+onShow\b/.test(slotCal), 'slotCalendar.js must expose onShow()');
+    // It must not write availability through any legacy day-status path.
+    assert.ok(!/calendar_availability/.test(slotCal), 'slotCalendar.js must not touch calendar_availability');
+  });
+
+  it('admin.html loads the slot calendar module', () => {
+    assert.ok(/js\/modules\/calendar\/slotCalendar\.js/.test(adminHtml), 'admin.html must include slotCalendar.js');
+  });
+
+  it('navigation renders the slot UI and aliases 容量設定 → 空き枠管理', () => {
+    assert.ok(/SlotCalendar\.onShow\s*\(/.test(navJs), 'go("calendar") must render the slot UI');
+    assert.ok(/view === 'capacity'[^\n]*'calendar'/.test(navJs), 'go("capacity") must alias to the merged calendar screen');
+  });
+});

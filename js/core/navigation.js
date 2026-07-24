@@ -34,7 +34,7 @@ function calcStats() {
    ════════════════════════════════════════════════════════ */
 const VIEW_TITLES = {
   dashboard:'ダッシュボード', bookings:'予約管理', quotes:'見積り管理',
-  reviews:'レビュー管理', services:'サービス管理', faq:'FAQ編集', company:'会社情報編集', footer:'フッター編集', hero:'ヒーロー編集', calendar:'カレンダー管理', analytics:'分析',
+  reviews:'レビュー管理', services:'サービス管理', faq:'FAQ編集', company:'会社情報編集', footer:'フッター編集', hero:'ヒーロー編集', calendar:'空き枠管理', analytics:'分析',
   capacity:'容量設定', pricing:'料金管理', disposal:'不用品管理', actions:'クイック操作',
   backup:'バックアップ', media:'メディアライブラリ', customers:'顧客管理', 'portal-users':'顧客ポータル管理', line:'LINE通知設定', email:'メール通知設定', changelog:'変更履歴', security:'セキュリティ', health:'システム健全性',
   staff:'スタッフ管理',
@@ -86,6 +86,9 @@ async function _dpSync(table, filters, adapterFn, viewId, rerenderFn) {
 
 function go(view) {
   if (!Auth.isLoggedIn()) { Auth.logout(); return; }
+  // 容量設定 is merged into 空き枠管理 (slot calendar). Alias legacy deep links /
+  // quick-actions so go('capacity') lands on the unified availability screen.
+  if (view === 'capacity' && window.SlotCalendar && SlotCalendar.enabled && SlotCalendar.enabled()) view = 'calendar';
   if (Auth.mustChangePassword()) { showForceChange(); return; }
   if (_ADMIN_ONLY.has(view) && Auth.getRole && Auth.getRole() !== 'admin') {
     toast('このページへのアクセス権限がありません');
@@ -104,7 +107,20 @@ function go(view) {
   Auth.touch();
   if (view==='dashboard') renderDash();
   if (view==='bookings') renderBookings();
-  if (view==='calendar') { refreshCalendarUI(); renderGCalPanel(); _syncCalendarFromApi(); if (typeof _loadSlotCapClosed==='function') _loadSlotCapClosed(refreshCalendarUI); }
+  if (view==='calendar') {
+    // Slot-only 空き枠管理 (flag on, default): render the slot month grid + editor
+    // and keep the {max,limited} thresholds fresh. Legacy ○△× grid path runs only
+    // when the flag is off (staged-rollout fallback) — it overlays slot_capacity
+    // day-closures via _loadSlotCapClosed (PR #122) exactly as before.
+    if (window.SlotCalendar && SlotCalendar.enabled && SlotCalendar.enabled()) {
+      SlotCalendar.onShow();
+      if (typeof _syncCapacityFromApi === 'function') _syncCapacityFromApi();
+      renderGCalPanel();
+    } else {
+      refreshCalendarUI(); renderGCalPanel(); _syncCalendarFromApi();
+      if (typeof _loadSlotCapClosed==='function') _loadSlotCapClosed(refreshCalendarUI);
+    }
+  }
   if (view==='analytics') renderAnalytics();
   if (view==='capacity') { loadCapacity(); _syncCapacityFromApi(); }
   if (view==='pricing') { renderPricing(); _syncPricingFromApi(); }
