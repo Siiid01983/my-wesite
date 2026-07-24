@@ -56,6 +56,25 @@
   });
 
   /* ── Util ───────────────────────────────────────────────────────────────── */
+  /* Parse a DB/ISO timestamp to an absolute instant. Naive 'YYYY-MM-DD HH:MM:SS'
+     (and ISO-without-tz) is interpreted as JST — the pinned server timezone
+     (hm-api/_lib.php + _db.php) — NOT the viewer's browser tz, so displayed times
+     agree with the JST-aware numeric sort used in the chat/message lists. Values
+     already carrying 'Z'/±HH:MM are absolute and parsed as-is. */
+  function opsToDate(s) {
+    if (window.HMFmt && HMFmt.toDate) return HMFmt.toDate(s);
+    if (!s) return null;
+    var v = String(s).trim(); if (!v) return null;
+    var hasTz = /[zZ]$/.test(v) || /[+\-]\d{2}:?\d{2}$/.test(v);
+    var norm = v.indexOf('T') > 0 ? v : v.replace(' ', 'T');
+    if (!hasTz) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(norm)) norm += 'T00:00:00+09:00';
+      else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(norm)) norm += '+09:00';
+    }
+    var d = new Date(norm);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  Ops.toDate = opsToDate;
   var util = (Ops.util = {
     esc: function (s) {
       return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -74,27 +93,27 @@
     },
     fmtDate: function (s) {
       if (!s) return '—';
-      var d = new Date(String(s).replace(' ', 'T'));
-      if (isNaN(d)) return String(s);
+      var d = opsToDate(s);
+      if (!d) return String(s);
       return (d.getMonth() + 1) + '月' + d.getDate() + '日';
     },
     fmtDateFull: function (s) {
       if (!s) return '—';
-      var d = new Date(String(s).replace(' ', 'T'));
-      if (isNaN(d)) return String(s);
+      var d = opsToDate(s);
+      if (!d) return String(s);
       var wd = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
       return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日（' + wd + '）';
     },
     fmtTime: function (s) {
       if (!s) return '';
-      var d = new Date(String(s).replace(' ', 'T'));
-      if (isNaN(d)) return '';
+      var d = opsToDate(s);
+      if (!d) return '';
       return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
     },
     relTime: function (s) {
       if (!s) return '';
-      var d = new Date(String(s).replace(' ', 'T'));
-      if (isNaN(d)) return '';
+      var d = opsToDate(s);
+      if (!d) return '';
       var diff = (Date.now() - d.getTime()) / 1000;
       if (diff < 60) return window.t ? window.t('util.justNow') : 'たった今';
       if (diff < 3600) return window.t ? window.t('util.minAgo', { n: Math.floor(diff / 60) }) : Math.floor(diff / 60) + '分前';

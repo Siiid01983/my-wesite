@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_log.php';   // structured logging (defines hm_log_* + hm_client_ip)
 
+// Single timezone for the whole PHP layer. Every timestamp we format server-side
+// (inbox received_at from email Date headers, log stamps, date('Y-m-d H:i:s'),
+// etc.) is written in JST so it agrees with the MySQL session tz (set in _db.php)
+// and with the JST-aware parsing on the client. Without this, polled-email
+// timestamps (PHP default tz) and NOW()/CURRENT_TIMESTAMP rows (MySQL tz) landed
+// on two different clocks in the same column → out-of-order / wrong-time messages.
+date_default_timezone_set('Asia/Tokyo');
+
 // Production posture: never render PHP warnings/notices/fatals into the HTTP
 // response — they can leak filesystem paths, SQL, and internal table names.
 // Errors are still written to the log files by the handlers below. Set

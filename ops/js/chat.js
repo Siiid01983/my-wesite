@@ -13,6 +13,16 @@
 
   var state = { convs: [], byKey: {}, bookings: {}, openKey: null, screen: null, poll: null };
 
+  /* Numeric (epoch-ms) sort key for a timestamp. NEVER sort messages lexically:
+     raw ts values mix MySQL 'YYYY-MM-DD HH:MM:SS' with ISO '…T…Z', and space<'T'
+     so a string sort orders by format, not time (root cause of out-of-order
+     messages). Delegates to the shared JST-aware parser (HMFmt.tsMs). */
+  function tsMs(v) {
+    if (window.HMFmt && HMFmt.tsMs) return HMFmt.tsMs(v);
+    var d = new Date(String(v || '').replace(' ', 'T'));
+    return isNaN(d.getTime()) ? 0 : d.getTime();
+  }
+
   function parseLabels(m) {
     var l = m.labels || {};
     if (typeof l === 'string') { try { l = JSON.parse(l); } catch (_) { l = {}; } }
@@ -50,7 +60,7 @@
 
     var convs = Object.keys(groups).map(function (k) {
       var g = groups[k];
-      var msgs = g.rows.map(normMsg).sort(function (a, b) { return String(a.ts).localeCompare(String(b.ts)); });
+      var msgs = g.rows.map(normMsg).sort(function (a, b) { return tsMs(a.ts) - tsMs(b.ts); });
       var bk = state.bookings[g.bookingId];
       var custEmail = '';
       g.rows.forEach(function (m) { var l = parseLabels(m); if (!l.outbound && m.email && !custEmail) custEmail = m.email; });
@@ -67,7 +77,7 @@
         unread: msgs.filter(function (x) { return !x.out && !x.read; }).length,
       };
     });
-    convs.sort(function (a, b) { return String(b.lastTs).localeCompare(String(a.lastTs)); });
+    convs.sort(function (a, b) { return tsMs(b.lastTs) - tsMs(a.lastTs); });
     state.convs = convs;
     state.byKey = {};
     convs.forEach(function (c) { state.byKey[c.key] = c; });

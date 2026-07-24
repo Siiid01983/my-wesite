@@ -110,13 +110,15 @@ function go(view) {
   if (view==='calendar') {
     // Slot-only 空き枠管理 (flag on, default): render the slot month grid + editor
     // and keep the {max,limited} thresholds fresh. Legacy ○△× grid path runs only
-    // when the flag is off (staged-rollout fallback).
+    // when the flag is off (staged-rollout fallback) — it overlays slot_capacity
+    // day-closures via _loadSlotCapClosed (PR #122) exactly as before.
     if (window.SlotCalendar && SlotCalendar.enabled && SlotCalendar.enabled()) {
       SlotCalendar.onShow();
       if (typeof _syncCapacityFromApi === 'function') _syncCapacityFromApi();
       renderGCalPanel();
     } else {
       refreshCalendarUI(); renderGCalPanel(); _syncCalendarFromApi();
+      if (typeof _loadSlotCapClosed==='function') _loadSlotCapClosed(refreshCalendarUI);
     }
   }
   if (view==='analytics') renderAnalytics();
