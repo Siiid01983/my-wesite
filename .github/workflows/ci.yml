@@ -1,0 +1,80 @@
+name: CI — tests
+
+# Runs the test suite on every push and pull request. The PHP job installs
+# pdo_sqlite so the slot-capacity DB-integration tests (in-memory SQLite) that
+# skip locally actually execute here — including the no-duplicate-reservation
+# and closure invariants behind the booking engine.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  php-tests:
+    name: PHP — slot-capacity engine (pdo_sqlite)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up PHP 8.3 with pdo_sqlite
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo, pdo_sqlite, sqlite3, mbstring
+          coverage: none
+
+      - name: Confirm pdo_sqlite is loaded
+        run: php -r "echo 'PDO drivers: '.implode(',', PDO::getAvailableDrivers()).PHP_EOL; exit(in_array('sqlite', PDO::getAvailableDrivers(), true) ? 0 : 1);"
+
+      - name: Lint slot-capacity PHP
+        run: |
+          for f in hm-api/_capacity.php hm-api/slot-capacity.php \
+                   tests/slot-capacity-month.test.php tests/slot-capacity-engine.test.php; do
+            php -l "$f"
+          done
+
+      - name: slot-capacity month-status (pure + DB)
+        run: php tests/slot-capacity-month.test.php
+
+      - name: slot-capacity engine (no-duplicate / closure invariants)
+        run: php tests/slot-capacity-engine.test.php
+
+  node-tests:
+    name: Node — arch lock + slot UI + regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium (for the slot-calendar E2E)
+        run: npx playwright install --with-deps chromium
+
+      - name: Architecture lock
+        run: npm run test:arch
+
+      - name: DataProvider unit
+        run: npm test
+
+      - name: Portal self-service unit
+        run: npm run test:portal
+
+      - name: Calendar/timestamp fixes
+        run: npm run test:fixes
+
+      - name: Slot-calendar smoke
+        run: npm run test:slot-cal
+
+      - name: Slot-calendar E2E (headless Chromium, self-mocked backend)
+        run: npm run test:slot-cal-e2e
