@@ -64,10 +64,19 @@ jobs:
       - name: Install Playwright Chromium (for the slot-calendar E2E)
         run: npx playwright install --with-deps chromium
 
+      - name: Start static dev server (dataProvider browser test)
+        run: |
+          nohup node serve.js > /tmp/serve.log 2>&1 &
+          for i in $(seq 1 20); do
+            curl -sf http://localhost:5050/admin.html > /dev/null && break
+            sleep 0.5
+          done
+          curl -sf http://localhost:5050/admin.html > /dev/null && echo "static server up on :5050" || (echo "server failed to start"; cat /tmp/serve.log; exit 1)
+
       - name: Architecture lock
         run: npm run test:arch
 
-      - name: DataProvider unit
+      - name: DataProvider unit (browser, static server)
         run: npm test
 
       - name: Portal self-service unit
