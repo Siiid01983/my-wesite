@@ -245,3 +245,30 @@ describe('Admin slot calendar UI (locked)', () => {
     assert.ok(/view === 'capacity'[^\n]*'calendar'/.test(navJs), 'go("capacity") must alias to the merged calendar screen');
   });
 });
+
+// ── 8. Portal boundary: customer self-service must not bypass the booking engine ─
+//    The slot_capacity engine is the single source of truth. Portal endpoints are
+//    read / self-service only — they may PATCH a booking row (via BookingService)
+//    but must NEVER write the engine tables (slot_capacity / booking_slots) directly,
+//    which would let a customer corrupt capacity/closure state or double-book.
+describe('Portal boundary (locked)', () => {
+  const auth       = read('hm-api/auth.php');
+  const portalComm = read('hm-api/portal-communications.php');
+  const portalSelf = read('js/portal/portalSelfService.js');
+
+  it('portal endpoints never mutate the booking-engine tables directly', () => {
+    for (const [name, src] of [['auth.php', auth], ['portal-communications.php', portalComm]]) {
+      assert.ok(!/\b(hm_cap_set|hm_cap_reserve|hm_slot_reserve)\s*\(/.test(src),
+        `${name} must NOT call slot-capacity engine mutators (portal is read/self-service only)`);
+      assert.ok(!/(INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+`?(slot_capacity|booking_slots)`?/i.test(src),
+        `${name} must NOT write slot_capacity/booking_slots (engine is the single source of truth)`);
+    }
+  });
+
+  it('portal self-service reschedule routes through the sanctioned updateBooking path', () => {
+    assert.ok(/svc\.updateBooking\s*\(/.test(portalSelf),
+      'portalSelfService must reschedule via BookingService.updateBooking (not a direct engine write)');
+    assert.ok(!/slot-capacity\.php|slot_capacity|booking_slots/.test(portalSelf),
+      'portalSelfService must not touch slot_capacity / booking_slots directly');
+  });
+});
