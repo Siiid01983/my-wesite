@@ -27,7 +27,10 @@ jobs:
           coverage: none
 
       - name: Confirm pdo_sqlite is loaded
-        run: php -r "echo 'PDO drivers: '.implode(',', PDO::getAvailableDrivers()).PHP_EOL; exit(in_array('sqlite', PDO::getAvailableDrivers(), true) ? 0 : 1);"
+        run: |
+          php -r "echo implode(',', PDO::getAvailableDrivers()), PHP_EOL;"
+          php -r "exit(in_array('sqlite', PDO::getAvailableDrivers(), true) ? 0 : 1);"
+          echo "pdo_sqlite OK"
 
       - name: Lint slot-capacity PHP
         run: |
