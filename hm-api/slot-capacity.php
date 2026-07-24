@@ -81,8 +81,8 @@ if (!$isCli) {
 }
 
 $action = strtolower(trim((string)($param('action') ?? 'get')));
-if (!in_array($action, ['get', 'set', 'close', 'reopen', 'close-day', 'reopen-day', 'closed-days'], true)) {
-  sc_out(['ok' => false, 'error' => "invalid action — use get|set|close|reopen|close-day|reopen-day|closed-days"], $isCli, 400);
+if (!in_array($action, ['get', 'set', 'close', 'reopen', 'close-day', 'reopen-day', 'closed-days', 'month-status'], true)) {
+  sc_out(['ok' => false, 'error' => "invalid action — use get|set|close|reopen|close-day|reopen-day|closed-days|month-status"], $isCli, 400);
 }
 $reason = trim((string)($param('reason') ?? ''));
 
@@ -135,6 +135,18 @@ try {
     if (strcmp($from, $to) > 0) { $t = $from; $from = $to; $to = $t; }   // normalise order
     if ((strtotime($to) - strtotime($from)) / 86400 > 366) sc_out(['ok' => false, 'error' => 'range too large (max 366 days)'], $isCli, 400);
     sc_out(['ok' => true, 'action' => 'closed-days', 'from' => $from, 'to' => $to, 'closed' => hm_cap_closed_range($db, $from, $to)], $isCli);
+  }
+
+  // Range read: per-band status for EVERY day in [from, to] → { date: {am:{…},…} }.
+  // Powers the slot-aware admin month calendar (partial closures + capacity colour).
+  // Read-only; caps the span at 366 days (same as closed-days). Two queries total.
+  if ($action === 'month-status') {
+    $from = $validDay(trim((string)($param('from') ?? '')));
+    $to   = $validDay(trim((string)($param('to') ?? '')));
+    if ($from === null || $to === null) sc_out(['ok' => false, 'error' => 'from/to required — YYYY-MM-DD'], $isCli, 400);
+    if (strcmp($from, $to) > 0) { $t = $from; $from = $to; $to = $t; }   // normalise order
+    if ((strtotime($to) - strtotime($from)) / 86400 > 366) sc_out(['ok' => false, 'error' => 'range too large (max 366 days)'], $isCli, 400);
+    sc_out(['ok' => true, 'action' => 'month-status', 'from' => $from, 'to' => $to, 'days' => hm_cap_month($db, $from, $to)], $isCli);
   }
 
   // Whole-day close / reopen — apply to all four bands. A specific date is

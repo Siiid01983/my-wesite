@@ -1,7 +1,20 @@
 'use strict';
 
 /* ════════════════════════════════════════════════════════
-   BOOKINGS TABLE
+   ADMIN MONTH CALENDAR — ○△× availability grid
+   ════════════════════════════════════════════════════════
+   ⚠ DEPRECATED as the PRIMARY availability UI (2026-07).
+   The unified slot-based 「空き枠管理」 screen (js/modules/calendar/slotCalendar.js)
+   is now the default availability manager. This ○△× day-status grid is retained
+   ONLY as the flag-off fallback (localStorage hm_admin_slot_ui='0') and because
+   CalendarService.getAvailability() is still READ by the mobile calendar
+   (js/modules/mobile/mobileCalendar.js) and Google-Calendar sync (gcalSync.js).
+   Day open/close here already routes through the slot_capacity engine
+   (CalendarService.syncDayClosure → slot-capacity.php close-day/reopen-day), so it
+   is not a second source of truth — just a second view. Do NOT extend it; add
+   availability features to slotCalendar.js. Physical removal of the manual toggle
+   (calClick/toggleBulk/applyBulk + the #view-calendar .cal-wrap markup) is a
+   post-production-bake follow-up, once the slot UI is confirmed live.
    ════════════════════════════════════════════════════════ */
 
 let _calV = new Date(); _calV.setDate(1);

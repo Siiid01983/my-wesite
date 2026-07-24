@@ -202,6 +202,97 @@ if (!function_exists('hm_cap_effective')) {
   }
 
   /**
+   * PURE status derivation for a single (capacity, used, closed) triple — the exact
+   * rule hm_cap_status() applies, factored out so it is DB-free and unit-testable
+   * (and reused by hm_cap_month). closed wins; else full when nothing remains; else
+   * limited when some slot is used and the remainder is at/under the low-water mark
+   * (2 when capacity>=4, else 1); else available. reason surfaces only when closed.
+   * @return array{status:string,capacity:int,used:int,remaining:int,closed:bool,reason:string}
+   */
+  function hm_cap_state(int $capacity, int $used, bool $closed, string $reason = ''): array {
+    $cap = max(0, $capacity);
+    $u   = max(0, $used);
+    $remaining = max(0, $cap - $u);
+    $lowMark = $cap >= 4 ? 2 : 1;
+    $status = $closed ? 'closed'
+            : ($remaining <= 0 ? 'full'
+            : ($u > 0 && $remaining <= $lowMark ? 'limited' : 'available'));
+    return [
+      'status' => $status, 'capacity' => $cap, 'used' => $u,
+      'remaining' => $remaining, 'closed' => $closed,
+      'reason' => $closed ? $reason : '',
+    ];
+  }
+
+  /**
+   * Per-band status for EVERY day in [from, to] — the read behind the slot-aware
+   * admin month calendar. Same per-band shape + semantics as hm_cap_status(), but
+   * computed in just TWO queries for the whole range (one slot_capacity read for
+   * overrides + per-band defaults, one grouped booking_slots read for used counts)
+   * so a month render doesn't fan out into 8×N round-trips.
+   *
+   * @return array<string, array<string, array{status:string,capacity:int,used:int,
+   *   remaining:int,closed:bool,reason:string}>>  — { 'YYYY-MM-DD' => { am:{…}, … } }
+   * Safe pre-migration: a missing slot_capacity / booking_slots table yields the
+   * back-compat default for every day (capacity 1, open, 0 used).
+   */
+  function hm_cap_month(PDO $db, string $from, string $to): array {
+    // Enumerate the days (inclusive). Invalid input → empty result.
+    try {
+      $start = new DateTimeImmutable($from);
+      $end   = new DateTimeImmutable($to);
+    } catch (Throwable $e) { return []; }
+    if ($end < $start) { $t = $start; $start = $end; $end = $t; }
+    $days = [];
+    for ($d = $start; $d <= $end; $d = $d->modify('+1 day')) $days[] = $d->format('Y-m-d');
+
+    $fromD = $days[0] ?? $from;
+    $toD   = $days[count($days) - 1] ?? $to;
+
+    // Per-band defaults (date='*') + per-(date,band) overrides in one read.
+    $defaults = [];
+    foreach (HM_CAP_BANDS as $b) $defaults[$b] = ['capacity' => 1, 'closed' => false, 'reason' => ''];
+    $override = [];   // $override[date][band] = ['capacity','closed','reason']
+    try {
+      $st = $db->prepare(
+        "SELECT booking_date, time_band, capacity, is_closed, reason FROM slot_capacity
+         WHERE booking_date = ? OR (booking_date BETWEEN ? AND ?)"
+      );
+      $st->execute([HM_CAP_DEFAULT, $fromD, $toD]);
+      foreach ($st as $r) {
+        $bn = (string)($r['time_band'] ?? '');
+        if (!in_array($bn, HM_CAP_BANDS, true)) continue;
+        $row = ['capacity' => max(0, (int)$r['capacity']), 'closed' => (bool)(int)$r['is_closed'], 'reason' => (string)($r['reason'] ?? '')];
+        $bd = (string)($r['booking_date'] ?? '');
+        if ($bd === HM_CAP_DEFAULT) $defaults[$bn] = $row;
+        else                        $override[$bd][$bn] = $row;
+      }
+    } catch (Throwable $e) { /* table missing → all defaults (capacity 1, open) */ }
+
+    // Reserved counts per (date, band) in one grouped read.
+    $used = [];   // $used[date][band] = int
+    try {
+      $st = $db->prepare(
+        "SELECT booking_date, time_band, COUNT(*) c FROM booking_slots
+         WHERE booking_date BETWEEN ? AND ? GROUP BY booking_date, time_band"
+      );
+      $st->execute([$fromD, $toD]);
+      foreach ($st as $r) $used[(string)($r['booking_date'] ?? '')][(string)($r['time_band'] ?? '')] = (int)$r['c'];
+    } catch (Throwable $e) { /* no booking_slots → zero used everywhere */ }
+
+    $out = [];
+    foreach ($days as $day) {
+      $bands = [];
+      foreach (HM_CAP_BANDS as $b) {
+        $eff = $override[$day][$b] ?? $defaults[$b];   // date override → default → cap1/open
+        $bands[$b] = hm_cap_state((int)$eff['capacity'], (int)($used[$day][$b] ?? 0), (bool)$eff['closed'], (string)($eff['reason'] ?? ''));
+      }
+      $out[$day] = $bands;
+    }
+    return $out;
+  }
+
+  /**
    * Capacity-aware reserve for (date, band): claim the lowest free slot_index in
    * [0, capacity). Runs in the caller's transaction if open, else its own; a
    * SELECT … FOR UPDATE serialises concurrent reservers and the UNIQUE key is the

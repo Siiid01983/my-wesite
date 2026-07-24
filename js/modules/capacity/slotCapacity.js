@@ -192,7 +192,13 @@ window.SlotCapacity = (function () {
       .then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
       .then(function (res) {
         var j = res.body || {};
-        if (j.ok) { _render(j.bands || {}); _msg(okMsg, 'ok'); _toast(okMsg); return; }
+        if (j.ok) {
+          _render(j.bands || {}); _msg(okMsg, 'ok'); _toast(okMsg);
+          // Notify listeners (the slot calendar month grid) that this date's
+          // capacity/closure changed so they can refresh their colouring.
+          try { document.dispatchEvent(new CustomEvent('slotcap:changed', { detail: { date: _date() } })); } catch (e) {}
+          return;
+        }
         _msg('失敗: ' + _esc(j.error || ('HTTP ' + res.status)), 'error');
       })
       .catch(function () { _msg('通信エラー', 'error'); });
