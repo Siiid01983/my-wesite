@@ -7,6 +7,10 @@
     "test:inbox-reply": "node tests/inbox-reply-flow.verify.js",
     "test:booking-loc": "node tests/booking-service-location.verify.js",
     "test:fixes":  "node --test tests/calendar-timestamp-fixes.verify.js",
+    "test:slot-cal":     "node tests/slot-calendar.smoke.js",
+    "test:slot-cal-e2e": "node tests/slot-calendar.e2e.js",
+    "test:slot-month":   "php tests/slot-capacity-month.test.php",
+    "test:slot-engine":  "php tests/slot-capacity-engine.test.php",
     "test:all":    "node --test tests/dataProvider.test.js tests/smoke.test.js tests/portalSelfService.test.js tests/architecture-lock.test.js"
   },
   "dependencies": {
