@@ -128,15 +128,26 @@ for every day of the visible month** (to colour partial closures). Add one read 
 
 ---
 
-## 7. Open decisions (need sign-off before P1)
+## 7. Resolved decisions (signed off — 2026-07-24)
 
-- **D1. One view or two?** Merge `#view-calendar` + `#view-capacity` into a single
-  「空き枠管理」view (recommended — one place for availability), or keep two nav entries.
-- **D2. Keep ○△× as a non-clickable per-day roll-up glyph** for scanning (recommended),
-  or remove all ○△× from admin entirely.
-- **D3. Legacy `{max,limited}` day-count settings** — keep (drives display heuristic +
-  stats; recommended) or retire the settings panel too.
-- **D4. Feature flag** `hm_admin_slot_ui` for staged rollout (recommended) or hard cut-over.
+- **D1 → MERGE.** `#view-calendar` and `#view-capacity` become a single 「空き枠管理」
+  view: slot-aware month grid on top, per-band day editor + capacity settings below.
+  One nav entry; the redundant second nav item is removed and its route aliased.
+- **D2 → KEEP ○△× as a read-only roll-up.** Each day cell shows a small, non-clickable
+  per-day glyph derived from the 4 band states (all open → ○ · some limited/partial → △ ·
+  all closed/full → ×). All *editing* is per-slot. No manual ○△× toggle remains.
+- **D3 → KEEP the `{max,limited}` panel.** It still drives the △/× display heuristic and
+  dashboard stats; retired only as the *primary* editor, not deleted. No stats blast radius.
+- **D4 → FEATURE FLAG `hm_admin_slot_ui`.** Staged rollout; the ○△× grid remains an
+  instant fallback until P4 flips the default.
+
+### Impact of D1 (merge) on the file plan
+- `admin.html`: the slot month grid + roll-up replaces `#view-calendar`'s inner markup;
+  the `時間帯別キャパシティ` + `予約容量設定` panels move under the same view (or the
+  `#view-capacity` container is rendered inside 「空き枠管理」). The `capacity` nav button
+  (`admin.html:888`) is removed and `go('capacity')` aliased to the merged view so any
+  deep links / print buttons keep working (backward compat).
+- Nav label カレンダー → 空き枠管理; `#gcalPanel` stays in the merged view.
 
 ---
 
