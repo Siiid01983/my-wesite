@@ -215,8 +215,13 @@ try {
   //  the server-side backstop against a direct/stale-client POST. Rejects with the
   //  same 409 'slot_taken' contract the frontend already handles (reason=closed).
   //  Defensive: a closed-check hiccup never blocks a booking on an open day.
+  //  TIMELINE: skipped for a timeline booking — the availability authority is the
+  //  admin WINDOW (hm_timeline_start_ok already validated fit + free above). A date
+  //  may have all four legacy bands 'closed' (e.g. from the calendar→slotcap
+  //  migration) yet have real timeline windows drawn; the band day-closure must NOT
+  //  veto an in-window hourly booking.
   $__bd = substr((string)($data['booking_date'] ?? ''), 0, 10);
-  if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $__bd)) {
+  if ($__tlStart === null && preg_match('/^\d{4}-\d{2}-\d{2}$/', $__bd)) {
     try {
       $__dc = hm_cap_day_closed($db, $__bd);
       if (!empty($__dc['closed'])) {

@@ -27,6 +27,7 @@ require_once __DIR__ . '/_lib.php';
 require_once __DIR__ . '/_db.php';
 require_once __DIR__ . '/_slots.php';      // canonical slot layer (release / band id)
 require_once __DIR__ . '/_capacity.php';   // capacity-aware reserve (per-band configurable capacity)
+require_once __DIR__ . '/_windows.php';     // timeline gate (hm_timeline_active) — skip band reserve for interval bookings
 
 $isCli = (PHP_SAPI === 'cli');
 
@@ -117,7 +118,7 @@ try {
   $db = hm_db();
 
   // Booking must exist and not be an admin block.
-  $q = $db->prepare('SELECT customer_name, customer_email, booking_date, notes, status FROM bookings WHERE id = ? LIMIT 1');
+  $q = $db->prepare('SELECT customer_name, customer_email, booking_date, notes, status, start_at FROM bookings WHERE id = ? LIMIT 1');
   $q->execute([$bookingId]);
   $bk = $q->fetch(PDO::FETCH_ASSOC);
   if (!$bk) bkst_out(['ok' => false, 'error' => 'not_found'], $isCli, 404);
@@ -163,7 +164,13 @@ try {
     //     capacity 'used' count and shows on the calendar like any reservation.
     //     Independent of slot_lock_enabled: confirmation ALWAYS records the slot.
     //     Flexible / 時間指定なし bookings resolve to no band → nothing is locked.
-    if ($status === 'confirmed') {
+    // TIMELINE booking (interval reserved at create via hm_iv_reserve): confirming
+    // is STATUS-ONLY — no band check/reserve. The legacy band confirm below would
+    // otherwise 409 on a date whose bands are 'closed' (e.g. calendar→slotcap
+    // migration) even though the hourly interval is validly held.
+    $__isTimelineBk = (function_exists('hm_timeline_active') && hm_timeline_active($db) && !empty($bk['start_at']));
+
+    if ($status === 'confirmed' && !$__isTimelineBk) {
       $band = hm_slot_band_from_notes($bk['notes']);
       // SINGLE-SOURCE pre-confirm validation (day closed / band closed / capacity)
       // — the SAME hm_cap_confirm_check() the admin rest.php + reschedule paths use.

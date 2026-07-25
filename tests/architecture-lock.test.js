@@ -310,6 +310,19 @@ describe('Hourly timeline (gated, dormant by default)', () => {
     assert.ok(/hm_timeline_active\s*\(/.test(resched), 'reschedule.php must gate the timeline move on hm_timeline_active');
     assert.ok(/hm_iv_reserve\s*\(/.test(resched), 'reschedule.php timeline move must go through hm_iv_reserve (atomic overlap)');
   });
+
+  it('a timeline booking is NOT vetoed/blocked by the legacy band day-closure', () => {
+    // create-booking: the band day-closure guard must be skipped for a timeline
+    // booking (window is the authority) — otherwise migration-closed bands 409 it.
+    assert.ok(/\$__tlStart === null && preg_match/.test(createBk),
+      'create-booking day-closure guard must be gated with $__tlStart === null');
+    // booking-status: confirming a timeline (interval) booking must skip band reserve.
+    const bkStatus = read('hm-api/booking-status.php');
+    assert.ok(/hm_timeline_active\s*\(\$db\)\s*&&\s*!empty\(\$bk\['start_at'\]\)/.test(bkStatus),
+      'booking-status confirm must detect a timeline booking (active + start_at)');
+    assert.ok(/\$status === 'confirmed' && !\$__isTimelineBk/.test(bkStatus),
+      'booking-status must skip the band confirm/reserve for a timeline booking');
+  });
 });
 
 // ── 10. Admin timeline UI is preview-gated + writes only to availability_windows ─
