@@ -198,11 +198,14 @@ describe('Slot-capacity engine (locked)', () => {
     assert.ok(/CREATE TABLE IF NOT EXISTS slot_capacity/.test(capacity), '_capacity.php owns the slot_capacity table');
   });
 
-  it('availability.php derives availability from the capacity engine (not calendar_availability)', () => {
-    assert.ok(/require_once __DIR__ \. '\/_capacity\.php'/.test(availability), 'availability.php must include _capacity.php');
-    assert.ok(/hm_cap_day\s*\(/.test(availability), 'availability.php must read per-band capacity via hm_cap_day()');
-    assert.ok(/booking_slots/.test(availability), 'availability.php reads reserved slots from booking_slots');
-    assert.ok(!/\bcalendar_availability\b/.test(availability), 'availability.php must NOT read calendar_availability (display-only table)');
+  it('availability.php is TIMELINE-ONLY (no bands / capacity / booking_slots)', () => {
+    assert.ok(/hm_windows_day\s*\(/.test(availability) && /hm_timeline_slots\s*\(/.test(availability),
+      'availability.php must serve timeline windows + slots');
+    assert.ok(!/'bands'/.test(availability) && !/hm_cap_day\s*\(/.test(availability),
+      'availability.php must NOT emit bands or read per-band capacity');
+    assert.ok(!/booking_slots/.test(availability) && !/require_once __DIR__ \. '\/_capacity\.php'/.test(availability),
+      'availability.php must NOT read booking_slots or require the band engine');
+    assert.ok(!/\bcalendar_availability\b/.test(availability), 'availability.php must NOT read calendar_availability');
   });
 
   it('confirm + reschedule funnel through the single-source validation/reserve', () => {
