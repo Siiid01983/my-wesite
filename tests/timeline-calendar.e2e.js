@@ -91,10 +91,28 @@ function chk(label, cond) { if (cond) { pass++; console.log('  [ok] ' + label); 
   await page.waitForTimeout(50);
   chk('month = 42 cells', (await page.$$('#hmTl .tl-mcell')).length === 42);
   chk('month shows availability sum', (await page.evaluate(() => !!document.querySelector('#hmTl .tl-mcell .sum'))));
-  // back to day for interaction tests
-  await page.click('#hmTl .tl-mcell.tl-today');   // click today's cell → day view
+  chk('booking renders as a chip in month view', (await page.$$('#hmTl .tl-mchip')).length === 1);
+
+  console.log('month cell click → day view (empty cell, no chip)');
+  await page.click('#hmTl .tl-mcell[data-date="2026-08-20"]');   // a cell with no booking chip
   await page.waitForTimeout(50);
   chk('month cell click → day view', (await page.$$('#hmTl .tl-col')).length === 1);
+
+  console.log('month-view booking chip drag → cross-week/month reschedule');
+  await page.click('#hmTl .tl-seg button[data-v="month"]'); await page.waitForTimeout(50);
+  await page.evaluate(() => { window.__posts = []; });
+  const src = await page.$eval('#hmTl .tl-mchip', el => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  const dst = await page.$eval('#hmTl .tl-mcell[data-date="2026-08-19"]', el => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  await page.mouse.move(src.x, src.y); await page.mouse.down();
+  await page.mouse.move((src.x + dst.x) / 2, (src.y + dst.y) / 2); await page.mouse.move(dst.x, dst.y); await page.mouse.up();
+  await page.waitForTimeout(200);
+  const mrs = await page.evaluate(() => window.__posts.find(p => p.booking_id === 'bk1'));
+  chk('chip drag → reschedule to 2026-08-19 (cross-week)', !!mrs && mrs.booking_date === '2026-08-19');
+  chk('time-of-day preserved on cross-day move (14:00)', !!mrs && /14:00/.test(mrs.start_at || ''));
+
+  // day view of the booking's date (reliable; not subject to the post-drag click guard)
+  await page.evaluate(() => window.TimelineCalendar._debug.setAnchor('2026-08-12'));
+  await page.click('#hmTl .tl-seg button[data-v="day"]'); await page.waitForTimeout(80);
 
   console.log('booking render + drag-reschedule (Phase D)');
   chk('booking block rendered', (await page.$$('#hmTl .tl-bk')).length === 1);

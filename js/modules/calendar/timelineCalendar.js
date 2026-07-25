@@ -27,6 +27,7 @@ window.TimelineCalendar = (function () {
 
   var DOW  = ['日', '月', '火', '水', '木', '金', '土'];
   var MN   = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  var _chipDragTs = 0;   // timestamp of the last month-chip drag (suppress post-drop click)
 
   var state = {
     view: 'week',           // 'day' | 'week' | 'month'
@@ -145,6 +146,10 @@ window.TimelineCalendar = (function () {
       '.tl-mcell .n{font-size:13px;font-weight:700}',
       '.tl-mcell .bar{height:5px;border-radius:3px;background:var(--tl-win)}',
       '.tl-mcell .sum{font-size:10px;color:var(--tl-win);font-weight:700}',
+      '.tl-mcell.droptarget{border-color:var(--tl-accent);box-shadow:0 0 0 2px var(--tl-accent) inset;background:rgba(26,115,232,.08)}',
+      '.tl-mchip{display:block;font-size:10px;font-weight:700;color:#fff;background:var(--tl-accent);border-radius:5px;padding:2px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:grab;touch-action:none;transition:box-shadow .1s}',
+      '.tl-mchip.pending{background:#f9ab00}',
+      '.tl-mchip.dragging{cursor:grabbing;box-shadow:0 6px 16px rgba(0,0,0,.3);opacity:.95}',
       '.tl-empty{padding:26px;text-align:center;font-size:13px;opacity:.6}',
       '.tl-hint{font-size:12px;opacity:.6;margin:8px 2px 0}',
       '@media(max-width:640px){.tl-title{font-size:15px;min-width:0}.tl-seg button{padding:6px 9px}.tl-colhead .d{font-size:14px}}'
@@ -588,14 +593,59 @@ window.TimelineCalendar = (function () {
       var d = parse(ds), inMonth = d.getMonth() === mon;
       var wins = state.windows[ds] || [];
       var totalMin = wins.reduce(function (acc, w) { return acc + (dtMin(w.end_at) - dtMin(w.start_at)); }, 0);
-      var bars = wins.slice(0, 3).map(function () { return '<div class="bar"></div>'; }).join('');
       var sum = totalMin > 0 ? '<span class="sum">' + (Math.round(totalMin/60*10)/10) + 'h 空き</span>' : '';
+      // Bookings as draggable chips — drag between cells to move across days / weeks
+      // / months (the 6-week grid spans them all; navigate months to go further).
+      var chips = (state.bookings[ds] || []).map(function (b) {
+        var pend = (b.status && b.status !== 'confirmed' && b.status !== 'completed') ? ' pending' : '';
+        return '<div class="tl-mchip' + pend + '" data-id="' + _esc(b.id) + '" data-date="' + ds + '" ' +
+               'data-s="' + dtMin(b.start_at) + '" data-e="' + dtMin(b.end_at) + '" ' +
+               'title="' + _esc(b.customer_name || '') + '">' + minToHm(dtMin(b.start_at)) + ' ' + _esc(b.customer_name || '予約') + '</div>';
+      }).join('');
       return '<div class="tl-mcell' + (inMonth ? '' : ' dim') + (ds === tdy ? ' tl-today' : '') + '" data-date="' + ds + '">' +
-               '<span class="n">' + d.getDate() + '</span>' + bars + sum + '</div>';
+               '<span class="n">' + d.getDate() + '</span>' + sum + chips + '</div>';
     }).join('');
     body.innerHTML = dows + '<div class="tl-month">' + cells + '</div>';
     body.querySelectorAll('.tl-mcell').forEach(function (c) {
-      c.onclick = function () { state.anchor = parse(c.getAttribute('data-date')); state.view = 'day'; render(); };
+      c.onclick = function (e) {
+        if (e.target.closest('.tl-mchip')) return;
+        if (Date.now() - _chipDragTs < 400) return;   // ignore the click synthesized after a chip drop
+        state.anchor = parse(c.getAttribute('data-date')); state.view = 'day'; render();
+      };
+    });
+    body.querySelectorAll('.tl-mchip').forEach(function (chip) {
+      chip.addEventListener('pointerdown', function (e) { e.stopPropagation(); _mchipDrag(e, chip); });
+    });
+  }
+
+  // Drag a booking chip between month cells → reschedule to the target DAY, keeping
+  // the time-of-day. Covers cross-day, cross-week AND cross-month in one gesture.
+  function _mchipDrag(ev, chip) {
+    var id = chip.getAttribute('data-id'), date0 = chip.getAttribute('data-date');
+    var sMin = +chip.getAttribute('data-s'), eMin = +chip.getAttribute('data-e');
+    var target = date0, lastCell = null;
+    _chipDragTs = Date.now();   // guard: suppress the click synthesized on pointerup
+    chip.classList.add('dragging');
+    function highlight(cell) {
+      if (lastCell && lastCell !== cell) lastCell.classList.remove('droptarget');
+      if (cell) cell.classList.add('droptarget');
+      lastCell = cell;
+    }
+    TimelineGestures.pointerDrag(ev, {
+      threshold: 4,
+      onMove: function (info) {
+        var el = document.elementFromPoint(info.clientX, info.clientY);
+        var cell = el && el.closest ? el.closest('.tl-mcell') : null;
+        target = cell ? cell.getAttribute('data-date') : date0;
+        highlight(cell);
+      },
+      onEnd: function () {
+        chip.classList.remove('dragging');
+        if (lastCell) lastCell.classList.remove('droptarget');
+        _chipDragTs = Date.now();   // refresh guard at drop time
+        if (target && target !== date0) _reschedule(id, target, sMin, eMin);   // keep time, change day
+      },
+      onCancel: function () { chip.classList.remove('dragging'); if (lastCell) lastCell.classList.remove('droptarget'); }
     });
   }
 
