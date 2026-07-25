@@ -41,6 +41,11 @@ window.MobileCal = (function () {
     return m;
   }
   function _availOf(ds) {
+    // BAND REMOVAL: day-level band availability is legacy. Under the timeline the
+    // real constraint is per-slot (enforced server-side by hm_iv_reserve), so the
+    // mobile day-status defaults to 'available' when the band service is gone. Kept
+    // reading CalendarService while it still exists so nothing changes pre-removal.
+    if (typeof CalendarService === 'undefined' || !CalendarService.getAvailability) return 'available';
     try { return (CalendarService.getAvailability() || {})[ds] || 'available'; }
     catch (e) { return 'available'; }
   }
