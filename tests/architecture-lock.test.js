@@ -304,6 +304,12 @@ describe('Hourly timeline (gated, dormant by default)', () => {
     assert.ok(/hm_iv_reserve\s*\(/.test(createBk),
       'create-booking timeline path must reserve via hm_iv_reserve (single overlap/conflict authority)');
   });
+
+  it('reschedule uses the interval authority for timeline moves (gated)', () => {
+    const resched = read('hm-api/reschedule.php');
+    assert.ok(/hm_timeline_active\s*\(/.test(resched), 'reschedule.php must gate the timeline move on hm_timeline_active');
+    assert.ok(/hm_iv_reserve\s*\(/.test(resched), 'reschedule.php timeline move must go through hm_iv_reserve (atomic overlap)');
+  });
 });
 
 // ── 10. Admin timeline UI is preview-gated + writes only to availability_windows ─

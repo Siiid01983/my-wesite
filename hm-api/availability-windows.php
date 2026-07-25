@@ -139,7 +139,21 @@ try {
     if ($from === null || $to === null) aw_out(['ok' => false, 'error' => 'from/to required — YYYY-MM-DD'], $isCli, 400);
     if (strcmp($from, $to) > 0) { $t = $from; $from = $to; $to = $t; }
     if ((strtotime($to) - strtotime($from)) / 86400 > 366) aw_out(['ok' => false, 'error' => 'range too large (max 366 days)'], $isCli, 400);
-    aw_out(['ok' => true, 'from' => $from, 'to' => $to, 'windows' => hm_windows_range($db, $from, $to)], $isCli);
+    // Also return SCHEDULED bookings in range (start_at set, not cancelled) so the
+    // admin timeline can render + drag-reschedule them. Cheap single query.
+    $bookings = [];
+    try {
+      $bs = $db->prepare(
+        "SELECT id, customer_name, status, start_at, end_at FROM bookings
+          WHERE start_at IS NOT NULL AND end_at IS NOT NULL
+            AND start_at >= ? AND start_at <= ?
+            AND status NOT IN ('キャンセル','cancelled','admin_blocked')
+          ORDER BY start_at ASC"
+      );
+      $bs->execute([$from . ' 00:00:00', $to . ' 23:59:59']);
+      $bookings = $bs->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $be) { $bookings = []; }   // start_at column may not exist pre-migration
+    aw_out(['ok' => true, 'from' => $from, 'to' => $to, 'windows' => hm_windows_range($db, $from, $to), 'bookings' => $bookings], $isCli);
   }
 
   if ($action === 'slots') {

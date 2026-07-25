@@ -29,7 +29,8 @@ const HARNESS = `<!doctype html><html><head><meta charset="utf-8"></head><body>
       url=String(url); var method=(opts&&opts.method)||'GET';
       if(method==='POST'){ window.__posts.push(JSON.parse(opts.body)); return Promise.resolve({json:function(){return Promise.resolve({ok:true,id:'new1'});}}); }
       if(url.indexOf('action=get')!==-1){ return Promise.resolve({json:function(){return Promise.resolve({ok:true,date:'2026-08-12',windows:[],config:{day_start:'07:00',day_end:'22:00',step:30,durations:[30,60,90,120,180],default_duration:120,active:false}});}}); }
-      if(url.indexOf('action=range')!==-1){ return Promise.resolve({json:function(){return Promise.resolve({ok:true,windows:[{id:'w1',window_date:'2026-08-12',start_at:'2026-08-12 09:00:00',end_at:'2026-08-12 12:00:00'}]});}}); }
+      if(url.indexOf('action=range')!==-1){ return Promise.resolve({json:function(){return Promise.resolve({ok:true,windows:[{id:'w1',window_date:'2026-08-12',start_at:'2026-08-12 09:00:00',end_at:'2026-08-12 12:00:00'}],bookings:[{id:'bk1',customer_name:'田中',status:'confirmed',start_at:'2026-08-12 14:00:00',end_at:'2026-08-12 16:00:00'}]});}}); }
+      if(url.indexOf('reschedule.php')!==-1){ window.__posts.push(Object.assign({__url:'reschedule'},JSON.parse(opts.body))); return Promise.resolve({json:function(){return Promise.resolve({ok:true,moved:true});}}); }
       return Promise.resolve({json:function(){return Promise.resolve({ok:true});}});
     };
   <\/script>
@@ -75,6 +76,23 @@ function chk(label, cond) { if (cond) { pass++; console.log('  [ok] ' + label); 
   await page.click('#hmTl .tl-mcell.tl-today');   // click today's cell → day view
   await page.waitForTimeout(50);
   chk('month cell click → day view', (await page.$$('#hmTl .tl-col')).length === 1);
+
+  console.log('booking render + drag-reschedule (Phase D)');
+  chk('booking block rendered', (await page.$$('#hmTl .tl-bk')).length === 1);
+  chk('booking shows customer name', /田中/.test(await page.evaluate(() => document.querySelector('#hmTl .tl-bk .nm').textContent)));
+  // Drag the booking body up ~48px (~1h) → ~13:00, using its real bounding box.
+  await page.evaluate(() => { window.__posts = []; });
+  const bb = await page.$eval('#hmTl .tl-bk', el => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + 14 }; });
+  await page.mouse.move(bb.x, bb.y);
+  await page.mouse.down();
+  await page.mouse.move(bb.x, bb.y - 16);
+  await page.mouse.move(bb.x, bb.y - 32);
+  await page.mouse.move(bb.x, bb.y - 48);
+  await page.mouse.up();
+  await page.waitForTimeout(200);
+  const rs = await page.evaluate(() => window.__posts.find(p => p.booking_id === 'bk1'));
+  chk('reschedule POSTed for bk1', !!rs && rs.booking_id === 'bk1');
+  chk('reschedule new start ~13:00', !!rs && /13:00/.test(rs.start_at || ''));
 
   console.log('delete (✕ → POST delete)');
   await page.evaluate(() => { window.__posts = []; });

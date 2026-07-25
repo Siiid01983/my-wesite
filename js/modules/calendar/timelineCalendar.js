@@ -33,6 +33,7 @@ window.TimelineCalendar = (function () {
     anchor: null,           // Date (any day within the shown range)
     snap: 30,               // minutes: 15 | 30 | 60
     windows: {},            // date → [{id,start_at,end_at}]
+    bookings: {},           // date → [{id,customer_name,status,start_at,end_at}]
     cfg: { day_start: '07:00', day_end: '22:00', step: 30, durations: [30,60,90,120,180], default_duration: 120 },
     pxPerMin: 0.8,          // vertical scale (48px / hour)
     built: false
@@ -125,6 +126,13 @@ window.TimelineCalendar = (function () {
       '.tl-win:hover .tl-del,.tl-win.sel .tl-del{opacity:1}',
       '.tl-win .tl-t{pointer-events:none}',
       '.tl-ghost{position:absolute;left:5px;right:5px;background:rgba(26,115,232,.18);border:1px dashed var(--tl-accent);border-radius:7px;pointer-events:none;z-index:6;font-size:11px;color:var(--tl-accent);font-weight:700;padding:2px 6px}',
+      // Booking blocks (draggable to reschedule) — distinct blue, inset right so
+      // the green availability window stays visible behind them.
+      '.tl-bk{position:absolute;left:34%;right:5px;background:var(--tl-accent);border:1px solid #1557b0;border-radius:7px;padding:3px 6px;font-size:11px;color:#fff;font-weight:700;overflow:hidden;cursor:grab;z-index:3;box-shadow:0 1px 4px rgba(0,0,0,.18);transition:box-shadow .12s;touch-action:none}',
+      '.tl-bk.dragging{cursor:grabbing;box-shadow:0 8px 20px rgba(0,0,0,.3);opacity:.95;z-index:7}',
+      '.tl-bk .tl-h{position:absolute;left:0;right:0;height:9px;cursor:ns-resize}.tl-bk .tl-h.bot{bottom:-1px}',
+      '.tl-bk .nm{display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;pointer-events:none}',
+      '.tl-bk.pending{background:#f9ab00;border-color:#e37400}',
       '.tl-now{position:absolute;left:0;right:0;height:0;border-top:2px solid #ea4335;z-index:4;pointer-events:none}',
       '.tl-now::before{content:"";position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;background:#ea4335}',
       // Month view
@@ -211,11 +219,17 @@ window.TimelineCalendar = (function () {
     fetch(_base() + '/availability-windows.php?action=range&from=' + r.from + '&to=' + r.to, { headers: _headers() })
       .then(function (res) { return res.json(); })
       .then(function (out) {
-        state.windows = {};
+        state.windows = {}; state.bookings = {};
         if (out && out.ok && Array.isArray(out.windows)) {
           out.windows.forEach(function (w) {
             var d = (w.window_date || String(w.start_at).slice(0, 10));
             (state.windows[d] = state.windows[d] || []).push(w);
+          });
+        }
+        if (out && out.ok && Array.isArray(out.bookings)) {
+          out.bookings.forEach(function (b) {
+            var d = String(b.start_at).slice(0, 10);
+            (state.bookings[d] = state.bookings[d] || []).push(b);
           });
         }
         render();
@@ -268,12 +282,13 @@ window.TimelineCalendar = (function () {
       var lines = '';
       for (var mm = s; mm <= e; mm += 30) lines += '<div class="tl-hrline' + (mm % 60 ? ' half' : '') + '" style="top:' + minToY(mm) + 'px"></div>';
       var wins = (state.windows[ds] || []).map(function (w) { return _winHtml(w); }).join('');
+      var bks = (state.bookings[ds] || []).map(function (b) { return _bkHtml(b); }).join('');
       var now = isT ? _nowLine() : '';
       var dd = parse(ds), dowCls = dd.getDay() === 0 ? 'dow-sun' : dd.getDay() === 6 ? 'dow-sat' : '';
       var head = '<div class="tl-colhead"><span class="' + dowCls + '">' + DOW[dd.getDay()] + '</span> <span class="d">' + dd.getDate() + '</span></div>';
       return '<div class="tl-col' + (isT ? ' tl-today' : '') + '" data-date="' + ds + '" style="height:' + (h + 40) + 'px">' +
                head + '<div class="tl-canvas" data-date="' + ds + '" style="position:absolute;left:0;right:0;top:40px;height:' + h + 'px">' +
-               lines + wins + now + '</div></div>';
+               lines + wins + bks + now + '</div></div>';
     }).join('');
 
     var colW = state.view === 'day' ? '1fr' : 'repeat(7,1fr)';
@@ -295,6 +310,17 @@ window.TimelineCalendar = (function () {
              '<button class="tl-del" type="button" title="削除">&times;</button>' +
              '<span class="tl-h top"></span>' +
              '<span class="tl-t">' + minToHm(a) + '–' + minToHm(b) + '</span>' +
+             '<span class="tl-h bot"></span>' +
+           '</div>';
+  }
+  function _bkHtml(b) {
+    var a = dtMin(b.start_at), z = dtMin(b.end_at);
+    var top = minToY(a), ht = Math.max(16, (z - a) * state.pxPerMin);
+    var pend = (b.status && b.status !== 'confirmed' && b.status !== 'completed') ? ' pending' : '';
+    return '<div class="tl-bk' + pend + '" data-id="' + _esc(b.id) + '" data-s="' + a + '" data-e="' + z + '" data-date="' + String(b.start_at).slice(0,10) + '" ' +
+           'style="top:' + top + 'px;height:' + ht + 'px" title="' + _esc(b.customer_name || '') + ' ' + minToHm(a) + '–' + minToHm(z) + '">' +
+             '<span class="nm">' + _esc(b.customer_name || '予約') + '</span>' +
+             '<span class="tl-t" style="font-size:10px;opacity:.9">' + minToHm(a) + '–' + minToHm(z) + '</span>' +
              '<span class="tl-h bot"></span>' +
            '</div>';
   }
@@ -323,7 +349,7 @@ window.TimelineCalendar = (function () {
         }
       });
 
-      // MOVE / RESIZE / DELETE on existing blocks.
+      // MOVE / RESIZE / DELETE on existing availability windows.
       canvas.querySelectorAll('.tl-win').forEach(function (win) {
         win.querySelector('.tl-del').addEventListener('click', function (e) { e.stopPropagation(); _delete(win.getAttribute('data-id')); });
         win.querySelector('.tl-h.top').addEventListener('pointerdown', function (e) { e.stopPropagation(); _resizeDrag(e, win, ds, 'top', scroll); });
@@ -333,7 +359,87 @@ window.TimelineCalendar = (function () {
           _moveDrag(e, win, ds, scroll);
         });
       });
+
+      // MOVE / RESIZE bookings (drag-to-reschedule; move supports cross-day in week view).
+      canvas.querySelectorAll('.tl-bk').forEach(function (bk) {
+        bk.querySelector('.tl-h.bot').addEventListener('pointerdown', function (e) { e.stopPropagation(); _bkResizeDrag(e, bk, scroll); });
+        bk.addEventListener('pointerdown', function (e) {
+          if (e.target.closest('.tl-h')) return;
+          _bkMoveDrag(e, bk, scroll);
+        });
+      });
     });
+  }
+
+  // Resolve which day column the pointer is over (week view cross-day drag).
+  function _dateUnderPointer(clientX, clientY, fallback) {
+    var el = document.elementFromPoint(clientX, clientY);
+    var canvas = el && el.closest ? el.closest('.tl-canvas') : null;
+    return canvas ? canvas.getAttribute('data-date') : fallback;
+  }
+
+  function _bkMoveDrag(ev, bk, scroll) {
+    var a0 = +bk.getAttribute('data-s'), b0 = +bk.getAttribute('data-e'), dur = b0 - a0;
+    var date0 = bk.getAttribute('data-date');
+    var canvas0 = bk.parentNode, startCanvasY = _canvasY(canvas0, ev.clientY);
+    bk.classList.add('dragging');
+    var na = a0, nd = date0;
+    TimelineGestures.pointerDrag(ev, {
+      threshold: 3,
+      autoScroll: { el: scroll, edge: 52, maxSpeed: 16 },
+      onMove: function (info) {
+        var y = _canvasY(canvas0, info.clientY);
+        na = snapMin(yToMin(y - (startCanvasY - minToY(a0))));
+        na = Math.max(dayStartMin(), Math.min(dayEndMin() - dur, na));
+        nd = _dateUnderPointer(info.clientX, info.clientY, date0);
+        bk.style.top = minToY(na) + 'px';
+        bk.querySelector('.tl-t').textContent = minToHm(na) + '–' + minToHm(na + dur) + (nd !== date0 ? ' →' + nd.slice(5) : '');
+      },
+      onEnd: function () {
+        bk.classList.remove('dragging');
+        if (na === a0 && nd === date0) return;
+        _reschedule(bk.getAttribute('data-id'), nd, na, na + dur);
+      },
+      onCancel: function () { bk.classList.remove('dragging'); bk.style.top = minToY(a0) + 'px'; }
+    });
+  }
+
+  function _bkResizeDrag(ev, bk, scroll) {
+    var a0 = +bk.getAttribute('data-s'), b0 = +bk.getAttribute('data-e'), date0 = bk.getAttribute('data-date');
+    bk.classList.add('dragging');
+    var nb = b0;
+    TimelineGestures.pointerDrag(ev, {
+      autoScroll: { el: scroll, edge: 52, maxSpeed: 16 },
+      onMove: function (info) {
+        var y = _canvasY(bk.parentNode, info.clientY);
+        nb = Math.max(a0 + state.snap, Math.min(dayEndMin(), snapMin(yToMin(y))));
+        bk.style.height = Math.max(16, (nb - a0) * state.pxPerMin) + 'px';
+        bk.querySelector('.tl-t').textContent = minToHm(a0) + '–' + minToHm(nb);
+      },
+      onEnd: function () {
+        bk.classList.remove('dragging');
+        if (nb === b0) return;
+        _reschedule(bk.getAttribute('data-id'), date0, a0, nb);
+      },
+      onCancel: function () { bk.classList.remove('dragging'); }
+    });
+  }
+
+  function _reschedule(id, date, aMin, bMin) {
+    var startAt = date + ' ' + minToHm(aMin) + ':00';
+    var endAt   = date + ' ' + minToHm(bMin) + ':00';
+    _toast('予約を移動中…');
+    fetch(_base() + '/reschedule.php', { method: 'POST', headers: _headers(true),
+      body: JSON.stringify({ booking_id: id, booking_date: date, start_at: startAt, end_at: endAt }) })
+      .then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
+      .then(function (res) {
+        var j = res.body || {};
+        if (j.ok) { _toast('予約を' + date + ' ' + minToHm(aMin) + 'に変更しました'); }
+        else if (j.error === 'slot_taken') { _toast('その時間帯は他の予約と重複します'); }
+        else { _toast('変更に失敗: ' + _esc(j.error || ('HTTP ' + res.status))); }
+        load();
+      })
+      .catch(function () { _toast('通信エラー'); load(); });
   }
 
   function _canvasY(canvas, clientY) {
