@@ -13,6 +13,7 @@
     "test:timeline-cal-e2e": "node tests/timeline-calendar.e2e.js",
     "test:timeline-book":     "node tests/timeline-booking-payload.test.js",
     "test:timeline-book-e2e": "node tests/timeline-booking.e2e.js",
+    "test:timeline-touch":    "node tests/timeline-touch.e2e.js",
     "test:slot-month":   "php tests/slot-capacity-month.test.php",
     "test:slot-engine":  "php tests/slot-capacity-engine.test.php",
     "test:timeline":     "php tests/timeline-windows.test.php",

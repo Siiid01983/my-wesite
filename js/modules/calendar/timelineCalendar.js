@@ -166,6 +166,7 @@ window.TimelineCalendar = (function () {
     });
 
     try { state.snap = parseInt(localStorage.getItem('hm_timeline_snap') || '30', 10) || 30; } catch (_) {}
+    try { var z = parseFloat(localStorage.getItem('hm_timeline_zoom')); if (z >= 0.4 && z <= 2.4) state.pxPerMin = z; } catch (_) {}
 
     var root = document.createElement('div');
     root.id = 'hmTl';
@@ -179,6 +180,10 @@ window.TimelineCalendar = (function () {
         '<span class="tl-snap">スナップ<select id="tlSnap">' +
           '<option value="15">15分</option><option value="30">30分</option><option value="60">60分</option>' +
         '</select></span>' +
+        '<span class="tl-seg" id="tlZoom" title="拡大 / 縮小（モバイルはピンチ操作）">' +
+          '<button data-z="out" type="button" aria-label="縮小">－</button>' +
+          '<button data-z="in" type="button" aria-label="拡大">＋</button>' +
+        '</span>' +
         '<span class="tl-seg" id="tlSeg">' +
           '<button data-v="day" type="button">日</button>' +
           '<button data-v="week" type="button">週</button>' +
@@ -201,10 +206,55 @@ window.TimelineCalendar = (function () {
       var b = e.target.closest('button[data-v]'); if (!b) return;
       state.view = b.getAttribute('data-v'); render();
     });
+    root.querySelector('#tlZoom').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-z]'); if (!b) return;
+      _setZoom(b.getAttribute('data-z') === 'in' ? 1.25 : 0.8);
+    });
 
     state.built = true;
     return true;
   }
+
+  // Zoom = change vertical scale (px/min). Keeps the scroll centred roughly.
+  function _setZoom(factor) {
+    var prev = state.pxPerMin;
+    var next = Math.max(0.4, Math.min(2.4, prev * factor));
+    if (Math.abs(next - prev) < 0.001) return;
+    var scroll = document.getElementById('tlScroll');
+    var anchorMin = scroll ? yToMin((scroll.scrollTop + scroll.clientHeight / 2)) : null;
+    state.pxPerMin = next;
+    try { localStorage.setItem('hm_timeline_zoom', String(next)); } catch (_) {}
+    render();
+    if (anchorMin != null) { var s2 = document.getElementById('tlScroll'); if (s2) s2.scrollTop = Math.max(0, minToY(anchorMin) - s2.clientHeight / 2); }
+  }
+
+  // Two-finger pinch on the timeline surface → live zoom (mobile). Best-effort:
+  // tracks pointers on the scroll container; while two are down, scales px/min by
+  // the distance ratio and suppresses single-pointer create/drag.
+  function _bindPinch(scroll) {
+    var pts = {}, base = 0, baseScale = 0;
+    function dist() { var k = Object.keys(pts); if (k.length < 2) return 0; var a = pts[k[0]], b = pts[k[1]]; return Math.hypot(a.x - b.x, a.y - b.y); }
+    scroll.addEventListener('pointerdown', function (e) {
+      pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+      if (Object.keys(pts).length === 2) { base = dist(); baseScale = state.pxPerMin; scroll.dataset.pinch = '1'; }
+    });
+    scroll.addEventListener('pointermove', function (e) {
+      if (!pts[e.pointerId]) return;
+      pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+      if (scroll.dataset.pinch === '1' && base > 0) {
+        e.preventDefault();
+        var ratio = dist() / base;
+        var next = Math.max(0.4, Math.min(2.4, baseScale * ratio));
+        if (Math.abs(next - state.pxPerMin) > 0.03) { state.pxPerMin = next; try { localStorage.setItem('hm_timeline_zoom', String(next)); } catch (_) {} render(); }
+      }
+    });
+    function endPt(e) { delete pts[e.pointerId]; if (Object.keys(pts).length < 2) scroll.dataset.pinch = ''; }
+    scroll.addEventListener('pointerup', endPt);
+    scroll.addEventListener('pointercancel', endPt);
+  }
+
+  // Is a two-finger pinch currently in progress? Create/drag bail out if so.
+  function _pinching() { var s = document.getElementById('tlScroll'); return !!(s && s.dataset.pinch === '1'); }
 
   function _shift(dir) {
     if (state.view === 'day')  state.anchor = addDays(state.anchor, dir);
@@ -299,6 +349,7 @@ window.TimelineCalendar = (function () {
     var scroll = document.getElementById('tlScroll');
     var firstMin = _firstWindowMin(dates); if (firstMin != null) scroll.scrollTop = Math.max(0, minToY(firstMin - 60) - 8);
 
+    _bindPinch(scroll);
     _bindTimeInteractions(scroll);
   }
 
@@ -344,7 +395,8 @@ window.TimelineCalendar = (function () {
       TimelineGestures.pressHold(canvas, {
         ms: 220,
         onHold: function (ev) {
-          if (ev.target.closest('.tl-win')) return;   // not on an existing block
+          if (ev.target.closest('.tl-win') || ev.target.closest('.tl-bk')) return;   // not on an existing block
+          if (_pinching()) return;                     // two-finger pinch owns the gesture
           _createDrag(ev, canvas, ds, scroll);
         }
       });
@@ -572,7 +624,8 @@ window.TimelineCalendar = (function () {
     hmToMin: hmToMin, minToHm: minToHm, dtMin: dtMin,
     setCfg: function (c) { state.cfg = Object.assign(state.cfg, c || {}); },
     setSnap: function (n) { state.snap = n; }, setView: function (v) { state.view = v; },
-    setAnchor: function (s) { state.anchor = parse(s); }, rangeOf: rangeOf
+    setAnchor: function (s) { state.anchor = parse(s); }, rangeOf: rangeOf,
+    pxPerMin: function () { return state.pxPerMin; }
   };
 
   return { onShow: onShow, mount: mount, reload: load, enabled: _enabled, _debug: _debug };

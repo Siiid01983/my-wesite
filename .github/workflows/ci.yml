@@ -108,3 +108,6 @@ jobs:
 
       - name: Timeline booking E2E (customer slot-picker, index.html loads clean)
         run: npm run test:timeline-book-e2e
+
+      - name: Timeline TOUCH E2E (mobile press-hold/drag/zoom/pinch via CDP)
+        run: npm run test:timeline-touch
