@@ -21,6 +21,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_db.php';
 require_once __DIR__ . '/_intervals.php';   // hourly: busy-interval reader (gated, dormant until hm_iv_active)
+require_once __DIR__ . '/_windows.php';      // timeline: allow-list windows + slot gen (gated, dormant until hm_timeline_active)
 require_once __DIR__ . '/_capacity.php';    // per-band capacity status (inert until configured)
 require_once __DIR__ . '/_ratelimit.php';
 hm_cors();
@@ -77,6 +78,26 @@ try {
   } catch (Throwable $ie) {
     hm_log_error('availability intervals read failed (non-fatal)', ['err' => $ie->getMessage(), 'date' => $date]);
   }
+  // TIMELINE (allow-list, additive): when the timeline is live (flag ON + migrated),
+  // return the day's admin-drawn availability `windows` and the bookable `slots`
+  // for the default duration (the client can regenerate for other durations from
+  // windows + intervals). Dormant otherwise → these keys stay empty/false and the
+  // legacy `bands` response is unchanged. Defensive so a read hiccup never breaks
+  // availability.
+  $timeline = false;
+  $windows  = [];
+  $slots    = [];
+  try {
+    $db = hm_db();
+    $timeline = hm_timeline_active($db);
+    if ($timeline) {
+      $windows = hm_windows_day($db, $date);
+      $slots   = hm_timeline_slots($db, $date, hm_timeline_default_duration());
+    }
+  } catch (Throwable $we) {
+    hm_log_error('availability timeline read failed (non-fatal)', ['err' => $we->getMessage(), 'date' => $date]);
+  }
+
   // Capacity block (additive): { am:{status,capacity,used,remaining,closed}, … }.
   // Inert when unconfigured (every band resolves to capacity 1 / open). Defensive
   // so a capacity-read hiccup never breaks the availability endpoint.
@@ -98,7 +119,9 @@ try {
     }
   }
 
-  hm_json(['ok' => true, 'date' => $date, 'bands' => $bands, 'intervals' => $intervals, 'hourly' => $hourly, 'capacity' => $capacity]);
+  hm_json(['ok' => true, 'date' => $date, 'bands' => $bands, 'intervals' => $intervals, 'hourly' => $hourly, 'capacity' => $capacity,
+           'timeline' => $timeline, 'windows' => $windows, 'slots' => $slots,
+           'default_duration' => hm_timeline_default_duration()]);
 } catch (Throwable $e) {
   hm_log_error('availability failed', ['err' => $e->getMessage(), 'date' => $date]);
   hm_json(['ok' => false, 'error' => hm_safe_msg('Request failed', $e)], 500);

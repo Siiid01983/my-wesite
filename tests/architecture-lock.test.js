@@ -272,3 +272,36 @@ describe('Portal boundary (locked)', () => {
       'portalSelfService must not touch slot_capacity / booking_slots directly');
   });
 });
+
+// ── 9. Hourly timeline (allow-list windows) is DORMANT-BY-DEFAULT + gated ──────
+//    Safety contract for the phased rollout: the timeline scheduler must ship OFF
+//    (timeline_enabled=false) and every live read/write path must gate on
+//    hm_timeline_active (flag + migrated). Overlap/conflict detection must reuse
+//    the single interval authority (hm_iv_reserve), never a second one.
+describe('Hourly timeline (gated, dormant by default)', () => {
+  const cfgExample = read('hm-api/_config.example.php');
+  const windows    = read('hm-api/_windows.php');
+  const createBk   = read('hm-api/create-booking.php');
+  const availPhp   = read('hm-api/availability.php');
+
+  it('timeline_enabled defaults to false in the config example', () => {
+    assert.ok(/'timeline_enabled'\s*=>\s*false/.test(cfgExample),
+      "_config.example.php must ship 'timeline_enabled' => false (dormant by default)");
+  });
+
+  it('_windows.php gates activation on the flag AND the migrated interval column', () => {
+    assert.ok(/function\s+hm_timeline_active\s*\(/.test(windows), '_windows.php must define hm_timeline_active()');
+    assert.ok(/hm_timeline_enabled\(\)\s*&&\s*hm_bookings_has_interval_cols/.test(windows),
+      'hm_timeline_active must require BOTH the flag and the migrated column');
+  });
+
+  it('the live endpoints gate the timeline path on hm_timeline_active', () => {
+    assert.ok(/hm_timeline_active\s*\(/.test(createBk), 'create-booking.php must gate the timeline path on hm_timeline_active');
+    assert.ok(/hm_timeline_active\s*\(/.test(availPhp),  'availability.php must gate the timeline read on hm_timeline_active');
+  });
+
+  it('timeline booking reserves through the single interval authority (hm_iv_reserve)', () => {
+    assert.ok(/hm_iv_reserve\s*\(/.test(createBk),
+      'create-booking timeline path must reserve via hm_iv_reserve (single overlap/conflict authority)');
+  });
+});

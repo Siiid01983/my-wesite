@@ -14,6 +14,7 @@ require_once __DIR__ . '/_ratelimit.php';
 require_once __DIR__ . '/_line.php';
 require_once __DIR__ . '/_slots.php';   // Phase 2: slot lock (feature-flagged, OFF by default)
 require_once __DIR__ . '/_intervals.php';   // hourly dual-write gate (feature-flagged, OFF by default)
+require_once __DIR__ . '/_windows.php';      // timeline allow-list windows + atomic slot reserve (gated, OFF by default)
 require_once __DIR__ . '/_capacity.php';    // capacity-based reserve (capacity_enabled, OFF by default)
 hm_cors();
 hm_require_api_key();
@@ -145,8 +146,37 @@ try {
   //  Deploy-order-safe: the preferred_* columns are kept ONLY when their migration
   //  (002) has run (hm_bookings_has_request_cols); otherwise they are stripped so
   //  the INSERT matches whatever schema is actually present.
+  // ── TIMELINE (allow-list) booking — takes precedence when live ──────────────
+  //  The customer picked an EXACT start time + duration from the admin's windows.
+  //  We validate it fits an available window and is currently free, then reserve
+  //  it ATOMICALLY after the insert (start_at/end_at left NULL in $data so the
+  //  row is invisible to overlap checks until hm_iv_reserve sets it under a
+  //  day-level FOR UPDATE lock — the single conflict authority). Dormant unless
+  //  timeline_enabled + migrated.
+  $__tlStart = null; $__tlEnd = null;
+  if (hm_timeline_active($db)) {
+    $__cs = hm_iv_normalize((string)($p['start_at'] ?? ''));
+    if ($__cs !== null) {
+      $__dur = (int)($p['duration_min'] ?? hm_timeline_default_duration());
+      if (!in_array($__dur, hm_timeline_durations(), true)) $__dur = hm_timeline_default_duration();
+      $__dateOnly = substr($__cs, 0, 10);
+      $__ce = date('Y-m-d H:i:s', strtotime($__cs) + $__dur * 60);
+      if (substr($__ce, 0, 10) === $__dateOnly && hm_timeline_start_ok($db, $__dateOnly, $__cs, $__dur)) {
+        $__tlStart = $__cs; $__tlEnd = $__ce;
+        if (hm_bookings_has_duration_col($db)) $data['duration_min'] = $__dur;
+        if (empty($data['status'])) $data['status'] = 'pending';
+      } else {
+        // Chosen slot no longer inside an open window / already taken → 409 (the
+        // frontend already handles the slot_taken contract).
+        hm_log_write('info.log', ['type' => 'slot_conflict', 'endpoint' => 'create-booking',
+          'mode' => 'timeline', 'date' => $__dateOnly, 'reason' => 'unavailable']);
+        hm_json(['ok' => false, 'data' => null, 'error' => 'slot_taken', 'reason' => 'unavailable'], 409);
+      }
+    }
+  }
+
   $__ivActive = hm_iv_active($db);
-  if ($__ivActive && hm_bookings_has_request_cols($db)) {
+  if (!$__tlStart && $__ivActive && hm_bookings_has_request_cols($db)) {
     foreach (['preferred_start_1', 'preferred_start_2'] as $__pk) {
       if (isset($data[$__pk])) {
         $__nz = hm_iv_normalize((string)$data[$__pk]);
@@ -157,10 +187,10 @@ try {
     unset($data['preferred_start_1'], $data['preferred_start_2']);
   }
 
-  if ($__ivActive && !empty($data['preferred_start_1'])) {
+  if (!$__tlStart && $__ivActive && !empty($data['preferred_start_1'])) {
     // Client-Request: awaits admin confirmation. start_at/end_at intentionally NULL.
     $data['status'] = 'pending';
-  } elseif ($__ivActive) {
+  } elseif (!$__tlStart && $__ivActive) {
     $__band = hm_slot_band_id(hm_slot_time_from_notes($data['notes'] ?? ''));
     $__bandHours = [
       'am' => ['09:00', '12:00'], 'pm' => ['12:00', '15:00'],
@@ -223,7 +253,32 @@ try {
   $lockTime = ($reserveOnCreate && (hm_slot_lock_enabled() || $capOn)) ? hm_slot_time_from_notes($data['notes'] ?? '') : null;
   $lockBand = $lockTime !== null ? hm_slot_band_id($lockTime) : null;
 
-  if ($lockBand !== null) {
+  if ($__tlStart !== null) {
+    // TIMELINE: insert (NULL interval) then reserve [start,end) atomically. The
+    // FOR UPDATE day-lock in hm_iv_reserve serializes concurrent bookings and is
+    // the single overlap authority; a collision → 409 and the row is rolled back.
+    $db->beginTransaction();
+    try {
+      $st = $db->prepare($sql);
+      $st->execute(array_values($data));
+      $rv = hm_iv_reserve($db, (string)$data['id'], $__tlStart, $__tlEnd);
+      if (!empty($rv['conflict'])) {
+        $db->rollBack();
+        hm_log_write('info.log', ['type' => 'slot_conflict', 'endpoint' => 'create-booking',
+          'mode' => 'timeline', 'date' => (string)($data['booking_date'] ?? ''),
+          'with' => (string)($rv['with'] ?? '')]);
+        hm_json(['ok' => false, 'data' => null, 'error' => 'slot_taken', 'reason' => 'unavailable'], 409);
+      }
+      if (!empty($rv['error'])) {
+        $db->rollBack();
+        hm_json(['ok' => false, 'data' => null, 'error' => 'invalid_time', 'reason' => (string)$rv['error']], 400);
+      }
+      $db->commit();
+    } catch (Throwable $e) {
+      if ($db->inTransaction()) $db->rollBack();
+      throw $e;
+    }
+  } elseif ($lockBand !== null) {
     $db->beginTransaction();
     try {
       $res = $capOn
