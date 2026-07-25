@@ -112,7 +112,13 @@ function go(view) {
     // and keep the {max,limited} thresholds fresh. Legacy ○△× grid path runs only
     // when the flag is off (staged-rollout fallback) — it overlays slot_capacity
     // day-closures via _loadSlotCapClosed (PR #122) exactly as before.
-    if (window.SlotCalendar && SlotCalendar.enabled && SlotCalendar.enabled()) {
+    if (window.TimelineCalendar && TimelineCalendar.enabled && TimelineCalendar.enabled()) {
+      // Hourly TIMELINE preview (client flag hm_timeline_ui='1') — the Google-
+      // Calendar availability manager. Independent of the server timeline_enabled
+      // gate; lets an admin lay out windows before the booking engine goes live.
+      TimelineCalendar.onShow();
+      renderGCalPanel();
+    } else if (window.SlotCalendar && SlotCalendar.enabled && SlotCalendar.enabled()) {
       SlotCalendar.onShow();
       if (typeof _syncCapacityFromApi === 'function') _syncCapacityFromApi();
       renderGCalPanel();

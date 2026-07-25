@@ -305,3 +305,28 @@ describe('Hourly timeline (gated, dormant by default)', () => {
       'create-booking timeline path must reserve via hm_iv_reserve (single overlap/conflict authority)');
   });
 });
+
+// ── 10. Admin timeline UI is preview-gated + writes only to availability_windows ─
+describe('Admin timeline UI (Google-Calendar style)', () => {
+  const tlCal = read('js/modules/calendar/timelineCalendar.js');
+  const adminHtml = read('admin.html');
+  const navJs = read('js/core/navigation.js');
+
+  it('timelineCalendar.js is preview-flag gated (hm_timeline_ui, default OFF)', () => {
+    assert.ok(/hm_timeline_ui/.test(tlCal), 'timelineCalendar.js must honour the hm_timeline_ui preview flag');
+    assert.ok(/getItem\('hm_timeline_ui'\)\s*===\s*'1'/.test(tlCal),
+      'the preview flag must default OFF (opt-in with ===\'1\')');
+  });
+
+  it('timelineCalendar.js manages ONLY availability_windows (not bands/slots)', () => {
+    assert.ok(/availability-windows\.php/.test(tlCal), 'timelineCalendar.js must persist via availability-windows.php');
+    assert.ok(!/slot_capacity|booking_slots|slot-capacity\.php/.test(tlCal),
+      'timelineCalendar.js must not touch slot_capacity / booking_slots');
+  });
+
+  it('admin.html loads the timeline modules and navigation renders them gated', () => {
+    assert.ok(/timelineGestures\.js/.test(adminHtml) && /timelineCalendar\.js/.test(adminHtml),
+      'admin.html must include the timeline gesture + calendar modules');
+    assert.ok(/TimelineCalendar\.onShow\s*\(/.test(navJs), 'go("calendar") must render the timeline when its flag is on');
+  });
+});

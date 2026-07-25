@@ -84,6 +84,8 @@ const PRECACHE = [
   '/js/modules/calendar/calendar.js',
   '/js/modules/calendar/gcalSync.js',
   '/js/modules/calendar/slotCalendar.js',
+  '/js/modules/calendar/timelineGestures.js',
+  '/js/modules/calendar/timelineCalendar.js',
   '/js/modules/capacity/capacity.js',
   '/js/modules/capacity/slotCapacity.js',
   '/js/modules/pricing/pricing.js',

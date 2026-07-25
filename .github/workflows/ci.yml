@@ -96,3 +96,9 @@ jobs:
 
       - name: Slot-calendar E2E (headless Chromium, self-mocked backend)
         run: npm run test:slot-cal-e2e
+
+      - name: Timeline-calendar smoke (time/pixel/date logic)
+        run: npm run test:timeline-cal
+
+      - name: Timeline-calendar E2E (headless Chromium, press-hold/drag/resize)
+        run: npm run test:timeline-cal-e2e
