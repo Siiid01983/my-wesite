@@ -222,27 +222,22 @@ describe('Slot-capacity engine (locked)', () => {
   });
 });
 
-// ── 7. Admin slot-only availability UI (空き枠管理) is present + wired ─────────
-describe('Admin slot calendar UI (locked)', () => {
-  const slotCal   = read('js/modules/calendar/slotCalendar.js');
-  const adminHtml  = read('admin.html');
-  const navJs      = read('js/core/navigation.js');
-
-  it('slotCalendar.js exists, reads ONLY month-status, and is flag-gated', () => {
-    assert.ok(/month-status/.test(slotCal), 'slotCalendar.js must read the month-status endpoint');
-    assert.ok(/hm_admin_slot_ui/.test(slotCal), 'slotCalendar.js must honour the hm_admin_slot_ui flag');
-    assert.ok(/function\s+onShow\b/.test(slotCal), 'slotCalendar.js must expose onShow()');
-    // It must not write availability through any legacy day-status path.
-    assert.ok(!/calendar_availability/.test(slotCal), 'slotCalendar.js must not touch calendar_availability');
+// ── 7. Band removal: the intermediate slot band UI is deleted (timeline is the calendar)
+describe('Band UI removal (slotCalendar/slotCapacity retired)', () => {
+  it('slotCalendar.js / slotCapacity.js no longer exist', () => {
+    assert.equal(fs.existsSync(path.join(ROOT, 'js/modules/calendar/slotCalendar.js')), false, 'slotCalendar.js must be deleted');
+    assert.equal(fs.existsSync(path.join(ROOT, 'js/modules/capacity/slotCapacity.js')), false, 'slotCapacity.js must be deleted');
   });
-
-  it('admin.html loads the slot calendar module', () => {
-    assert.ok(/js\/modules\/calendar\/slotCalendar\.js/.test(adminHtml), 'admin.html must include slotCalendar.js');
+  it('admin.html + sw.js no longer reference the deleted band UIs', () => {
+    for (const rel of ['admin.html', 'sw.js']) {
+      const src = read(rel);
+      assert.ok(!/slotCalendar\.js|slotCapacity\.js/.test(src), `${rel} must not reference the deleted band UIs`);
+    }
   });
-
-  it('navigation renders the slot UI and aliases 容量設定 → 空き枠管理', () => {
-    assert.ok(/SlotCalendar\.onShow\s*\(/.test(navJs), 'go("calendar") must render the slot UI');
-    assert.ok(/view === 'capacity'[^\n]*'calendar'/.test(navJs), 'go("capacity") must alias to the merged calendar screen');
+  it('the timeline is the default admin calendar (navigation)', () => {
+    const navJs = read('js/core/navigation.js');
+    assert.ok(/TimelineCalendar\.onShow\s*\(/.test(navJs), 'go("calendar") must render the timeline');
+    assert.ok(!/SlotCalendar\.onShow/.test(navJs), 'navigation must not reference the deleted SlotCalendar');
   });
 });
 
@@ -340,10 +335,10 @@ describe('Admin timeline UI (Google-Calendar style)', () => {
   const adminHtml = read('admin.html');
   const navJs = read('js/core/navigation.js');
 
-  it('timelineCalendar.js is preview-flag gated (hm_timeline_ui, default OFF)', () => {
-    assert.ok(/hm_timeline_ui/.test(tlCal), 'timelineCalendar.js must honour the hm_timeline_ui preview flag');
-    assert.ok(/getItem\('hm_timeline_ui'\)\s*===\s*'1'/.test(tlCal),
-      'the preview flag must default OFF (opt-in with ===\'1\')');
+  it('timeline is the default admin calendar, with an escape hatch (hm_timeline_ui=0)', () => {
+    assert.ok(/hm_timeline_ui/.test(tlCal), 'timelineCalendar.js must honour the hm_timeline_ui flag');
+    assert.ok(/getItem\('hm_timeline_ui'\)\s*!==\s*'0'/.test(tlCal),
+      "the timeline must be default-ON (fallback only when hm_timeline_ui==='0')");
   });
 
   it('timelineCalendar.js manages ONLY availability_windows (not bands/slots)', () => {

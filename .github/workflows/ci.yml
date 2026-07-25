@@ -91,12 +91,6 @@ jobs:
       - name: Calendar/timestamp fixes
         run: npm run test:fixes
 
-      - name: Slot-calendar smoke
-        run: npm run test:slot-cal
-
-      - name: Slot-calendar E2E (headless Chromium, self-mocked backend)
-        run: npm run test:slot-cal-e2e
-
       - name: Timeline-calendar smoke (time/pixel/date logic)
         run: npm run test:timeline-cal
 

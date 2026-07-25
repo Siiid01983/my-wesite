@@ -885,9 +885,8 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
         <button class="sb-link" data-view="staff" onclick="go('staff')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>スタッフ管理
         </button>
-        <!-- 容量設定 is merged into 空き枠管理 when the slot UI is on; slotCalendar.js
-             hides this nav entry then (go('capacity') aliases to 'calendar'). Kept so
-             the flag-off (hm_admin_slot_ui='0') fallback still reaches capacity/slots. -->
+        <!-- 容量設定 is merged into the timeline 空き枠管理 screen; go('capacity')
+             aliases to 'calendar' (see navigation.js). -->
         <button class="sb-link" data-view="capacity" onclick="go('capacity')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>容量設定
         </button>
@@ -1718,8 +1717,6 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 <script src="js/modules/bookings/pendingRequests.js"></script>
 <script src="js/modules/calendar/gcalSync.js"></script>
 <script src="js/modules/capacity/capacity.js"></script>
-<script src="js/modules/capacity/slotCapacity.js"></script>
-<script src="js/modules/calendar/slotCalendar.js"></script><!-- unified 空き枠管理 slot calendar (Phase 2; flag hm_admin_slot_ui, default on) -->
 <script src="js/modules/calendar/timelineGestures.js"></script><!-- pointer/touch gesture engine for the hourly timeline -->
 <script src="js/modules/calendar/timelineCalendar.js"></script><!-- hourly TIMELINE (Google-Calendar style; preview flag hm_timeline_ui, default OFF) -->
 <script src="js/modules/pricing/pricing.js"></script>

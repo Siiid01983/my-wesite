@@ -88,7 +88,8 @@ function go(view) {
   if (!Auth.isLoggedIn()) { Auth.logout(); return; }
   // 容量設定 is merged into 空き枠管理 (slot calendar). Alias legacy deep links /
   // quick-actions so go('capacity') lands on the unified availability screen.
-  if (view === 'capacity' && window.SlotCalendar && SlotCalendar.enabled && SlotCalendar.enabled()) view = 'calendar';
+  // 容量設定 is merged into the timeline 空き枠管理 screen — alias legacy deep links.
+  if (view === 'capacity' && window.TimelineCalendar && TimelineCalendar.enabled && TimelineCalendar.enabled()) view = 'calendar';
   if (Auth.mustChangePassword()) { showForceChange(); return; }
   if (_ADMIN_ONLY.has(view) && Auth.getRole && Auth.getRole() !== 'admin') {
     toast('このページへのアクセス権限がありません');
@@ -113,14 +114,10 @@ function go(view) {
     // when the flag is off (staged-rollout fallback) — it overlays slot_capacity
     // day-closures via _loadSlotCapClosed (PR #122) exactly as before.
     if (window.TimelineCalendar && TimelineCalendar.enabled && TimelineCalendar.enabled()) {
-      // Hourly TIMELINE preview (client flag hm_timeline_ui='1') — the Google-
-      // Calendar availability manager. Independent of the server timeline_enabled
-      // gate; lets an admin lay out windows before the booking engine goes live.
+      // Hourly TIMELINE — the Google-Calendar availability manager, now the default
+      // admin calendar (band removal). hm_timeline_ui='0' falls back to the legacy
+      // ○△× grid below.
       TimelineCalendar.onShow();
-      renderGCalPanel();
-    } else if (window.SlotCalendar && SlotCalendar.enabled && SlotCalendar.enabled()) {
-      SlotCalendar.onShow();
-      if (typeof _syncCapacityFromApi === 'function') _syncCapacityFromApi();
       renderGCalPanel();
     } else {
       refreshCalendarUI(); renderGCalPanel(); _syncCalendarFromApi();
