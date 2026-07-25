@@ -312,10 +312,13 @@ describe('Hourly timeline (gated, dormant by default)', () => {
       'create-booking timeline path must reserve via hm_iv_reserve (single overlap/conflict authority)');
   });
 
-  it('reschedule uses the interval authority for timeline moves (gated)', () => {
+  it('reschedule uses the interval authority for interval moves (flag-independent)', () => {
     const resched = read('hm-api/reschedule.php');
-    assert.ok(/hm_timeline_active\s*\(/.test(resched), 'reschedule.php must gate the timeline move on hm_timeline_active');
-    assert.ok(/hm_iv_reserve\s*\(/.test(resched), 'reschedule.php timeline move must go through hm_iv_reserve (atomic overlap)');
+    // Discriminated by the request carrying an interval, NOT by the timeline flag.
+    assert.ok(/\$__useInterval\s*=\s*\(\$newStart !== '' && \$newEnd !== ''\)/.test(resched),
+      'reschedule.php must route interval moves on the request carrying start+end (not the timeline flag)');
+    assert.ok(/hm_iv_reserve\s*\(/.test(resched), 'reschedule.php interval move must go through hm_iv_reserve (atomic overlap)');
+    assert.ok(!/hm_timeline_active\s*\(/.test(resched), 'reschedule.php must NOT depend on the timeline_enabled flag');
   });
 
   it('band removal P1: mobile/gcal consumers are band-OPTIONAL (no hard dependency)', () => {
@@ -336,12 +339,15 @@ describe('Hourly timeline (gated, dormant by default)', () => {
     assert.ok(!/require_once __DIR__ \. '\/_capacity\.php'/.test(createBk),
       'create-booking must not require _capacity.php (band engine removed)');
     assert.ok(/hm_iv_reserve\s*\(/.test(createBk), 'create-booking must still reserve via the timeline interval authority');
-    // booking-status: confirming a timeline (interval) booking must skip band reserve.
+    // booking-status: an INTERVAL booking (start_at set) confirms status-only; the
+    // band confirm/reserve runs ONLY for interval-LESS legacy bookings — decided by
+    // the booking's own interval, flag-independently.
     const bkStatus = read('hm-api/booking-status.php');
-    assert.ok(/hm_timeline_active\s*\(\$db\)\s*&&\s*!empty\(\$bk\['start_at'\]\)/.test(bkStatus),
-      'booking-status confirm must detect a timeline booking (active + start_at)');
-    assert.ok(/\$status === 'confirmed' && !\$__isTimelineBk/.test(bkStatus),
-      'booking-status must skip the band confirm/reserve for a timeline booking');
+    assert.ok(/\$__hasInterval\s*=\s*!empty\(\$bk\['start_at'\]\)/.test(bkStatus),
+      'booking-status must detect an interval booking by start_at (not the timeline flag)');
+    assert.ok(/\$status === 'confirmed' && !\$__hasInterval/.test(bkStatus),
+      'booking-status must run the band confirm/reserve ONLY for interval-less legacy bookings');
+    assert.ok(!/hm_timeline_active\s*\(/.test(bkStatus), 'booking-status must NOT depend on the timeline_enabled flag');
   });
 });
 
