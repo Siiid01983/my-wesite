@@ -111,3 +111,6 @@ jobs:
 
       - name: Timeline TOUCH E2E (mobile press-hold/drag/zoom/pinch via CDP)
         run: npm run test:timeline-touch
+
+      - name: Timeline FULL-STACK integration (real client → HTTP → engine port)
+        run: npm run test:timeline-integration
