@@ -311,6 +311,15 @@ describe('Hourly timeline (gated, dormant by default)', () => {
     assert.ok(/hm_iv_reserve\s*\(/.test(resched), 'reschedule.php timeline move must go through hm_iv_reserve (atomic overlap)');
   });
 
+  it('band removal P1: mobile/gcal consumers are band-OPTIONAL (no hard dependency)', () => {
+    const mob = read('js/modules/mobile/mobileCalendar.js');
+    const gcal = read('js/modules/calendar/gcalSync.js');
+    assert.ok(/typeof CalendarService === 'undefined'/.test(mob),
+      'mobileCalendar._availOf must default to available when CalendarService is gone');
+    assert.ok(/window\.CalendarService && CalendarService\.updateAvailability/.test(gcal),
+      'gcalSync must guard the legacy band-availability write (band-optional)');
+  });
+
   it('a timeline booking is NOT vetoed/blocked by the legacy band day-closure', () => {
     // create-booking: the band day-closure guard must be skipped for a timeline
     // booking (window is the authority) — otherwise migration-closed bands 409 it.

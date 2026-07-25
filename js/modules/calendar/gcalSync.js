@@ -241,7 +241,13 @@ window.GCalSync = (function () {
 
         const ds = ev.start.date;
         if (!avail[ds] || avail[ds] === 'available') {
-          CalendarService.updateAvailability(ds, 'booked');
+          // BAND REMOVAL: the legacy day-level availability write is the last band
+          // dependency here. Guarded so gcalSync keeps working once CalendarService
+          // (the band service) is deleted — an imported all-day GCal block will then
+          // be recorded via the timeline block path (block-interval.php) instead.
+          if (window.CalendarService && CalendarService.updateAvailability) {
+            CalendarService.updateAvailability(ds, 'booked');
+          }
           blocked++;
         } else {
           skipped++;
