@@ -272,3 +272,67 @@ describe('Portal boundary (locked)', () => {
       'portalSelfService must not touch slot_capacity / booking_slots directly');
   });
 });
+
+// ── 9. Hourly timeline (allow-list windows) is DORMANT-BY-DEFAULT + gated ──────
+//    Safety contract for the phased rollout: the timeline scheduler must ship OFF
+//    (timeline_enabled=false) and every live read/write path must gate on
+//    hm_timeline_active (flag + migrated). Overlap/conflict detection must reuse
+//    the single interval authority (hm_iv_reserve), never a second one.
+describe('Hourly timeline (gated, dormant by default)', () => {
+  const cfgExample = read('hm-api/_config.example.php');
+  const windows    = read('hm-api/_windows.php');
+  const createBk   = read('hm-api/create-booking.php');
+  const availPhp   = read('hm-api/availability.php');
+
+  it('timeline_enabled defaults to false in the config example', () => {
+    assert.ok(/'timeline_enabled'\s*=>\s*false/.test(cfgExample),
+      "_config.example.php must ship 'timeline_enabled' => false (dormant by default)");
+  });
+
+  it('_windows.php gates activation on the flag AND the migrated interval column', () => {
+    assert.ok(/function\s+hm_timeline_active\s*\(/.test(windows), '_windows.php must define hm_timeline_active()');
+    assert.ok(/hm_timeline_enabled\(\)\s*&&\s*hm_bookings_has_interval_cols/.test(windows),
+      'hm_timeline_active must require BOTH the flag and the migrated column');
+  });
+
+  it('the live endpoints gate the timeline path on hm_timeline_active', () => {
+    assert.ok(/hm_timeline_active\s*\(/.test(createBk), 'create-booking.php must gate the timeline path on hm_timeline_active');
+    assert.ok(/hm_timeline_active\s*\(/.test(availPhp),  'availability.php must gate the timeline read on hm_timeline_active');
+  });
+
+  it('timeline booking reserves through the single interval authority (hm_iv_reserve)', () => {
+    assert.ok(/hm_iv_reserve\s*\(/.test(createBk),
+      'create-booking timeline path must reserve via hm_iv_reserve (single overlap/conflict authority)');
+  });
+
+  it('reschedule uses the interval authority for timeline moves (gated)', () => {
+    const resched = read('hm-api/reschedule.php');
+    assert.ok(/hm_timeline_active\s*\(/.test(resched), 'reschedule.php must gate the timeline move on hm_timeline_active');
+    assert.ok(/hm_iv_reserve\s*\(/.test(resched), 'reschedule.php timeline move must go through hm_iv_reserve (atomic overlap)');
+  });
+});
+
+// ── 10. Admin timeline UI is preview-gated + writes only to availability_windows ─
+describe('Admin timeline UI (Google-Calendar style)', () => {
+  const tlCal = read('js/modules/calendar/timelineCalendar.js');
+  const adminHtml = read('admin.html');
+  const navJs = read('js/core/navigation.js');
+
+  it('timelineCalendar.js is preview-flag gated (hm_timeline_ui, default OFF)', () => {
+    assert.ok(/hm_timeline_ui/.test(tlCal), 'timelineCalendar.js must honour the hm_timeline_ui preview flag');
+    assert.ok(/getItem\('hm_timeline_ui'\)\s*===\s*'1'/.test(tlCal),
+      'the preview flag must default OFF (opt-in with ===\'1\')');
+  });
+
+  it('timelineCalendar.js manages ONLY availability_windows (not bands/slots)', () => {
+    assert.ok(/availability-windows\.php/.test(tlCal), 'timelineCalendar.js must persist via availability-windows.php');
+    assert.ok(!/slot_capacity|booking_slots|slot-capacity\.php/.test(tlCal),
+      'timelineCalendar.js must not touch slot_capacity / booking_slots');
+  });
+
+  it('admin.html loads the timeline modules and navigation renders them gated', () => {
+    assert.ok(/timelineGestures\.js/.test(adminHtml) && /timelineCalendar\.js/.test(adminHtml),
+      'admin.html must include the timeline gesture + calendar modules');
+    assert.ok(/TimelineCalendar\.onShow\s*\(/.test(navJs), 'go("calendar") must render the timeline when its flag is on');
+  });
+});

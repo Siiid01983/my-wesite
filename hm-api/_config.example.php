@@ -133,6 +133,26 @@ return [
   //   slot_lock_enabled / line_enabled / imap_enabled.
   'hourly_enabled' => false,
 
+  // ── Hourly TIMELINE (allow-list availability windows — Google-Calendar model) ─
+  //   Master switch for the timeline scheduler: the admin draws AVAILABLE working
+  //   periods (availability_windows) on an hourly timeline, and customers book
+  //   discrete start times inside them for a chosen duration. Replaces the
+  //   band/capacity model AS THE PRIMARY UI when ON; the band system stays as the
+  //   fallback while this is OFF. SAFE BY DEFAULT: absent/false → every timeline
+  //   read/write path stays dormant and production behaves exactly as today.
+  //   ⚠ ORDER: run migrations/hourly/001_bookings_hourly.sql (interval columns)
+  //   AND migrations/timeline/001_timeline.sql (windows + duration_min) FIRST,
+  //   then set this true. Belt-and-suspenders: the code also probes for the
+  //   start_at column, so a wrong order stays dormant, not broken. Rollback = set
+  //   back to false (one line, no redeploy). Mirrors hourly_enabled.
+  'timeline_enabled' => false,
+  //   Optional tuning (safe to omit — defaults shown):
+  'timeline_default_duration' => 120,                 // minutes (2h)
+  'timeline_durations'        => [30, 60, 90, 120, 180],
+  'timeline_slot_step'        => 30,                  // minutes granularity
+  'timeline_day_start'        => '07:00',             // grid visual bounds only
+  'timeline_day_end'          => '22:00',
+
   // ── Capacity-based scheduling (per-band Morning/Afternoon/Evening/Night) ───
   //  OFF (default) → create-booking keeps the capacity-1 slot-lock behavior.
   //  ON  → reserves via hm_cap_reserve(); a booking fails only when the band is

@@ -111,6 +111,11 @@ function _bookingToRow(b) {
   // regardless of server mode.
   if (b.preferredStart1) row.preferred_start_1 = b.preferredStart1;
   if (b.preferredStart2) row.preferred_start_2 = b.preferredStart2;
+  // TIMELINE model: exact chosen start + duration. create-booking.php reads these
+  // from the raw body and reserves the interval atomically only when timeline is
+  // live; harmless (stripped) otherwise.
+  if (b.startAt)     row.start_at     = b.startAt;
+  if (b.durationMin) row.duration_min = b.durationMin;
   return row;
 }
 
@@ -208,6 +213,12 @@ const BookingService = (() => {
       items:     Array.isArray(fields.items) ? fields.items : [],
       preferredStart1: fields.preferredStart1 || '',
       preferredStart2: fields.preferredStart2 || '',
+      // TIMELINE model: an exact chosen start ("YYYY-MM-DDTHH:MM") + duration
+      // (minutes). Sent only when the customer picked a discrete slot; create-
+      // booking.php reserves [start, start+duration) atomically ONLY when the
+      // server timeline is live, and ignores them otherwise (safe to always send).
+      startAt:     fields.startAt     || '',
+      durationMin: fields.durationMin || 0,
       fromAddr:  fromA,
       toAddr:    single ? '' : toA,
       notes:     fields.notes    || '',

@@ -21,6 +21,7 @@ require_once __DIR__ . '/_lib.php';
 require_once __DIR__ . '/_db.php';
 require_once __DIR__ . '/_slots.php';
 require_once __DIR__ . '/_capacity.php';
+require_once __DIR__ . '/_windows.php';   // timeline: hm_timeline_active + hm_iv_reserve (gated, dormant by default)
 
 $isCli = (PHP_SAPI === 'cli');
 class HmRsConflict extends RuntimeException { public $reason = 'full'; }
@@ -86,11 +87,18 @@ try {
   $newBand   = $bandOf($newStart, $bk['notes']);
   $moved = false;
 
+  // TIMELINE model (gated): move/resize is an interval transfer. hm_iv_reserve does
+  // the atomic FOR UPDATE overlap check (excluding this booking's own row) and sets
+  // start_at/end_at — the SAME single authority create-booking uses. When live, this
+  // replaces the band pre-check + band transfer below.
+  $tlActive = hm_timeline_active($db) && $newStart !== '' && $newEnd !== '';
+
   // SINGLE-SOURCE validation of the TARGET slot — the SAME hm_cap_confirm_check()
   // the Ops + admin confirm paths use. Covers a whole-day closure even for a
   // band-less booking (the reserve below only guards band closed/full). Excludes
   // this booking's own reservation so moving within a band isn't self-blocked.
-  if ($confirmed) {
+  // Skipped in timeline mode (interval overlap is the authority there).
+  if ($confirmed && !$tlActive) {
     $chk = hm_cap_confirm_check($db, $newDate, $newBand, $bookingId);
     if (empty($chk['ok'])) rs_out(['ok' => false, 'error' => 'slot_taken', 'reason' => (string)($chk['reason'] ?? 'slot_taken')], $isCli, 409);
   }
@@ -98,6 +106,17 @@ try {
   hm_slot_ensure_table($db);
   $db->beginTransaction();
   try {
+    if ($tlActive) {
+      // Atomic interval move/resize: overlap-checked against every other scheduled
+      // booking + admin block for the target day; sets start_at/end_at on success.
+      $rv = hm_iv_reserve($db, $bookingId, $newStart, $newEnd);
+      if (!empty($rv['conflict'])) { $c = new HmRsConflict(); $c->reason = 'slot_taken'; throw $c; }
+      if (!empty($rv['error']))    { $db->rollBack(); rs_out(['ok' => false, 'error' => 'invalid_time', 'reason' => (string)$rv['error']], $isCli, 400); }
+      $moved = true;
+      // hm_iv_reserve already set start_at/end_at; just persist the (possibly new) date.
+      $db->prepare('UPDATE bookings SET booking_date = ? WHERE id = ?')->execute([$newDate, $bookingId]);
+      $db->commit();
+    } else {
     // Transfer the reservation for a CONFIRMED booking: release-by-booking (removes
     // every old row → no duplicate/ghost), then reserve the new band. A full/closed
     // target rolls the whole thing back, so the old reservation is preserved.
@@ -114,6 +133,7 @@ try {
     $vals[] = $bookingId;
     $db->prepare('UPDATE bookings SET ' . implode(', ', $sets) . ' WHERE id = ?')->execute($vals);
     $db->commit();
+    }
   } catch (Throwable $e) {
     if ($db->inTransaction()) $db->rollBack();
     if ($e instanceof HmRsConflict) rs_out(['ok' => false, 'error' => 'slot_taken', 'reason' => $e->reason], $isCli, 409);

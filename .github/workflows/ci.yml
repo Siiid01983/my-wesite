@@ -32,10 +32,13 @@ jobs:
           php -r "exit(in_array('sqlite', PDO::getAvailableDrivers(), true) ? 0 : 1);"
           echo "pdo_sqlite OK"
 
-      - name: Lint slot-capacity PHP
+      - name: Lint slot-capacity + timeline PHP
         run: |
           for f in hm-api/_capacity.php hm-api/slot-capacity.php \
-                   tests/slot-capacity-month.test.php tests/slot-capacity-engine.test.php; do
+                   hm-api/_windows.php hm-api/availability-windows.php \
+                   hm-api/availability.php hm-api/create-booking.php \
+                   tests/slot-capacity-month.test.php tests/slot-capacity-engine.test.php \
+                   tests/timeline-windows.test.php; do
             php -l "$f"
           done
 
@@ -44,6 +47,9 @@ jobs:
 
       - name: slot-capacity engine (no-duplicate / closure invariants)
         run: php tests/slot-capacity-engine.test.php
+
+      - name: timeline windows (slot-gen + window CRUD, pure + DB)
+        run: php tests/timeline-windows.test.php
 
   node-tests:
     name: Node — arch lock + slot UI + regression
@@ -90,3 +96,18 @@ jobs:
 
       - name: Slot-calendar E2E (headless Chromium, self-mocked backend)
         run: npm run test:slot-cal-e2e
+
+      - name: Timeline-calendar smoke (time/pixel/date logic)
+        run: npm run test:timeline-cal
+
+      - name: Timeline-calendar E2E (headless Chromium, press-hold/drag/resize)
+        run: npm run test:timeline-cal-e2e
+
+      - name: Timeline booking payload (BookingService → start_at/duration_min)
+        run: npm run test:timeline-book
+
+      - name: Timeline booking E2E (customer slot-picker, index.html loads clean)
+        run: npm run test:timeline-book-e2e
+
+      - name: Timeline TOUCH E2E (mobile press-hold/drag/zoom/pinch via CDP)
+        run: npm run test:timeline-touch

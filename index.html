@@ -3044,12 +3044,20 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 
   // Single source of truth for the booking the overlay is assembling.
   function baBlankState() {
-    return { serviceId:'', service:'', fromAddr:'', toAddr:'', dateISO:'', timeSlot:'', preferredStart1:'', preferredStart2:'', fromFloor:'', toFloor:'', fromEv:'', toEv:'', disposal:'', workers:2, filters:'', name:'', email:'', phone:'', notes:'' };
+    return { serviceId:'', service:'', fromAddr:'', toAddr:'', dateISO:'', timeSlot:'', preferredStart1:'', preferredStart2:'', startAt:'', durationMin:0, fromFloor:'', toFloor:'', fromEv:'', toEv:'', disposal:'', workers:2, filters:'', name:'', email:'', phone:'', notes:'' };
   }
   // CLIENT-REQUEST mode: when the server has hourly live, the time step becomes two
   // "preferred datetime" inputs and the flow submits a PENDING request instead of a
   // band. Resolved once per overlay open by _baFetchMode(); false = legacy band UI.
   var baHourly = false;
+  // TIMELINE mode (availability.php `timeline`): the customer picks an EXACT start
+  // time from the admin's available windows + a duration; the engine reserves
+  // [start, start+duration). Takes precedence over baHourly. OFF unless the server
+  // timeline_enabled flag is on → zero change to the current production flow.
+  var baTimeline = false;
+  var baAvailWindows = null;      // [{start_at,end_at}] admin windows for baState.dateISO
+  var baAvailSlots = null;        // ["HH:MM", …] server slots for the default duration
+  var baDefaultDuration = 120;
   var baState = baBlankState();
   var baCurrentScreen = 'services';
   var baSubmitting = false;
@@ -3234,17 +3242,22 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     var today = _baTodayLocal();   // LOCAL strict YYYY-MM-DD (toISOString is UTC → wrong day pre-09:00 JST)
     fetch(base + '/availability.php?date=' + encodeURIComponent(today), { headers: { 'X-API-KEY': window.API_KEY || '' } })
       .then(function (r) { return r.json(); })
-      .then(function (out) { baHourly = !!(out && out.ok && out.hourly); })
-      .catch(function () { baHourly = false; })
+      .then(function (out) {
+        baTimeline = !!(out && out.ok && out.timeline);
+        baHourly   = !baTimeline && !!(out && out.ok && out.hourly);
+        if (out && out.default_duration) baDefaultDuration = out.default_duration;
+      })
+      .catch(function () { baTimeline = false; baHourly = false; })
       .then(function () { baRenderTimeSlots(); _baApplyModeLabels(); });
   }
   function _baApplyModeLabels() {
     var sb = document.getElementById('ba-submit-btn');
-    if (sb) sb.textContent = baHourly ? '予約リクエストを送信' : '予約を確定する';
+    if (sb) sb.textContent = (baHourly && !baTimeline) ? '予約リクエストを送信' : '予約を確定する';
     var tt = document.querySelector('#ba-drawer-time .ba-drawer-title');
-    if (tt) tt.textContent = baHourly ? '希望日時（第1・第2希望）' : (_baCfg().labels.timeTitle || '希望時間帯');
+    var timeTitle = baTimeline ? '希望の開始時刻' : (baHourly ? '希望日時（第1・第2希望）' : (_baCfg().labels.timeTitle || '希望時間帯'));
+    if (tt) tt.textContent = timeTitle;
     var vt = document.getElementById('ba-val-time-label');
-    if (vt) vt.textContent = baHourly ? '希望日時' : '希望時間帯';
+    if (vt) vt.textContent = baTimeline ? '開始時刻' : (baHourly ? '希望日時' : '希望時間帯');
   }
 
   window.openBookingApp = function (serviceName) {
@@ -3475,6 +3488,19 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   // ── Preferred time ──────────────────────────────────────
   window.baConfirmTime = function () {
     var el = document.getElementById('ba-val-time');
+    if (baTimeline) {
+      var picked = document.querySelector('#ba-drawer-time input[name="ba-tl"]:checked');
+      if (!picked) { alert('空き開始時刻を選択してください。'); return; }
+      if (!baState.dateISO) { alert('先に希望日を選択してください。'); baOpenDrawer('date'); return; }
+      var dur = baState.durationMin || baDefaultDuration || 120;
+      baState.durationMin = dur;
+      baState.startAt = baState.dateISO + 'T' + picked.value;   // "YYYY-MM-DDTHH:MM"
+      var endMin = (_baToMin(picked.value) || 0) + dur;
+      el.textContent = picked.value + '〜' + _baMinHm(endMin) + '（' + (dur % 60 === 0 ? (dur / 60) + '時間' : dur + '分') + '）';
+      el.classList.add('filled');
+      baCloseDrawer('time');
+      return;
+    }
     if (baHourly) {
       var i1 = document.getElementById('ba-pref-1'), i2 = document.getElementById('ba-pref-2');
       var p1 = i1 ? i1.value : '', p2 = i2 ? i2.value : '';
@@ -3515,7 +3541,9 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     if (!baState.fromAddr) { alert(single ? '作業場所を入力してください。' : '現住所を入力してください。'); baOpenDrawer('from'); return; }
     if (!single && !baState.toAddr) { alert('引越し先を入力してください。'); baOpenDrawer('to'); return; }
     if (!baState.dateISO)  { alert('希望日を選択してください。'); baOpenDrawer('date'); return; }
-    if (baHourly) {
+    if (baTimeline) {
+      if (!baState.startAt) { alert('ご希望の開始時刻を選択してください。'); baOpenDrawer('time'); return; }
+    } else if (baHourly) {
       if (!baState.preferredStart1) { alert('ご希望の日時を選択してください。'); baOpenDrawer('time'); return; }
     } else if (!baState.timeSlot) { alert('希望時間帯を選択してください。'); baOpenDrawer('time'); return; }
     baShowScreen('contact');
@@ -3537,7 +3565,13 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
       rows.push(['引越し先', (baState.toAddr || '—') + (baState.toFloor ? '（' + baState.toFloor + '階・EV' + (baState.toEv || '-') + '）' : '')]);
     }
     rows.push(['希望日',   _baFmtDate(baState.dateISO)]);
-    if (baHourly) {
+    if (baTimeline) {
+      var _dm = baState.durationMin || baDefaultDuration || 120;
+      var _st = baState.startAt ? baState.startAt.slice(11, 16) : '';
+      var _et = _st ? _baMinHm((_baToMin(_st) || 0) + _dm) : '';
+      rows.push(['開始時刻', _st ? (_st + '〜' + _et) : '—']);
+      rows.push(['所要時間', (_dm % 60 === 0 ? (_dm / 60) + '時間' : _dm + '分')]);
+    } else if (baHourly) {
       rows.push(['第1希望', baState.preferredStart1 ? _baFmtPref(baState.preferredStart1) : '—']);
       if (baState.preferredStart2) rows.push(['第2希望', _baFmtPref(baState.preferredStart2)]);
     } else {
@@ -3614,10 +3648,12 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
         serviceId: baState.serviceId || '',
         locMode:   single ? 'single' : 'dual',
         date:      baState.dateISO || '',
-        time:      baHourly ? '' : (baState.timeSlot || ''),
+        time:      (baHourly || baTimeline) ? '' : (baState.timeSlot || ''),
         items:     _baItemsArray(),
-        preferredStart1: baHourly ? (baState.preferredStart1 || '') : '',
-        preferredStart2: baHourly ? (baState.preferredStart2 || '') : '',
+        preferredStart1: (baHourly && !baTimeline) ? (baState.preferredStart1 || '') : '',
+        preferredStart2: (baHourly && !baTimeline) ? (baState.preferredStart2 || '') : '',
+        startAt:     baTimeline ? (baState.startAt || '') : '',
+        durationMin: baTimeline ? (baState.durationMin || baDefaultDuration || 120) : 0,
         fromAddr:  baState.fromAddr,
         toAddr:    single ? '' : baState.toAddr,
         name:      baState.name,
@@ -3842,8 +3878,11 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
       .then(function (out) {
         baAvailBands     = (out && out.ok && out.bands) ? out.bands : null;
         baAvailIntervals = (out && out.ok && Array.isArray(out.intervals)) ? out.intervals : null;
+        baAvailWindows   = (out && out.ok && Array.isArray(out.windows)) ? out.windows : null;
+        baAvailSlots     = (out && out.ok && Array.isArray(out.slots)) ? out.slots : null;
+        if (out && out.default_duration) baDefaultDuration = out.default_duration;
       })
-      .catch(function () { baAvailBands = null; baAvailIntervals = null; })
+      .catch(function () { baAvailBands = null; baAvailIntervals = null; baAvailWindows = null; baAvailSlots = null; })
       .then(function () { baRenderTimeSlots(); });
   }
   // CLIENT-REQUEST mode: two "preferred datetime" inputs instead of band radios.
@@ -3874,9 +3913,53 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
       + '</div>'
       + '<p style="font-size:12px;color:#6b7280;margin:12px 0 0">ご希望の日時をお選びください。担当者が空き状況を確認し、正式な作業時間をご連絡します。</p>';
   }
+  // ── TIMELINE mode: available discrete start times inside the admin's windows ──
+  // Pure client generator mirroring the server (hm_tl_gen_slots): a start S is
+  // bookable iff [S,S+dur] fits a window AND overlaps no busy interval.
+  function _baToMin(v) { var m = String(v || '').match(/(\d{2}):(\d{2})/); return m ? (+m[1]) * 60 + (+m[2]) : null; }
+  function _baMinHm(m) { m = Math.max(0, Math.min(1440, m)); return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2); }
+  function _baGenSlots(windows, busy, durationMin, step) {
+    step = step || 30; if (!durationMin) return [];
+    var wins = (windows || []).map(function (w) { return [_baToMin(w.start_at), _baToMin(w.end_at)]; }).filter(function (r) { return r[0] != null && r[1] > r[0]; });
+    var bz = (busy || []).map(function (b) { return [_baToMin(b.start_at), _baToMin(b.end_at)]; }).filter(function (r) { return r[0] != null && r[1] > r[0]; });
+    var out = [];
+    wins.forEach(function (w) {
+      for (var s = w[0]; s + durationMin <= w[1]; s += step) {
+        var e = s + durationMin, free = true;
+        for (var i = 0; i < bz.length; i++) { if (s < bz[i][1] && e > bz[i][0]) { free = false; break; } }
+        if (free) out.push(_baMinHm(s));
+      }
+    });
+    return out.filter(function (v, i, a) { return a.indexOf(v) === i; }).sort();
+  }
+  function _baRenderTimelineSlots(host) {
+    var dur = baState.durationMin || baDefaultDuration || 120;
+    var durOpts = [30, 60, 90, 120, 180];
+    var slots = _baGenSlots(baAvailWindows || [], baAvailIntervals || [], dur, 30);
+    var durHtml = durOpts.map(function (d) {
+      return '<button type="button" class="ba-dur' + (d === dur ? ' on' : '') + '" data-dur="' + d + '" style="padding:8px 12px;border:1px solid ' + (d === dur ? '#2C3626' : '#d5dae1') + ';border-radius:20px;background:' + (d === dur ? '#2C3626' : '#fff') + ';color:' + (d === dur ? '#fff' : '#374151') + ';font:inherit;font-size:13px;font-weight:600;cursor:pointer">' + (d % 60 === 0 ? (d / 60) + '時間' : d + '分') + '</button>';
+    }).join('');
+    var slotHtml = slots.length
+      ? slots.map(function (t) {
+          var sel = baState.startAt && baState.startAt.slice(11, 16) === t;
+          return '<label class="ba-tl-slot" style="display:inline-block"><input type="radio" name="ba-tl" value="' + t + '"' + (sel ? ' checked' : '') + ' style="position:absolute;opacity:0"><span style="display:inline-block;padding:9px 14px;border:1px solid ' + (sel ? '#2C3626' : '#d5dae1') + ';border-radius:9px;background:' + (sel ? '#2C3626' : '#fff') + ';color:' + (sel ? '#fff' : '#0b0f17') + ';font-weight:700;font-size:14px;cursor:pointer;min-width:64px;text-align:center">' + t + '</span></label>';
+        }).join('')
+      : '<p style="font-size:13px;color:#6b7280;margin:8px 0">選択した日に空き時間がありません。別の日をお選びください。</p>';
+    host.innerHTML =
+        '<div style="margin-bottom:14px"><div style="font-size:13px;font-weight:600;margin-bottom:8px">所要時間</div>'
+      +   '<div id="ba-tl-durs" style="display:flex;flex-wrap:wrap;gap:8px">' + durHtml + '</div></div>'
+      + '<div><div style="font-size:13px;font-weight:600;margin-bottom:8px">空き開始時刻</div>'
+      +   '<div id="ba-tl-slots" style="display:flex;flex-wrap:wrap;gap:8px">' + slotHtml + '</div></div>';
+    var durWrap = host.querySelector('#ba-tl-durs');
+    if (durWrap) durWrap.querySelectorAll('.ba-dur').forEach(function (b) {
+      b.onclick = function () { baState.durationMin = parseInt(b.getAttribute('data-dur'), 10) || 120; _baRenderTimelineSlots(host); };
+    });
+  }
+
   function baRenderTimeSlots() {
     var host = document.getElementById('ba-time-host');
     if (!host) return;
+    if (baTimeline) { _baRenderTimelineSlots(host); return; }
     if (baHourly) { _baRenderPreferredInputs(host); return; }
     host.innerHTML = _baCfg().timeSlots.map(function (s) {
       var label = (s && typeof s === 'object') ? String(s.label || '') : String(s || '');
