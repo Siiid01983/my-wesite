@@ -15,7 +15,6 @@ require_once __DIR__ . '/_line.php';
 require_once __DIR__ . '/_slots.php';   // Phase 2: slot lock (feature-flagged, OFF by default)
 require_once __DIR__ . '/_intervals.php';   // hourly dual-write gate (feature-flagged, OFF by default)
 require_once __DIR__ . '/_windows.php';      // timeline allow-list windows + atomic slot reserve (gated, OFF by default)
-require_once __DIR__ . '/_capacity.php';    // capacity-based reserve (capacity_enabled, OFF by default)
 hm_cors();
 hm_require_api_key();
 hm_rate_limit('booking', 5, 60);   // public submit: max 5 / IP / minute
@@ -175,88 +174,13 @@ try {
     }
   }
 
-  $__ivActive = hm_iv_active($db);
-  if (!$__tlStart && $__ivActive && hm_bookings_has_request_cols($db)) {
-    foreach (['preferred_start_1', 'preferred_start_2'] as $__pk) {
-      if (isset($data[$__pk])) {
-        $__nz = hm_iv_normalize((string)$data[$__pk]);
-        if ($__nz === null) unset($data[$__pk]); else $data[$__pk] = $__nz;
-      }
-    }
-  } else {
-    unset($data['preferred_start_1'], $data['preferred_start_2']);
-  }
-
-  if (!$__tlStart && $__ivActive && !empty($data['preferred_start_1'])) {
-    // Client-Request: awaits admin confirmation. start_at/end_at intentionally NULL.
-    $data['status'] = 'pending';
-  } elseif (!$__tlStart && $__ivActive) {
-    $__band = hm_slot_band_id(hm_slot_time_from_notes($data['notes'] ?? ''));
-    $__bandHours = [
-      'am' => ['09:00', '12:00'], 'pm' => ['12:00', '15:00'],
-      'ev' => ['15:00', '18:00'], 'nt' => ['18:00', '21:00'],
-    ];
-    $__dateOnly = substr((string)($data['booking_date'] ?? ''), 0, 10);
-    if ($__band !== null && isset($__bandHours[$__band])
-        && preg_match('/^\d{4}-\d{2}-\d{2}$/', $__dateOnly)) {
-      $data['start_at'] = $__dateOnly . ' ' . $__bandHours[$__band][0] . ':00';
-      $data['end_at']   = $__dateOnly . ' ' . $__bandHours[$__band][1] . ':00';
-    }
-  }
+  // Band + client-request scheduling removed — the timeline is the only scheduler.
+  // preferred_start_* are never used now; strip them so the INSERT matches the schema.
+  unset($data['preferred_start_1'], $data['preferred_start_2']);
 
   $keys = array_keys($data);
   $ph   = implode(',', array_fill(0, count($keys), '?'));
   $sql  = 'INSERT INTO bookings (' . implode(',', array_map(fn($c) => "`$c`", $keys)) . ") VALUES ($ph)";
-
-  // ── Full-day closure guard (hard stop, flag-independent) ────────────────────
-  //  A manually CLOSED day (admin close-day → all bands closed) must never accept
-  //  a booking request, even though the reserve is otherwise deferred to admin
-  //  confirmation. availability.php already hides closed days from the UI; this is
-  //  the server-side backstop against a direct/stale-client POST. Rejects with the
-  //  same 409 'slot_taken' contract the frontend already handles (reason=closed).
-  //  Defensive: a closed-check hiccup never blocks a booking on an open day.
-  //  TIMELINE: skipped for a timeline booking — the availability authority is the
-  //  admin WINDOW (hm_timeline_start_ok already validated fit + free above). A date
-  //  may have all four legacy bands 'closed' (e.g. from the calendar→slotcap
-  //  migration) yet have real timeline windows drawn; the band day-closure must NOT
-  //  veto an in-window hourly booking.
-  $__bd = substr((string)($data['booking_date'] ?? ''), 0, 10);
-  if ($__tlStart === null && preg_match('/^\d{4}-\d{2}-\d{2}$/', $__bd)) {
-    try {
-      $__dc = hm_cap_day_closed($db, $__bd);
-      if (!empty($__dc['closed'])) {
-        hm_log_write('info.log', ['type' => 'day_closed_reject', 'endpoint' => 'create-booking',
-          'date' => $__bd, 'reason' => (string)($__dc['reason'] ?? '')]);
-        hm_json(['ok' => false, 'data' => null, 'error' => 'slot_taken', 'reason' => 'closed',
-                 'closed_reason' => (string)($__dc['reason'] ?? '')], 409);
-      }
-    } catch (Throwable $__e) {
-      hm_log_error('create-booking day-closed check failed (non-fatal)', ['err' => $__e->getMessage(), 'date' => $__bd]);
-    }
-  }
-
-  // ── Phase 2: server-side slot lock (SLOT_LOCK_ENABLED, OFF by default) ──────
-  //  When the flag is ON *and* this booking carries a canonical band, reserve
-  //  the slot ATOMICALLY with the booking insert, BEFORE the success response is
-  //  flushed (finding #7). A slot collision → 409 and NO booking row is written.
-  //  Because the slot's UNIQUE(date,band) row is inserted first, a duplicate
-  //  same-band re-submit also 409s → inherent idempotency for locked bands
-  //  (finding #8). Flag OFF, or a band-less / 時間指定なし booking, takes the
-  //  ORIGINAL plain-insert path below — behaviour identical to before.
-  // Reserve gate: 'capacity_enabled' (per-band configurable capacity) takes
-  // precedence over the capacity-1 slot lock. When EITHER is on AND the booking
-  // carries a band, the reserve runs ATOMICALLY with the insert; a collision → 409
-  // and NO booking row is written. capacity_enabled OFF → byte-for-byte the prior
-  // slot-lock behavior (hm_slot_lock_enabled path unchanged).
-  $capOn    = hm_capacity_enabled();
-  // Reservation is DEFERRED to admin confirmation (booking-status.php reserves on
-  // 確定). A customer booking is a REQUEST/PREFERENCE only and must NOT reserve or
-  // block a slot at create time — the booking stays 新規 and the calendar/capacity
-  // are unchanged until an admin confirms. Set 'reserve_on_create' truthy in
-  // _config.php to restore the old create-time locking behaviour.
-  $reserveOnCreate = !empty(hm_config()['reserve_on_create']);
-  $lockTime = ($reserveOnCreate && (hm_slot_lock_enabled() || $capOn)) ? hm_slot_time_from_notes($data['notes'] ?? '') : null;
-  $lockBand = $lockTime !== null ? hm_slot_band_id($lockTime) : null;
 
   if ($__tlStart !== null) {
     // TIMELINE: insert (NULL interval) then reserve [start,end) atomically. The
@@ -283,29 +207,10 @@ try {
       if ($db->inTransaction()) $db->rollBack();
       throw $e;
     }
-  } elseif ($lockBand !== null) {
-    $db->beginTransaction();
-    try {
-      $res = $capOn
-        ? hm_cap_reserve($db, (string)($data['booking_date'] ?? ''), $lockBand, (string)$data['id'])
-        : hm_slot_reserve($db, (string)($data['booking_date'] ?? ''), $lockTime, (string)$data['id']);
-      if (!empty($res['conflict'])) {
-        $db->rollBack();
-        hm_log_write('info.log', ['type' => 'slot_conflict', 'endpoint' => 'create-booking',
-          'date' => (string)($data['booking_date'] ?? ''), 'band' => $lockBand,
-          'mode' => $capOn ? 'capacity' : 'lock', 'reason' => (string)($res['reason'] ?? 'slot_taken')]);
-        // Keep error='slot_taken' for frontend compatibility; 'reason' adds detail
-        // (full | closed) for capacity mode.
-        hm_json(['ok' => false, 'data' => null, 'error' => 'slot_taken', 'reason' => (string)($res['reason'] ?? 'full')], 409);
-      }
-      $st = $db->prepare($sql);
-      $st->execute(array_values($data));
-      $db->commit();
-    } catch (Throwable $e) {
-      if ($db->inTransaction()) $db->rollBack();
-      throw $e;
-    }
   } else {
+    // No chosen start (e.g. timeline temporarily unavailable → contact fallback):
+    // plain insert, no reservation. The customer's request is captured for admin
+    // follow-up; the timeline reserve above is the only slot-locking path.
     $st = $db->prepare($sql);
     $st->execute(array_values($data));
   }

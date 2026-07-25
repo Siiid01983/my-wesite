@@ -212,8 +212,12 @@ describe('Slot-capacity engine (locked)', () => {
     assert.ok(/beginTransaction\s*\(/.test(reschedule) && /slot_taken/.test(reschedule), 'reschedule.php must be transactional with a slot_taken rollback');
   });
 
-  it('create-booking hard-stops a fully closed day via the engine', () => {
-    assert.ok(/hm_cap_day_closed\s*\(/.test(createBooking), 'create-booking.php must guard closed days with hm_cap_day_closed()');
+  it('create-booking enforces availability via the timeline window (band engine removed)', () => {
+    // create-booking is now timeline-only: the admin WINDOW is the availability
+    // authority (hm_timeline_start_ok) and hm_iv_reserve is the atomic lock. The
+    // legacy band day-closure / band reserve have been deleted from this endpoint.
+    assert.ok(/hm_timeline_start_ok\s*\(/.test(createBooking), 'create-booking must validate the chosen slot fits an open window');
+    assert.ok(!/hm_cap_day_closed\s*\(/.test(createBooking), 'create-booking must no longer use the band day-closure guard');
   });
 
   it('slot-capacity.php exposes the read-only month-status action', () => {
@@ -323,11 +327,15 @@ describe('Hourly timeline (gated, dormant by default)', () => {
       'gcalSync must guard the legacy band-availability write (band-optional)');
   });
 
-  it('a timeline booking is NOT vetoed/blocked by the legacy band day-closure', () => {
-    // create-booking: the band day-closure guard must be skipped for a timeline
-    // booking (window is the authority) — otherwise migration-closed bands 409 it.
-    assert.ok(/\$__tlStart === null && preg_match/.test(createBk),
-      'create-booking day-closure guard must be gated with $__tlStart === null');
+  it('a timeline booking is NOT vetoed/blocked by the legacy band engine', () => {
+    // create-booking: the band engine is fully removed — no band day-closure guard,
+    // no band/capacity reserve, no _capacity.php include. Only the timeline reserve
+    // (hm_iv_reserve) locks slots.
+    assert.ok(!/hm_cap_day_closed|hm_cap_reserve|hm_slot_reserve\b/.test(createBk),
+      'create-booking must not call the band engine (day-closure / band reserve)');
+    assert.ok(!/require_once __DIR__ \. '\/_capacity\.php'/.test(createBk),
+      'create-booking must not require _capacity.php (band engine removed)');
+    assert.ok(/hm_iv_reserve\s*\(/.test(createBk), 'create-booking must still reserve via the timeline interval authority');
     // booking-status: confirming a timeline (interval) booking must skip band reserve.
     const bkStatus = read('hm-api/booking-status.php');
     assert.ok(/hm_timeline_active\s*\(\$db\)\s*&&\s*!empty\(\$bk\['start_at'\]\)/.test(bkStatus),
