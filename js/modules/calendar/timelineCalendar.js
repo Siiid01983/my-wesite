@@ -530,22 +530,25 @@ window.TimelineCalendar = (function () {
     var a0 = +win.getAttribute('data-s'), b0 = +win.getAttribute('data-e'), dur = b0 - a0;
     win.classList.add('dragging');
     var startCanvasY = _canvasY(win.parentNode, ev.clientY);
+    var na = a0, nd = ds;   // vertical = time; horizontal (week view) = day column
     TimelineGestures.pointerDrag(ev, {
       threshold: 3,
       autoScroll: { el: scroll, edge: 52, maxSpeed: 16 },
       onMove: function (info) {
         var y = _canvasY(win.parentNode, info.clientY);
-        var na = snapMin(yToMin(y - (startCanvasY - minToY(a0))));
+        na = snapMin(yToMin(y - (startCanvasY - minToY(a0))));
         na = Math.max(dayStartMin(), Math.min(dayEndMin() - dur, na));
+        nd = _dateUnderPointer(info.clientX, info.clientY, nd);   // cross-day (same as bookings)
         win.style.top = minToY(na) + 'px';
-        win.querySelector('.tl-t').textContent = minToHm(na) + '–' + minToHm(na + dur);
+        win.querySelector('.tl-t').textContent = minToHm(na) + '–' + minToHm(na + dur) + (nd !== ds ? ' →' + nd.slice(5) : '');
         win._na = na;
       },
       onEnd: function () {
         win.classList.remove('dragging');
-        var na = win._na != null ? win._na : a0;
-        if (na === a0) return;
-        _update(win.getAttribute('data-id'), ds, na, na + dur);
+        if (na === a0 && nd === ds) return;
+        // hm_windows_update re-derives window_date from the start datetime, so a
+        // date change here MOVES the window to the target day (backend supported).
+        _update(win.getAttribute('data-id'), nd, na, na + dur);
       },
       onCancel: function () { win.classList.remove('dragging'); win.style.top = minToY(a0) + 'px'; }
     });

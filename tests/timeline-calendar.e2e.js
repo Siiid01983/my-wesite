@@ -13,8 +13,12 @@ const path = require('node:path');
 let chromium;
 try { ({ chromium } = require('playwright')); } catch (_) { console.log('SKIP: playwright not installed'); process.exit(0); }
 
-const GEST = fs.readFileSync(path.join(__dirname, '..', 'js', 'modules', 'calendar', 'timelineGestures.js'), 'utf8');
-const CAL  = fs.readFileSync(path.join(__dirname, '..', 'js', 'modules', 'calendar', 'timelineCalendar.js'), 'utf8');
+// Source override (live-deployment verification): set TL_SRC_DIR to a directory
+// holding downloaded copies of the two modules to test EXACTLY what a server
+// serves, instead of the local working tree.
+const SRC_DIR = process.env.TL_SRC_DIR || path.join(__dirname, '..', 'js', 'modules', 'calendar');
+const GEST = fs.readFileSync(path.join(SRC_DIR, 'timelineGestures.js'), 'utf8');
+const CAL  = fs.readFileSync(path.join(SRC_DIR, 'timelineCalendar.js'), 'utf8');
 
 const HARNESS = `<!doctype html><html><head><meta charset="utf-8"></head><body>
   <div id="view-calendar" class="view"><div class="cal-wrap">LEGACY</div><div id="gcalPanel"></div></div>
@@ -63,6 +67,21 @@ function chk(label, cond) { if (cond) { pass++; console.log('  [ok] ' + label); 
   chk('window label 09:00–12:00', (await page.evaluate(() => document.querySelector('#hmTl .tl-win .tl-t').textContent)) === '09:00–12:00');
   // 09:00 = 540min; day_start 07:00=420; (540-420)*0.8 = 96px
   chk('window positioned at 96px', Math.abs(parseFloat(await page.evaluate(() => document.querySelector('#hmTl .tl-win').style.top)) - 96) < 1);
+
+  console.log('cross-day window drag (week view, Wed → Thu)');
+  await page.evaluate(() => { window.__posts = []; });
+  const wb = await page.$eval('#hmTl .tl-win', el => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width }; });
+  // Grab the window body, drag one full column to the RIGHT (Thu 2026-08-13), same time.
+  await page.mouse.move(wb.x, wb.y);
+  await page.mouse.down();
+  await page.mouse.move(wb.x + wb.w * 0.6, wb.y);
+  await page.mouse.move(wb.x + wb.w * 1.2, wb.y);
+  await page.mouse.up();
+  await page.waitForTimeout(200);
+  const xd = await page.evaluate(() => window.__posts.find(p => p.action === 'update'));
+  chk('cross-day update POSTed', !!xd && xd.id === 'w1');
+  chk('window moved to 2026-08-13', !!xd && xd.date === '2026-08-13');
+  chk('time preserved on cross-day move', !!xd && xd.start_time === '09:00' && xd.end_time === '12:00');
 
   console.log('view switch');
   await page.click('#hmTl .tl-seg button[data-v="day"]');
