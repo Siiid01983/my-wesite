@@ -54,7 +54,9 @@ window.TimelineCalendar = (function () {
       return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
     });
   }
-  function _enabled() { try { return localStorage.getItem('hm_timeline_ui') === '1'; } catch (_) { return false; } }
+  // Band removal: the timeline is now the ADMIN calendar by default. Escape hatch —
+  // set hm_timeline_ui='0' to fall back to the legacy ○△× grid (calendar.js).
+  function _enabled() { try { return localStorage.getItem('hm_timeline_ui') !== '0'; } catch (_) { return true; } }
 
   /* ── pure date/time helpers (exposed for unit tests) ── */
   function pad(n) { return String(n).padStart(2, '0'); }

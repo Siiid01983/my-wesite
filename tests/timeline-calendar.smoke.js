@@ -36,10 +36,10 @@ function ck(label, cond) { if (cond) { pass++; console.log('  [ok] ' + label); }
 assert.ok(TL && TL._debug, 'TimelineCalendar + debug hooks present');
 const D = TL._debug;
 
-console.log('feature flag (preview) default OFF');
-ck('hm_timeline_ui unset → disabled', TL.enabled() === false);
-store.hm_timeline_ui = '1';
-ck('hm_timeline_ui=1 → enabled', TL.enabled() === true);
+console.log('feature flag — timeline is the default admin calendar (band removal)');
+ck('hm_timeline_ui unset → enabled (default on)', TL.enabled() === true);
+store.hm_timeline_ui = '0';
+ck("hm_timeline_ui='0' → disabled (legacy ○△× escape hatch)", TL.enabled() === false);
 delete store.hm_timeline_ui;
 
 console.log('time helpers');
