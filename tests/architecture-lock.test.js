@@ -239,6 +239,14 @@ describe('Band UI removal (slotCalendar/slotCapacity retired)', () => {
     assert.ok(/TimelineCalendar\.onShow\s*\(/.test(navJs), 'go("calendar") must render the timeline');
     assert.ok(!/SlotCalendar\.onShow/.test(navJs), 'navigation must not reference the deleted SlotCalendar');
   });
+
+  it('customer overlay renders NO band time picker (timeline-only + contact fallback)', () => {
+    assert.ok(!/name="ba-time"/.test(indexHtml),
+      'index.html must not render band time radios (name="ba-time")');
+    assert.ok(/_baRenderTimelineSlots/.test(indexHtml), 'the customer time step must use the timeline slot picker');
+    assert.ok(/090-2489-3402/.test(indexHtml) && /ba-time-host/.test(indexHtml),
+      'a contact fallback must exist for when timeline availability is unavailable');
+  });
 });
 
 // ── 8. Portal boundary: customer self-service must not bypass the booking engine ─

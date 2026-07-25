@@ -113,6 +113,28 @@ const INIT = `
   // (BookingService payload mapping is covered by timeline-booking-payload.test.js —
   //  it loads dynamically here so is not reachable as a window global.)
 
+  console.log('graceful contact fallback when timeline unavailable (never bands)');
+  const cust2 = await browser.newPage();
+  await cust2.addInitScript(() => {
+    Object.defineProperty(window, 'API_BASE', { get() { return 'http://mock'; }, set() {}, configurable: true });
+    window.API_KEY = '';
+    const real = window.fetch;
+    window.fetch = function (url, opts) {
+      url = String(url);
+      if (url.indexOf('availability.php') !== -1) return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, timeline: false, bands: { am: 'available' }, intervals: [], windows: [], slots: [] }) });
+      return real ? real.apply(this, arguments) : Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) });
+    };
+  });
+  await cust2.goto(url, { waitUntil: 'load' }); await cust2.waitForTimeout(300);
+  await cust2.evaluate(() => window.openBookingApp('単身引越し')); await cust2.waitForTimeout(300);
+  await cust2.evaluate(() => window.baOpenDrawer && window.baOpenDrawer('time')); await cust2.waitForTimeout(200);
+  chk('no timeline slots when timeline:false', (await cust2.$$('#ba-time-host input[name="ba-tl"]')).length === 0);
+  chk('NO band radios shown (bands fully removed)', (await cust2.$$('#ba-time-host input[name="ba-time"]')).length === 0);
+  chk('contact fallback shown (tel + LINE)', await cust2.evaluate(() => {
+    var h = document.getElementById('ba-time-host'); return !!h && /090-2489-3402/.test(h.textContent) && /LINE/.test(h.innerHTML);
+  }));
+  await cust2.close();
+
   await browser.close();
   server.close();
   console.log('\n' + (fail ? ('FAIL: ' + fail + ' failed, ' + pass + ' passed') : ('PASS: all ' + pass + ' checks')));

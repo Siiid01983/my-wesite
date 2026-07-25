@@ -3243,21 +3243,22 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     fetch(base + '/availability.php?date=' + encodeURIComponent(today), { headers: { 'X-API-KEY': window.API_KEY || '' } })
       .then(function (r) { return r.json(); })
       .then(function (out) {
+        // Timeline (hourly) is the ONLY scheduler now. Band + client-request modes
+        // are retired. If the server doesn't report timeline availability, the time
+        // step shows a graceful contact fallback (never a band picker).
         baTimeline = !!(out && out.ok && out.timeline);
-        baHourly   = !baTimeline && !!(out && out.ok && out.hourly);
         if (out && out.default_duration) baDefaultDuration = out.default_duration;
       })
-      .catch(function () { baTimeline = false; baHourly = false; })
+      .catch(function () { baTimeline = false; })
       .then(function () { baRenderTimeSlots(); _baApplyModeLabels(); });
   }
   function _baApplyModeLabels() {
     var sb = document.getElementById('ba-submit-btn');
-    if (sb) sb.textContent = (baHourly && !baTimeline) ? '予約リクエストを送信' : '予約を確定する';
+    if (sb) sb.textContent = '予約を確定する';
     var tt = document.querySelector('#ba-drawer-time .ba-drawer-title');
-    var timeTitle = baTimeline ? '希望の開始時刻' : (baHourly ? '希望日時（第1・第2希望）' : (_baCfg().labels.timeTitle || '希望時間帯'));
-    if (tt) tt.textContent = timeTitle;
+    if (tt) tt.textContent = '希望の開始時刻';
     var vt = document.getElementById('ba-val-time-label');
-    if (vt) vt.textContent = baTimeline ? '開始時刻' : (baHourly ? '希望日時' : '希望時間帯');
+    if (vt) vt.textContent = '開始時刻';
   }
 
   window.openBookingApp = function (serviceName) {
@@ -3485,41 +3486,18 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     baCloseDrawer('filter');
   };
 
-  // ── Preferred time ──────────────────────────────────────
+  // ── Start time (timeline hourly slots only) ─────────────
   window.baConfirmTime = function () {
     var el = document.getElementById('ba-val-time');
-    if (baTimeline) {
-      var picked = document.querySelector('#ba-drawer-time input[name="ba-tl"]:checked');
-      if (!picked) { alert('空き開始時刻を選択してください。'); return; }
-      if (!baState.dateISO) { alert('先に希望日を選択してください。'); baOpenDrawer('date'); return; }
-      var dur = baState.durationMin || baDefaultDuration || 120;
-      baState.durationMin = dur;
-      baState.startAt = baState.dateISO + 'T' + picked.value;   // "YYYY-MM-DDTHH:MM"
-      var endMin = (_baToMin(picked.value) || 0) + dur;
-      el.textContent = picked.value + '〜' + _baMinHm(endMin) + '（' + (dur % 60 === 0 ? (dur / 60) + '時間' : dur + '分') + '）';
-      el.classList.add('filled');
-      baCloseDrawer('time');
-      return;
-    }
-    if (baHourly) {
-      var i1 = document.getElementById('ba-pref-1'), i2 = document.getElementById('ba-pref-2');
-      var p1 = i1 ? i1.value : '', p2 = i2 ? i2.value : '';
-      if (!p1) { alert('第1希望の日時を選択してください。'); return; }
-      var minDT = _baTodayLocal() + 'T00:00';   // enforce minDate: today (manual-entry guard)
-      if (p1 < minDT || (p2 && p2 < minDT)) { alert('過去の日時は選択できません。'); return; }
-      if (p2 && p2 === p1) { alert('第2希望は第1希望と異なる日時にしてください。'); return; }
-      baState.preferredStart1 = p1;
-      baState.preferredStart2 = p2;
-      el.textContent = _baFmtPref(p1) + (p2 ? '／' + _baFmtPref(p2) : '');
-      el.classList.add('filled');
-      baCloseDrawer('time');
-      return;
-    }
-    var checked = document.querySelector('#ba-drawer-time input[name="ba-time"]:checked');
-    var v = checked ? checked.value : '';
-    if (!v) return;                                                     // require a choice
-    baState.timeSlot = v;
-    el.textContent = v; el.classList.add('filled');
+    var picked = document.querySelector('#ba-drawer-time input[name="ba-tl"]:checked');
+    if (!picked) { alert('空き開始時刻を選択してください。'); return; }
+    if (!baState.dateISO) { alert('先に希望日を選択してください。'); baOpenDrawer('date'); return; }
+    var dur = baState.durationMin || baDefaultDuration || 120;
+    baState.durationMin = dur;
+    baState.startAt = baState.dateISO + 'T' + picked.value;   // "YYYY-MM-DDTHH:MM"
+    var endMin = (_baToMin(picked.value) || 0) + dur;
+    el.textContent = picked.value + '〜' + _baMinHm(endMin) + '（' + (dur % 60 === 0 ? (dur / 60) + '時間' : dur + '分') + '）';
+    el.classList.add('filled');
     baCloseDrawer('time');
   };
   // "2026-07-20T09:30" → "7/20 09:30" (compact display for the summary chip/rows).
@@ -3541,11 +3519,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     if (!baState.fromAddr) { alert(single ? '作業場所を入力してください。' : '現住所を入力してください。'); baOpenDrawer('from'); return; }
     if (!single && !baState.toAddr) { alert('引越し先を入力してください。'); baOpenDrawer('to'); return; }
     if (!baState.dateISO)  { alert('希望日を選択してください。'); baOpenDrawer('date'); return; }
-    if (baTimeline) {
-      if (!baState.startAt) { alert('ご希望の開始時刻を選択してください。'); baOpenDrawer('time'); return; }
-    } else if (baHourly) {
-      if (!baState.preferredStart1) { alert('ご希望の日時を選択してください。'); baOpenDrawer('time'); return; }
-    } else if (!baState.timeSlot) { alert('希望時間帯を選択してください。'); baOpenDrawer('time'); return; }
+    if (!baState.startAt) { alert('ご希望の開始時刻を選択してください。'); baOpenDrawer('time'); return; }
     baShowScreen('contact');
     setTimeout(function () { var n = document.getElementById('ba-name'); if (n) n.focus(); }, 80);
   };
@@ -3565,18 +3539,11 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
       rows.push(['引越し先', (baState.toAddr || '—') + (baState.toFloor ? '（' + baState.toFloor + '階・EV' + (baState.toEv || '-') + '）' : '')]);
     }
     rows.push(['希望日',   _baFmtDate(baState.dateISO)]);
-    if (baTimeline) {
-      var _dm = baState.durationMin || baDefaultDuration || 120;
-      var _st = baState.startAt ? baState.startAt.slice(11, 16) : '';
-      var _et = _st ? _baMinHm((_baToMin(_st) || 0) + _dm) : '';
-      rows.push(['開始時刻', _st ? (_st + '〜' + _et) : '—']);
-      rows.push(['所要時間', (_dm % 60 === 0 ? (_dm / 60) + '時間' : _dm + '分')]);
-    } else if (baHourly) {
-      rows.push(['第1希望', baState.preferredStart1 ? _baFmtPref(baState.preferredStart1) : '—']);
-      if (baState.preferredStart2) rows.push(['第2希望', _baFmtPref(baState.preferredStart2)]);
-    } else {
-      rows.push(['希望時間', baState.timeSlot || '—']);
-    }
+    var _dm = baState.durationMin || baDefaultDuration || 120;
+    var _st = baState.startAt ? baState.startAt.slice(11, 16) : '';
+    var _et = _st ? _baMinHm((_baToMin(_st) || 0) + _dm) : '';
+    rows.push(['開始時刻', _st ? (_st + '〜' + _et) : '—']);
+    rows.push(['所要時間', (_dm % 60 === 0 ? (_dm / 60) + '時間' : _dm + '分')]);
     rows.push(['作業員',   baState.workers + '名']);
     rows.push(['荷物',     items]);
     if (baState.disposal) rows.push(['不用品回収', baState.disposal]);
@@ -3648,12 +3615,10 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
         serviceId: baState.serviceId || '',
         locMode:   single ? 'single' : 'dual',
         date:      baState.dateISO || '',
-        time:      (baHourly || baTimeline) ? '' : (baState.timeSlot || ''),
+        time:      '',
         items:     _baItemsArray(),
-        preferredStart1: (baHourly && !baTimeline) ? (baState.preferredStart1 || '') : '',
-        preferredStart2: (baHourly && !baTimeline) ? (baState.preferredStart2 || '') : '',
-        startAt:     baTimeline ? (baState.startAt || '') : '',
-        durationMin: baTimeline ? (baState.durationMin || baDefaultDuration || 120) : 0,
+        startAt:     baState.startAt || '',
+        durationMin: baState.durationMin || baDefaultDuration || 120,
         fromAddr:  baState.fromAddr,
         toAddr:    single ? '' : baState.toAddr,
         name:      baState.name,
@@ -3706,9 +3671,8 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     _baSetText('ba-val-to', '引越し先を選択');
     _baSetText('ba-val-items', '荷物を選択');
     _baSetText('ba-val-date', '引越し希望日を選択');
-    _baSetText('ba-val-time', '時間帯を選択');
+    _baSetText('ba-val-time', '開始時刻を選択');
     _baSetText('ba-val-filter', '条件を選択');
-    var _t = document.querySelector('#ba-drawer-time input[name="ba-time"]:checked'); if (_t) _t.checked = false;
     ['ba-input-from','ba-input-to','ba-input-date','ba-name','ba-email','ba-phone','ba-notes','ba-zip-from','ba-zip-to','ba-floor-from','ba-floor-to','ba-disposal'].forEach(function (id) {
       var e = document.getElementById(id); if (e) e.value = '';
     });
@@ -3959,28 +3923,15 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   function baRenderTimeSlots() {
     var host = document.getElementById('ba-time-host');
     if (!host) return;
+    // Timeline hourly slots are the ONLY time picker. If the server hasn't reported
+    // timeline availability (rare — e.g. a transient error), show a graceful contact
+    // fallback instead of a band picker, so a customer is never shown 午前/午後/….
     if (baTimeline) { _baRenderTimelineSlots(host); return; }
-    if (baHourly) { _baRenderPreferredInputs(host); return; }
-    host.innerHTML = _baCfg().timeSlots.map(function (s) {
-      var label = (s && typeof s === 'object') ? String(s.label || '') : String(s || '');
-      var value = (s && typeof s === 'object' && s.value) ? String(s.value) : label;
-      if (!label) return '';
-      if (_baSlotReserved(value)) {   // reserved OR admin_blocked → not selectable (hourly-precise when available)
-        return '<label class="ba-filter-label" style="opacity:.45;cursor:not-allowed;text-decoration:line-through">'
-          + '<input type="radio" name="ba-time" value="' + _baEsc(value) + '" disabled> ' + _baEsc(label) + '（満席）</label>';
-      }
-      return '<label class="ba-filter-label"><input type="radio" name="ba-time" value="' + _baEsc(value) + '"> ' + _baEsc(label) + '</label>';
-    }).join('');
-    // If a previously chosen slot became unavailable (date changed / just blocked),
-    // clear it so a stale reserved band can't be carried into submit.
-    if (baState.timeSlot && _baSlotReserved(baState.timeSlot)) {
-      baState.timeSlot = '';
-      var tv = document.getElementById('ba-val-time');
-      if (tv) { tv.textContent = '時間帯を選択'; tv.classList.remove('filled'); }
-    }
-    if (baState.timeSlot) {
-      host.querySelectorAll('input[name="ba-time"]').forEach(function (r) { if (r.value === baState.timeSlot) r.checked = true; });
-    }
+    host.innerHTML =
+      '<div style="padding:18px 6px;text-align:center;color:#4b5563;font-size:14px;line-height:1.7">'
+      + 'ただいま空き時間を取得できませんでした。<br>お手数ですが、お電話（<a href="tel:09024893402" style="color:#2C3626;font-weight:700">090-2489-3402</a>）'
+      + 'または<a href="https://lin.ee/Gxr9dKp" target="_blank" rel="noopener" style="color:#2C3626;font-weight:700">LINE</a>よりご希望日時をお知らせください。'
+      + '</div>';
   }
   function baRenderFilters() {
     var host = document.getElementById('ba-filter-host');
