@@ -182,6 +182,9 @@ if (!function_exists('hm_timeline_enabled')) {
   // ── Table + CRUD ────────────────────────────────────────────────────────────
 
   function hm_windows_ensure_table(PDO $db): void {
+    // Portable across MySQL (prod) and SQLite (tests): no inline KEY clauses —
+    // indexes are added separately (best-effort; MySQL lacks CREATE INDEX IF NOT
+    // EXISTS, so a duplicate is swallowed). The migration SQL owns prod indexes.
     $db->exec(
       "CREATE TABLE IF NOT EXISTS availability_windows (
         id          CHAR(36)  NOT NULL,
@@ -189,11 +192,15 @@ if (!function_exists('hm_timeline_enabled')) {
         start_at    DATETIME  NOT NULL,
         end_at      DATETIME  NOT NULL,
         created_at  DATETIME  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (id),
-        KEY availability_windows_date_idx     (window_date),
-        KEY availability_windows_start_at_idx (start_at)
+        PRIMARY KEY (id)
       )"
     );
+    foreach ([
+      'CREATE INDEX IF NOT EXISTS availability_windows_date_idx ON availability_windows (window_date)',
+      'CREATE INDEX IF NOT EXISTS availability_windows_start_at_idx ON availability_windows (start_at)',
+    ] as $ix) {
+      try { $db->exec($ix); } catch (Throwable $e) { /* index exists / older engine → ignore */ }
+    }
   }
 
   /** List windows for a single date → [{id,start_at,end_at}, …] ordered by start. */
