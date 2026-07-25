@@ -26,8 +26,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_lib.php';
 require_once __DIR__ . '/_db.php';
 require_once __DIR__ . '/_slots.php';      // canonical slot layer (release / band id)
-require_once __DIR__ . '/_capacity.php';   // capacity-aware reserve (per-band configurable capacity)
-require_once __DIR__ . '/_windows.php';     // timeline gate (hm_timeline_active) — skip band reserve for interval bookings
+require_once __DIR__ . '/_capacity.php';   // capacity-aware reserve — LEGACY band bookings only (interval-less)
 
 $isCli = (PHP_SAPI === 'cli');
 
@@ -164,13 +163,16 @@ try {
     //     capacity 'used' count and shows on the calendar like any reservation.
     //     Independent of slot_lock_enabled: confirmation ALWAYS records the slot.
     //     Flexible / 時間指定なし bookings resolve to no band → nothing is locked.
-    // TIMELINE booking (interval reserved at create via hm_iv_reserve): confirming
-    // is STATUS-ONLY — no band check/reserve. The legacy band confirm below would
-    // otherwise 409 on a date whose bands are 'closed' (e.g. calendar→slotcap
-    // migration) even though the hourly interval is validly held.
-    $__isTimelineBk = (function_exists('hm_timeline_active') && hm_timeline_active($db) && !empty($bk['start_at']));
+    // A booking with a reserved INTERVAL (start_at set — every timeline booking)
+    // confirms STATUS-ONLY: the interval was locked atomically at create/reschedule,
+    // so there is nothing to band-reserve and the legacy band confirm would wrongly
+    // 409 (e.g. a date whose bands were closed by the calendar→slotcap migration).
+    // The band arm below therefore runs ONLY for interval-LESS LEGACY bookings
+    // (created before the timeline) — flag-independent, so behaviour never depends
+    // on timeline_enabled, only on whether the booking itself has an interval.
+    $__hasInterval = !empty($bk['start_at']);
 
-    if ($status === 'confirmed' && !$__isTimelineBk) {
+    if ($status === 'confirmed' && !$__hasInterval) {
       $band = hm_slot_band_from_notes($bk['notes']);
       // SINGLE-SOURCE pre-confirm validation (day closed / band closed / capacity)
       // — the SAME hm_cap_confirm_check() the admin rest.php + reschedule paths use.

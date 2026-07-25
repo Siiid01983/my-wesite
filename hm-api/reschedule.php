@@ -21,7 +21,7 @@ require_once __DIR__ . '/_lib.php';
 require_once __DIR__ . '/_db.php';
 require_once __DIR__ . '/_slots.php';
 require_once __DIR__ . '/_capacity.php';
-require_once __DIR__ . '/_windows.php';   // timeline: hm_timeline_active + hm_iv_reserve (gated, dormant by default)
+require_once __DIR__ . '/_intervals.php';  // hm_iv_reserve — atomic interval move/resize (flag-independent)
 
 $isCli = (PHP_SAPI === 'cli');
 class HmRsConflict extends RuntimeException { public $reason = 'full'; }
@@ -87,18 +87,18 @@ try {
   $newBand   = $bandOf($newStart, $bk['notes']);
   $moved = false;
 
-  // TIMELINE model (gated): move/resize is an interval transfer. hm_iv_reserve does
-  // the atomic FOR UPDATE overlap check (excluding this booking's own row) and sets
-  // start_at/end_at — the SAME single authority create-booking uses. When live, this
-  // replaces the band pre-check + band transfer below.
-  $tlActive = hm_timeline_active($db) && $newStart !== '' && $newEnd !== '';
+  // INTERVAL move/resize (every timeline reschedule carries start_at + end_at):
+  // hm_iv_reserve does the atomic FOR UPDATE overlap check (excluding this booking's
+  // own row) and sets start_at/end_at — the SAME single authority create-booking
+  // uses. Discriminated by the REQUEST carrying an interval, NOT by timeline_enabled,
+  // so it is flag-independent. A date-only/band reschedule (interval-less — legacy /
+  // portal) falls through to the LEGACY band transfer below, preserving back-compat.
+  $__useInterval = ($newStart !== '' && $newEnd !== '');
 
-  // SINGLE-SOURCE validation of the TARGET slot — the SAME hm_cap_confirm_check()
-  // the Ops + admin confirm paths use. Covers a whole-day closure even for a
-  // band-less booking (the reserve below only guards band closed/full). Excludes
-  // this booking's own reservation so moving within a band isn't self-blocked.
-  // Skipped in timeline mode (interval overlap is the authority there).
-  if ($confirmed && !$tlActive) {
+  // SINGLE-SOURCE validation of the TARGET slot (LEGACY band path only). Covers a
+  // whole-day closure even for a band-less booking. Excludes this booking's own
+  // reservation. Skipped for an interval move (overlap is the authority there).
+  if ($confirmed && !$__useInterval) {
     $chk = hm_cap_confirm_check($db, $newDate, $newBand, $bookingId);
     if (empty($chk['ok'])) rs_out(['ok' => false, 'error' => 'slot_taken', 'reason' => (string)($chk['reason'] ?? 'slot_taken')], $isCli, 409);
   }
@@ -106,7 +106,10 @@ try {
   hm_slot_ensure_table($db);
   $db->beginTransaction();
   try {
-    if ($tlActive) {
+    if ($__useInterval) {
+      // Release any stale legacy band row first, so a legacy booking rescheduled with
+      // an interval doesn't leave a ghost booking_slots reservation (back-compat).
+      hm_slot_release($db, $bookingId);
       // Atomic interval move/resize: overlap-checked against every other scheduled
       // booking + admin block for the target day; sets start_at/end_at on success.
       $rv = hm_iv_reserve($db, $bookingId, $newStart, $newEnd);
