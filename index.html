@@ -3044,16 +3044,13 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 
   // Single source of truth for the booking the overlay is assembling.
   function baBlankState() {
-    return { serviceId:'', service:'', fromAddr:'', toAddr:'', dateISO:'', timeSlot:'', preferredStart1:'', preferredStart2:'', startAt:'', durationMin:0, fromFloor:'', toFloor:'', fromEv:'', toEv:'', disposal:'', workers:2, filters:'', name:'', email:'', phone:'', notes:'' };
+    return { serviceId:'', service:'', fromAddr:'', toAddr:'', dateISO:'', startAt:'', durationMin:0, fromFloor:'', toFloor:'', fromEv:'', toEv:'', disposal:'', workers:2, filters:'', name:'', email:'', phone:'', notes:'' };
   }
-  // CLIENT-REQUEST mode: when the server has hourly live, the time step becomes two
-  // "preferred datetime" inputs and the flow submits a PENDING request instead of a
-  // band. Resolved once per overlay open by _baFetchMode(); false = legacy band UI.
-  var baHourly = false;
   // TIMELINE mode (availability.php `timeline`): the customer picks an EXACT start
   // time from the admin's available windows + a duration; the engine reserves
-  // [start, start+duration). Takes precedence over baHourly. OFF unless the server
-  // timeline_enabled flag is on → zero change to the current production flow.
+  // [start, start+duration). This is the ONLY time-selection mode (band + client-
+  // request removed). Resolved once per overlay open by _baFetchMode(); when false
+  // (server unavailable) the time step shows a contact fallback, never a band picker.
   var baTimeline = false;
   var baAvailWindows = null;      // [{start_at,end_at}] admin windows for baState.dateISO
   var baAvailSlots = null;        // ["HH:MM", …] server slots for the default duration
@@ -3234,11 +3231,11 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   window.baShowScreen = baShowScreen;
 
   // ── Public API ──────────────────────────────────────────
-  // Resolve band vs client-request mode from the server (availability.php `hourly`),
-  // then re-render the time step + submit label. Fail-safe: any error → band UI.
+  // Resolve timeline availability from the server (availability.php `timeline`),
+  // then re-render the time step. Fail-safe: any error → contact fallback.
   function _baFetchMode() {
     var base = (window.API_BASE || '').replace(/\/+$/, '');
-    if (!base) { baHourly = false; return; }
+    if (!base) { baTimeline = false; return; }
     var today = _baTodayLocal();   // LOCAL strict YYYY-MM-DD (toISOString is UTC → wrong day pre-09:00 JST)
     fetch(base + '/availability.php?date=' + encodeURIComponent(today), { headers: { 'X-API-KEY': window.API_KEY || '' } })
       .then(function (r) { return r.json(); })
@@ -3264,7 +3261,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   window.openBookingApp = function (serviceName) {
     document.getElementById('booking-app').classList.add('open');
     document.body.style.overflow = 'hidden';
-    baHourly = false; _baFetchMode();   // resolve mode; re-renders time step on return
+    baTimeline = false; _baFetchMode();   // resolve timeline availability; re-renders time step on return
     // Pull the latest availability so the date step reflects real bookings.
     if (typeof window.refreshBookingCalendar === 'function') { try { window.refreshBookingCalendar(); } catch (_) {} }
     // Re-render the picker so admin CMS name/image edits (localStorage snapshot)
@@ -3500,11 +3497,6 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     el.classList.add('filled');
     baCloseDrawer('time');
   };
-  // "2026-07-20T09:30" → "7/20 09:30" (compact display for the summary chip/rows).
-  function _baFmtPref(v) {
-    var m = String(v || '').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})/);
-    return m ? (parseInt(m[2], 10) + '/' + parseInt(m[3], 10) + ' ' + m[4]) : String(v || '');
-  }
 
   // ── Workers ─────────────────────────────────────────────
   window.baSetWorker = function (n) {
@@ -3742,73 +3734,10 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   // ── Slot availability (Smart Booking Engine) ────────────
   // Mirrors server hm_slot_band_id(): map a time-slot value to a canonical band
   // ('am'|'pm'|'ev'|'nt') or null (flexible / 時間指定なし → never locked).
-  var baAvailBands = null;   // { am:'available'|'reserved', … } for baState.dateISO, else null
-  var baAvailIntervals = null;   // [{start_at,end_at,…}] busy ranges for baState.dateISO (hourly), else null
-  function _baBandId(v) {
-    var t = String(v == null ? '' : v).trim();
-    if (!t) return null;
-    if (t.indexOf('午前') !== -1) return 'am';
-    if (t.indexOf('午後') !== -1) return 'pm';
-    if (t.indexOf('夕方') !== -1) return 'ev';
-    if (t.indexOf('夜間') !== -1) return 'nt';
-    if (t.indexOf('時間指定なし') !== -1) return null;   // flexible → not band-locked
-    var m = t.match(/(\d{1,2})\s*[:：時]/);
-    if (m) {
-      var h = parseInt(m[1], 10);
-      if (h >= 8  && h < 12) return 'am';
-      if (h >= 12 && h < 15) return 'pm';
-      if (h >= 15 && h < 18) return 'ev';
-      if (h >= 18)           return 'nt';
-    }
-    return null;
-  }
-  function _baBandReserved(band) {
-    return !!(band && baAvailBands && baAvailBands[band] && baAvailBands[band] !== 'available');
-  }
-  // ── Hourly (interval) availability — precise overlap when the server sends it ──
-  // Parse a slot value into a [startMin, endMin] window (minutes past midnight):
-  //   • explicit "H:MM〜H:MM" inside the value/label (covers "午前（9:00〜12:00）"
-  //     AND pure hourly slots like "09:00〜10:00"), else
-  //   • the band's fixed window via _baBandId (am 9–12, pm 12–15, ev 15–18, nt 18–21).
-  //   • 時間指定なし / unparseable → null (flexible → never reserved).
-  function _baSlotWindow(value) {
-    var t = String(value == null ? '' : value);
-    if (t.indexOf('時間指定なし') !== -1) return null;
-    var m = t.match(/(\d{1,2})\s*[:：]\s*(\d{2})\s*[〜～~\-]\s*(\d{1,2})\s*[:：]\s*(\d{2})/);
-    if (m) {
-      var a = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
-      var b = parseInt(m[3], 10) * 60 + parseInt(m[4], 10);
-      if (b > a) return [a, b];
-    }
-    var band = _baBandId(value);
-    var W = { am: [540, 720], pm: [720, 900], ev: [900, 1080], nt: [1080, 1260] };
-    return (band && W[band]) ? W[band] : null;
-  }
-  // Minutes-past-midnight from a "YYYY-MM-DD HH:MM:SS" (or ...T...) datetime, else null.
-  function _baHM(s) {
-    var t = String(s == null ? '' : s).split(/[ T]/)[1] || '';
-    var m = t.match(/^(\d{1,2}):(\d{2})/);
-    return m ? (parseInt(m[1], 10) * 60 + parseInt(m[2], 10)) : null;
-  }
-  // True if the slot's window overlaps ANY busy interval (half-open, mirrors server).
-  function _baIntervalReserved(value) {
-    var win = _baSlotWindow(value);
-    if (!win || !(baAvailIntervals && baAvailIntervals.length)) return false;
-    for (var i = 0; i < baAvailIntervals.length; i++) {
-      var it = baAvailIntervals[i] || {};
-      var bs = _baHM(it.start_at), be = _baHM(it.end_at);
-      if (bs == null || be == null) continue;
-      if (win[0] < be && win[1] > bs) return true;   // overlap
-    }
-    return false;
-  }
-  // Hybrid reserved-check: interval-precise when the server sent a non-empty
-  // `intervals` array, else the legacy band lookup (back-compat / historical dates).
-  function _baSlotReserved(value) {
-    if (baAvailIntervals && baAvailIntervals.length) return _baIntervalReserved(value);
-    return _baBandReserved(_baBandId(value));
-  }
-  // Fetch real-time band availability for a date. availability.php returns
+  // Busy time ranges for baState.dateISO — fed to the timeline slot generator
+  // (_baGenSlots) so booked/blocked hours are excluded from the customer picker.
+  var baAvailIntervals = null;   // [{start_at,end_at,…}] or null
+  // Fetch real-time availability for a date. availability.php returns
   // 'reserved' for BOTH customer reservations and admin_blocked rows, so this one
   // check hides blocked + booked bands. Fail-open: any error leaves slots
   // unrestricted — the server slot lock (409 slot_taken) is the authoritative
@@ -3831,7 +3760,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     return s;
   }
   function _baFetchAvail(iso) {
-    baAvailBands = null; baAvailIntervals = null;
+    baAvailIntervals = null;
     iso = _baDateOnly(iso);   // normalize before it hits the strict server validator
     var base = (window.API_BASE || '').replace(/\/+$/, '');
     if (!iso || !base) { baRenderTimeSlots(); return; }
@@ -3840,42 +3769,18 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     })
       .then(function (r) { return r.json(); })
       .then(function (out) {
-        baAvailBands     = (out && out.ok && out.bands) ? out.bands : null;
         baAvailIntervals = (out && out.ok && Array.isArray(out.intervals)) ? out.intervals : null;
         baAvailWindows   = (out && out.ok && Array.isArray(out.windows)) ? out.windows : null;
         baAvailSlots     = (out && out.ok && Array.isArray(out.slots)) ? out.slots : null;
         if (out && out.default_duration) baDefaultDuration = out.default_duration;
       })
-      .catch(function () { baAvailBands = null; baAvailIntervals = null; baAvailWindows = null; baAvailSlots = null; })
+      .catch(function () { baAvailIntervals = null; baAvailWindows = null; baAvailSlots = null; })
       .then(function () { baRenderTimeSlots(); });
   }
-  // CLIENT-REQUEST mode: two "preferred datetime" inputs instead of band radios.
-  // The admin later decides the final start/end (confirm-request.php). Prefilled
-  // with the chosen 希望日 (+ default 09:00 / 13:00) but fully editable.
-  // Local (not UTC) "YYYY-MM-DD" for TODAY — used as the datetime-local min so past
-  // dates can't be picked (the native equivalent of a picker's minDate: today). The
-  // datetime-local control already renders in the browser's locale (Japanese on a
-  // JP browser), so no separate 'ja' locale option is needed here.
+  // Local (not UTC) "YYYY-MM-DD" for TODAY (used as the date-picker minimum).
   function _baTodayLocal() {
     var t = new Date();
     return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
-  }
-  function _baRenderPreferredInputs(host) {
-    var today = _baTodayLocal();
-    var d = baState.dateISO || today;          // 希望日 (calendar already blocks past) or today
-    var minDT = today + 'T00:00';              // minDate: today (prevents past selection)
-    var v1 = baState.preferredStart1 || (d + 'T09:00');
-    var v2 = baState.preferredStart2 || '';
-    host.innerHTML =
-        '<div class="ba-pref-field" style="margin-bottom:14px">'
-      +   '<div style="font-size:13px;font-weight:600;margin-bottom:6px">第1希望 <span style="color:#b91c1c">*</span></div>'
-      +   '<input type="datetime-local" id="ba-pref-1" min="' + minDT + '" value="' + _baEsc(v1) + '" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #d5dae1;border-radius:8px;font:inherit">'
-      + '</div>'
-      + '<div class="ba-pref-field">'
-      +   '<div style="font-size:13px;font-weight:600;margin-bottom:6px">第2希望（任意）</div>'
-      +   '<input type="datetime-local" id="ba-pref-2" min="' + minDT + '" value="' + _baEsc(v2) + '" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #d5dae1;border-radius:8px;font:inherit">'
-      + '</div>'
-      + '<p style="font-size:12px;color:#6b7280;margin:12px 0 0">ご希望の日時をお選びください。担当者が空き状況を確認し、正式な作業時間をご連絡します。</p>';
   }
   // ── TIMELINE mode: available discrete start times inside the admin's windows ──
   // Pure client generator mirroring the server (hm_tl_gen_slots): a start S is
