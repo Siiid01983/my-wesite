@@ -102,3 +102,9 @@ jobs:
 
       - name: Timeline-calendar E2E (headless Chromium, press-hold/drag/resize)
         run: npm run test:timeline-cal-e2e
+
+      - name: Timeline booking payload (BookingService → start_at/duration_min)
+        run: npm run test:timeline-book
+
+      - name: Timeline booking E2E (customer slot-picker, index.html loads clean)
+        run: npm run test:timeline-book-e2e
