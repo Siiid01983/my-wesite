@@ -96,7 +96,7 @@ if (!function_exists('hm_timeline_enabled')) {
       foreach ($d as $v) { $v = (int)$v; if ($v > 0) $out[] = $v; }
       if ($out) return array_values(array_unique($out));
     }
-    return [30, 60, 90, 120, 180];
+    return [30, 60, 90, 120, 180, 240];
   }
 
   /** Default reservation duration (minutes). Default 120 (2h). */

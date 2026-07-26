@@ -14,6 +14,7 @@
     "test:timeline-touch":    "node tests/timeline-touch.e2e.js",
     "test:timeline-integration": "node tests/timeline-integration.e2e.js",
     "test:timeline-block":       "node tests/timeline-block-booking.e2e.js",
+    "test:customer-picker":      "node tests/customer-timeline-picker.e2e.js",
     "test:ops-cal":              "node tests/ops-calendar.e2e.js",
     "test:timeline":     "php tests/timeline-windows.test.php",
     "test:all":    "node --test tests/dataProvider.test.js tests/smoke.test.js tests/portalSelfService.test.js tests/architecture-lock.test.js"

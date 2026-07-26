@@ -365,6 +365,29 @@ describe('Hourly timeline (sole scheduler, active by default)', () => {
     assert.ok(/hm_timeline_active\s*\(/.test(availPhp),  'availability.php must resolve the timeline read via hm_timeline_active');
   });
 
+  it('availability.php is the SINGLE SOURCE: server-generates slots per duration', () => {
+    assert.ok(/slots_by_duration/.test(availPhp),
+      'availability.php must return slots_by_duration (server-computed free starts per duration)');
+    assert.ok(/hm_timeline_slots\s*\(/.test(availPhp),
+      'availability.php must generate slots via hm_timeline_slots (windows − bookings − blocks − closed)');
+    // Public endpoint must not leak names/reasons in intervals — time-ranges only.
+    assert.ok(/'start_at'\s*=>[^;]*'end_at'\s*=>/.test(availPhp.replace(/\n/g, ' ')),
+      'availability.php intervals must be sanitized to start_at/end_at only');
+  });
+
+  it('the customer picker DISPLAYS server slots (no second slot engine, no band, no manual fallback)', () => {
+    const idx = read('index.html');
+    assert.ok(/slots_by_duration/.test(idx) && /_baServerSlots/.test(idx),
+      'index.html must display server slots_by_duration (single source)');
+    assert.ok(!/function\s+_baGenSlots/.test(idx),
+      'index.html must NOT contain a client-side slot generator (_baGenSlots)');
+    assert.ok(!/ba-time-host[^]*?tel:0902489|午前|午後|夕方|深夜/.test(idx) || !/_baGenSlots/.test(idx),
+      'the time picker must not fall back to bands');
+    // The "no availability" wording must live behind the truly-empty branch only.
+    assert.ok(/この日は空き時間がありません/.test(idx),
+      'the picker keeps a truly-empty message (shown only when the server returns zero slots)');
+  });
+
   it('closed days suppress all availability (windows AND default) — reason never public', () => {
     assert.ok(/hm_day_is_closed\s*\(/.test(windows),
       'hm_windows_day_ranges must return [] for a closed day');

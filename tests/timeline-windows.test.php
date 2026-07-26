@@ -58,7 +58,7 @@ ck('snap to 30',            hm_tl_snap(575, 30), 570);
 echo "\ndefaults\n";
 ck('default duration 120',  hm_timeline_default_duration(), 120);
 ck('step 30',               hm_timeline_step(), 30);
-ck('durations set',         hm_timeline_durations(), [30,60,90,120,180]);
+ck('durations set (incl 4h)', hm_timeline_durations(), [30,60,90,120,180,240]);
 
 // ── DB half (in-memory SQLite) ───────────────────────────────────────────────
 if (!in_array('sqlite', PDO::getAvailableDrivers(), true)) {
@@ -128,6 +128,25 @@ $ro = hm_day_reopen($db, '2026-08-15');
 ck('reopen ok',             !empty($ro['ok']), true);
 ck('reopened not closed',   hm_day_is_closed($db, '2026-08-16'), false);   // fresh date (cache-safe)
 ck('reopened → slots back', count(hm_timeline_slots($db, '2026-08-15', 60, 30)) > 0, true);
+
+// ── Blocks + bookings remove customer slots (the picker's single source) ───────
+echo "\nDB: blocked / booked intervals disappear from customer slots\n";
+// Fresh day, explicit 08:00–18:00 window; block 09:30–11:00 (admin_blocked row).
+hm_windows_add($db, '2026-09-20 08:00', '2026-09-20 18:00');
+$db->exec("INSERT INTO bookings (id,customer_name,status,booking_date,start_at,end_at)
+           VALUES ('blk','（ブロック）','admin_blocked','2026-09-20','2026-09-20 09:30:00','2026-09-20 11:00:00')");
+$s60 = hm_timeline_slots($db, '2026-09-20', 60, 30);   // user example #12
+ck('60m includes 08:00 & 08:30',  in_array('08:00',$s60,true) && in_array('08:30',$s60,true), true);
+ck('60m excludes the blocked gap', !in_array('09:00',$s60,true) && !in_array('09:30',$s60,true) && !in_array('10:00',$s60,true), true);
+ck('60m resumes at 11:00',         in_array('11:00',$s60,true), true);
+// A real booking behaves identically; cancel frees it again.
+$db->exec("INSERT INTO bookings (id,customer_name,status,booking_date,start_at,end_at)
+           VALUES ('bk9','客','confirmed','2026-09-20','2026-09-20 13:00:00','2026-09-20 15:00:00')");
+$s120 = hm_timeline_slots($db, '2026-09-20', 120, 30);
+ck('120m excludes booked 13–15',   !in_array('13:00',$s120,true) && !in_array('12:00',$s120,true), true);
+$db->exec("UPDATE bookings SET status='cancelled' WHERE id='bk9'");
+$s120b = hm_timeline_slots($db, '2026-09-20', 120, 30);
+ck('cancel returns the slot',      in_array('13:00',$s120b,true), true);
 
 echo "\n" . ($fail ? "FAIL: $fail failed, $pass passed\n" : "PASS: all $pass checks\n");
 exit($fail ? 1 : 0);

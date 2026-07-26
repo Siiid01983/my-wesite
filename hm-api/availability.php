@@ -64,27 +64,35 @@ try {
   }
   catch (Throwable $ie) { hm_log_error('availability intervals read failed (non-fatal)', ['err' => $ie->getMessage(), 'date' => $date]); }
 
-  // Effective availability windows (admin-drawn OR the default business-hours
-  // window when none is drawn) + the bookable start times inside them (minus busy
-  // intervals) for the default duration. `timeline` stays true whenever the engine
-  // is live; the client regenerates slots for other durations from `windows`.
-  // A CLOSED day returns no windows/slots and closed:true — the customer sees
-  // "unavailable"; the internal reason is NEVER exposed on this public endpoint.
+  // Effective availability windows (admin-drawn OR the default business-hours window
+  // when none is drawn) and the bookable start times inside them. The SERVER is the
+  // single source of truth: it generates the free start times for EVERY allowed
+  // duration (windows − existing bookings − admin blocks) so the customer picker only
+  // DISPLAYS them and never runs a second engine. A CLOSED day returns no
+  // windows/slots and closed:true — the customer sees "unavailable"; the internal
+  // reason is NEVER exposed on this public endpoint.
   $timeline = false; $windows = []; $slots = []; $closed = false;
+  $durations = hm_timeline_durations();
+  $defaultDur = hm_timeline_default_duration();
+  $slotsByDur = [];
   try {
     $timeline = hm_timeline_active($db);
     if ($timeline) {
       $closed  = hm_day_is_closed($db, $date);
       $windows = hm_windows_day_effective($db, $date);
-      $slots   = hm_timeline_slots($db, $date, hm_timeline_default_duration());
+      foreach ($durations as $d) {
+        $slotsByDur[(string)$d] = hm_timeline_slots($db, $date, (int)$d);
+      }
+      $slots = $slotsByDur[(string)$defaultDur] ?? hm_timeline_slots($db, $date, $defaultDur);
     }
   } catch (Throwable $we) {
     hm_log_error('availability timeline read failed (non-fatal)', ['err' => $we->getMessage(), 'date' => $date]);
   }
 
   hm_json(['ok' => true, 'date' => $date, 'timeline' => $timeline, 'closed' => $closed,
-           'windows' => $windows, 'slots' => $slots, 'intervals' => $intervals,
-           'default_duration' => hm_timeline_default_duration()]);
+           'windows' => $windows, 'slots' => $slots, 'slots_by_duration' => $slotsByDur,
+           'intervals' => $intervals, 'durations' => $durations,
+           'default_duration' => $defaultDur]);
 } catch (Throwable $e) {
   hm_log_error('availability failed', ['err' => $e->getMessage(), 'date' => $date]);
   hm_json(['ok' => false, 'error' => hm_safe_msg('Request failed', $e)], 500);
