@@ -431,3 +431,56 @@ describe('Admin timeline UI (Google-Calendar style)', () => {
     assert.ok(/TimelineCalendar\.onShow\s*\(/.test(navJs), 'go("calendar") must render the timeline when its flag is on');
   });
 });
+
+// ── 11. Complete scheduler: block mode, manual booking, context menu, live sync ─
+//    The timeline is a full Google-Calendar-style scheduler: three create modes
+//    (availability window / manual block / manual booking), right-click & long-press
+//    delete, whole-day close with reason, and push (BroadcastChannel) + polling sync.
+describe('Timeline is a complete scheduler (block / booking / menu / sync)', () => {
+  const tlCal = read('js/modules/calendar/timelineCalendar.js');
+
+  it('three create modes exist (window / block / booking)', () => {
+    assert.ok(/createMode/.test(tlCal), 'timelineCalendar must track a createMode');
+    assert.ok(/data-m="window"/.test(tlCal) && /data-m="block"/.test(tlCal) && /data-m="booking"/.test(tlCal),
+      'the toolbar must offer window / block / booking create modes');
+  });
+
+  it('manual BLOCK create posts to block-interval.php with reason + memo', () => {
+    assert.ok(/_openBlockDialog/.test(tlCal), 'a block reason/memo dialog must exist');
+    assert.ok(/block-interval\.php/.test(tlCal) && /action:\s*'block'/.test(tlCal),
+      'block create must POST action:block to block-interval.php');
+    assert.ok(/memo:/.test(tlCal), 'block create must send a memo field');
+  });
+
+  it('manual BOOKING create posts to create-booking.php (name/email/phone + start_at)', () => {
+    assert.ok(/_openBookingDialog/.test(tlCal), 'a manual booking dialog must exist');
+    assert.ok(/create-booking\.php/.test(tlCal) && /start_at:/.test(tlCal) && /duration_min:/.test(tlCal),
+      'booking create must POST start_at + duration_min to create-booking.php');
+  });
+
+  it('right-click / long-press context menu deletes bookings, blocks and windows', () => {
+    assert.ok(/_bindContextMenu/.test(tlCal) && /contextmenu/.test(tlCal),
+      'a context menu (right-click) must be bound');
+    assert.ok(/_deleteBooking/.test(tlCal) && /booking-status\.php/.test(tlCal),
+      'booking delete must cancel via booking-status.php');
+    assert.ok(/_unblock/.test(tlCal) && /action:\s*'unblock'/.test(tlCal),
+      'block delete must unblock via block-interval.php');
+  });
+
+  it('whole-day close carries a required reason (close-day.php)', () => {
+    assert.ok(/close-day\.php/.test(tlCal) && /action:\s*'close'/.test(tlCal),
+      'close-day must POST action:close to close-day.php');
+  });
+
+  it('live sync is push (BroadcastChannel) + auto-refresh polling', () => {
+    assert.ok(/BroadcastChannel/.test(tlCal), 'timeline must use BroadcastChannel for instant same-browser sync');
+    assert.ok(/_syncBroadcast/.test(tlCal), 'mutations must broadcast a sync event');
+    assert.ok(/setInterval/.test(tlCal), 'timeline must auto-refresh (poll) to catch cross-device changes');
+  });
+
+  it('manual blocks are surfaced to the admin range (reason + memo)', () => {
+    const aw = read('hm-api/availability-windows.php');
+    assert.ok(/'blocks'\s*=>/.test(aw), 'availability-windows range must return blocks[]');
+    assert.ok(/admin_blocked/.test(aw), 'blocks query must select admin_blocked rows');
+  });
+});

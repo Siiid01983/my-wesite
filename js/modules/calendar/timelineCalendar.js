@@ -45,8 +45,10 @@ window.TimelineCalendar = (function () {
     view: 'week',           // 'day' | 'week' | 'month'
     anchor: null,           // Date (any day within the shown range)
     snap: 30,               // minutes: 15 | 30 | 60
+    createMode: 'window',   // press-hold creates: 'window' | 'block' | 'booking'
     windows: {},            // date → [{id,start_at,end_at}]
     bookings: {},           // date → [{id,customer_name,status,start_at,end_at}]
+    blocks: {},             // date → [{id,reason,memo,start_at,end_at}] (admin manual blocks)
     closed: {},             // date → {day,reason,closed_by,closed_at} (whole-day closure)
     cfg: { day_start: '07:00', day_end: '22:00', step: 30, durations: [30,60,90,120,180], default_duration: 120 },
     pxPerMin: 0.8,          // vertical scale (48px / hour)
@@ -181,6 +183,7 @@ window.TimelineCalendar = (function () {
       '.tl-closed-by{display:block;font-size:10px;opacity:.85;margin-top:2px}',
       '.tl-mcell.tl-mcell-closed{border-color:#d93025;background:rgba(217,48,37,.06)}',
       '.tl-mcell .closed-tag{font-size:9px;font-weight:800;color:#fff;background:#d93025;border-radius:4px;padding:1px 4px;align-self:flex-start}',
+      '.tl-mcell .blk-tag{font-size:9px;font-weight:800;color:#c62828;align-self:flex-start}',
       // Close-day reason dialog
       '.tl-dlg-ov{position:fixed;inset:0;background:rgba(15,23,20,.5);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px}',
       '.tl-dlg{background:var(--tl-bg);color:var(--tl-ink);border-radius:16px;padding:20px;width:min(420px,100%);box-shadow:0 20px 60px rgba(0,0,0,.35)}',
@@ -193,6 +196,17 @@ window.TimelineCalendar = (function () {
       '.tl-dlg-actions{display:flex;justify-content:flex-end;gap:8px}',
       '.tl-dlg-cancel,.tl-dlg-ok{border-radius:10px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer;border:1px solid var(--tl-line);background:var(--tl-bg);color:inherit}',
       '.tl-dlg-ok{background:#d93025;border-color:#d93025;color:#fff}.tl-dlg-ok:disabled{opacity:.45;cursor:not-allowed}',
+      // Create-mode toggle (空き / ブロック / 予約)
+      '.tl-mode button.on{background:var(--tl-win);color:#fff}',
+      '.tl-mode button[data-m="block"].on{background:#d93025}',
+      '.tl-mode button[data-m="booking"].on{background:var(--tl-accent)}',
+      // Manual block element (distinct hatched red)
+      '.tl-blk{position:absolute;left:5px;right:34%;background:repeating-linear-gradient(45deg,#c62828,#c62828 7px,#b71c1c 7px,#b71c1c 14px);border:1px solid #8e0000;border-radius:7px;padding:3px 6px;font-size:11px;color:#fff;font-weight:700;overflow:hidden;z-index:3;box-shadow:0 1px 4px rgba(0,0,0,.2);cursor:context-menu;touch-action:none}',
+      '.tl-blk .nm{display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;pointer-events:none}',
+      // Context menu (right-click / long-press)
+      '.tl-ctx{position:fixed;z-index:100000;background:var(--tl-bg);color:var(--tl-ink);border:1px solid var(--tl-line);border-radius:10px;box-shadow:0 12px 34px rgba(0,0,0,.28);padding:5px;min-width:180px}',
+      '.tl-ctx-item{display:block;width:100%;text-align:left;border:0;background:transparent;color:inherit;padding:9px 12px;font-size:13px;font-weight:600;cursor:pointer;border-radius:7px}',
+      '.tl-ctx-item:hover{background:rgba(26,115,232,.1)}.tl-ctx-item.danger{color:#d93025}.tl-ctx-item.danger:hover{background:rgba(217,48,37,.12)}',
       '@media(max-width:640px){.tl-title{font-size:15px;min-width:0}.tl-seg button{padding:6px 9px}.tl-colhead .d{font-size:14px}}'
     ].join('');
     document.head.appendChild(s);
@@ -230,6 +244,11 @@ window.TimelineCalendar = (function () {
           '<button data-z="out" type="button" aria-label="縮小">－</button>' +
           '<button data-z="in" type="button" aria-label="拡大">＋</button>' +
         '</span>' +
+        '<span class="tl-seg tl-mode" id="tlMode" title="長押しで作成するもの">' +
+          '<button data-m="window" type="button">空き</button>' +
+          '<button data-m="block" type="button">ブロック</button>' +
+          '<button data-m="booking" type="button">予約</button>' +
+        '</span>' +
         '<span class="tl-seg" id="tlSeg">' +
           '<button data-v="day" type="button">日</button>' +
           '<button data-v="week" type="button">週</button>' +
@@ -252,6 +271,13 @@ window.TimelineCalendar = (function () {
       var b = e.target.closest('button[data-v]'); if (!b) return;
       state.view = b.getAttribute('data-v'); render();
     });
+    root.querySelector('#tlMode').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-m]'); if (!b) return;
+      state.createMode = b.getAttribute('data-m');
+      root.querySelectorAll('#tlMode button').forEach(function (x) { x.classList.toggle('on', x === b); });
+      render();
+    });
+    root.querySelector('#tlMode button[data-m="window"]').classList.add('on');
     root.querySelector('#tlZoom').addEventListener('click', function (e) {
       var b = e.target.closest('button[data-z]'); if (!b) return;
       _setZoom(b.getAttribute('data-z') === 'in' ? 1.25 : 0.8);
@@ -315,7 +341,7 @@ window.TimelineCalendar = (function () {
     fetch(_base() + '/availability-windows.php?action=range&from=' + r.from + '&to=' + r.to, { headers: _headers() })
       .then(function (res) { return res.json(); })
       .then(function (out) {
-        state.windows = {}; state.bookings = {}; state.closed = {};
+        state.windows = {}; state.bookings = {}; state.blocks = {}; state.closed = {};
         if (out && out.ok && Array.isArray(out.windows)) {
           out.windows.forEach(function (w) {
             var d = (w.window_date || String(w.start_at).slice(0, 10));
@@ -328,12 +354,18 @@ window.TimelineCalendar = (function () {
             (state.bookings[d] = state.bookings[d] || []).push(b);
           });
         }
+        if (out && out.ok && Array.isArray(out.blocks)) {
+          out.blocks.forEach(function (b) {
+            var d = String(b.start_at).slice(0, 10);
+            (state.blocks[d] = state.blocks[d] || []).push(b);
+          });
+        }
         if (out && out.ok && Array.isArray(out.closed)) {
           out.closed.forEach(function (c) { if (c && c.day) state.closed[c.day] = c; });
         }
         render();
       })
-      .catch(function () { state.windows = {}; state.closed = {}; render(); });
+      .catch(function () { state.windows = {}; state.blocks = {}; state.closed = {}; render(); });
   }
 
   function _loadConfig(then) {
@@ -352,8 +384,9 @@ window.TimelineCalendar = (function () {
       b.classList.toggle('on', b.getAttribute('data-v') === state.view);
     });
     var hint = document.getElementById('tlHint');
-    if (state.view === 'month') hint.textContent = '日付をクリックして日ビューへ。空き時間帯を作成できます。';
-    else hint.textContent = '長押しで空き時間帯を作成 · ドラッグで移動 · 上下でサイズ変更 · ✕で削除';
+    var modeLbl = state.createMode === 'block' ? 'ブロック' : state.createMode === 'booking' ? '予約' : '空き時間帯';
+    if (state.view === 'month') hint.textContent = '日付をクリックして日ビューへ。長押しで' + modeLbl + 'を作成できます。';
+    else hint.textContent = '長押しで' + modeLbl + 'を作成 · ドラッグで移動/日をまたぐ · 上下でサイズ変更 · 右クリック/長押しで削除';
     if (state.view === 'month') _renderMonth();
     else _renderTime();
   }
@@ -382,6 +415,7 @@ window.TimelineCalendar = (function () {
       for (var mm = s; mm <= e; mm += 30) lines += '<div class="tl-hrline' + (mm % 60 ? ' half' : '') + '" style="top:' + minToY(mm) + 'px"></div>';
       var wins = (state.windows[ds] || []).map(function (w) { return _winHtml(w); }).join('');
       var bks = (state.bookings[ds] || []).map(function (b) { return _bkHtml(b); }).join('');
+      var blks = (state.blocks[ds] || []).map(function (b) { return _blkHtml(b); }).join('');
       var now = isT ? _nowLine() : '';
       var dd = parse(ds), dowCls = dd.getDay() === 0 ? 'dow-sun' : dd.getDay() === 6 ? 'dow-sat' : '';
       var cls = state.closed[ds];
@@ -392,7 +426,7 @@ window.TimelineCalendar = (function () {
         (cls.closed_by ? '<span class="tl-closed-by">' + _esc(cls.closed_by) + '</span>' : '') + '</div>' : '';
       return '<div class="tl-col' + (isT ? ' tl-today' : '') + (cls ? ' tl-col-closed' : '') + '" data-date="' + ds + '" style="height:' + (h + 40) + 'px">' +
                head + '<div class="tl-canvas" data-date="' + ds + '" style="position:absolute;left:0;right:0;top:40px;height:' + h + 'px">' +
-               lines + wins + bks + now + closedOv + '</div></div>';
+               lines + wins + blks + bks + now + closedOv + '</div></div>';
     }).join('');
 
     var colW = state.view === 'day' ? '1fr' : 'repeat(7,1fr)';
@@ -433,7 +467,7 @@ window.TimelineCalendar = (function () {
 
   function _reopenDay(ds) {
     _closePost({ action: 'reopen', date: ds }).then(function (ok) {
-      if (ok) { _toast(ds + ' の休業を解除しました'); load(); }
+      if (ok) { _toast(ds + ' の休業を解除しました'); _syncBroadcast(); load(); }
     });
   }
 
@@ -441,48 +475,15 @@ window.TimelineCalendar = (function () {
   var CLOSE_REASONS = ['祝日・休日', 'スタッフ休暇', 'トラック整備', '手動予約', '緊急停止'];
 
   function _openCloseDialog(ds) {
-    var prev = document.getElementById('tlCloseDlg'); if (prev) prev.remove();
-    var ov = document.createElement('div'); ov.id = 'tlCloseDlg'; ov.className = 'tl-dlg-ov';
-    ov.innerHTML =
-      '<div class="tl-dlg" role="dialog" aria-modal="true">' +
-        '<div class="tl-dlg-h">' + _esc(ds) + ' を休業にする</div>' +
-        '<div class="tl-dlg-sub">理由を選択（お客様には表示されません）</div>' +
-        '<div class="tl-dlg-reasons">' +
-          CLOSE_REASONS.map(function (r) { return '<button type="button" class="tl-rsn" data-r="' + _esc(r) + '">' + _esc(r) + '</button>'; }).join('') +
-        '</div>' +
-        '<input type="text" id="tlCloseCustom" class="tl-dlg-input" placeholder="またはカスタム理由を入力" maxlength="120">' +
-        '<div class="tl-dlg-actions">' +
-          '<button type="button" class="tl-dlg-cancel">キャンセル</button>' +
-          '<button type="button" class="tl-dlg-ok" disabled>休業にする</button>' +
-        '</div>' +
-      '</div>';
-    document.body.appendChild(ov);
-    var custom = ov.querySelector('#tlCloseCustom');
-    var okBtn  = ov.querySelector('.tl-dlg-ok');
-    var chosen = '';
-    function sync() { var v = (chosen || custom.value).trim(); okBtn.disabled = !v; }
-    ov.querySelectorAll('.tl-rsn').forEach(function (b) {
-      b.addEventListener('click', function () {
-        ov.querySelectorAll('.tl-rsn').forEach(function (x) { x.classList.remove('on'); });
-        b.classList.add('on'); chosen = b.getAttribute('data-r'); custom.value = ''; sync();
-      });
+    _openReasonDialog({
+      title: ds + ' を休業にする', sub: '理由を選択（お客様には表示されません）',
+      reasons: CLOSE_REASONS, withMemo: false, okLabel: '休業にする',
+      onOk: function (reason) {
+        return _closePost({ action: 'close', date: ds, reason: reason }).then(function (ok) {
+          if (ok) { _toast(ds + ' を休業にしました'); _syncBroadcast(); load(); }
+        });
+      }
     });
-    custom.addEventListener('input', function () {
-      if (custom.value) { ov.querySelectorAll('.tl-rsn').forEach(function (x) { x.classList.remove('on'); }); chosen = ''; }
-      sync();
-    });
-    function close() { ov.remove(); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
-    ov.querySelector('.tl-dlg-cancel').addEventListener('click', close);
-    okBtn.addEventListener('click', function () {
-      var reason = (chosen || custom.value).trim();
-      if (!reason) return;
-      okBtn.disabled = true; okBtn.textContent = '保存中…';
-      _closePost({ action: 'close', date: ds, reason: reason }).then(function (ok) {
-        close(); if (ok) { _toast(ds + ' を休業にしました'); load(); }
-      });
-    });
-    setTimeout(function () { custom.focus(); }, 30);
   }
 
   function _winHtml(w) {
@@ -507,6 +508,16 @@ window.TimelineCalendar = (function () {
              '<span class="tl-h bot"></span>' +
            '</div>';
   }
+  function _blkHtml(b) {
+    var a = dtMin(b.start_at), z = dtMin(b.end_at);
+    var top = minToY(a), ht = Math.max(16, (z - a) * state.pxPerMin);
+    var reason = b.reason || '（ブロック）', memo = b.memo || '';
+    return '<div class="tl-blk" data-id="' + _esc(b.id) + '" data-s="' + a + '" data-e="' + z + '" data-date="' + String(b.start_at).slice(0,10) + '" ' +
+           'title="' + _esc(reason + (memo ? ' — ' + memo : '')) + ' ' + minToHm(a) + '–' + minToHm(z) + '">' +
+             '<span class="nm">🚫 ' + _esc(reason) + '</span>' +
+             '<span class="tl-t" style="font-size:10px;opacity:.9">' + minToHm(a) + '–' + minToHm(z) + (memo ? ' · ' + _esc(memo) : '') + '</span>' +
+           '</div>';
+  }
   function _nowLine() {
     var now = new Date(), m = now.getHours()*60 + now.getMinutes();
     if (m < dayStartMin() || m > dayEndMin()) return '';
@@ -523,11 +534,11 @@ window.TimelineCalendar = (function () {
     scroll.querySelectorAll('.tl-canvas').forEach(function (canvas) {
       var ds = canvas.getAttribute('data-date');
 
-      // CREATE: press-hold on empty canvas → drag to size a new window.
+      // CREATE: press-hold on empty canvas → drag to size a new window/block/booking.
       TimelineGestures.pressHold(canvas, {
         ms: 220,
         onHold: function (ev) {
-          if (ev.target.closest('.tl-win') || ev.target.closest('.tl-bk')) return;   // not on an existing block
+          if (ev.target.closest('.tl-win') || ev.target.closest('.tl-bk') || ev.target.closest('.tl-blk')) return;
           if (_pinching()) return;                     // two-finger pinch owns the gesture
           _createDrag(ev, canvas, ds, scroll);
         }
@@ -542,17 +553,66 @@ window.TimelineCalendar = (function () {
           if (e.target.closest('.tl-h') || e.target.closest('.tl-del')) return;
           _moveDrag(e, win, ds, scroll);
         });
+        _bindContextMenu(win, [{ label: '空き時間を削除', danger: true, act: function () { _delete(win.getAttribute('data-id')); } }]);
       });
 
-      // MOVE / RESIZE bookings (drag-to-reschedule; move supports cross-day in week view).
+      // MOVE / RESIZE / DELETE bookings (drag-to-reschedule; move supports cross-day).
       canvas.querySelectorAll('.tl-bk').forEach(function (bk) {
         bk.querySelector('.tl-h.bot').addEventListener('pointerdown', function (e) { e.stopPropagation(); _bkResizeDrag(e, bk, scroll); });
         bk.addEventListener('pointerdown', function (e) {
           if (e.target.closest('.tl-h')) return;
           _bkMoveDrag(e, bk, scroll);
         });
+        _bindContextMenu(bk, [{ label: '予約を削除（キャンセル）', danger: true, act: function () { _deleteBooking(bk.getAttribute('data-id')); } }]);
+      });
+
+      // Manual BLOCKS: right-click / long-press → unblock (delete).
+      canvas.querySelectorAll('.tl-blk').forEach(function (blk) {
+        _bindContextMenu(blk, [{ label: 'ブロックを解除', danger: true, act: function () { _unblock(blk.getAttribute('data-id')); } }]);
       });
     });
+  }
+
+  /* ── context menu (desktop right-click + mobile long-press) ── */
+  function _bindContextMenu(el, items) {
+    el.addEventListener('contextmenu', function (e) { e.preventDefault(); e.stopPropagation(); _showMenu(e.clientX, e.clientY, items); });
+    // Mobile long-press (no drag): open the same menu.
+    var lpTimer = null, moved = false, sx = 0, sy = 0;
+    el.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse') return;              // desktop uses contextmenu
+      moved = false; sx = e.clientX; sy = e.clientY;
+      lpTimer = setTimeout(function () { if (!moved) _showMenu(sx, sy, items); }, 550);
+    });
+    el.addEventListener('pointermove', function (e) { if (Math.abs(e.clientX - sx) > 8 || Math.abs(e.clientY - sy) > 8) { moved = true; clearTimeout(lpTimer); } });
+    el.addEventListener('pointerup', function () { clearTimeout(lpTimer); });
+    el.addEventListener('pointercancel', function () { clearTimeout(lpTimer); });
+  }
+
+  function _showMenu(x, y, items) {
+    var prev = document.getElementById('tlCtxMenu'); if (prev) prev.remove();
+    var menu = document.createElement('div'); menu.id = 'tlCtxMenu'; menu.className = 'tl-ctx';
+    items.forEach(function (it) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'tl-ctx-item' + (it.danger ? ' danger' : ''); b.textContent = it.label;
+      b.addEventListener('click', function () { menu.remove(); it.act(); });
+      menu.appendChild(b);
+    });
+    document.body.appendChild(menu);
+    var w = menu.offsetWidth, h = menu.offsetHeight;
+    menu.style.left = Math.min(x, window.innerWidth - w - 8) + 'px';
+    menu.style.top  = Math.min(y, window.innerHeight - h - 8) + 'px';
+    setTimeout(function () {
+      var off = function (e) { if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('pointerdown', off, true); } };
+      document.addEventListener('pointerdown', off, true);
+    }, 0);
+  }
+
+  function _deleteBooking(id) {
+    if (!window.confirm('この予約をキャンセルしますか？')) return;
+    _post2('/booking-status.php', { booking_id: id, status: 'Cancelled', notify: false }, '予約をキャンセルしました');
+  }
+  function _unblock(id) {
+    _post2('/block-interval.php', { action: 'unblock', id: id }, 'ブロックを解除しました');
   }
 
   // Resolve which day column the pointer is over (week view cross-day drag).
@@ -618,7 +678,7 @@ window.TimelineCalendar = (function () {
       .then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
       .then(function (res) {
         var j = res.body || {};
-        if (j.ok) { _toast('予約を' + date + ' ' + minToHm(aMin) + 'に変更しました'); }
+        if (j.ok) { _toast('予約を' + date + ' ' + minToHm(aMin) + 'に変更しました'); _syncBroadcast(); }
         else if (j.error === 'slot_taken') { _toast('その時間帯は他の予約と重複します'); }
         else { _toast('変更に失敗: ' + _esc(j.error || ('HTTP ' + res.status))); }
         load();
@@ -652,10 +712,119 @@ window.TimelineCalendar = (function () {
         canvas.removeChild(ghost);
         var a = Math.min(startMin, curEnd), b = Math.max(startMin, curEnd);
         if (b - a < state.snap) b = a + state.snap;
-        _add(ds, a, b);
+        if (state.createMode === 'block')       _openBlockDialog(ds, a, b);
+        else if (state.createMode === 'booking') _openBookingDialog(ds, a, b);
+        else                                     _add(ds, a, b);
       },
       onCancel: function () { if (ghost.parentNode) canvas.removeChild(ghost); }
     });
+  }
+
+  /* ── manual BLOCK create (reason + memo) → block-interval.php ── */
+  var BLOCK_REASONS = ['祝日', '昼休み', 'トラック整備', '電話予約', 'プライベート予約', '休暇'];
+  function _openBlockDialog(ds, aMin, bMin) {
+    _openReasonDialog({
+      title: ds + ' ' + minToHm(aMin) + '–' + minToHm(bMin) + ' をブロック',
+      sub: '理由を選択（お客様には表示されません）', reasons: BLOCK_REASONS,
+      withMemo: true, okLabel: 'ブロックする',
+      onOk: function (reason, memo) {
+        return _post2('/block-interval.php', { action: 'block', date: ds, start_time: minToHm(aMin), end_time: minToHm(bMin), reason: reason, memo: memo }, 'ブロックしました');
+      }
+    });
+  }
+
+  /* ── manual BOOKING create (name + email + phone) → create-booking.php ──
+     create-booking validates email + phone (public-form contract). For a phone
+     booking WITHOUT contact details, use BLOCK mode (reason 電話予約) instead. ── */
+  function _openBookingDialog(ds, aMin, bMin) {
+    var prev = document.getElementById('tlCloseDlg'); if (prev) prev.remove();
+    var dur = bMin - aMin;
+    var ov = document.createElement('div'); ov.id = 'tlCloseDlg'; ov.className = 'tl-dlg-ov';
+    ov.innerHTML =
+      '<div class="tl-dlg" role="dialog" aria-modal="true">' +
+        '<div class="tl-dlg-h">' + _esc(ds + ' ' + minToHm(aMin) + '–' + minToHm(bMin)) + ' に予約を作成</div>' +
+        '<div class="tl-dlg-sub">手動で予約を登録します（メール・電話は必須）</div>' +
+        '<input type="text"  id="tlBkName"  class="tl-dlg-input" placeholder="お客様名（必須）" maxlength="80">' +
+        '<input type="email" id="tlBkEmail" class="tl-dlg-input" placeholder="メールアドレス（必須）" maxlength="120">' +
+        '<input type="tel"   id="tlBkPhone" class="tl-dlg-input" placeholder="電話番号（必須）" maxlength="40">' +
+        '<div class="tl-dlg-actions">' +
+          '<button type="button" class="tl-dlg-cancel">キャンセル</button>' +
+          '<button type="button" class="tl-dlg-ok" disabled>予約を作成</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    var nm = ov.querySelector('#tlBkName'), em = ov.querySelector('#tlBkEmail'), ph = ov.querySelector('#tlBkPhone'), okBtn = ov.querySelector('.tl-dlg-ok');
+    function valid() {
+      return nm.value.trim() && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em.value.trim()) && em.value.trim().replace(/\D/g, '').length >= 0 && ph.value.replace(/\D/g, '').length >= 8;
+    }
+    function sync() { okBtn.disabled = !valid(); }
+    [nm, em, ph].forEach(function (i) { i.addEventListener('input', sync); });
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('.tl-dlg-cancel').addEventListener('click', close);
+    okBtn.addEventListener('click', function () {
+      if (!valid()) return;
+      okBtn.disabled = true; okBtn.textContent = '作成中…';
+      _post2('/create-booking.php', {
+        customer_name: nm.value.trim(), customer_email: em.value.trim(), customer_phone: ph.value.trim(),
+        booking_date: ds, start_at: ds + ' ' + minToHm(aMin) + ':00', duration_min: dur,
+        status: 'confirmed', notes: '手動予約（管理タイムライン）'
+      }, '予約を作成しました').then(function (ok) { close(); });
+    });
+    setTimeout(function () { nm.focus(); }, 30);
+  }
+
+  // Generic POST → reload on success; returns Promise<bool>.
+  function _post2(path, payload, okMsg) {
+    return fetch(_base() + path, { method: 'POST', headers: _headers(true), body: JSON.stringify(payload) })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }, function () { return { ok: false, j: null }; }); })
+      .then(function (res) {
+        if (res.ok && res.j && res.j.ok) { _toast(okMsg); _syncBroadcast(); load(); return true; }
+        var err = (res.j && res.j.error) || 'エラー';
+        _toast(err === 'slot_taken' ? 'その時間帯は他の予約と重複します' : ('失敗: ' + _esc(err)));
+        return false;
+      })
+      .catch(function () { _toast('通信エラー'); return false; });
+  }
+
+  // Shared reason-picker dialog (used by close-day and block create).
+  function _openReasonDialog(opt) {
+    var prev = document.getElementById('tlCloseDlg'); if (prev) prev.remove();
+    var ov = document.createElement('div'); ov.id = 'tlCloseDlg'; ov.className = 'tl-dlg-ov';
+    ov.innerHTML =
+      '<div class="tl-dlg" role="dialog" aria-modal="true">' +
+        '<div class="tl-dlg-h">' + _esc(opt.title) + '</div>' +
+        '<div class="tl-dlg-sub">' + _esc(opt.sub) + '</div>' +
+        '<div class="tl-dlg-reasons">' +
+          opt.reasons.map(function (r) { return '<button type="button" class="tl-rsn" data-r="' + _esc(r) + '">' + _esc(r) + '</button>'; }).join('') +
+        '</div>' +
+        '<input type="text" id="tlRsnCustom" class="tl-dlg-input" placeholder="またはカスタム理由を入力" maxlength="120">' +
+        (opt.withMemo ? '<input type="text" id="tlRsnMemo" class="tl-dlg-input" placeholder="メモ（任意）" maxlength="200">' : '') +
+        '<div class="tl-dlg-actions">' +
+          '<button type="button" class="tl-dlg-cancel">キャンセル</button>' +
+          '<button type="button" class="tl-dlg-ok" disabled>' + _esc(opt.okLabel || 'OK') + '</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    var custom = ov.querySelector('#tlRsnCustom'), memo = ov.querySelector('#tlRsnMemo'), okBtn = ov.querySelector('.tl-dlg-ok');
+    var chosen = '';
+    function sync() { okBtn.disabled = !(chosen || custom.value).trim(); }
+    ov.querySelectorAll('.tl-rsn').forEach(function (b) {
+      b.addEventListener('click', function () {
+        ov.querySelectorAll('.tl-rsn').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on'); chosen = b.getAttribute('data-r'); custom.value = ''; sync();
+      });
+    });
+    custom.addEventListener('input', function () { if (custom.value) { ov.querySelectorAll('.tl-rsn').forEach(function (x) { x.classList.remove('on'); }); chosen = ''; } sync(); });
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('.tl-dlg-cancel').addEventListener('click', close);
+    okBtn.addEventListener('click', function () {
+      var reason = (chosen || custom.value).trim(); if (!reason) return;
+      okBtn.disabled = true; okBtn.textContent = '保存中…';
+      Promise.resolve(opt.onOk(reason, memo ? memo.value.trim() : '')).then(function () { close(); });
+    });
+    setTimeout(function () { custom.focus(); }, 30);
   }
 
   function _moveDrag(ev, win, ds, scroll) {
@@ -729,8 +898,10 @@ window.TimelineCalendar = (function () {
                'data-s="' + dtMin(b.start_at) + '" data-e="' + dtMin(b.end_at) + '" ' +
                'title="' + _esc(b.customer_name || '') + '">' + minToHm(dtMin(b.start_at)) + ' ' + _esc(b.customer_name || '予約') + '</div>';
       }).join('');
+      var nBlk = (state.blocks[ds] || []).length;
+      var blkTag = nBlk ? '<span class="blk-tag" title="ブロック ' + nBlk + '件">🚫' + nBlk + '</span>' : '';
       var cls = state.closed[ds];
-      var meta = cls ? '<span class="closed-tag" title="' + _esc(cls.reason || '') + '">休業</span>' : sum;
+      var meta = cls ? '<span class="closed-tag" title="' + _esc(cls.reason || '') + '">休業</span>' : (sum + blkTag);
       return '<div class="tl-mcell' + (inMonth ? '' : ' dim') + (ds === tdy ? ' tl-today' : '') + (cls ? ' tl-mcell-closed' : '') + '" data-date="' + ds + '">' +
                '<span class="n">' + d.getDate() + '</span>' + meta + chips + '</div>';
     }).join('');
@@ -783,7 +954,7 @@ window.TimelineCalendar = (function () {
     return fetch(_base() + '/availability-windows.php', { method: 'POST', headers: _headers(true), body: JSON.stringify(payload) })
       .then(function (r) { return r.json(); })
       .then(function (j) {
-        if (j && j.ok) { if (ok) _toast(ok); load(); return j; }
+        if (j && j.ok) { if (ok) _toast(ok); _syncBroadcast(); load(); return j; }
         _toast('失敗: ' + _esc((j && j.error) || 'error')); load(); return j;
       })
       .catch(function () { _toast('通信エラー'); load(); });
@@ -792,11 +963,38 @@ window.TimelineCalendar = (function () {
   function _update(id, ds, aMin, bMin) { return _post({ action:'update', id: id, date: ds, start_time: minToHm(aMin), end_time: minToHm(bMin) }, '更新しました'); }
   function _delete(id) { if (!window.confirm('この空き時間帯を削除しますか？')) return; return _post({ action:'delete', id: id }, '削除しました'); }
 
+  /* ── live sync: instant same-browser (BroadcastChannel) + polling (cross-device) ──
+     Every schedule mutation broadcasts; any open timeline (Admin / Ops) refreshes
+     with no page reload. A 20s poll catches changes made on OTHER devices (e.g. a
+     customer booking from their phone), since cPanel PHP has no websocket/SSE push.
+     The customer booking modal always fetches availability fresh on each date pick,
+     so it never shows a stale slot. */
+  var _chan = null, _refreshTimer = null, _syncInit = false;
+  function _initSync() {
+    if (_syncInit) return; _syncInit = true;
+    try {
+      _chan = ('BroadcastChannel' in window) ? new BroadcastChannel('hm_timeline_sync') : null;
+      if (_chan) _chan.onmessage = function (e) {
+        if (e && e.data && e.data.type === 'timeline_changed' && document.getElementById('hmTl') && !document.querySelector('.dragging')) load();
+      };
+    } catch (_) { _chan = null; }
+    _refreshTimer = setInterval(function () {
+      if (document.getElementById('hmTl') && !document.hidden &&
+          !document.getElementById('tlCloseDlg') && !document.getElementById('tlCtxMenu') &&
+          !document.querySelector('.dragging')) load();
+    }, 20000);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden && document.getElementById('hmTl') && !document.querySelector('.dragging')) load();
+    });
+  }
+  function _syncBroadcast() { try { if (_chan) _chan.postMessage({ type: 'timeline_changed', at: Date.now() }); } catch (_) {} }
+
   /* ── public entry (from go('calendar')) ── */
   function onShow() {
     if (!_enabled()) return false;
     if (!state.anchor) state.anchor = parse(today());
     if (!mount()) return false;
+    _initSync();
     _loadConfig(load);
     return true;
   }

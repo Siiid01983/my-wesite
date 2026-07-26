@@ -171,18 +171,22 @@ try {
   }
 
   $reason  = trim((string)($param('reason') ?? ''));
+  $memo    = trim((string)($param('memo') ?? ''));
+  $label   = $reason !== '' ? $reason : '（ブロック）';   // shown as the block's title on the admin timeline
   $blockId = hm_slot_uuid();
 
   // Insert the block row first (start_at/end_at NULL), then let hm_iv_reserve set
   // the interval AND run the overlap check inside ONE transaction. hm_iv_reserve
   // excludes the row's own id, so a conflict can only be another booking/block.
+  // customer_name holds the REASON (admin-only label); notes holds the MEMO. The
+  // public availability endpoint exposes neither — only the busy time range.
   $db->beginTransaction();
   try {
     $ins = $db->prepare(
       "INSERT INTO bookings (id, customer_name, status, booking_date, notes, created_at)
-       VALUES (?, '（ブロック）', 'admin_blocked', ?, ?, NOW())"
+       VALUES (?, ?, 'admin_blocked', ?, ?, NOW())"
     );
-    $ins->execute([$blockId, $date, ($reason !== '' ? $reason : null)]);
+    $ins->execute([$blockId, $label, $date, ($memo !== '' ? $memo : null)]);
 
     $res = hm_iv_reserve($db, $blockId, $start, $end);   // runs within this tx (ownTx=false)
     if (!empty($res['error'])) {
@@ -204,7 +208,8 @@ try {
     throw $e;
   }
 
-  bx_out(['ok' => true, 'action' => 'blocked', 'id' => $blockId, 'start' => $start, 'end' => $end], $isCli);
+  bx_out(['ok' => true, 'action' => 'blocked', 'id' => $blockId, 'start' => $start, 'end' => $end,
+          'reason' => $reason, 'memo' => $memo], $isCli);
 
 } catch (Throwable $e) {
   if (function_exists('hm_log_error')) {

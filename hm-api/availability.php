@@ -53,9 +53,15 @@ if (!$validDate) {
 try {
   $db = hm_db();
 
-  // Busy time ranges (existing bookings + admin blocks) — start_at/end_at.
+  // Busy time ranges (existing bookings + admin blocks). PUBLIC endpoint: expose
+  // ONLY the [start_at,end_at] range — never customer names, statuses or block
+  // reasons — so nothing about who booked or why a slot is blocked ever leaks.
   $intervals = [];
-  try { $intervals = hm_iv_day($db, $date); }
+  try {
+    foreach (hm_iv_day($db, $date) as $iv) {
+      $intervals[] = ['start_at' => (string)($iv['start_at'] ?? ''), 'end_at' => (string)($iv['end_at'] ?? '')];
+    }
+  }
   catch (Throwable $ie) { hm_log_error('availability intervals read failed (non-fatal)', ['err' => $ie->getMessage(), 'date' => $date]); }
 
   // Effective availability windows (admin-drawn OR the default business-hours
