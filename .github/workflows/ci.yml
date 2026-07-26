@@ -108,3 +108,6 @@ jobs:
 
       - name: Timeline FULL-STACK integration (real client → HTTP → engine port)
         run: npm run test:timeline-integration
+
+      - name: Ops calendar = shared timeline component (unified Admin+Ops)
+        run: npm run test:ops-cal

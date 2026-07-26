@@ -247,6 +247,20 @@ describe('Band UI removal (slotCalendar/slotCapacity retired)', () => {
     assert.ok(!/SlotCalendar\.onShow/.test(navJs), 'navigation must not reference the deleted SlotCalendar');
   });
 
+  it('Admin + Ops share ONE calendar component (no duplicate implementations)', () => {
+    // The bespoke Ops calendar is deleted; Ops loads the SAME timeline modules and
+    // mounts them via the shared configure() hook.
+    assert.equal(fs.existsSync(path.join(ROOT, 'ops/js/calendar.js')), false, 'the duplicate ops/js/calendar.js must be deleted');
+    assert.equal(fs.existsSync(path.join(ROOT, 'ops/js/closedDayCalendar.js')), false, 'the band-only closedDayCalendar.js must be deleted');
+    const opsHtml = read('ops/calendar.html');
+    assert.ok(/js\/modules\/calendar\/timelineCalendar\.js/.test(opsHtml) && /js\/opsCalendar\.js/.test(opsHtml),
+      'ops/calendar.html must load the shared timeline component + the Ops shim');
+    assert.ok(/TimelineCalendar\.configure\s*\(/.test(read('ops/js/opsCalendar.js')),
+      'opsCalendar.js must mount the shared component via configure()');
+    assert.ok(/function configure\s*\(/.test(read('js/modules/calendar/timelineCalendar.js')),
+      'timelineCalendar.js must expose configure() so one component serves Admin + Ops');
+  });
+
   it('customer overlay renders NO band time picker (timeline-only + contact fallback)', () => {
     assert.ok(!/name="ba-time"/.test(indexHtml),
       'index.html must not render band time radios (name="ba-time")');

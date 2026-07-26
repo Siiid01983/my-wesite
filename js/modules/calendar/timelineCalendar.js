@@ -29,6 +29,18 @@ window.TimelineCalendar = (function () {
   var MN   = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
   var _chipDragTs = 0;   // timestamp of the last month-chip drag (suppress post-drop click)
 
+  // Host config so ONE component serves both Admin (admin.html #view-calendar) and
+  // Ops (ops/calendar.html) — same engine, API, windows, drag/resize, conflict
+  // detection, rendering. Only the mount target / env hooks differ; permissions are
+  // enforced server-side (both send the admin token). Defaults = admin.
+  var host = {
+    mountId: 'view-calendar',   // container the timeline mounts into
+    force: false,               // Ops sets true (the timeline IS the Ops calendar)
+    toast: null,                // optional toast(msg) override (Ops.UI)
+    today: null                 // optional today()→'YYYY-MM-DD' override
+  };
+  function configure(o) { if (o) { Object.keys(o).forEach(function (k) { if (o[k] != null) host[k] = o[k]; }); } return host; }
+
   var state = {
     view: 'week',           // 'day' | 'week' | 'month'
     anchor: null,           // Date (any day within the shown range)
@@ -42,7 +54,7 @@ window.TimelineCalendar = (function () {
 
   /* ── env helpers (mirror slotCalendar.js) ── */
   function _base()   { return (window.API_BASE || '').replace(/\/+$/, ''); }
-  function _toast(m) { if (typeof window.toast === 'function') window.toast(m); else console.log('[Timeline]', m); }
+  function _toast(m) { if (typeof host.toast === 'function') host.toast(m); else if (typeof window.toast === 'function') window.toast(m); else console.log('[Timeline]', m); }
   function _headers(json) {
     var h = json ? { 'Content-Type': 'application/json' } : {};
     h['X-API-KEY'] = window.API_KEY || '';
@@ -56,14 +68,18 @@ window.TimelineCalendar = (function () {
   }
   // Band removal: the timeline is now the ADMIN calendar by default. Escape hatch —
   // set hm_timeline_ui='0' to fall back to the legacy ○△× grid (calendar.js).
-  function _enabled() { try { return localStorage.getItem('hm_timeline_ui') !== '0'; } catch (_) { return true; } }
+  function _enabled() { if (host.force) return true; try { return localStorage.getItem('hm_timeline_ui') !== '0'; } catch (_) { return true; } }
 
   /* ── pure date/time helpers (exposed for unit tests) ── */
   function pad(n) { return String(n).padStart(2, '0'); }
   function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
   function parse(s) { var p = String(s).split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
   function addDays(d, n) { var x = new Date(d); x.setDate(x.getDate()+n); return x; }
-  function today() { if (typeof window.todayStr === 'function') { var t = window.todayStr(); if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t; } return ymd(new Date()); }
+  function today() {
+    if (typeof host.today === 'function') { var h = host.today(); if (/^\d{4}-\d{2}-\d{2}$/.test(h)) return h; }
+    if (typeof window.todayStr === 'function') { var t = window.todayStr(); if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t; }
+    return ymd(new Date());
+  }
   function hmToMin(hm) { var p = String(hm).split(':'); return (+p[0])*60 + (+p[1] || 0); }
   function minToHm(m) { m = Math.max(0, Math.min(1440, Math.round(m))); return pad(Math.floor(m/60)) + ':' + pad(m%60); }
   function dtMin(dt) { var m = String(dt).match(/(\d{2}):(\d{2})/); return m ? (+m[1])*60 + (+m[2]) : 0; }
@@ -162,7 +178,7 @@ window.TimelineCalendar = (function () {
   /* ── mount into #view-calendar (idempotent) ── */
   function mount() {
     if (!_enabled()) return false;
-    var view = document.getElementById('view-calendar');
+    var view = document.getElementById(host.mountId);
     if (!view) return false;
     if (document.getElementById('hmTl')) return true;
     _injectStyles();
@@ -683,5 +699,5 @@ window.TimelineCalendar = (function () {
     pxPerMin: function () { return state.pxPerMin; }
   };
 
-  return { onShow: onShow, mount: mount, reload: load, enabled: _enabled, _debug: _debug };
+  return { onShow: onShow, mount: mount, reload: load, enabled: _enabled, configure: configure, _debug: _debug };
 })();
