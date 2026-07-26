@@ -513,6 +513,7 @@ window.TimelineCalendar = (function () {
     var top = minToY(a), ht = Math.max(16, (z - a) * state.pxPerMin);
     var reason = b.reason || '（ブロック）', memo = b.memo || '';
     return '<div class="tl-blk" data-id="' + _esc(b.id) + '" data-s="' + a + '" data-e="' + z + '" data-date="' + String(b.start_at).slice(0,10) + '" ' +
+           'style="top:' + top + 'px;height:' + ht + 'px" ' +
            'title="' + _esc(reason + (memo ? ' — ' + memo : '')) + ' ' + minToHm(a) + '–' + minToHm(z) + '">' +
              '<span class="nm">🚫 ' + _esc(reason) + '</span>' +
              '<span class="tl-t" style="font-size:10px;opacity:.9">' + minToHm(a) + '–' + minToHm(z) + (memo ? ' · ' + _esc(memo) : '') + '</span>' +

@@ -85,6 +85,10 @@ function chk(label, cond) { if (cond) { pass++; console.log('  [ok] ' + label); 
   chk('block element rendered', (await page.$$('#hmTl .tl-blk')).length === 1);
   chk('block shows reason', /トラック整備/.test(await page.evaluate(() => document.querySelector('#hmTl .tl-blk .nm').textContent)));
   chk('block shows memo', /定期点検/.test(await page.evaluate(() => document.querySelector('#hmTl .tl-blk').textContent)));
+  // Positioned at its time: 10:00 = (600-420)*0.8 = 144px (regression guard for the
+  // missing-style bug where blocks stacked at the canvas top).
+  chk('block positioned at 10:00 (~144px)', Math.abs(parseFloat(await page.evaluate(() => document.querySelector('#hmTl .tl-blk').style.top)) - 144) < 1);
+  chk('block has a height (90min)', parseFloat(await page.evaluate(() => document.querySelector('#hmTl .tl-blk').style.height)) > 40);
 
   console.log('BLOCK mode: press-hold create → reason+memo dialog → POST block-interval');
   await page.click('#hmTl #tlMode button[data-m="block"]'); await page.waitForTimeout(60);
