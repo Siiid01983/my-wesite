@@ -47,6 +47,7 @@ window.TimelineCalendar = (function () {
     snap: 30,               // minutes: 15 | 30 | 60
     windows: {},            // date → [{id,start_at,end_at}]
     bookings: {},           // date → [{id,customer_name,status,start_at,end_at}]
+    closed: {},             // date → {day,reason,closed_by,closed_at} (whole-day closure)
     cfg: { day_start: '07:00', day_end: '22:00', step: 30, durations: [30,60,90,120,180], default_duration: 120 },
     pxPerMin: 0.8,          // vertical scale (48px / hour)
     built: false
@@ -170,6 +171,28 @@ window.TimelineCalendar = (function () {
       '.tl-mchip.dragging{cursor:grabbing;box-shadow:0 6px 16px rgba(0,0,0,.3);opacity:.95}',
       '.tl-empty{padding:26px;text-align:center;font-size:13px;opacity:.6}',
       '.tl-hint{font-size:12px;opacity:.6;margin:8px 2px 0}',
+      // Whole-day close: header toggle, column overlay, month-cell tag
+      '.tl-closebtn{margin-left:5px;border:0;background:transparent;cursor:pointer;font-size:12px;line-height:1;padding:1px 3px;border-radius:6px;opacity:.55;transition:opacity .12s,background .12s}',
+      '.tl-closebtn:hover{opacity:1;background:rgba(217,48,37,.12)}',
+      '.tl-col-closed .tl-canvas{background:repeating-linear-gradient(45deg,rgba(217,48,37,.06),rgba(217,48,37,.06) 8px,transparent 8px,transparent 16px)}',
+      '.tl-closed{position:absolute;left:5px;right:5px;top:6px;z-index:8;background:rgba(217,48,37,.95);color:#fff;border-radius:8px;padding:6px 8px;box-shadow:0 2px 8px rgba(0,0,0,.18);pointer-events:none}',
+      '.tl-closed-tag{display:inline-block;font-size:10px;font-weight:800;background:rgba(255,255,255,.25);border-radius:4px;padding:1px 5px;margin-right:4px}',
+      '.tl-closed-rsn{font-size:12px;font-weight:700}',
+      '.tl-closed-by{display:block;font-size:10px;opacity:.85;margin-top:2px}',
+      '.tl-mcell.tl-mcell-closed{border-color:#d93025;background:rgba(217,48,37,.06)}',
+      '.tl-mcell .closed-tag{font-size:9px;font-weight:800;color:#fff;background:#d93025;border-radius:4px;padding:1px 4px;align-self:flex-start}',
+      // Close-day reason dialog
+      '.tl-dlg-ov{position:fixed;inset:0;background:rgba(15,23,20,.5);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px}',
+      '.tl-dlg{background:var(--tl-bg);color:var(--tl-ink);border-radius:16px;padding:20px;width:min(420px,100%);box-shadow:0 20px 60px rgba(0,0,0,.35)}',
+      '.tl-dlg-h{font-size:16px;font-weight:800;margin-bottom:4px}',
+      '.tl-dlg-sub{font-size:12px;opacity:.7;margin-bottom:12px}',
+      '.tl-dlg-reasons{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}',
+      '.tl-rsn{border:1px solid var(--tl-line);background:var(--tl-bg);color:inherit;border-radius:20px;padding:8px 13px;font-size:13px;font-weight:600;cursor:pointer;transition:all .12s}',
+      '.tl-rsn:hover{border-color:var(--tl-accent)}.tl-rsn.on{background:#d93025;border-color:#d93025;color:#fff}',
+      '.tl-dlg-input{width:100%;border:1px solid var(--tl-line);border-radius:10px;padding:10px 12px;font-size:14px;background:var(--tl-bg);color:inherit;margin-bottom:14px}',
+      '.tl-dlg-actions{display:flex;justify-content:flex-end;gap:8px}',
+      '.tl-dlg-cancel,.tl-dlg-ok{border-radius:10px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer;border:1px solid var(--tl-line);background:var(--tl-bg);color:inherit}',
+      '.tl-dlg-ok{background:#d93025;border-color:#d93025;color:#fff}.tl-dlg-ok:disabled{opacity:.45;cursor:not-allowed}',
       '@media(max-width:640px){.tl-title{font-size:15px;min-width:0}.tl-seg button{padding:6px 9px}.tl-colhead .d{font-size:14px}}'
     ].join('');
     document.head.appendChild(s);
@@ -292,7 +315,7 @@ window.TimelineCalendar = (function () {
     fetch(_base() + '/availability-windows.php?action=range&from=' + r.from + '&to=' + r.to, { headers: _headers() })
       .then(function (res) { return res.json(); })
       .then(function (out) {
-        state.windows = {}; state.bookings = {};
+        state.windows = {}; state.bookings = {}; state.closed = {};
         if (out && out.ok && Array.isArray(out.windows)) {
           out.windows.forEach(function (w) {
             var d = (w.window_date || String(w.start_at).slice(0, 10));
@@ -305,9 +328,12 @@ window.TimelineCalendar = (function () {
             (state.bookings[d] = state.bookings[d] || []).push(b);
           });
         }
+        if (out && out.ok && Array.isArray(out.closed)) {
+          out.closed.forEach(function (c) { if (c && c.day) state.closed[c.day] = c; });
+        }
         render();
       })
-      .catch(function () { state.windows = {}; render(); });
+      .catch(function () { state.windows = {}; state.closed = {}; render(); });
   }
 
   function _loadConfig(then) {
@@ -358,10 +384,15 @@ window.TimelineCalendar = (function () {
       var bks = (state.bookings[ds] || []).map(function (b) { return _bkHtml(b); }).join('');
       var now = isT ? _nowLine() : '';
       var dd = parse(ds), dowCls = dd.getDay() === 0 ? 'dow-sun' : dd.getDay() === 6 ? 'dow-sat' : '';
-      var head = '<div class="tl-colhead"><span class="' + dowCls + '">' + DOW[dd.getDay()] + '</span> <span class="d">' + dd.getDate() + '</span></div>';
-      return '<div class="tl-col' + (isT ? ' tl-today' : '') + '" data-date="' + ds + '" style="height:' + (h + 40) + 'px">' +
+      var cls = state.closed[ds];
+      var head = '<div class="tl-colhead"><span class="' + dowCls + '">' + DOW[dd.getDay()] + '</span> <span class="d">' + dd.getDate() + '</span>' +
+        '<button class="tl-closebtn" type="button" data-close-date="' + ds + '" data-closed="' + (cls ? '1' : '') + '" title="' + (cls ? '休業を解除' : 'この日を休業にする') + '">' + (cls ? '↺' : '🚫') + '</button></div>';
+      var closedOv = cls ? '<div class="tl-closed"><span class="tl-closed-tag">休業</span>' +
+        '<span class="tl-closed-rsn">' + _esc(cls.reason || '') + '</span>' +
+        (cls.closed_by ? '<span class="tl-closed-by">' + _esc(cls.closed_by) + '</span>' : '') + '</div>' : '';
+      return '<div class="tl-col' + (isT ? ' tl-today' : '') + (cls ? ' tl-col-closed' : '') + '" data-date="' + ds + '" style="height:' + (h + 40) + 'px">' +
                head + '<div class="tl-canvas" data-date="' + ds + '" style="position:absolute;left:0;right:0;top:40px;height:' + h + 'px">' +
-               lines + wins + bks + now + '</div></div>';
+               lines + wins + bks + now + closedOv + '</div></div>';
     }).join('');
 
     var colW = state.view === 'day' ? '1fr' : 'repeat(7,1fr)';
@@ -374,6 +405,84 @@ window.TimelineCalendar = (function () {
 
     _bindPinch(scroll);
     _bindTimeInteractions(scroll);
+    _bindCloseButtons(body);
+  }
+
+  /* ── whole-day close / reopen (reason required) ── */
+  function _bindCloseButtons(root) {
+    if (!root) return;
+    root.querySelectorAll('[data-close-date]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation(); e.preventDefault();
+        var ds = btn.getAttribute('data-close-date');
+        if (btn.getAttribute('data-closed')) _reopenDay(ds); else _openCloseDialog(ds);
+      });
+    });
+  }
+
+  function _closePost(payload) {
+    return fetch(_base() + '/close-day.php', { method: 'POST', headers: _headers(true), body: JSON.stringify(payload) })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }, function () { return { ok: false, j: null }; }); })
+      .then(function (res) {
+        if (res.ok && res.j && res.j.ok) return true;
+        _toast((res.j && res.j.error) || '休業設定を保存できませんでした');
+        return false;
+      })
+      .catch(function () { _toast('通信エラー：休業設定を保存できませんでした'); return false; });
+  }
+
+  function _reopenDay(ds) {
+    _closePost({ action: 'reopen', date: ds }).then(function (ok) {
+      if (ok) { _toast(ds + ' の休業を解除しました'); load(); }
+    });
+  }
+
+  // Preset reasons (never shown to customers — internal only).
+  var CLOSE_REASONS = ['祝日・休日', 'スタッフ休暇', 'トラック整備', '手動予約', '緊急停止'];
+
+  function _openCloseDialog(ds) {
+    var prev = document.getElementById('tlCloseDlg'); if (prev) prev.remove();
+    var ov = document.createElement('div'); ov.id = 'tlCloseDlg'; ov.className = 'tl-dlg-ov';
+    ov.innerHTML =
+      '<div class="tl-dlg" role="dialog" aria-modal="true">' +
+        '<div class="tl-dlg-h">' + _esc(ds) + ' を休業にする</div>' +
+        '<div class="tl-dlg-sub">理由を選択（お客様には表示されません）</div>' +
+        '<div class="tl-dlg-reasons">' +
+          CLOSE_REASONS.map(function (r) { return '<button type="button" class="tl-rsn" data-r="' + _esc(r) + '">' + _esc(r) + '</button>'; }).join('') +
+        '</div>' +
+        '<input type="text" id="tlCloseCustom" class="tl-dlg-input" placeholder="またはカスタム理由を入力" maxlength="120">' +
+        '<div class="tl-dlg-actions">' +
+          '<button type="button" class="tl-dlg-cancel">キャンセル</button>' +
+          '<button type="button" class="tl-dlg-ok" disabled>休業にする</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    var custom = ov.querySelector('#tlCloseCustom');
+    var okBtn  = ov.querySelector('.tl-dlg-ok');
+    var chosen = '';
+    function sync() { var v = (chosen || custom.value).trim(); okBtn.disabled = !v; }
+    ov.querySelectorAll('.tl-rsn').forEach(function (b) {
+      b.addEventListener('click', function () {
+        ov.querySelectorAll('.tl-rsn').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on'); chosen = b.getAttribute('data-r'); custom.value = ''; sync();
+      });
+    });
+    custom.addEventListener('input', function () {
+      if (custom.value) { ov.querySelectorAll('.tl-rsn').forEach(function (x) { x.classList.remove('on'); }); chosen = ''; }
+      sync();
+    });
+    function close() { ov.remove(); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('.tl-dlg-cancel').addEventListener('click', close);
+    okBtn.addEventListener('click', function () {
+      var reason = (chosen || custom.value).trim();
+      if (!reason) return;
+      okBtn.disabled = true; okBtn.textContent = '保存中…';
+      _closePost({ action: 'close', date: ds, reason: reason }).then(function (ok) {
+        close(); if (ok) { _toast(ds + ' を休業にしました'); load(); }
+      });
+    });
+    setTimeout(function () { custom.focus(); }, 30);
   }
 
   function _winHtml(w) {
@@ -620,8 +729,10 @@ window.TimelineCalendar = (function () {
                'data-s="' + dtMin(b.start_at) + '" data-e="' + dtMin(b.end_at) + '" ' +
                'title="' + _esc(b.customer_name || '') + '">' + minToHm(dtMin(b.start_at)) + ' ' + _esc(b.customer_name || '予約') + '</div>';
       }).join('');
-      return '<div class="tl-mcell' + (inMonth ? '' : ' dim') + (ds === tdy ? ' tl-today' : '') + '" data-date="' + ds + '">' +
-               '<span class="n">' + d.getDate() + '</span>' + sum + chips + '</div>';
+      var cls = state.closed[ds];
+      var meta = cls ? '<span class="closed-tag" title="' + _esc(cls.reason || '') + '">休業</span>' : sum;
+      return '<div class="tl-mcell' + (inMonth ? '' : ' dim') + (ds === tdy ? ' tl-today' : '') + (cls ? ' tl-mcell-closed' : '') + '" data-date="' + ds + '">' +
+               '<span class="n">' + d.getDate() + '</span>' + meta + chips + '</div>';
     }).join('');
     body.innerHTML = dows + '<div class="tl-month">' + cells + '</div>';
     body.querySelectorAll('.tl-mcell').forEach(function (c) {

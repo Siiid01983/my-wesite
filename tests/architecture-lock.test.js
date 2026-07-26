@@ -231,7 +231,7 @@ describe('Timeline engine is the single source of truth (locked)', () => {
   });
 
   it('availability.php is TIMELINE-ONLY (no bands / capacity / booking_slots)', () => {
-    assert.ok(/hm_windows_day\s*\(/.test(availability) && /hm_timeline_slots\s*\(/.test(availability),
+    assert.ok(/hm_windows_day_effective\s*\(/.test(availability) && /hm_timeline_slots\s*\(/.test(availability),
       'availability.php must serve timeline windows + slots');
     assert.ok(!/'bands'/.test(availability) && !/hm_cap_day\s*\(/.test(availability),
       'availability.php must NOT emit bands or read per-band capacity');
@@ -324,31 +324,55 @@ describe('Portal boundary (locked)', () => {
   });
 });
 
-// ── 9. Hourly timeline (allow-list windows) is DORMANT-BY-DEFAULT + gated ──────
-//    Safety contract for the phased rollout: the timeline scheduler must ship OFF
-//    (timeline_enabled=false) and every live read/write path must gate on
-//    hm_timeline_active (flag + migrated). Overlap/conflict detection must reuse
-//    the single interval authority (hm_iv_reserve), never a second one.
-describe('Hourly timeline (gated, dormant by default)', () => {
+// ── 9. Hourly timeline is the SOLE scheduler, ACTIVE BY DEFAULT (self-healing) ──
+//    The band/capacity engines are removed, so the timeline no longer ships dormant
+//    behind a flag: it is active whenever the bookings interval columns exist, and
+//    those are ensured on demand (hm_iv_ensure_cols) so no operator migration or
+//    config flip is required. Only an explicit 'timeline_disabled' kill switch turns
+//    it off. Overlap/conflict detection must reuse the single interval authority
+//    (hm_iv_reserve), never a second one.
+describe('Hourly timeline (sole scheduler, active by default)', () => {
   const cfgExample = read('hm-api/_config.example.php');
   const windows    = read('hm-api/_windows.php');
+  const intervals  = read('hm-api/_intervals.php');
   const createBk   = read('hm-api/create-booking.php');
   const availPhp   = read('hm-api/availability.php');
 
-  it('timeline_enabled defaults to false in the config example', () => {
-    assert.ok(/'timeline_enabled'\s*=>\s*false/.test(cfgExample),
-      "_config.example.php must ship 'timeline_enabled' => false (dormant by default)");
-  });
-
-  it('_windows.php gates activation on the flag AND the migrated interval column', () => {
+  it('activation self-heals: no flag gate, columns ensured on demand, kill-switch only', () => {
     assert.ok(/function\s+hm_timeline_active\s*\(/.test(windows), '_windows.php must define hm_timeline_active()');
-    assert.ok(/hm_timeline_enabled\(\)\s*&&\s*hm_bookings_has_interval_cols/.test(windows),
-      'hm_timeline_active must require BOTH the flag and the migrated column');
+    // Must NOT require the legacy timeline_enabled flag to be on.
+    assert.ok(!/hm_timeline_enabled\(\)\s*&&\s*hm_bookings_has_interval_cols/.test(windows),
+      'hm_timeline_active must no longer require the timeline_enabled flag');
+    assert.ok(/timeline_disabled/.test(windows),
+      'hm_timeline_active must honor the explicit timeline_disabled kill switch');
+    assert.ok(/hm_iv_ensure_cols\s*\(/.test(windows),
+      'hm_timeline_active must ensure the interval columns on demand (self-heal)');
+    assert.ok(/function\s+hm_iv_ensure_cols\s*\(/.test(intervals),
+      '_intervals.php must define hm_iv_ensure_cols() (idempotent ALTER)');
   });
 
-  it('the live endpoints gate the timeline path on hm_timeline_active', () => {
-    assert.ok(/hm_timeline_active\s*\(/.test(createBk), 'create-booking.php must gate the timeline path on hm_timeline_active');
-    assert.ok(/hm_timeline_active\s*\(/.test(availPhp),  'availability.php must gate the timeline read on hm_timeline_active');
+  it('customers always get slots: default business-hours window when none is drawn', () => {
+    assert.ok(/function\s+hm_timeline_default_windows\s*\(/.test(windows),
+      '_windows.php must define hm_timeline_default_windows()');
+    assert.ok(/hm_timeline_default_windows\s*\(\)/.test(windows),
+      'hm_windows_day_ranges must fall back to the default window when a date has none');
+    assert.ok(/'timeline_default_windows'/.test(cfgExample),
+      "_config.example.php must document 'timeline_default_windows'");
+  });
+
+  it('the live endpoints use hm_timeline_active (no per-flag gating)', () => {
+    assert.ok(/hm_timeline_active\s*\(/.test(createBk), 'create-booking.php must resolve the timeline path via hm_timeline_active');
+    assert.ok(/hm_timeline_active\s*\(/.test(availPhp),  'availability.php must resolve the timeline read via hm_timeline_active');
+  });
+
+  it('closed days suppress all availability (windows AND default) — reason never public', () => {
+    assert.ok(/hm_day_is_closed\s*\(/.test(windows),
+      'hm_windows_day_ranges must return [] for a closed day');
+    assert.ok(/'closed'\s*=>/.test(availPhp),
+      'availability.php must expose a closed flag');
+    // The public availability endpoint must NOT leak the internal reason.
+    assert.ok(!/close_info|closed_by|['"]reason['"]/.test(availPhp),
+      'availability.php must NOT expose the closure reason/closed_by to customers');
   });
 
   it('timeline booking reserves through the single interval authority (hm_iv_reserve)', () => {

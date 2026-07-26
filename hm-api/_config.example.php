@@ -134,19 +134,22 @@ return [
   'hourly_enabled' => false,
 
   // ── Hourly TIMELINE (allow-list availability windows — Google-Calendar model) ─
-  //   Master switch for the timeline scheduler: the admin draws AVAILABLE working
-  //   periods (availability_windows) on an hourly timeline, and customers book
-  //   discrete start times inside them for a chosen duration. Replaces the
-  //   band/capacity model AS THE PRIMARY UI when ON; the band system stays as the
-  //   fallback while this is OFF. SAFE BY DEFAULT: absent/false → every timeline
-  //   read/write path stays dormant and production behaves exactly as today.
-  //   ⚠ ORDER: run migrations/hourly/001_bookings_hourly.sql (interval columns)
-  //   AND migrations/timeline/001_timeline.sql (windows + duration_min) FIRST,
-  //   then set this true. Belt-and-suspenders: the code also probes for the
-  //   start_at column, so a wrong order stays dormant, not broken. Rollback = set
-  //   back to false (one line, no redeploy). Mirrors hourly_enabled.
-  'timeline_enabled' => false,
-  //   Optional tuning (safe to omit — defaults shown):
+  //   The timeline is the SOLE scheduler (band/capacity engines removed). The admin
+  //   draws AVAILABLE working periods (availability_windows) on an hourly timeline
+  //   and customers book discrete start times inside them for a chosen duration.
+  //   It is ACTIVE BY DEFAULT: the bookings interval columns are ensured on demand
+  //   (hm_iv_ensure_cols), so no migration or flag flip is required to go live.
+  //   • 'timeline_disabled' => true  → EMERGENCY kill switch (forces every timeline
+  //     read/write off). Omit / false for normal operation.
+  //   • 'timeline_enabled' is retired as a gate (kept only for back-compat tooling);
+  //     it no longer turns the timeline off unless explicitly set false above via
+  //     'timeline_disabled'.
+  //   • 'timeline_default_windows' → business-hours window(s) applied to any date
+  //     the admin has NOT drawn windows for, so customers always see bookable slots.
+  //     An admin window for a specific date overrides it; a CLOSED day (close-day.php)
+  //     suppresses all availability for that date.
+  // 'timeline_disabled'      => false,               // emergency stop (default off)
+  'timeline_default_windows'  => [['09:00', '18:00']], // default open hours per day
   'timeline_default_duration' => 120,                 // minutes (2h)
   'timeline_durations'        => [30, 60, 90, 120, 180],
   'timeline_slot_step'        => 30,                  // minutes granularity

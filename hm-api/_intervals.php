@@ -56,6 +56,39 @@ if (!function_exists('hm_iv_normalize')) {
   }
 
   /**
+   * Ensure the timeline interval columns exist on `bookings` (idempotent, safe).
+   * Adds start_at / end_at / duration_min if missing so the timeline is the live
+   * scheduler with NO operator migration step (deploy-order-safe self-heal).
+   *
+   * Best-effort: never throws. Skips while inside a transaction (an ALTER would
+   * implicitly commit and break atomicity) — the next call outside a tx retries.
+   * MySQL only (SHOW COLUMNS / ALTER); on SQLite the probe throws and is swallowed
+   * (test fixtures already create the columns).
+   */
+  function hm_iv_ensure_cols(PDO $db): void {
+    static $ensured = false;
+    if ($ensured) return;
+    try {
+      $q = $db->query("SHOW COLUMNS FROM bookings LIKE 'start_at'");
+      if ($q && $q->fetch()) { $ensured = true; return; }   // already present
+      if ($db->inTransaction()) return;                       // never ALTER mid-tx
+      // MySQL lacks ADD COLUMN IF NOT EXISTS; we've just confirmed start_at absent.
+      $db->exec(
+        "ALTER TABLE bookings
+           ADD COLUMN start_at DATETIME NULL,
+           ADD COLUMN end_at DATETIME NULL,
+           ADD COLUMN duration_min INT NULL"
+      );
+      try { $db->exec("CREATE INDEX bookings_start_at_idx ON bookings (start_at)"); }
+      catch (Throwable $ie) { /* index exists / older engine → ignore */ }
+      $ensured = true;
+    } catch (Throwable $e) {
+      // Leave $ensured false so a later call (outside a tx / after transient DB
+      // error) can retry. Availability then simply reports no slots until healed.
+    }
+  }
+
+  /**
    * TRUE only when hourly is BOTH enabled (flag) AND migrated (column present).
    * The flag is checked first so the schema probe is skipped entirely while the
    * feature is off — zero added cost on the default path.

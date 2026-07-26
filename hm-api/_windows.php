@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_intervals.php';   // hm_bookings_has_interval_cols, hm_iv_day, hm_iv_normalize
 require_once __DIR__ . '/_slots.php';       // hm_slot_uuid
+require_once __DIR__ . '/_closedays.php';   // hm_day_is_closed — whole-day closures suppress all windows
 
 if (!defined('HM_WINDOWS_BUILD')) define('HM_WINDOWS_BUILD', 'timeline-windows-1');
 
@@ -32,15 +33,47 @@ if (!function_exists('hm_timeline_enabled')) {
 
   // ── Config / gate ───────────────────────────────────────────────────────────
 
-  /** Master switch: 'timeline_enabled' truthy in _config.php. Absent → false. */
+  /** Legacy flag reader (retained for tooling/back-compat). The timeline no longer
+   *  GATES on this — it is the sole scheduler. Absent → treated as on. */
   function hm_timeline_enabled(): bool {
-    if (!function_exists('hm_config')) return false;
-    return !empty(hm_config()['timeline_enabled']);
+    if (!function_exists('hm_config')) return true;
+    $cfg = hm_config();
+    // Only an EXPLICIT false disables; absence means "on" (bands are removed).
+    if (array_key_exists('timeline_enabled', $cfg)) return !empty($cfg['timeline_enabled']);
+    return true;
   }
 
-  /** TRUE only when the flag is ON *and* the interval columns exist (migrated). */
+  /**
+   * The timeline is the SOLE scheduler (band + capacity engines removed). It is
+   * ACTIVE whenever the bookings table has interval columns — which are ensured on
+   * demand (hm_iv_ensure_cols) so a fresh deploy needs no operator migration and no
+   * config flip. An explicit 'timeline_disabled' => true in _config.php is the only
+   * kill-switch (emergency stop); the legacy 'timeline_enabled' flag no longer gates.
+   */
   function hm_timeline_active(PDO $db): bool {
-    return hm_timeline_enabled() && hm_bookings_has_interval_cols($db);
+    if (function_exists('hm_config') && !empty(hm_config()['timeline_disabled'])) return false;
+    hm_iv_ensure_cols($db);
+    return hm_bookings_has_interval_cols($db);
+  }
+
+  /**
+   * Default availability windows (minutes-since-midnight [start,end] pairs) applied
+   * to any date the admin has NOT explicitly drawn windows for, so customers always
+   * receive bookable start times out-of-the-box. Config: 'timeline_default_windows'
+   * => [['09:00','18:00'], …]; default is a single 09:00–18:00 business-hours block.
+   * An admin window drawn for a specific date OVERRIDES the default for that date;
+   * a CLOSED day suppresses it entirely (handled in hm_windows_day_ranges).
+   */
+  function hm_timeline_default_windows(): array {
+    $cfg = (function_exists('hm_config') ? hm_config() : []);
+    $raw = $cfg['timeline_default_windows'] ?? [['09:00', '18:00']];
+    $out = [];
+    foreach ((array)$raw as $w) {
+      if (!is_array($w)) continue;
+      $a = hm_tl_min((string)($w[0] ?? '')); $b = hm_tl_min((string)($w[1] ?? ''));
+      if ($a !== null && $b !== null && $b > $a) $out[] = [$a, $b];
+    }
+    return $out;
   }
 
   /** Does bookings.duration_min exist yet (timeline 001 migration)? Cached. */
@@ -288,12 +321,43 @@ if (!function_exists('hm_timeline_enabled')) {
 
   // ── DB-backed slot reads (compose windows + busy intervals) ─────────────────
 
-  /** Windows for a date as [startMin,endMin] pairs (for the pure generator). */
+  /**
+   * Effective windows for a date as [startMin,endMin] pairs (for the pure slot
+   * generator). Resolution order:
+   *   1. CLOSED day        → [] (no availability at all)
+   *   2. explicit windows  → the admin's drawn windows for the date
+   *   3. neither           → the configured default business-hours window(s)
+   */
   function hm_windows_day_ranges(PDO $db, string $date): array {
+    if (hm_day_is_closed($db, $date)) return [];
     $out = [];
     foreach (hm_windows_day($db, $date) as $w) {
       $a = hm_tl_min((string)$w['start_at']); $b = hm_tl_min((string)$w['end_at']);
       if ($a !== null && $b !== null) $out[] = [$a, $b];
+    }
+    if (!$out) $out = hm_timeline_default_windows();
+    return $out;
+  }
+
+  /**
+   * Effective windows as display rows [{id,start_at,end_at}] for the CUSTOMER
+   * availability response — mirrors hm_windows_day_ranges (closed → []; default
+   * business hours synthesized with an empty id when the admin drew none) so the
+   * client slot generator and the server agree. Admin editing endpoints keep using
+   * the raw hm_windows_day() so the admin only ever edits real, persisted windows.
+   */
+  function hm_windows_day_effective(PDO $db, string $date): array {
+    if (hm_day_is_closed($db, $date)) return [];
+    $rows = hm_windows_day($db, $date);
+    if ($rows) return $rows;
+    $out = [];
+    foreach (hm_timeline_default_windows() as $r) {
+      $out[] = [
+        'id'       => '',
+        'start_at' => $date . ' ' . hm_tl_hhmm($r[0]) . ':00',
+        'end_at'   => $date . ' ' . hm_tl_hhmm($r[1]) . ':00',
+        'default'  => true,
+      ];
     }
     return $out;
   }

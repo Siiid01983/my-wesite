@@ -43,7 +43,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/_lib.php';
 require_once __DIR__ . '/_db.php';
 require_once __DIR__ . '/_slots.php';       // hm_slot_uuid()
-require_once __DIR__ . '/_intervals.php';   // hm_iv_active / hm_iv_reserve / hm_iv_normalize / hm_iv_day
+require_once __DIR__ . '/_intervals.php';   // hm_iv_reserve / hm_iv_normalize / hm_iv_day
+require_once __DIR__ . '/_windows.php';      // hm_timeline_active (unified timeline gate)
 
 $isCli = (PHP_SAPI === 'cli');
 
@@ -126,9 +127,11 @@ if (!in_array($action, ['block', 'unblock', 'list'], true)) {
 try {
   $db = hm_db();
 
-  // ── Gate: hourly must be live (flag ON + migration run) ──────────────────────
-  if (!hm_iv_active($db)) {
-    bx_out(['ok' => false, 'error' => 'hourly_disabled — enable hourly_enabled and run the interval migration first'], $isCli, 409);
+  // ── Gate: the timeline is the sole scheduler (active by default; interval
+  //    columns ensured on demand). Only the emergency 'timeline_disabled' kill
+  //    switch, or a DB that cannot self-heal the columns, turns blocking off. ─────
+  if (!hm_timeline_active($db)) {
+    bx_out(['ok' => false, 'error' => 'timeline_disabled — scheduler is temporarily disabled'], $isCli, 409);
   }
 
   // ── unblock: delete an admin_blocked row by id (status-guarded) ──────────────

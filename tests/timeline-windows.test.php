@@ -97,14 +97,37 @@ $upd = hm_windows_update($db, (string)$add['id'], '2026-08-15 09:00', '2026-08-1
 ck('update ok',             !empty($upd['ok']), true);
 ck('resized slots',         hm_timeline_slots($db, '2026-08-15', 60, 30), ['09:00']);
 
-// Delete → no windows → no slots.
+// Delete the explicit window → the date now falls back to the DEFAULT business-
+// hours window (09:00–18:00), so customers still receive slots (the #1 fix). The
+// booking above is cancelled, so a 60m/30-step day yields 09:00 … 17:00.
 $del = hm_windows_delete($db, (string)$add['id']);
 ck('delete count 1',        (int)($del['deleted'] ?? 0), 1);
-ck('no windows no slots',   hm_timeline_slots($db, '2026-08-15', 60, 30), []);
+$defSlots = hm_timeline_slots($db, '2026-08-15', 60, 30);
+ck('default window slots',  count($defSlots), 17);              // 09:00 … 17:00
+ck('default first slot',    $defSlots[0] ?? '', '09:00');
+ck('default last slot',     end($defSlots), '17:00');
 
 // Update a non-existent id → not found.
 $nf = hm_windows_update($db, 'nope', '2026-08-15 09:00', '2026-08-15 10:00');
 ck('update missing → error', $nf['error'] ?? '', 'not found');
+
+// ── Close-day: a closed date suppresses ALL availability (explicit + default) ──
+echo "\nDB: whole-day closures\n";
+hm_closedays_ensure_table($db);
+$cl = hm_day_close($db, '2026-08-15', 'スタッフ休暇', 'admin@test');
+ck('close ok',              !empty($cl['ok']), true);
+ck('day is closed',         hm_day_is_closed($db, '2026-08-15'), true);
+ck('closed → no slots',     hm_timeline_slots($db, '2026-08-15', 60, 30), []);
+ck('closed → no windows',   hm_windows_day_effective($db, '2026-08-15'), []);
+$info = hm_day_close_info($db, '2026-08-15');
+ck('closure reason stored', $info['reason'] ?? '', 'スタッフ休暇');
+ck('closure closed_by',     $info['closed_by'] ?? '', 'admin@test');
+ck('close reason required',  hm_day_close($db, '2026-08-16', '', 'admin')['error'] ?? '', 'reason required');
+// Reopen → default window slots return.
+$ro = hm_day_reopen($db, '2026-08-15');
+ck('reopen ok',             !empty($ro['ok']), true);
+ck('reopened not closed',   hm_day_is_closed($db, '2026-08-16'), false);   // fresh date (cache-safe)
+ck('reopened → slots back', count(hm_timeline_slots($db, '2026-08-15', 60, 30)) > 0, true);
 
 echo "\n" . ($fail ? "FAIL: $fail failed, $pass passed\n" : "PASS: all $pass checks\n");
 exit($fail ? 1 : 0);
