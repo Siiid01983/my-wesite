@@ -134,24 +134,14 @@ if (empty($data['status'])) $data['status'] = 'pending';
 try {
   $db   = hm_db();
 
-  // ── HOURLY / CLIENT-REQUEST handling (all gated; dormant until hourly is live) ─
-  //  Two mutually-exclusive branches, both behind hm_iv_active (flag ON + migrated):
-  //   • Client-Request model — the customer sent preferred appointment time(s):
-  //     store them and keep the row a PENDING request. start_at/end_at stay NULL;
-  //     the admin sets the final duration later via confirm-request.php. No band,
-  //     no forced end-time calc.
-  //   • Band transition — no preferred time: mirror the requested band into
-  //     start_at/end_at (am 09–12 · pm 12–15 · ev 15–18 · nt 18–21), as before.
-  //  Deploy-order-safe: the preferred_* columns are kept ONLY when their migration
-  //  (002) has run (hm_bookings_has_request_cols); otherwise they are stripped so
-  //  the INSERT matches whatever schema is actually present.
-  // ── TIMELINE (allow-list) booking — takes precedence when live ──────────────
+  // ── TIMELINE (allow-list) booking — the ONE scheduler (band + client-request
+  //    models removed). Active by default: hm_timeline_active() ensures the
+  //    interval columns on demand, so no flag/migration step is required.
   //  The customer picked an EXACT start time + duration from the admin's windows.
   //  We validate it fits an available window and is currently free, then reserve
   //  it ATOMICALLY after the insert (start_at/end_at left NULL in $data so the
   //  row is invisible to overlap checks until hm_iv_reserve sets it under a
-  //  day-level FOR UPDATE lock — the single conflict authority). Dormant unless
-  //  timeline_enabled + migrated.
+  //  day-level FOR UPDATE lock — the single conflict authority).
   $__tlStart = null; $__tlEnd = null;
   if (hm_timeline_active($db)) {
     $__cs = hm_iv_normalize((string)($p['start_at'] ?? ''));

@@ -9,127 +9,47 @@
    Swap Adapter.* calls for async API calls here.
    ════════════════════════════════════════════════════════ */
 const CalendarService = {
+  /* Day-level availability map { 'YYYY-MM-DD': 'available'|'limited'|'booked' },
+     derived entirely from bookings — Adapter.getAvail() marks a date 'booked' when
+     it has any non-cancelled booking, and the local hm_counts tally (maintained by
+     BookingService) raises 'limited'/'booked' against the capacity thresholds. There
+     is NO calendar_availability read here: the Timeline (availability_windows +
+     bookings) is the single availability source; this map is a display helper used
+     by the mobile month view and Google-Calendar sync. */
   getAvailability() {
-    const manualOverrides = Adapter.getAvail();
+    const booked = Adapter.getAvail();          // { date: 'booked' } from live bookings
     let counts = {};
     try { counts = JSON.parse(localStorage.getItem('hm_counts') || '{}'); } catch(e) {}
     const cap = Adapter.getCapacity();
-    const allDates = new Set([...Object.keys(manualOverrides), ...Object.keys(counts)]);
+    const allDates = new Set([...Object.keys(booked), ...Object.keys(counts)]);
     const result = {};
-    const rank = { available: 0, limited: 1, booked: 2 };
     allDates.forEach(date => {
       const count = counts[date] || 0;
-      const countStatus = count >= cap.max ? 'booked' : count >= cap.limited ? 'limited' : null;
-      const manual = manualOverrides[date] || null;
-      const effective = (!countStatus || (manual && rank[manual] >= rank[countStatus]))
-        ? manual : countStatus;
-      if (effective) result[date] = effective;
+      let status = booked[date] || null;         // hard 'booked' from a real booking
+      if (!status) {
+        if (count >= cap.max) status = 'booked';
+        else if (count >= cap.limited) status = 'limited';
+      }
+      if (status) result[date] = status;
     });
-    // SINGLE SOURCE OF TRUTH overlay — slot_capacity day-closures. A day fully
-    // closed in slot_capacity (the booking engine's table) ALWAYS renders × here,
-    // no matter which surface closed it (this month calendar OR the 時間帯別
-    // キャパシティ panel). This is what keeps the two admin surfaces in sync.
-    // Cache is refreshed from slot-capacity.php (action=closed-days) by the calendar
-    // module; syncDayClosure() keeps it optimistically current on each click.
-    let slotClosed = {};
-    try { slotClosed = JSON.parse(localStorage.getItem('hm_slotcap_closed') || '{}'); } catch(e) {}
-    Object.keys(slotClosed).forEach(date => { result[date] = 'booked'; });
     return result;
   },
 
   updateAvailability(date, status) {
+    // Display-only broadcast. Whole-day open/close is no longer enforced through
+    // a band engine — the Timeline (availability_windows + bookings) is the single
+    // authority. GCalSync's pull path still calls this to surface an imported block.
     Adapter.setDate(date, status);
-    this.syncDayClosure(date, status);
-    this.saveAvailability();
     document.dispatchEvent(new CustomEvent('calendar:updated', {
       detail: { date, status, availability: this.getAvailability() }
     }));
   },
 
   setBlockedDates(dates, status) {
-    dates.forEach(date => { Adapter.setDate(date, status); this.syncDayClosure(date, status); });
-    this.saveAvailability();
+    dates.forEach(date => Adapter.setDate(date, status));
     document.dispatchEvent(new CustomEvent('calendar:blocked', {
       detail: { dates, status, availability: this.getAvailability() }
     }));
-  },
-
-  /* Route a WHOLE-DAY open/close through the authoritative capacity engine
-     (hm-api/slot-capacity.php) — the SAME table (slot_capacity) that availability.php,
-     create-booking.php and booking-status.php read. This is the SINGLE backend path;
-     the month calendar and the 時間帯別キャパシティ panel now write the same store, so
-     they can no longer disagree. calendar_availability remains only a public-marketing
-     display cache (no enforcement authority).
-
-     Day-state → slot_capacity action:
-       'booked'    (Full / Closed)          → close-day  (全日休止 — every band closed)
-       'available' (Reopened / Preferred-open) → reopen-day (全日再開 — every band reopened)
-       'limited'   (soft "残りわずか" hint)   → no engine equivalent → no slot_capacity write
-
-     Optimistically updates the hm_slotcap_closed cache so getAvailability() reflects
-     the change immediately (before the fetch resolves); the calendar module reconciles
-     it from the server on the next load. Best-effort + non-blocking: a server failure is
-     toasted but never throws. Auth mirrors slotCapacity.js (X-API-KEY + X-ADMIN-TOKEN). */
-  syncDayClosure(date, status) {
-    if (!date || (status !== 'booked' && status !== 'available')) return;
-    const CLOSED_KEY = 'hm_slotcap_closed';
-    const PENDING_KEY = 'hm_slotcap_pending';
-    const REASON = '管理カレンダーより休止';
-    const wantClosed = (status === 'booked');
-
-    // Snapshot the pre-click cache so we can ROLL BACK if the server rejects the
-    // write (e.g. 403 when __HM_ADMIN_TOKEN is missing/expired). The grid must
-    // never keep showing a closure/reopen that did not actually persist.
-    let prev = {};
-    try { prev = JSON.parse(localStorage.getItem(CLOSED_KEY) || '{}'); } catch (e) {}
-
-    const writeClosed = (map) => { try { localStorage.setItem(CLOSED_KEY, JSON.stringify(map)); } catch (e) {} };
-    const setPending = (val) => {
-      try {
-        const pend = JSON.parse(localStorage.getItem(PENDING_KEY) || '{}');
-        if (val) pend[date] = { closed: wantClosed, at: Date.now() }; else delete pend[date];
-        localStorage.setItem(PENDING_KEY, JSON.stringify(pend));
-      } catch (e) {}
-    };
-
-    // Optimistic cache + a PENDING marker (timestamped). The pending marker lets a
-    // concurrent closed-days refresh (_loadSlotCapClosed) know this write is still
-    // in flight, so it re-applies it instead of clobbering it with not-yet-committed
-    // server state (the reconcile race).
-    const next = Object.assign({}, prev);
-    if (wantClosed) next[date] = REASON; else delete next[date];
-    writeClosed(next);
-    setPending(true);
-
-    const rollback = (msg) => {
-      // Restore the pre-click cache, drop the pending marker, and re-render so the
-      // grid reflects the TRUE (server) state — no fake success left on screen.
-      writeClosed(prev);
-      setPending(false);
-      if (typeof refreshCalendarUI === 'function') refreshCalendarUI();
-      if (typeof toast === 'function') toast(msg);
-    };
-
-    const base = (window.API_BASE || '').replace(/\/+$/, '');
-    if (!base) { setPending(false); return; }   // pure-local fallback: nothing to persist
-    const headers = { 'Content-Type': 'application/json', 'X-API-KEY': window.API_KEY || '' };
-    if (window.__HM_ADMIN_TOKEN) headers['X-ADMIN-TOKEN'] = window.__HM_ADMIN_TOKEN;
-    const payload = wantClosed
-      ? { action: 'close-day', date, reason: REASON }
-      : { action: 'reopen-day', date };
-    fetch(base + '/slot-capacity.php', { method: 'POST', headers, body: JSON.stringify(payload) })
-      .then(r => r.json().then(j => ({ httpOk: r.ok, code: r.status, j }), () => ({ httpOk: false, code: r.status, j: null })))
-      .then(res => {
-        if (res.httpOk && res.j && res.j.ok) { setPending(false); return; }   // committed → drop pending
-        console.error('[CalendarService] syncDayClosure failed', payload.action, date, res.code, res.j && res.j.error);
-        rollback(res.code === 403
-          ? '権限エラー：休止設定は保存されませんでした。再ログインしてください'
-          : '休止設定をサーバーに保存できませんでした（変更を取り消しました）');
-      })
-      .catch(err => {
-        console.error('[CalendarService] syncDayClosure network error', err && err.message);
-        rollback('通信エラー：休止設定を保存できませんでした（変更を取り消しました）');
-      });
   },
 
   setCapacity(max, limited) {

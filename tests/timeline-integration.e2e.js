@@ -69,7 +69,7 @@ const uid = p => p + (++idc);
 const dayOf = dt => String(dt).slice(0, 10);
 const winRanges = date => windows.filter(w => w.window_date === date).map(w => [toMin(w.start_at), toMin(w.end_at)]);
 const busyRanges = date => bookings.filter(b => b.status !== 'cancelled' && dayOf(b.start_at) === date).map(b => [toMin(b.start_at), toMin(b.end_at)]);
-const CFG = { day_start: '07:00', day_end: '22:00', step: 30, durations: [30, 60, 90, 120, 180], default_duration: 120, active: true };
+const CFG = { day_start: '07:00', day_end: '22:00', step: 30, durations: [30, 60, 90, 120, 180, 240], default_duration: 120, active: true };
 
 function readBody(req) { return new Promise(r => { let d = ''; req.on('data', c => d += c); req.on('end', () => { try { r(JSON.parse(d || '{}')); } catch (_) { r({}); } }); }); }
 
@@ -230,7 +230,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await cust.evaluate(() => window.openBookingApp && window.openBookingApp('単身引越し')); await sleep(300);
   await cust.evaluate(() => window.baSetDate && window.baSetDate('2099-01-05')); await sleep(250);
   await cust.evaluate(() => window.baOpenDrawer && window.baOpenDrawer('time')); await sleep(200);
-  chk('picker shows 3 server-computed slots + 5 durations', (await cust.$$('#ba-time-host input[name="ba-tl"]')).length === 3 && (await cust.$$('#ba-time-host .ba-dur')).length === 5);
+  chk('picker shows 3 server-computed slots + 6 durations', (await cust.$$('#ba-time-host input[name="ba-tl"]')).length === 3 && (await cust.$$('#ba-time-host .ba-dur')).length === 6);
   await cust.close();
 
   console.log('RESCHEDULE (drag booking) + reschedule-conflict (real HTTP)');

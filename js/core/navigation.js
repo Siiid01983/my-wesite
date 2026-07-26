@@ -86,10 +86,9 @@ async function _dpSync(table, filters, adapterFn, viewId, rerenderFn) {
 
 function go(view) {
   if (!Auth.isLoggedIn()) { Auth.logout(); return; }
-  // 容量設定 is merged into 空き枠管理 (slot calendar). Alias legacy deep links /
-  // quick-actions so go('capacity') lands on the unified availability screen.
-  // 容量設定 is merged into the timeline 空き枠管理 screen — alias legacy deep links.
-  if (view === 'capacity' && window.TimelineCalendar && TimelineCalendar.enabled && TimelineCalendar.enabled()) view = 'calendar';
+  // 容量設定 (band max/day) was removed in the timeline final migration. Keep the
+  // alias so any lingering go('capacity') deep link lands on the Timeline calendar.
+  if (view === 'capacity') view = 'calendar';
   if (Auth.mustChangePassword()) { showForceChange(); return; }
   if (_ADMIN_ONLY.has(view) && Auth.getRole && Auth.getRole() !== 'admin') {
     toast('このページへのアクセス権限がありません');
@@ -109,23 +108,12 @@ function go(view) {
   if (view==='dashboard') renderDash();
   if (view==='bookings') renderBookings();
   if (view==='calendar') {
-    // Slot-only 空き枠管理 (flag on, default): render the slot month grid + editor
-    // and keep the {max,limited} thresholds fresh. Legacy ○△× grid path runs only
-    // when the flag is off (staged-rollout fallback) — it overlays slot_capacity
-    // day-closures via _loadSlotCapClosed (PR #122) exactly as before.
-    if (window.TimelineCalendar && TimelineCalendar.enabled && TimelineCalendar.enabled()) {
-      // Hourly TIMELINE — the Google-Calendar availability manager, now the default
-      // admin calendar (band removal). hm_timeline_ui='0' falls back to the legacy
-      // ○△× grid below.
-      TimelineCalendar.onShow();
-      renderGCalPanel();
-    } else {
-      refreshCalendarUI(); renderGCalPanel(); _syncCalendarFromApi();
-      if (typeof _loadSlotCapClosed==='function') _loadSlotCapClosed(refreshCalendarUI);
-    }
+    // TIMELINE is the ONLY admin calendar (band grid removed). renderGCalPanel is
+    // the Google-Calendar sync panel that sits alongside the timeline.
+    TimelineCalendar.onShow();
+    if (typeof renderGCalPanel === 'function') renderGCalPanel();
   }
   if (view==='analytics') renderAnalytics();
-  if (view==='capacity') { loadCapacity(); _syncCapacityFromApi(); }
   if (view==='pricing') { renderPricing(); _syncPricingFromApi(); }
   if (view==='disposal') { renderDisposal(); _syncDisposalFromApi(); }
   if (view==='quotes') { renderQuotes(); _syncQuotesFromApi(); }

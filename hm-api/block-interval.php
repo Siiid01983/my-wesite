@@ -43,7 +43,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/_lib.php';
 require_once __DIR__ . '/_db.php';
 require_once __DIR__ . '/_slots.php';       // hm_slot_uuid()
-require_once __DIR__ . '/_intervals.php';   // hm_iv_active / hm_iv_reserve / hm_iv_normalize / hm_iv_day
+require_once __DIR__ . '/_intervals.php';   // hm_iv_reserve / hm_iv_normalize / hm_iv_day
+require_once __DIR__ . '/_windows.php';      // hm_timeline_active (unified timeline gate)
 
 $isCli = (PHP_SAPI === 'cli');
 
@@ -126,9 +127,11 @@ if (!in_array($action, ['block', 'unblock', 'list'], true)) {
 try {
   $db = hm_db();
 
-  // ── Gate: hourly must be live (flag ON + migration run) ──────────────────────
-  if (!hm_iv_active($db)) {
-    bx_out(['ok' => false, 'error' => 'hourly_disabled — enable hourly_enabled and run the interval migration first'], $isCli, 409);
+  // ── Gate: the timeline is the sole scheduler (active by default; interval
+  //    columns ensured on demand). Only the emergency 'timeline_disabled' kill
+  //    switch, or a DB that cannot self-heal the columns, turns blocking off. ─────
+  if (!hm_timeline_active($db)) {
+    bx_out(['ok' => false, 'error' => 'timeline_disabled — scheduler is temporarily disabled'], $isCli, 409);
   }
 
   // ── unblock: delete an admin_blocked row by id (status-guarded) ──────────────
@@ -168,18 +171,22 @@ try {
   }
 
   $reason  = trim((string)($param('reason') ?? ''));
+  $memo    = trim((string)($param('memo') ?? ''));
+  $label   = $reason !== '' ? $reason : '（ブロック）';   // shown as the block's title on the admin timeline
   $blockId = hm_slot_uuid();
 
   // Insert the block row first (start_at/end_at NULL), then let hm_iv_reserve set
   // the interval AND run the overlap check inside ONE transaction. hm_iv_reserve
   // excludes the row's own id, so a conflict can only be another booking/block.
+  // customer_name holds the REASON (admin-only label); notes holds the MEMO. The
+  // public availability endpoint exposes neither — only the busy time range.
   $db->beginTransaction();
   try {
     $ins = $db->prepare(
       "INSERT INTO bookings (id, customer_name, status, booking_date, notes, created_at)
-       VALUES (?, '（ブロック）', 'admin_blocked', ?, ?, NOW())"
+       VALUES (?, ?, 'admin_blocked', ?, ?, NOW())"
     );
-    $ins->execute([$blockId, $date, ($reason !== '' ? $reason : null)]);
+    $ins->execute([$blockId, $label, $date, ($memo !== '' ? $memo : null)]);
 
     $res = hm_iv_reserve($db, $blockId, $start, $end);   // runs within this tx (ownTx=false)
     if (!empty($res['error'])) {
@@ -201,7 +208,8 @@ try {
     throw $e;
   }
 
-  bx_out(['ok' => true, 'action' => 'blocked', 'id' => $blockId, 'start' => $start, 'end' => $end], $isCli);
+  bx_out(['ok' => true, 'action' => 'blocked', 'id' => $blockId, 'start' => $start, 'end' => $end,
+          'reason' => $reason, 'memo' => $memo], $isCli);
 
 } catch (Throwable $e) {
   if (function_exists('hm_log_error')) {

@@ -25,7 +25,7 @@
   if (window.AdminReauth) return;
 
   // Must match $ADMIN_WRITE_TABLES in hm-api/rest.php.
-  var ADMIN_TABLES = ['hm_data', 'services', 'calendar_availability', 'inbox_messages'];
+  var ADMIN_TABLES = ['hm_data', 'services', 'inbox_messages'];
   var _shown = false;
 
   function isEnforced() { return !!window.__HM_ADMIN_ENFORCED; }

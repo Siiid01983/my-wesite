@@ -105,8 +105,6 @@ async function _pdfDownload(html, filename) {
   }
 }
 
-async function downloadPDFCalendar()   { const h = _capturePrintHtml(printCalendar);          if (h) await _pdfDownload(h, '空き状況カレンダー.pdf'); }
-async function downloadPDFCapacity()   { const h = _capturePrintHtml(printCapacity);          if (h) await _pdfDownload(h, '容量設定レポート.pdf'); }
 async function downloadPDFPricing()    { const h = _capturePrintHtml(printPricing);           if (h) await _pdfDownload(h, '料金表.pdf'); }
 async function downloadPDFDisposal()   { const h = _capturePrintHtml(printDisposal);          if (h) await _pdfDownload(h, '不用品処分料金表.pdf'); }
 async function downloadPDFReport()     { const h = _capturePrintHtml(printReport);            if (h) await _pdfDownload(h, '売上レポート.pdf'); }

@@ -571,12 +571,11 @@ window.ContentLoader = (function () {
   }
 
   async function _load(sb) {
-      const [kvRes, svcRes, revRes, calRes] = await Promise.all([
+      const [kvRes, svcRes, revRes] = await Promise.all([
         sb.from('hm_data').select('key,value'),
         sb.from('services').select('*').order('display_order'),
         sb.from('reviews').select('*').eq('approved', true).eq('published', true)
           .order('created_at', { ascending: false }),
-        sb.from('calendar_availability').select('date,status'),
       ]);
 
       /* hm_data KV ─────────────────────────────────────── */
@@ -649,12 +648,8 @@ window.ContentLoader = (function () {
         console.warn('[ContentLoader] reviews read error:', revRes.error.message);
       }
 
-      /* calendar_availability ──────────────────────────── */
-      if (calRes.data) {
-        _applyCalendar(calRes.data);
-      } else if (calRes.error) {
-        console.warn('[ContentLoader] calendar read error:', calRes.error.message);
-      }
+      /* (calendar_availability retired — public booking uses the BA overlay date
+         picker + availability.php per-slot; no public month-grid graying.) */
 
       /* Reviews section header + rating swap (runtime; keeps index.html locked). */
       _customizeReviewsSection();

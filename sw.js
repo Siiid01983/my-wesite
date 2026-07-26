@@ -41,7 +41,6 @@ const PRECACHE = [
   '/js/back-to-top.js',
   '/script.js',
   '/bookingService.js',
-  '/calendarService.js',
 
   /* Admin entry points */
   '/admin-bookings.js',
@@ -85,7 +84,6 @@ const PRECACHE = [
   '/js/modules/calendar/gcalSync.js',
   '/js/modules/calendar/timelineGestures.js',
   '/js/modules/calendar/timelineCalendar.js',
-  '/js/modules/capacity/capacity.js',
   '/js/modules/pricing/pricing.js',
   '/js/modules/disposal/disposal.js',
   '/js/modules/quotes/quotes.js',

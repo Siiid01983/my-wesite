@@ -1,28 +1,24 @@
 <?php
 // ════════════════════════════════════════════════════════════════════════════
-//  availability.php — Smart Booking Engine, Phase 1 (STRICTLY READ-ONLY)
+//  availability.php — TIMELINE availability for a single date (STRICTLY READ-ONLY)
 //
-//  Real-time slot availability for a single date, derived solely from the
-//  booking_slots table (Phase 0). Capacity = 1 per band: a slot row exists →
-//  that band is "reserved"; otherwise "available".
+//  Returns ONLY hourly/timeline information — no bands, no capacity, no
+//  Morning/Afternoon/Evening/Night:
+//    • intervals — busy time ranges (existing bookings + admin blocks; start_at/end_at)
+//    • windows   — the admin's drawn availability windows for the date
+//    • slots     — bookable start times inside the windows, minus busy intervals
 //
 //  GET /hm-api/availability.php?date=YYYY-MM-DD
-//    → { "ok":true, "date":"2026-07-20",
-//        "bands": { "am":"available","pm":"reserved","ev":"available","nt":"available" } }
+//    → { ok, date, timeline, windows:[…], slots:["09:00",…], intervals:[…],
+//        default_duration }
 //
-//  READ-ONLY GUARANTEE: this endpoint performs a single SELECT and NOTHING else.
-//  It never writes, reserves, or releases slots; it does not touch bookings,
-//  create-booking.php, rest.php, admin/portal UI, booking statuses, the flag
-//  SLOT_LOCK_ENABLED, or the booking_slots schema.
-//
-//  Conventions mirror get-booking.php: CORS, optional api-key gate, rate limit,
-//  prepared statements, and hm_safe_msg() so SQL errors are never exposed.
+//  READ-ONLY GUARANTEE: reads only; never writes/reserves. Conventions mirror
+//  get-booking.php: CORS, api-key gate, rate limit, hm_safe_msg() on errors.
 // ════════════════════════════════════════════════════════════════════════════
 declare(strict_types=1);
 require_once __DIR__ . '/_db.php';
-require_once __DIR__ . '/_intervals.php';   // hourly: busy-interval reader (gated, dormant until hm_iv_active)
-require_once __DIR__ . '/_windows.php';      // timeline: allow-list windows + slot gen (gated, dormant until hm_timeline_active)
-require_once __DIR__ . '/_capacity.php';    // per-band capacity status (inert until configured)
+require_once __DIR__ . '/_intervals.php';   // busy-interval reader (start_at/end_at)
+require_once __DIR__ . '/_windows.php';      // timeline: allow-list windows + slot generation
 require_once __DIR__ . '/_ratelimit.php';
 hm_cors();
 hm_require_api_key();
@@ -34,8 +30,6 @@ if ($method !== 'GET') {
   hm_json(['ok' => false, 'error' => 'method not allowed — use GET'], 405);
 }
 
-// ── Canonical bands (order preserved in output) ──────────────────────────────
-const HM_AVAIL_BANDS = ['am', 'pm', 'ev', 'nt'];
 
 // ── Validate the date: strict YYYY-MM-DD AND a real calendar date ────────────
 $date = trim((string)($_GET['date'] ?? ''));
@@ -52,76 +46,53 @@ if (!$validDate) {
   hm_json(['ok' => false, 'error' => 'invalid date — expected YYYY-MM-DD'], 400);
 }
 
-// ── Read availability (single parameterised SELECT; existence = reserved) ─────
+// ── TIMELINE-ONLY availability: busy intervals + admin windows + bookable slots ─
+//  No bands, no capacity, no Morning/Afternoon/Evening/Night. The customer receives
+//  only real hourly information: the day's busy time ranges (`intervals`) and the
+//  bookable start times (`slots`) generated from the admin's availability `windows`.
 try {
-  $bands = array_fill_keys(HM_AVAIL_BANDS, 'available');
+  $db = hm_db();
 
-  $st = hm_db()->prepare('SELECT DISTINCT time_band FROM booking_slots WHERE booking_date = ?');
-  $st->execute([$date]);
-  foreach ($st as $row) {
-    $band = (string)($row['time_band'] ?? '');
-    if (array_key_exists($band, $bands)) $bands[$band] = 'reserved';   // ignore any non-canonical values
-  }
-
-  // HOURLY (dual-read, additive): when hourly is live (flag ON + migration run),
-  // also return the day's real busy time ranges alongside the 4 band states. The
-  // website keeps reading `bands`; the app/grid migrate to `intervals` at their
-  // own pace. Dormant otherwise → response is byte-for-byte identical to before.
-  // Wrapped defensively so an interval-read hiccup can never break availability.
+  // Busy time ranges (existing bookings + admin blocks). PUBLIC endpoint: expose
+  // ONLY the [start_at,end_at] range — never customer names, statuses or block
+  // reasons — so nothing about who booked or why a slot is blocked ever leaks.
   $intervals = [];
-  $hourly = false;   // Client-Request / hourly mode signal for the booking overlay.
-  $capacity = null;  // per-band capacity status (Morning/Afternoon/Evening/Night).
   try {
-    $db = hm_db();
-    $hourly = hm_iv_active($db);
-    if ($hourly) $intervals = hm_iv_day($db, $date);
-  } catch (Throwable $ie) {
-    hm_log_error('availability intervals read failed (non-fatal)', ['err' => $ie->getMessage(), 'date' => $date]);
+    foreach (hm_iv_day($db, $date) as $iv) {
+      $intervals[] = ['start_at' => (string)($iv['start_at'] ?? ''), 'end_at' => (string)($iv['end_at'] ?? '')];
+    }
   }
-  // TIMELINE (allow-list, additive): when the timeline is live (flag ON + migrated),
-  // return the day's admin-drawn availability `windows` and the bookable `slots`
-  // for the default duration (the client can regenerate for other durations from
-  // windows + intervals). Dormant otherwise → these keys stay empty/false and the
-  // legacy `bands` response is unchanged. Defensive so a read hiccup never breaks
-  // availability.
-  $timeline = false;
-  $windows  = [];
-  $slots    = [];
+  catch (Throwable $ie) { hm_log_error('availability intervals read failed (non-fatal)', ['err' => $ie->getMessage(), 'date' => $date]); }
+
+  // Effective availability windows (admin-drawn OR the default business-hours window
+  // when none is drawn) and the bookable start times inside them. The SERVER is the
+  // single source of truth: it generates the free start times for EVERY allowed
+  // duration (windows − existing bookings − admin blocks) so the customer picker only
+  // DISPLAYS them and never runs a second engine. A CLOSED day returns no
+  // windows/slots and closed:true — the customer sees "unavailable"; the internal
+  // reason is NEVER exposed on this public endpoint.
+  $timeline = false; $windows = []; $slots = []; $closed = false;
+  $durations = hm_timeline_durations();
+  $defaultDur = hm_timeline_default_duration();
+  $slotsByDur = [];
   try {
-    $db = hm_db();
     $timeline = hm_timeline_active($db);
     if ($timeline) {
-      $windows = hm_windows_day($db, $date);
-      $slots   = hm_timeline_slots($db, $date, hm_timeline_default_duration());
+      $closed  = hm_day_is_closed($db, $date);
+      $windows = hm_windows_day_effective($db, $date);
+      foreach ($durations as $d) {
+        $slotsByDur[(string)$d] = hm_timeline_slots($db, $date, (int)$d);
+      }
+      $slots = $slotsByDur[(string)$defaultDur] ?? hm_timeline_slots($db, $date, $defaultDur);
     }
   } catch (Throwable $we) {
     hm_log_error('availability timeline read failed (non-fatal)', ['err' => $we->getMessage(), 'date' => $date]);
   }
 
-  // Capacity block (additive): { am:{status,capacity,used,remaining,closed}, … }.
-  // Inert when unconfigured (every band resolves to capacity 1 / open). Defensive
-  // so a capacity-read hiccup never breaks the availability endpoint.
-  try {
-    $capacity = hm_cap_day(hm_db(), $date);
-  } catch (Throwable $ce) {
-    hm_log_error('availability capacity read failed (non-fatal)', ['err' => $ce->getMessage(), 'date' => $date]);
-  }
-
-  // Fold CLOSED bands into the `bands` unavailability signal. A closed (or
-  // capacity-exhausted) band has NO booking_slots row, so it would otherwise
-  // report 'available'. The public booking overlay treats any non-'available'
-  // band as not-selectable, so this is what hides a manually closed day (all four
-  // bands closed → the whole day is unbookable) from customers — no client change
-  // needed. The precise closed+reason detail stays in `capacity` for richer UIs.
-  if (is_array($capacity)) {
-    foreach ($capacity as $b => $st2) {
-      if (array_key_exists($b, $bands) && !empty($st2['closed'])) $bands[$b] = 'reserved';
-    }
-  }
-
-  hm_json(['ok' => true, 'date' => $date, 'bands' => $bands, 'intervals' => $intervals, 'hourly' => $hourly, 'capacity' => $capacity,
-           'timeline' => $timeline, 'windows' => $windows, 'slots' => $slots,
-           'default_duration' => hm_timeline_default_duration()]);
+  hm_json(['ok' => true, 'date' => $date, 'timeline' => $timeline, 'closed' => $closed,
+           'windows' => $windows, 'slots' => $slots, 'slots_by_duration' => $slotsByDur,
+           'intervals' => $intervals, 'durations' => $durations,
+           'default_duration' => $defaultDur]);
 } catch (Throwable $e) {
   hm_log_error('availability failed', ['err' => $e->getMessage(), 'date' => $date]);
   hm_json(['ok' => false, 'error' => hm_safe_msg('Request failed', $e)], 500);

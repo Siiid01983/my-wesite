@@ -885,11 +885,8 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
         <button class="sb-link" data-view="staff" onclick="go('staff')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>スタッフ管理
         </button>
-        <!-- 容量設定 is merged into the timeline 空き枠管理 screen; go('capacity')
-             aliases to 'calendar' (see navigation.js). -->
-        <button class="sb-link" data-view="capacity" onclick="go('capacity')">
-          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>容量設定
-        </button>
+        <!-- 容量設定 (band max/day) was removed in the timeline final migration;
+             availability is per-window in the Timeline 空き枠管理 (go('calendar')). -->
         <button class="sb-link" data-view="pricing" onclick="go('pricing')">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>料金管理
         </button>
@@ -1083,42 +1080,11 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
         <!-- Camera Capture View (Phase 27E) -->
         <div id="view-camera" class="view"></div>
 
-        <!-- 3. CALENDAR -->
+        <!-- 3. CALENDAR — Timeline (js/modules/calendar/timelineCalendar.js) mounts
+             here on go('calendar'); it is the ONLY admin availability calendar. The
+             legacy ○△× month grid, its bulk tools and month print were removed in the
+             timeline final migration. #gcalPanel holds the Google-Calendar sync panel. -->
         <div id="view-calendar" class="view">
-          <div class="cal-wrap">
-            <div class="cal-hdr">
-              <button class="cal-nav" id="calPrev" onclick="calMove(-1)">&#8592;</button>
-              <span class="cal-month" id="calMonth"></span>
-              <button class="cal-nav" onclick="calMove(1)">&#8594;</button>
-            </div>
-            <div class="cal-controls">
-              <span id="calHint">クリックして空き状況を変更（○→△→×→○）</span>
-              <div style="display:flex;gap:6px;margin-left:auto;flex-wrap:wrap">
-                <button class="btn btn-ghost btn-sm" id="bulkToggle" onclick="toggleBulk()">一括選択</button>
-                <select class="sel" id="bulkStatus" style="display:none">
-                  <option value="available">○ 空き</option>
-                  <option value="limited">△ 残りわずか</option>
-                  <option value="booked">× 満了</option>
-                </select>
-                <button class="btn btn-ghost btn-sm" id="bulkApply" style="display:none" onclick="applyBulk()">選択日に適用</button>
-                <button class="btn btn-ghost btn-sm" onclick="downloadPDFCalendar()">
-                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PDF
-                </button>
-                <button class="btn btn-ghost btn-sm" onclick="printCalendar()">
-                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
-                </button>
-                <button class="btn btn-ghost btn-sm" onclick="resetAvail()">全リセット</button>
-                <button class="btn btn-primary btn-sm" onclick="CalendarService.saveAvailability();toast('空き状況を更新しました')">保存</button>
-              </div>
-            </div>
-            <div class="cal-grid" id="calGrid"></div>
-            <div class="cal-legend">
-              <span class="cal-leg"><span class="sym-a">○</span> 空き</span>
-              <span class="cal-leg"><span class="sym-l">△</span> 残りわずか</span>
-              <span class="cal-leg"><span class="sym-b">×</span> 満了</span>
-              <span style="margin-left:auto;font-size:10px" id="bulkCount"></span>
-            </div>
-          </div>
           <div id="gcalPanel"></div>
         </div>
 
@@ -1159,42 +1125,9 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
         <!-- 4b. ADVANCED ANALYTICS -->
         <div id="view-analytics-advanced" class="view"></div>
 
-        <!-- 5. CAPACITY -->
-        <div id="view-capacity" class="view">
-          <div class="settings-grid">
-            <div class="panel">
-              <div class="panel-head">
-                <span class="panel-title">予約容量設定</span>
-                <button class="btn btn-ghost btn-sm" onclick="downloadPDFCapacity()">
-                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PDF
-                </button>
-                <button class="btn btn-ghost btn-sm" onclick="printCapacity()">
-                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
-                </button>
-              </div>
-              <div class="panel-body">
-                <div class="settings-row">
-                  <div>
-                    <div class="settings-label">1日の最大予約数</div>
-                    <div class="settings-sub">この数を超えると「満了（×）」になります</div>
-                  </div>
-                  <input type="number" class="price-input" id="capMax" value="5" min="1" max="20" style="width:80px;text-align:center" />
-                </div>
-                <div class="settings-row">
-                  <div>
-                    <div class="settings-label">残りわずか閾値</div>
-                    <div class="settings-sub">この数以上で「残りわずか（△）」になります</div>
-                  </div>
-                  <input type="number" class="price-input" id="capLimited" value="3" min="1" max="20" style="width:80px;text-align:center" />
-                </div>
-                <div style="margin-top:16px;display:flex;gap:8px">
-                  <button class="btn btn-primary" onclick="saveCapacity()">保存</button>
-                  <button class="btn btn-ghost" onclick="_loadCapacityUI()">リセット</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <!-- 5. CAPACITY — removed in the timeline final migration. The band
+             "max bookings/day → 満了" model no longer exists; availability is per
+             availability_window in the Timeline. go('capacity') aliases to calendar. -->
 
         <!-- 6. PRICING -->
         <div id="view-pricing" class="view">
@@ -1229,10 +1162,6 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
                 <button class="qa-btn" onclick="go('bookings');filterToday()">
                   <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
                   本日の予約を表示
-                </button>
-                <button class="qa-btn" onclick="go('calendar');showFullBooked()">
-                  <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                  満了日を表示
                 </button>
                 <button class="qa-btn" onclick="exportCSV()">
                   <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
@@ -1713,10 +1642,8 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 <script src="js/modules/analytics/analyticsDashboard.js"></script>
 
 <script src="js/modules/calendar/calendar.js"></script>
-<script src="js/modules/calendar/intervalEditor.js"></script>
 <script src="js/modules/bookings/pendingRequests.js"></script>
 <script src="js/modules/calendar/gcalSync.js"></script>
-<script src="js/modules/capacity/capacity.js"></script>
 <script src="js/modules/calendar/timelineGestures.js"></script><!-- pointer/touch gesture engine for the hourly timeline -->
 <script src="js/modules/calendar/timelineCalendar.js"></script><!-- hourly TIMELINE (Google-Calendar style; preview flag hm_timeline_ui, default OFF) -->
 <script src="js/modules/pricing/pricing.js"></script>

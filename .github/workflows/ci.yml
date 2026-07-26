@@ -32,21 +32,9 @@ jobs:
           php -r "exit(in_array('sqlite', PDO::getAvailableDrivers(), true) ? 0 : 1);"
           echo "pdo_sqlite OK"
 
-      - name: Lint slot-capacity + timeline PHP
+      - name: Lint all hm-api PHP + tests
         run: |
-          for f in hm-api/_capacity.php hm-api/slot-capacity.php \
-                   hm-api/_windows.php hm-api/availability-windows.php \
-                   hm-api/availability.php hm-api/create-booking.php \
-                   tests/slot-capacity-month.test.php tests/slot-capacity-engine.test.php \
-                   tests/timeline-windows.test.php; do
-            php -l "$f"
-          done
-
-      - name: slot-capacity month-status (pure + DB)
-        run: php tests/slot-capacity-month.test.php
-
-      - name: slot-capacity engine (no-duplicate / closure invariants)
-        run: php tests/slot-capacity-engine.test.php
+          for f in hm-api/*.php tests/*.test.php; do php -l "$f"; done
 
       - name: timeline windows (slot-gen + window CRUD, pure + DB)
         run: php tests/timeline-windows.test.php
@@ -108,3 +96,12 @@ jobs:
 
       - name: Timeline FULL-STACK integration (real client → HTTP → engine port)
         run: npm run test:timeline-integration
+
+      - name: Timeline block / manual-booking / context-menu / close-day / sync
+        run: npm run test:timeline-block
+
+      - name: Customer picker uses admin timeline as single source (server slots)
+        run: npm run test:customer-picker
+
+      - name: Ops calendar = shared timeline component (unified Admin+Ops)
+        run: npm run test:ops-cal

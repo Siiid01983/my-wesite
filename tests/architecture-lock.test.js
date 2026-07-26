@@ -179,50 +179,90 @@ describe('API connectivity / origin consistency', () => {
   });
 });
 
-// ── 6. Slot-capacity is the SINGLE booking/availability engine (locked) ───────
-//   slot_capacity + booking_slots are the only source of truth for availability,
-//   confirmation, and rescheduling. calendar_availability stays display-only.
-//   Do NOT reintroduce a second availability authority.
-describe('Slot-capacity engine (locked)', () => {
-  const capacity      = read('hm-api/_capacity.php');
+// ── 6. TIMELINE is the SINGLE booking/availability engine (locked) ────────────
+//   availability_windows (allow-list) + bookings.start_at/end_at + hm_iv_reserve
+//   are the ONLY source of truth for availability, booking, and rescheduling.
+//   The band engine (_capacity/slot-capacity/booking_slots) is DELETED. Do NOT
+//   reintroduce a second scheduling authority.
+describe('Timeline engine is the single source of truth (locked)', () => {
+  const windows       = read('hm-api/_windows.php');
+  const intervals     = read('hm-api/_intervals.php');
   const availability  = read('hm-api/availability.php');
-  const slotCapApi    = read('hm-api/slot-capacity.php');
   const bookingStatus = read('hm-api/booking-status.php');
   const reschedule    = read('hm-api/reschedule.php');
   const createBooking = read('hm-api/create-booking.php');
 
-  it('_capacity.php defines the engine primitives', () => {
-    for (const fn of ['hm_cap_effective', 'hm_cap_reserve', 'hm_cap_confirm_check', 'hm_cap_day_closed', 'hm_cap_month', 'hm_cap_state']) {
-      assert.ok(new RegExp('function\\s+' + fn + '\\s*\\(').test(capacity), `_capacity.php must define ${fn}()`);
+  it('the band engine files are DELETED', () => {
+    for (const f of ['hm-api/_capacity.php', 'hm-api/slot-capacity.php', 'hm-api/slot-preflight.php', 'hm-api/booking-slot.php', 'hm-api/block-slot.php']) {
+      assert.equal(fs.existsSync(path.join(ROOT, f)), false, `${f} must be deleted (band engine removed)`);
     }
-    assert.ok(/CREATE TABLE IF NOT EXISTS slot_capacity/.test(capacity), '_capacity.php owns the slot_capacity table');
   });
 
-  it('availability.php derives availability from the capacity engine (not calendar_availability)', () => {
-    assert.ok(/require_once __DIR__ \. '\/_capacity\.php'/.test(availability), 'availability.php must include _capacity.php');
-    assert.ok(/hm_cap_day\s*\(/.test(availability), 'availability.php must read per-band capacity via hm_cap_day()');
-    assert.ok(/booking_slots/.test(availability), 'availability.php reads reserved slots from booking_slots');
-    assert.ok(!/\bcalendar_availability\b/.test(availability), 'availability.php must NOT read calendar_availability (display-only table)');
+  it('the booking_slots band engine is gone from _slots.php (only uuid + migration parser remain)', () => {
+    const slots = read('hm-api/_slots.php');
+    for (const fn of ['function hm_slot_reserve', 'function hm_slot_release', 'function hm_slot_ensure_table', 'function hm_slot_counts', 'function hm_slot_lock_enabled']) {
+      assert.ok(!slots.includes(fn), `${fn} (booking_slots band engine) must be removed`);
+    }
+    assert.ok(!/INSERT INTO booking_slots|CREATE TABLE IF NOT EXISTS booking_slots/.test(slots),
+      '_slots.php must not create or write the booking_slots table');
+    assert.ok(/function hm_slot_uuid/.test(slots), 'hm_slot_uuid (row-id helper) must remain');
   });
 
-  it('confirm + reschedule funnel through the single-source validation/reserve', () => {
-    assert.ok(/hm_cap_confirm_check\s*\(/.test(bookingStatus), 'booking-status.php must validate via hm_cap_confirm_check()');
-    assert.ok(/hm_cap_reserve\s*\(/.test(bookingStatus), 'confirm must reserve the slot (hm_cap_reserve)');
-    assert.ok(/hm_slot_release\s*\(/.test(reschedule) && /hm_cap_reserve\s*\(/.test(reschedule), 'reschedule.php must release-old + reserve-new (atomic transfer)');
+  it('the legacy calendar_availability / capacity ○△× JS is DELETED', () => {
+    // calendarService.js (localStorage ○△× service) and capacity/capacity.js
+    // (band max/day 容量設定) have no consumer under the timeline engine.
+    for (const f of ['calendarService.js', 'js/modules/capacity/capacity.js']) {
+      assert.equal(fs.existsSync(path.join(ROOT, f)), false, `${f} must be deleted (○△× availability removed)`);
+    }
+  });
+
+  it('NO runtime consumer reads the calendar_availability table (JS + PHP)', () => {
+    // Availability comes ONLY from the Timeline (availability_windows + bookings).
+    // A real call-site is .from()/.read()/.select() on the table, a PostgREST
+    // allowlist entry, or a realtime channel — bare mentions in comments are fine.
+    const CALL = /\.(from|read|select|insert|update|delete)\s*\(\s*['"]calendar_availability['"]|['"]calendar_availability['"]\s*=>|channel\([^)]*calendar_availability|\$CONTENT_TABLES[^\n]*calendar_availability/;
+    const files = [
+      'js/services/apiAdapter.js', 'js/services/contentLoader.js', 'js/services/statisticsService.js',
+      'js/services/dataProvider.js', 'js/services/adminReauth.js', 'js/modules/calendar/calendar.js',
+      'admin-bookings.js', 'hm-api/rest.php', 'hm-api/availability.php', 'hm-api/create-booking.php',
+      'hm-api/booking-status.php', 'hm-api/reschedule.php',
+    ];
+    for (const rel of files) {
+      if (!fs.existsSync(path.join(ROOT, rel))) continue;
+      assert.ok(!CALL.test(read(rel)), `${rel} must NOT have a runtime calendar_availability call-site`);
+    }
+  });
+
+  it('the timeline engine primitives exist (_windows / _intervals)', () => {
+    for (const fn of ['hm_timeline_active', 'hm_windows_add', 'hm_tl_gen_slots', 'hm_timeline_start_ok']) {
+      assert.ok(new RegExp('function\\s+' + fn + '\\s*\\(').test(windows), `_windows.php must define ${fn}()`);
+    }
+    assert.ok(/function\s+hm_iv_reserve\s*\(/.test(intervals), '_intervals.php must define the atomic hm_iv_reserve()');
+  });
+
+  it('availability.php is TIMELINE-ONLY (no bands / capacity / booking_slots)', () => {
+    assert.ok(/hm_windows_day_effective\s*\(/.test(availability) && /hm_timeline_slots\s*\(/.test(availability),
+      'availability.php must serve timeline windows + slots');
+    assert.ok(!/'bands'/.test(availability) && !/hm_cap_day\s*\(/.test(availability),
+      'availability.php must NOT emit bands or read per-band capacity');
+    assert.ok(!/booking_slots/.test(availability), 'availability.php must NOT read booking_slots');
+    assert.ok(!/\bcalendar_availability\b/.test(availability), 'availability.php must NOT read calendar_availability');
+  });
+
+  it('booking-status + reschedule are band-FREE and use only the interval authority', () => {
+    for (const [name, src] of [['booking-status.php', bookingStatus], ['reschedule.php', reschedule]]) {
+      assert.ok(!/hm_cap_[a-z_]+\s*\(|hm_slot_(reserve|release|band_id|time_from)\s*\(/.test(src),
+        `${name} must not call the band engine`);
+      assert.ok(!/require_once __DIR__ \. '\/_capacity\.php'/.test(src), `${name} must not require the deleted _capacity.php`);
+    }
+    assert.ok(/hm_iv_reserve\s*\(/.test(reschedule), 'reschedule.php must move intervals via hm_iv_reserve');
     assert.ok(/beginTransaction\s*\(/.test(reschedule) && /slot_taken/.test(reschedule), 'reschedule.php must be transactional with a slot_taken rollback');
   });
 
   it('create-booking enforces availability via the timeline window (band engine removed)', () => {
-    // create-booking is now timeline-only: the admin WINDOW is the availability
-    // authority (hm_timeline_start_ok) and hm_iv_reserve is the atomic lock. The
-    // legacy band day-closure / band reserve have been deleted from this endpoint.
     assert.ok(/hm_timeline_start_ok\s*\(/.test(createBooking), 'create-booking must validate the chosen slot fits an open window');
-    assert.ok(!/hm_cap_day_closed\s*\(/.test(createBooking), 'create-booking must no longer use the band day-closure guard');
-  });
-
-  it('slot-capacity.php exposes the read-only month-status action', () => {
-    assert.ok(/'month-status'/.test(slotCapApi), "slot-capacity.php must allow the 'month-status' action");
-    assert.ok(/hm_cap_month\s*\(/.test(slotCapApi), 'month-status must serve hm_cap_month()');
+    assert.ok(/hm_iv_reserve\s*\(/.test(createBooking), 'create-booking must reserve via the interval authority');
+    assert.ok(!/hm_cap_[a-z_]+\s*\(/.test(createBooking), 'create-booking must not call the band engine');
   });
 });
 
@@ -242,6 +282,20 @@ describe('Band UI removal (slotCalendar/slotCapacity retired)', () => {
     const navJs = read('js/core/navigation.js');
     assert.ok(/TimelineCalendar\.onShow\s*\(/.test(navJs), 'go("calendar") must render the timeline');
     assert.ok(!/SlotCalendar\.onShow/.test(navJs), 'navigation must not reference the deleted SlotCalendar');
+  });
+
+  it('Admin + Ops share ONE calendar component (no duplicate implementations)', () => {
+    // The bespoke Ops calendar is deleted; Ops loads the SAME timeline modules and
+    // mounts them via the shared configure() hook.
+    assert.equal(fs.existsSync(path.join(ROOT, 'ops/js/calendar.js')), false, 'the duplicate ops/js/calendar.js must be deleted');
+    assert.equal(fs.existsSync(path.join(ROOT, 'ops/js/closedDayCalendar.js')), false, 'the band-only closedDayCalendar.js must be deleted');
+    const opsHtml = read('ops/calendar.html');
+    assert.ok(/js\/modules\/calendar\/timelineCalendar\.js/.test(opsHtml) && /js\/opsCalendar\.js/.test(opsHtml),
+      'ops/calendar.html must load the shared timeline component + the Ops shim');
+    assert.ok(/TimelineCalendar\.configure\s*\(/.test(read('ops/js/opsCalendar.js')),
+      'opsCalendar.js must mount the shared component via configure()');
+    assert.ok(/function configure\s*\(/.test(read('js/modules/calendar/timelineCalendar.js')),
+      'timelineCalendar.js must expose configure() so one component serves Admin + Ops');
   });
 
   it('customer overlay renders NO band time picker (timeline-only + contact fallback)', () => {
@@ -280,31 +334,78 @@ describe('Portal boundary (locked)', () => {
   });
 });
 
-// ── 9. Hourly timeline (allow-list windows) is DORMANT-BY-DEFAULT + gated ──────
-//    Safety contract for the phased rollout: the timeline scheduler must ship OFF
-//    (timeline_enabled=false) and every live read/write path must gate on
-//    hm_timeline_active (flag + migrated). Overlap/conflict detection must reuse
-//    the single interval authority (hm_iv_reserve), never a second one.
-describe('Hourly timeline (gated, dormant by default)', () => {
+// ── 9. Hourly timeline is the SOLE scheduler, ACTIVE BY DEFAULT (self-healing) ──
+//    The band/capacity engines are removed, so the timeline no longer ships dormant
+//    behind a flag: it is active whenever the bookings interval columns exist, and
+//    those are ensured on demand (hm_iv_ensure_cols) so no operator migration or
+//    config flip is required. Only an explicit 'timeline_disabled' kill switch turns
+//    it off. Overlap/conflict detection must reuse the single interval authority
+//    (hm_iv_reserve), never a second one.
+describe('Hourly timeline (sole scheduler, active by default)', () => {
   const cfgExample = read('hm-api/_config.example.php');
   const windows    = read('hm-api/_windows.php');
+  const intervals  = read('hm-api/_intervals.php');
   const createBk   = read('hm-api/create-booking.php');
   const availPhp   = read('hm-api/availability.php');
 
-  it('timeline_enabled defaults to false in the config example', () => {
-    assert.ok(/'timeline_enabled'\s*=>\s*false/.test(cfgExample),
-      "_config.example.php must ship 'timeline_enabled' => false (dormant by default)");
-  });
-
-  it('_windows.php gates activation on the flag AND the migrated interval column', () => {
+  it('activation self-heals: no flag gate, columns ensured on demand, kill-switch only', () => {
     assert.ok(/function\s+hm_timeline_active\s*\(/.test(windows), '_windows.php must define hm_timeline_active()');
-    assert.ok(/hm_timeline_enabled\(\)\s*&&\s*hm_bookings_has_interval_cols/.test(windows),
-      'hm_timeline_active must require BOTH the flag and the migrated column');
+    // Must NOT require the legacy timeline_enabled flag to be on.
+    assert.ok(!/hm_timeline_enabled\(\)\s*&&\s*hm_bookings_has_interval_cols/.test(windows),
+      'hm_timeline_active must no longer require the timeline_enabled flag');
+    assert.ok(/timeline_disabled/.test(windows),
+      'hm_timeline_active must honor the explicit timeline_disabled kill switch');
+    assert.ok(/hm_iv_ensure_cols\s*\(/.test(windows),
+      'hm_timeline_active must ensure the interval columns on demand (self-heal)');
+    assert.ok(/function\s+hm_iv_ensure_cols\s*\(/.test(intervals),
+      '_intervals.php must define hm_iv_ensure_cols() (idempotent ALTER)');
   });
 
-  it('the live endpoints gate the timeline path on hm_timeline_active', () => {
-    assert.ok(/hm_timeline_active\s*\(/.test(createBk), 'create-booking.php must gate the timeline path on hm_timeline_active');
-    assert.ok(/hm_timeline_active\s*\(/.test(availPhp),  'availability.php must gate the timeline read on hm_timeline_active');
+  it('customers always get slots: default business-hours window when none is drawn', () => {
+    assert.ok(/function\s+hm_timeline_default_windows\s*\(/.test(windows),
+      '_windows.php must define hm_timeline_default_windows()');
+    assert.ok(/hm_timeline_default_windows\s*\(\)/.test(windows),
+      'hm_windows_day_ranges must fall back to the default window when a date has none');
+    assert.ok(/'timeline_default_windows'/.test(cfgExample),
+      "_config.example.php must document 'timeline_default_windows'");
+  });
+
+  it('the live endpoints use hm_timeline_active (no per-flag gating)', () => {
+    assert.ok(/hm_timeline_active\s*\(/.test(createBk), 'create-booking.php must resolve the timeline path via hm_timeline_active');
+    assert.ok(/hm_timeline_active\s*\(/.test(availPhp),  'availability.php must resolve the timeline read via hm_timeline_active');
+  });
+
+  it('availability.php is the SINGLE SOURCE: server-generates slots per duration', () => {
+    assert.ok(/slots_by_duration/.test(availPhp),
+      'availability.php must return slots_by_duration (server-computed free starts per duration)');
+    assert.ok(/hm_timeline_slots\s*\(/.test(availPhp),
+      'availability.php must generate slots via hm_timeline_slots (windows − bookings − blocks − closed)');
+    // Public endpoint must not leak names/reasons in intervals — time-ranges only.
+    assert.ok(/'start_at'\s*=>[^;]*'end_at'\s*=>/.test(availPhp.replace(/\n/g, ' ')),
+      'availability.php intervals must be sanitized to start_at/end_at only');
+  });
+
+  it('the customer picker DISPLAYS server slots (no second slot engine, no band, no manual fallback)', () => {
+    const idx = read('index.html');
+    assert.ok(/slots_by_duration/.test(idx) && /_baServerSlots/.test(idx),
+      'index.html must display server slots_by_duration (single source)');
+    assert.ok(!/function\s+_baGenSlots/.test(idx),
+      'index.html must NOT contain a client-side slot generator (_baGenSlots)');
+    assert.ok(!/ba-time-host[^]*?tel:0902489|午前|午後|夕方|深夜/.test(idx) || !/_baGenSlots/.test(idx),
+      'the time picker must not fall back to bands');
+    // The "no availability" wording must live behind the truly-empty branch only.
+    assert.ok(/この日は空き時間がありません/.test(idx),
+      'the picker keeps a truly-empty message (shown only when the server returns zero slots)');
+  });
+
+  it('closed days suppress all availability (windows AND default) — reason never public', () => {
+    assert.ok(/hm_day_is_closed\s*\(/.test(windows),
+      'hm_windows_day_ranges must return [] for a closed day');
+    assert.ok(/'closed'\s*=>/.test(availPhp),
+      'availability.php must expose a closed flag');
+    // The public availability endpoint must NOT leak the internal reason.
+    assert.ok(!/close_info|closed_by|['"]reason['"]/.test(availPhp),
+      'availability.php must NOT expose the closure reason/closed_by to customers');
   });
 
   it('timeline booking reserves through the single interval authority (hm_iv_reserve)', () => {
@@ -312,12 +413,9 @@ describe('Hourly timeline (gated, dormant by default)', () => {
       'create-booking timeline path must reserve via hm_iv_reserve (single overlap/conflict authority)');
   });
 
-  it('reschedule uses the interval authority for interval moves (flag-independent)', () => {
+  it('reschedule uses the interval authority (band-free, flag-independent)', () => {
     const resched = read('hm-api/reschedule.php');
-    // Discriminated by the request carrying an interval, NOT by the timeline flag.
-    assert.ok(/\$__useInterval\s*=\s*\(\$newStart !== '' && \$newEnd !== ''\)/.test(resched),
-      'reschedule.php must route interval moves on the request carrying start+end (not the timeline flag)');
-    assert.ok(/hm_iv_reserve\s*\(/.test(resched), 'reschedule.php interval move must go through hm_iv_reserve (atomic overlap)');
+    assert.ok(/hm_iv_reserve\s*\(/.test(resched), 'reschedule.php move must go through hm_iv_reserve (atomic overlap)');
     assert.ok(!/hm_timeline_active\s*\(/.test(resched), 'reschedule.php must NOT depend on the timeline_enabled flag');
   });
 
@@ -330,24 +428,15 @@ describe('Hourly timeline (gated, dormant by default)', () => {
       'gcalSync must guard the legacy band-availability write (band-optional)');
   });
 
-  it('a timeline booking is NOT vetoed/blocked by the legacy band engine', () => {
-    // create-booking: the band engine is fully removed — no band day-closure guard,
-    // no band/capacity reserve, no _capacity.php include. Only the timeline reserve
-    // (hm_iv_reserve) locks slots.
-    assert.ok(!/hm_cap_day_closed|hm_cap_reserve|hm_slot_reserve\b/.test(createBk),
-      'create-booking must not call the band engine (day-closure / band reserve)');
-    assert.ok(!/require_once __DIR__ \. '\/_capacity\.php'/.test(createBk),
-      'create-booking must not require _capacity.php (band engine removed)');
-    assert.ok(/hm_iv_reserve\s*\(/.test(createBk), 'create-booking must still reserve via the timeline interval authority');
-    // booking-status: an INTERVAL booking (start_at set) confirms status-only; the
-    // band confirm/reserve runs ONLY for interval-LESS legacy bookings — decided by
-    // the booking's own interval, flag-independently.
+  it('confirm is band-free (legacy bookings converted by the migration, not runtime)', () => {
+    // booking-status confirm is status-only; the band confirm/reserve is deleted.
+    // Legacy band bookings are converted to intervals by
+    // migrate-bookings-to-timeline.php — a DATA migration, not a runtime path.
     const bkStatus = read('hm-api/booking-status.php');
-    assert.ok(/\$__hasInterval\s*=\s*!empty\(\$bk\['start_at'\]\)/.test(bkStatus),
-      'booking-status must detect an interval booking by start_at (not the timeline flag)');
-    assert.ok(/\$status === 'confirmed' && !\$__hasInterval/.test(bkStatus),
-      'booking-status must run the band confirm/reserve ONLY for interval-less legacy bookings');
-    assert.ok(!/hm_timeline_active\s*\(/.test(bkStatus), 'booking-status must NOT depend on the timeline_enabled flag');
+    assert.ok(!/hm_cap_[a-z_]+\s*\(|hm_slot_(reserve|release)\s*\(/.test(bkStatus),
+      'booking-status must not call the band engine on confirm/cancel');
+    assert.ok(fs.existsSync(path.join(ROOT, 'hm-api/migrate-bookings-to-timeline.php')),
+      'the one-time legacy→timeline booking conversion migration must exist');
   });
 });
 
@@ -373,5 +462,58 @@ describe('Admin timeline UI (Google-Calendar style)', () => {
     assert.ok(/timelineGestures\.js/.test(adminHtml) && /timelineCalendar\.js/.test(adminHtml),
       'admin.html must include the timeline gesture + calendar modules');
     assert.ok(/TimelineCalendar\.onShow\s*\(/.test(navJs), 'go("calendar") must render the timeline when its flag is on');
+  });
+});
+
+// ── 11. Complete scheduler: block mode, manual booking, context menu, live sync ─
+//    The timeline is a full Google-Calendar-style scheduler: three create modes
+//    (availability window / manual block / manual booking), right-click & long-press
+//    delete, whole-day close with reason, and push (BroadcastChannel) + polling sync.
+describe('Timeline is a complete scheduler (block / booking / menu / sync)', () => {
+  const tlCal = read('js/modules/calendar/timelineCalendar.js');
+
+  it('three create modes exist (window / block / booking)', () => {
+    assert.ok(/createMode/.test(tlCal), 'timelineCalendar must track a createMode');
+    assert.ok(/data-m="window"/.test(tlCal) && /data-m="block"/.test(tlCal) && /data-m="booking"/.test(tlCal),
+      'the toolbar must offer window / block / booking create modes');
+  });
+
+  it('manual BLOCK create posts to block-interval.php with reason + memo', () => {
+    assert.ok(/_openBlockDialog/.test(tlCal), 'a block reason/memo dialog must exist');
+    assert.ok(/block-interval\.php/.test(tlCal) && /action:\s*'block'/.test(tlCal),
+      'block create must POST action:block to block-interval.php');
+    assert.ok(/memo:/.test(tlCal), 'block create must send a memo field');
+  });
+
+  it('manual BOOKING create posts to create-booking.php (name/email/phone + start_at)', () => {
+    assert.ok(/_openBookingDialog/.test(tlCal), 'a manual booking dialog must exist');
+    assert.ok(/create-booking\.php/.test(tlCal) && /start_at:/.test(tlCal) && /duration_min:/.test(tlCal),
+      'booking create must POST start_at + duration_min to create-booking.php');
+  });
+
+  it('right-click / long-press context menu deletes bookings, blocks and windows', () => {
+    assert.ok(/_bindContextMenu/.test(tlCal) && /contextmenu/.test(tlCal),
+      'a context menu (right-click) must be bound');
+    assert.ok(/_deleteBooking/.test(tlCal) && /booking-status\.php/.test(tlCal),
+      'booking delete must cancel via booking-status.php');
+    assert.ok(/_unblock/.test(tlCal) && /action:\s*'unblock'/.test(tlCal),
+      'block delete must unblock via block-interval.php');
+  });
+
+  it('whole-day close carries a required reason (close-day.php)', () => {
+    assert.ok(/close-day\.php/.test(tlCal) && /action:\s*'close'/.test(tlCal),
+      'close-day must POST action:close to close-day.php');
+  });
+
+  it('live sync is push (BroadcastChannel) + auto-refresh polling', () => {
+    assert.ok(/BroadcastChannel/.test(tlCal), 'timeline must use BroadcastChannel for instant same-browser sync');
+    assert.ok(/_syncBroadcast/.test(tlCal), 'mutations must broadcast a sync event');
+    assert.ok(/setInterval/.test(tlCal), 'timeline must auto-refresh (poll) to catch cross-device changes');
+  });
+
+  it('manual blocks are surfaced to the admin range (reason + memo)', () => {
+    const aw = read('hm-api/availability-windows.php');
+    assert.ok(/'blocks'\s*=>/.test(aw), 'availability-windows range must return blocks[]');
+    assert.ok(/admin_blocked/.test(aw), 'blocks query must select admin_blocked rows');
   });
 });

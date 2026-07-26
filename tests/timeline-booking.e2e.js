@@ -34,11 +34,14 @@ const INIT = `
       if (url.indexOf('availability.php') !== -1) {
         return Promise.resolve({ ok:true, json:function(){ return Promise.resolve({
           ok:true, date:url.replace(/.*date=/,'').slice(0,10),
-          bands:{am:'available',pm:'available',ev:'available',nt:'available'},
-          intervals:[], capacity:null, hourly:false,
-          timeline:true, default_duration:120,
+          intervals:[], closed:false,
+          timeline:true, default_duration:120, durations:[30,60,90,120,180,240],
           windows:[{id:'w1',start_at:'2099-01-05 09:00:00',end_at:'2099-01-05 12:00:00'}],
-          slots:['09:00','09:30','10:00']
+          // SERVER-generated free starts per duration (single source of truth):
+          slots:['09:00','09:30','10:00'],
+          slots_by_duration:{ '30':['09:00','09:30','10:00','10:30','11:00','11:30'],
+            '60':['09:00','09:30','10:00','10:30','11:00'], '90':['09:00','09:30','10:00','10:30'],
+            '120':['09:00','09:30','10:00'], '180':['09:00'], '240':[] }
         }); } });
       }
       if (url.indexOf('create-booking.php') !== -1) {
@@ -88,12 +91,12 @@ const INIT = `
   await page.waitForTimeout(250);
   await page.evaluate(() => window.baOpenDrawer && window.baOpenDrawer('time'));
   await page.waitForTimeout(200);
-  chk('duration chips rendered', (await page.$$('#ba-time-host .ba-dur')).length === 5);
+  chk('duration chips rendered (incl 4h)', (await page.$$('#ba-time-host .ba-dur')).length === 6);
   chk('slot chips rendered (3)', (await page.$$('#ba-time-host input[name="ba-tl"]')).length === 3);
   chk('no band radios in timeline mode', (await page.$$('#ba-time-host input[name="ba-time"]')).length === 0);
 
-  console.log('duration change regenerates slots');
-  // 09:00–12:00 window; 180-min duration → only 09:00 fits.
+  console.log('duration change shows that server list');
+  // 09:00–12:00 window; server reports 180-min → only 09:00 fits.
   await page.evaluate(() => { document.querySelector('#ba-time-host .ba-dur[data-dur="180"]').click(); });
   await page.waitForTimeout(150);
   chk('180min → 1 slot (09:00)', (await page.$$('#ba-time-host input[name="ba-tl"]')).length === 1);
@@ -113,7 +116,7 @@ const INIT = `
   // (BookingService payload mapping is covered by timeline-booking-payload.test.js —
   //  it loads dynamically here so is not reachable as a window global.)
 
-  console.log('graceful contact fallback when timeline unavailable (never bands)');
+  console.log('truly-empty day → pick-another-day note (never bands, never manual contact)');
   const cust2 = await browser.newPage();
   await cust2.addInitScript(() => {
     Object.defineProperty(window, 'API_BASE', { get() { return 'http://mock'; }, set() {}, configurable: true });
@@ -121,17 +124,18 @@ const INIT = `
     const real = window.fetch;
     window.fetch = function (url, opts) {
       url = String(url);
-      if (url.indexOf('availability.php') !== -1) return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, timeline: false, bands: { am: 'available' }, intervals: [], windows: [], slots: [] }) });
+      if (url.indexOf('availability.php') !== -1) return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, timeline: true, closed: false, intervals: [], windows: [], slots: [], slots_by_duration: { '30': [], '60': [], '120': [], '240': [] }, durations: [30,60,90,120,180,240], default_duration: 120 }) });
       return real ? real.apply(this, arguments) : Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) });
     };
   });
   await cust2.goto(url, { waitUntil: 'load' }); await cust2.waitForTimeout(300);
-  await cust2.evaluate(() => window.openBookingApp('単身引越し')); await cust2.waitForTimeout(300);
+  await cust2.evaluate(() => window.openBookingApp('単身引越し')); await cust2.waitForTimeout(200);
+  await cust2.evaluate(() => window.baSetDate && window.baSetDate('2099-01-06')); await cust2.waitForTimeout(300);
   await cust2.evaluate(() => window.baOpenDrawer && window.baOpenDrawer('time')); await cust2.waitForTimeout(200);
-  chk('no timeline slots when timeline:false', (await cust2.$$('#ba-time-host input[name="ba-tl"]')).length === 0);
+  chk('no timeline slots when day is empty', (await cust2.$$('#ba-time-host input[name="ba-tl"]')).length === 0);
   chk('NO band radios shown (bands fully removed)', (await cust2.$$('#ba-time-host input[name="ba-time"]')).length === 0);
-  chk('contact fallback shown (tel + LINE)', await cust2.evaluate(() => {
-    var h = document.getElementById('ba-time-host'); return !!h && /090-2489-3402/.test(h.textContent) && /LINE/.test(h.innerHTML);
+  chk('shows a no-availability note (not manual contact)', await cust2.evaluate(() => {
+    var h = document.getElementById('ba-time-host'); return !!h && /空き時間がありません/.test(h.textContent) && !/090-2489-3402/.test(h.textContent);
   }));
   await cust2.close();
 

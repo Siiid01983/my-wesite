@@ -4,8 +4,8 @@
  * fix/calendar-dayclose-slotcap-unify:
  *   A. Booking → calendar opens on the booking's date (?date= deep-link).
  *   B. Message timestamps: JST-consistent parsing + NUMERIC (never lexical) sort.
- *   C. Calendar day-close: no △ no-op, 403 rollback, reconcile-race pending guard,
- *      migration runnable by an admin session.
+ *   C. Legacy ○△× day-close machinery is fully removed (timeline is the calendar);
+ *      availability derives from bookings; migration runnable by an admin session.
  *
  * Pure Node (`node --test`) — no browser, no server. Section B loads the REAL
  * js/lib/chatFormat.js in a VM sandbox and exercises the shipped HMFmt.tsMs /
@@ -109,14 +109,15 @@ describe('B. Backend timezone is pinned end-to-end', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('A. Calendar reads ?date= and opens on that day', () => {
-  const src = read('ops/js/calendar.js');
+  // Ops now uses the SHARED timeline via opsCalendar.js (bespoke calendar.js deleted).
+  const src = read('ops/js/opsCalendar.js');
   it('bookings.js links to calendar.html?date=<booking date>', () => {
     assert.match(read('ops/js/bookings.js'), /calendar\.html\?date='/);
   });
-  it('calendar.js parses the date param and suppresses the auto-jump override', () => {
+  it('opsCalendar.js parses the date param and opens that day on the shared timeline', () => {
     assert.match(src, /URLSearchParams\(location\.search[^)]*\)\.get\('date'\)/);
-    assert.match(src, /applyDateDeepLink/);
-    assert.match(src, /state\.autoJumpDone\s*=\s*true/);
+    assert.match(src, /setAnchor\(dl\)/);
+    assert.match(src, /setView\('day'\)/);
   });
 
   // Reproduce the exact deep-link decision (regex + round-trip validation) to
@@ -132,57 +133,35 @@ describe('A. Calendar reads ?date= and opens on that day', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-describe('C. Day-close: no △ no-op, honest failures, no reconcile clobber', () => {
+describe('C. Legacy ○△× day-close machinery is REMOVED (timeline is the calendar)', () => {
   const monthCal = read('js/modules/calendar/calendar.js');
   const adminBk = read('admin-bookings.js');
+  const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '');
 
-  it('calClick is a two-state open/close toggle (△ removed from manual cycle)', () => {
-    assert.ok(!/cur\s*===\s*'available'\s*\?\s*'limited'/.test(monthCal),
-      'old three-way ○→△→× manual cycle must be gone');
-    assert.match(monthCal, /isClosed\s*\?\s*'available'\s*:\s*'booked'/);
+  it('the ○△× month grid + bulk tools are gone from calendar.js', () => {
+    for (const fn of ['function renderCalendar', 'function calClick', 'function _syncCalendarFromApi',
+                      'function toggleBulk', 'function applyBulk', 'function _loadSlotCapClosed']) {
+      assert.ok(!monthCal.includes(fn), `${fn} must be removed from calendar.js`);
+    }
+    assert.ok(!/hm_slotcap_pending|slot-capacity\.php/.test(monthCal),
+      'calendar.js must not touch the deleted slot-capacity engine');
   });
 
-  it('syncDayClosure rolls back the optimistic cache on 403/failure', () => {
-    assert.match(adminBk, /rollback\s*=\s*\(/);
-    assert.match(adminBk, /res\.code\s*===\s*403/);
-    assert.match(adminBk, /refreshCalendarUI/);
+  it('admin CalendarService no longer POSTs day-closures to the deleted slot-capacity.php', () => {
+    assert.ok(!/syncDayClosure/.test(adminBk), 'syncDayClosure (band day-close) must be removed');
+    assert.ok(!/slot-capacity\.php|hm_slotcap_pending/.test(adminBk),
+      'admin-bookings must not reference the deleted band engine');
   });
 
-  it('syncDayClosure records a PENDING marker; _loadSlotCapClosed honours it', () => {
-    assert.match(adminBk, /hm_slotcap_pending/);
-    assert.match(monthCal, /hm_slotcap_pending/);
-    assert.match(monthCal, /PENDING_TTL/);
+  it('CalendarService.getAvailability derives from bookings, not calendar_availability', () => {
+    assert.match(adminBk, /Adapter\.getAvail\(\)/);
+    assert.ok(!/calendar_availability/.test(stripComments(adminBk)),
+      'no calendar_availability call-site outside comments');
   });
 
-  it('migration accepts an admin session token (X-ADMIN-TOKEN)', () => {
-    const mig = read('hm-api/migrate-calendar-to-slotcap.php');
+  it('the legacy→timeline booking migration accepts an admin session token', () => {
+    const mig = read('hm-api/migrate-bookings-to-timeline.php');
     assert.match(mig, /HTTP_X_ADMIN_TOKEN/);
     assert.match(mig, /hm_admin_token_verify/);
-  });
-
-  // Reproduce the toggle + pending-merge logic to prove behaviour, not just text.
-  it('toggle: open→closed→open drives real states', () => {
-    const nextOf = (avail) => (avail === 'booked' ? 'available' : 'booked');
-    assert.equal(nextOf('available'), 'booked');   // click closes
-    assert.equal(nextOf('booked'), 'available');   // click reopens
-    assert.equal(nextOf('limited'), 'booked');     // auto-△ day → click closes (no no-op)
-  });
-
-  it('reconcile merge: fresh pending overrides stale server; expired is dropped', () => {
-    const now = Date.now();
-    const server = { '2026-07-20': '(old)' };                 // server still shows closed
-    const pending = {
-      '2026-07-20': { closed: false, at: now - 1000 },        // just reopened (in flight)
-      '2026-08-01': { closed: true, at: now - 60000 },        // expired marker
-    };
-    const TTL = 15000, keep = {}, merged = Object.assign({}, server);
-    for (const d of Object.keys(pending)) {
-      const p = pending[d];
-      if (now - p.at > TTL) continue;                          // drop expired
-      keep[d] = p;
-      if (p.closed) merged[d] = merged[d] || 'closed'; else delete merged[d];
-    }
-    assert.equal('2026-07-20' in merged, false, 'in-flight reopen must survive the refresh');
-    assert.equal('2026-08-01' in keep, false, 'expired marker must be forgotten');
   });
 });

@@ -129,8 +129,6 @@
     pending: '新規', checking: '確認中', confirmed: '確定', completed: '完了', cancelled: 'キャンセル', rejected: '却下', needs_revision: '要修正',
   };
   // Calendar: admin uses 'booked'; API schema uses 'full'.
-  const CAL_TO_DB    = { booked: 'full' };
-  const CAL_TO_LOCAL = { full: 'booked' };
 
   /* ── Notes encoding — fields not in DB schema are packed into notes ─── */
   const _HM_SEP = '\n[HM_EXTRAS]\n';
@@ -362,9 +360,8 @@
     async syncFromApi() {
       if (!_api) return;
 
-      const [bkRes, calRes, revRes, svcRes, kvRes] = await Promise.all([
+      const [bkRes, revRes, svcRes, kvRes] = await Promise.all([
         _api.from('bookings').select('*').order('created_at', { ascending: false }),
-        _api.from('calendar_availability').select('*'),
         _api.from('reviews').select('*').order('created_at', { ascending: false }),
         _api.from('services').select('*').order('display_order'),
         _api.from('hm_data').select('key, value'),
@@ -381,16 +378,7 @@
         if (window.DataProvider) DataProvider.seed('bookings', bkRes.data);
       } else if (bkRes.error) console.warn('[Adapter] bookings sync:', bkRes.error.message);
 
-      // Calendar overrides
-      if (calRes.data) {
-        const avail = {};
-        calRes.data.forEach(row => {
-          const local = CAL_TO_LOCAL[row.status] || row.status;
-          if (local !== 'available') avail[row.date] = local;
-        });
-        _set(K.av, avail);
-        if (window.DataProvider) DataProvider.seed('calendar_availability', calRes.data);
-      }
+      // (calendar_availability retired — availability derives from bookings + timeline)
 
       // Reviews
       if (revRes.data) {
@@ -501,40 +489,23 @@
       if (dbId) _del('bookings', 'id', dbId);
     },
 
-    /* ── Availability ─────────────────────────────────── */
-    getAvail: () => _ls(K.av, {}),
-
-    setDate(date, status) { if (!_checkCanWrite()) return;
-      const a = this.getAvail();
-      if (status === 'available') delete a[date]; else a[date] = status;
-      _set(K.av, a);
-      if (window.DataProvider) DataProvider.invalidate('calendar_availability');
-      // Keep hm_booked in sync for the public calendar
-      let booked = _ls(K.booked, []);
-      booked = booked.filter(d => d !== date);
-      if (status === 'booked') booked.push(date);
-      _set(K.booked, booked);
-      // API
-      const dbStatus = CAL_TO_DB[status] || status;
-      if (status === 'available') {
-        _del('calendar_availability', 'date', date);
-      } else {
-        _upsert('calendar_availability',
-          { date, status: dbStatus, updated_at: new Date().toISOString() }, 'date');
-      }
+    /* ── Availability (DERIVED from the TIMELINE — calendar_availability retired) ─
+       There is no per-day availability table anymore. A date is reported 'booked'
+       when it holds at least one non-cancelled booking (a "busy day" signal for
+       admin metrics / automation); the real per-slot availability is served live
+       by availability.php (windows + start_at/end_at). No calendar_availability
+       read or write remains anywhere. */
+    getAvail() {
+      const map = {};
+      (this.getBookings() || []).forEach(b => {
+        if (b && b.date && b.status !== 'キャンセル' && b.status !== 'cancelled') map[b.date] = 'booked';
+      });
+      return map;
     },
 
-    clearAvail() {
-      if (!_checkCanWrite()) return;
-      localStorage.removeItem(K.av);
-      localStorage.removeItem(K.booked);
-      localStorage.removeItem(K.counts);
-      if (window.DataProvider) DataProvider.invalidate('calendar_availability');
-      if (_api) {
-        _api.from('calendar_availability').delete().not('date', 'is', null)
-          .then(({ error }) => { if (error) console.warn('[Adapter] clearAvail error:', error.message); });
-      }
-    },
+    // Retired: availability is derived from bookings + timeline windows, never stored.
+    setDate() { /* no-op — calendar_availability removed */ },
+    clearAvail() { /* no-op — calendar_availability removed */ },
 
     /* ── Capacity ─────────────────────────────────────── */
     getCapacity: () => _ls(K.cap, { max: 5, limited: 3 }),
@@ -955,19 +926,13 @@
     saveCustomers: (v) => wt(K.cust, v),
 
     /* ── Migration ────────────────────────────────────── */
-    migrate() {
-      const booked = _ls(K.booked, []);
-      const avail  = this.getAvail();
-      booked.forEach(d => { if (!avail[d]) avail[d] = 'booked'; });
-      _set(K.av, avail);
-    },
+    migrate() { /* no-op — legacy calendar_availability localStorage retired */ },
 
     /* ── Realtime ─────────────────────────────────────── */
     _bookingsChannel:     null,
-    _availabilityChannel: null,
 
-    /* Subscribe to API Realtime for bookings and calendar_availability.
-       Idempotent — safe to call multiple times; duplicate channels are skipped. */
+    /* Subscribe to API Realtime for bookings. Idempotent — safe to call multiple
+       times; duplicate channels are skipped. */
     initializeRealtime() {
       if (!_api) return;
 
@@ -1022,52 +987,7 @@
           .subscribe();
       }
 
-      // ── Calendar Management: calendar_availability table ─
-      if (!this._availabilityChannel) {
-        this._availabilityChannel = _api
-          .channel('admin-availability-realtime')
-          .on('postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'calendar_availability' },
-            (payload) => {
-              console.log('[Realtime] Availability updated', payload.new);
-              const { date, status } = payload.new;
-              const localStatus = CAL_TO_LOCAL[status] || status;
-              const avail = this.getAvail();
-              if (localStatus === 'available') delete avail[date]; else avail[date] = localStatus;
-              _set(K.av, avail);
-              document.dispatchEvent(new CustomEvent('calendar:updated', {
-                detail: { date, status: localStatus, source: 'realtime' }
-              }));
-            })
-          .on('postgres_changes',
-            { event: 'UPDATE', schema: 'public', table: 'calendar_availability' },
-            (payload) => {
-              console.log('[Realtime] Availability updated', payload.new);
-              const { date, status } = payload.new;
-              const localStatus = CAL_TO_LOCAL[status] || status;
-              const avail = this.getAvail();
-              if (localStatus === 'available') delete avail[date]; else avail[date] = localStatus;
-              _set(K.av, avail);
-              document.dispatchEvent(new CustomEvent('calendar:updated', {
-                detail: { date, status: localStatus, source: 'realtime' }
-              }));
-            })
-          .on('postgres_changes',
-            { event: 'DELETE', schema: 'public', table: 'calendar_availability' },
-            (payload) => {
-              console.log('[Realtime] Availability updated', payload.old);
-              const date = payload.old?.date;
-              if (date) {
-                const avail = this.getAvail();
-                delete avail[date];
-                _set(K.av, avail);
-              }
-              document.dispatchEvent(new CustomEvent('calendar:updated', {
-                detail: { date, source: 'realtime' }
-              }));
-            })
-          .subscribe();
-      }
+      // (calendar_availability Realtime retired — availability derives from bookings)
     },
 
     /* Pull only the bookings table from API and refresh localStorage.
@@ -1278,22 +1198,9 @@
       return true;
     },
 
-    /* Pull only calendar_availability from API and refresh localStorage.
-       Lighter than syncFromApi() — use when calendar view is opened. */
-    async syncAvailability() {
-      if (!_api) return false;
-      const { data, error } = await _api.from('calendar_availability').select('*');
-      if (error) { console.warn('[Adapter] syncAvailability error:', error.message); return false; }
-      if (data) {
-        const avail = {};
-        data.forEach(row => {
-          const local = CAL_TO_LOCAL[row.status] || row.status;
-          if (local !== 'available') avail[row.date] = local;
-        });
-        _set(K.av, avail);
-      }
-      return true;
-    },
+    /* Retired: availability is derived from bookings + timeline windows, so there
+       is no calendar_availability to pull. Kept as a no-op for call-site safety. */
+    async syncAvailability() { return true; },
 
     /* Remove all active Realtime channels. Call on logout. */
     destroyRealtime() {
