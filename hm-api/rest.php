@@ -44,11 +44,6 @@ $SCHEMA = [
     'json' => ['items'], 'bool' => [], 'int' => [],
     'uuid_pk' => true, 'unique' => ['id'],
   ],
-  'calendar_availability' => [
-    'cols' => ['id','date','status','updated_at'],
-    'json' => [], 'bool' => [], 'int' => [],
-    'uuid_pk' => true, 'unique' => ['date'],
-  ],
   'reviews' => [
     'cols' => ['id','reference_id','customer_name','rating','review_text','approved','published','headline','service','date_label','location','source','booking_reference','created_at'],
     'json' => [], 'bool' => ['approved','published'], 'int' => ['rating'],
@@ -110,7 +105,7 @@ $action = (string)($req['action'] ?? 'select');
 //   • FULL gate  → every write (insert/upsert/update/delete) needs staff.
 //   • MODERATION → reviews: INSERT stays public (customer/portal submissions),
 //                  but upsert/update/delete (approve/publish/edit) need staff.
-$CONTENT_TABLES_FULL = ['hm_data', 'services', 'calendar_availability', 'inbox_messages', 'blog_posts'];
+$CONTENT_TABLES_FULL = ['hm_data', 'services', 'inbox_messages', 'blog_posts'];
 $CONTENT_TABLES_MOD  = ['reviews'];
 if ($action === 'delete') {
   hm_require_staff_write();                                   // no public deletes, any table

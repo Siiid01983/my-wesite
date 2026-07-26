@@ -58,17 +58,10 @@ CREATE TABLE IF NOT EXISTS bookings (
   KEY bookings_created_at_idx (created_at)         -- ORDER BY created_at DESC everywhere
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ── calendar_availability : stores ONLY non-available date overrides
---    Used by: apiAdapter (setDate/getAvail), contentLoader, public calendar.
-CREATE TABLE IF NOT EXISTS calendar_availability (
-  id         CHAR(36)    NOT NULL,
-  `date`     VARCHAR(40) NOT NULL,
-  status     VARCHAR(20) NOT NULL DEFAULT 'full',
-  updated_at TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  UNIQUE KEY calendar_date_unique (`date`),       -- upsert onConflict: date
-  KEY calendar_status_idx (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- ── calendar_availability : REMOVED (timeline final migration).
+--    The legacy ○△× day-availability table has no runtime consumer — availability
+--    is derived from the Timeline (availability_windows + bookings.start_at/end_at).
+--    Dropped on existing installs by migrations/timeline/002_drop_band_tables.sql.
 
 -- ── reviews : customer reviews (public submit + admin approve/publish)
 --    Used by: apiAdapter, statisticsService, contentLoader, portalReviews.

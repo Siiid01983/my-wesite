@@ -198,6 +198,31 @@ describe('Timeline engine is the single source of truth (locked)', () => {
     }
   });
 
+  it('the legacy calendar_availability / capacity ○△× JS is DELETED', () => {
+    // calendarService.js (localStorage ○△× service) and capacity/capacity.js
+    // (band max/day 容量設定) have no consumer under the timeline engine.
+    for (const f of ['calendarService.js', 'js/modules/capacity/capacity.js']) {
+      assert.equal(fs.existsSync(path.join(ROOT, f)), false, `${f} must be deleted (○△× availability removed)`);
+    }
+  });
+
+  it('NO runtime consumer reads the calendar_availability table (JS + PHP)', () => {
+    // Availability comes ONLY from the Timeline (availability_windows + bookings).
+    // A real call-site is .from()/.read()/.select() on the table, a PostgREST
+    // allowlist entry, or a realtime channel — bare mentions in comments are fine.
+    const CALL = /\.(from|read|select|insert|update|delete)\s*\(\s*['"]calendar_availability['"]|['"]calendar_availability['"]\s*=>|channel\([^)]*calendar_availability|\$CONTENT_TABLES[^\n]*calendar_availability/;
+    const files = [
+      'js/services/apiAdapter.js', 'js/services/contentLoader.js', 'js/services/statisticsService.js',
+      'js/services/dataProvider.js', 'js/services/adminReauth.js', 'js/modules/calendar/calendar.js',
+      'admin-bookings.js', 'hm-api/rest.php', 'hm-api/availability.php', 'hm-api/create-booking.php',
+      'hm-api/booking-status.php', 'hm-api/reschedule.php',
+    ];
+    for (const rel of files) {
+      if (!fs.existsSync(path.join(ROOT, rel))) continue;
+      assert.ok(!CALL.test(read(rel)), `${rel} must NOT have a runtime calendar_availability call-site`);
+    }
+  });
+
   it('the timeline engine primitives exist (_windows / _intervals)', () => {
     for (const fn of ['hm_timeline_active', 'hm_windows_add', 'hm_tl_gen_slots', 'hm_timeline_start_ok']) {
       assert.ok(new RegExp('function\\s+' + fn + '\\s*\\(').test(windows), `_windows.php must define ${fn}()`);

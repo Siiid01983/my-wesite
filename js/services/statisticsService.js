@@ -139,13 +139,14 @@
   async function getMonthlyBookings(){ return _count('bookings', [['gte', 'booking_date', _monthStartISO()]]); }
 
   async function getOccupancyRate() {
-    const bookedDays = await _count('calendar_availability', [
-      ['eq', 'status', 'full'],
-      ['gte', 'date', _monthStartISO()],
-      ['lte', 'date', _monthEndISO()],
+    // Timeline: occupancy ≈ this month's bookings / days in month (calendar_availability
+    // retired — availability is per-slot, served by availability.php).
+    const bookedDays = await _count('bookings', [
+      ['gte', 'booking_date', _monthStartISO()],
+      ['lte', 'booking_date', _monthEndISO()],
     ]);
     const total = _daysInMonth();
-    return total > 0 ? Math.round((bookedDays / total) * 100) : 0;
+    return total > 0 ? Math.min(100, Math.round((bookedDays / total) * 100)) : 0;
   }
 
   async function getDashboardStats() {
@@ -408,12 +409,11 @@
     const monthEnd   = _monthEndISO();
     const dIM        = _daysInMonth();
 
-    const [avail, limited, booked, totalBkMonth] = await Promise.all([
-      _count('calendar_availability', [['gte','date',monthStart],['lte','date',monthEnd],['eq','status','available']]),
-      _count('calendar_availability', [['gte','date',monthStart],['lte','date',monthEnd],['eq','status','limited']]),
-      _count('calendar_availability', [['gte','date',monthStart],['lte','date',monthEnd],['eq','status','full']]),
-      _count('bookings', [['gte','booking_date',monthStart],['lte','booking_date',monthEnd]]),
-    ]);
+    // Timeline: derive the month picture from bookings (calendar_availability retired).
+    const totalBkMonth = await _count('bookings', [['gte','booking_date',monthStart],['lte','booking_date',monthEnd]]);
+    const booked  = Math.min(dIM, totalBkMonth);   // "busy" days proxy
+    const limited = 0;
+    const avail   = Math.max(0, dIM - booked);
 
     const utilisationRate = dIM > 0 ? Math.round((booked / dIM) * 100) : 0;
 
@@ -515,13 +515,7 @@
   function initializeRealtime() {
     if (!_api) return;
 
-    if (!_availChannel) {
-      _availChannel = _api.channel('stats-availability')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'calendar_availability' }, () => { _cDel('operational'); _refresh(); })
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'calendar_availability' }, () => { _cDel('operational'); _refresh(); })
-        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'calendar_availability' }, () => { _cDel('operational'); _refresh(); })
-        .subscribe();
-    }
+    // (calendar_availability Realtime retired — operational stats refresh on booking changes)
 
     if (!_reviewsChannel) {
       _reviewsChannel = _api.channel('stats-reviews')

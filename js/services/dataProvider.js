@@ -13,7 +13,6 @@
      Override per-table via window.HM_CONFIG.CACHE_TTL = { bookings: 60000 }  */
   const _TTL_DEFAULTS = {
     bookings:              2 * 60 * 1000,
-    calendar_availability: 2 * 60 * 1000,
     reviews:               5 * 60 * 1000,
     services:             10 * 60 * 1000,
     hm_data:              10 * 60 * 1000,

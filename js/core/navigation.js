@@ -86,10 +86,9 @@ async function _dpSync(table, filters, adapterFn, viewId, rerenderFn) {
 
 function go(view) {
   if (!Auth.isLoggedIn()) { Auth.logout(); return; }
-  // 容量設定 is merged into 空き枠管理 (slot calendar). Alias legacy deep links /
-  // quick-actions so go('capacity') lands on the unified availability screen.
-  // 容量設定 is merged into the timeline 空き枠管理 screen — alias legacy deep links.
-  if (view === 'capacity' && window.TimelineCalendar && TimelineCalendar.enabled && TimelineCalendar.enabled()) view = 'calendar';
+  // 容量設定 (band max/day) was removed in the timeline final migration. Keep the
+  // alias so any lingering go('capacity') deep link lands on the Timeline calendar.
+  if (view === 'capacity') view = 'calendar';
   if (Auth.mustChangePassword()) { showForceChange(); return; }
   if (_ADMIN_ONLY.has(view) && Auth.getRole && Auth.getRole() !== 'admin') {
     toast('このページへのアクセス権限がありません');
@@ -115,7 +114,6 @@ function go(view) {
     if (typeof renderGCalPanel === 'function') renderGCalPanel();
   }
   if (view==='analytics') renderAnalytics();
-  if (view==='capacity') { loadCapacity(); _syncCapacityFromApi(); }
   if (view==='pricing') { renderPricing(); _syncPricingFromApi(); }
   if (view==='disposal') { renderDisposal(); _syncDisposalFromApi(); }
   if (view==='quotes') { renderQuotes(); _syncQuotesFromApi(); }
