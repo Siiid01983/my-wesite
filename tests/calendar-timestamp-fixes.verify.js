@@ -109,14 +109,15 @@ describe('B. Backend timezone is pinned end-to-end', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('A. Calendar reads ?date= and opens on that day', () => {
-  const src = read('ops/js/calendar.js');
+  // Ops now uses the SHARED timeline via opsCalendar.js (bespoke calendar.js deleted).
+  const src = read('ops/js/opsCalendar.js');
   it('bookings.js links to calendar.html?date=<booking date>', () => {
     assert.match(read('ops/js/bookings.js'), /calendar\.html\?date='/);
   });
-  it('calendar.js parses the date param and suppresses the auto-jump override', () => {
+  it('opsCalendar.js parses the date param and opens that day on the shared timeline', () => {
     assert.match(src, /URLSearchParams\(location\.search[^)]*\)\.get\('date'\)/);
-    assert.match(src, /applyDateDeepLink/);
-    assert.match(src, /state\.autoJumpDone\s*=\s*true/);
+    assert.match(src, /setAnchor\(dl\)/);
+    assert.match(src, /setView\('day'\)/);
   });
 
   // Reproduce the exact deep-link decision (regex + round-trip validation) to
