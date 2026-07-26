@@ -198,6 +198,16 @@ describe('Timeline engine is the single source of truth (locked)', () => {
     }
   });
 
+  it('the booking_slots band engine is gone from _slots.php (only uuid + migration parser remain)', () => {
+    const slots = read('hm-api/_slots.php');
+    for (const fn of ['function hm_slot_reserve', 'function hm_slot_release', 'function hm_slot_ensure_table', 'function hm_slot_counts', 'function hm_slot_lock_enabled']) {
+      assert.ok(!slots.includes(fn), `${fn} (booking_slots band engine) must be removed`);
+    }
+    assert.ok(!/INSERT INTO booking_slots|CREATE TABLE IF NOT EXISTS booking_slots/.test(slots),
+      '_slots.php must not create or write the booking_slots table');
+    assert.ok(/function hm_slot_uuid/.test(slots), 'hm_slot_uuid (row-id helper) must remain');
+  });
+
   it('the legacy calendar_availability / capacity ○△× JS is DELETED', () => {
     // calendarService.js (localStorage ○△× service) and capacity/capacity.js
     // (band max/day 容量設定) have no consumer under the timeline engine.
