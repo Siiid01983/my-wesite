@@ -90,16 +90,41 @@ function hm_cors(): void {
   hm_log_access();
 }
 
+// Resilient request-header reader. A raw $_SERVER['HTTP_<NAME>'] lookup misses a
+// header in three real cPanel/Apache situations, each of which manifests as
+// "the browser sent it but PHP sees nothing":
+//   1. mod_rewrite ran (this site's www→apex rule) → Apache re-exposes the original
+//      header prefixed REDIRECT_ (REDIRECT_HTTP_X_API_KEY).
+//   2. PHP-FPM / FastCGI or a proxy passes the header only through getallheaders() /
+//      apache_request_headers(), not the $_SERVER map.
+//   3. Casing differences (getallheaders may report 'X-Api-Key').
+// We check all sources and TRIM the result, so a stray trailing newline/space in
+// the sent value can never fail an otherwise-correct compare. Returns '' if truly absent.
+function hm_request_header(string $name): string {
+  $key = 'HTTP_' . strtoupper(str_replace('-', '_', $name));
+  foreach ([$key, 'REDIRECT_' . $key] as $k) {
+    if (isset($_SERVER[$k]) && trim((string)$_SERVER[$k]) !== '') return trim((string)$_SERVER[$k]);
+  }
+  foreach (['getallheaders', 'apache_request_headers'] as $fn) {
+    if (function_exists($fn)) {
+      foreach ((array)$fn() as $hk => $hv) {
+        if (strcasecmp((string)$hk, $name) === 0 && trim((string)$hv) !== '') return trim((string)$hv);
+      }
+    }
+  }
+  return '';
+}
+
 // API-key gate. Enforced ONLY when 'api_key' is set in _config.php (empty = off).
 // The browser must send the matching key as the X-API-KEY header (window.API_KEY).
 // NOTE: a client-shipped key is not secret — it deters casual/cross-origin abuse
 // alongside CORS, it is NOT user authentication. Call AFTER hm_cors() so the
 // OPTIONS preflight is answered before the key is checked.
 function hm_require_api_key(): void {
-  $expected = (string)(hm_config()['api_key'] ?? '');
+  $expected = trim((string)(hm_config()['api_key'] ?? ''));
   if ($expected === '') return;                       // gate disabled
-  $sent = $_SERVER['HTTP_X_API_KEY'] ?? '';
-  if (!is_string($sent) || $sent === '' || !hash_equals($expected, $sent)) {
+  $sent = hm_request_header('X-API-KEY');             // resilient: $_SERVER / REDIRECT_ / getallheaders, trimmed
+  if ($sent === '' || !hash_equals($expected, $sent)) {
     hm_log_auth_fail('bad_api_key');
     hm_json(['ok' => false, 'data' => null, 'error' => ['message' => 'Unauthorized', 'code' => 'api_key']], 401);
   }
@@ -191,7 +216,7 @@ function hm_admin_token_account_valid(array $payload): bool {
 // enabling/disabling is a pure config switch with no code change.
 function hm_require_admin(): void {
   if (!hm_admin_auth_enabled()) return;
-  $tok = $_SERVER['HTTP_X_ADMIN_TOKEN'] ?? '';
+  $tok = hm_request_header('X-ADMIN-TOKEN');
   $p   = (is_string($tok) && $tok !== '') ? hm_admin_token_verify($tok) : null;
   if (!$p || ($p['role'] ?? '') !== 'admin' || !hm_admin_token_account_valid($p)) {
     hm_log_auth_fail('admin_token');
@@ -210,7 +235,7 @@ function hm_require_admin(): void {
 // is set, since admin login mints tokens, so enforcement is active.)
 function hm_require_staff_write(): void {
   if (hm_admin_secret() === '') { hm_require_admin(); return; }   // can't verify → preserve prior behavior
-  $tok  = $_SERVER['HTTP_X_ADMIN_TOKEN'] ?? '';
+  $tok  = hm_request_header('X-ADMIN-TOKEN');
   $p    = (is_string($tok) && $tok !== '') ? hm_admin_token_verify($tok) : null;
   $role = is_array($p) ? ($p['role'] ?? '') : '';
   if (!$p || ($role !== 'admin' && $role !== 'manager') || !hm_admin_token_account_valid($p)) {
@@ -230,7 +255,7 @@ function hm_require_staff_write(): void {
 // Customer-facing reads use the ownership-gated endpoints (customer-bookings.php,
 // customer-profile.php, portal-communications.php) instead of rest.php.
 function hm_require_staff_read(): void {
-  $tok  = $_SERVER['HTTP_X_ADMIN_TOKEN'] ?? '';
+  $tok  = hm_request_header('X-ADMIN-TOKEN');
   $p    = (hm_admin_secret() !== '' && is_string($tok) && $tok !== '') ? hm_admin_token_verify($tok) : null;
   $role = is_array($p) ? ($p['role'] ?? '') : '';
   if (!$p || ($role !== 'admin' && $role !== 'manager') || !hm_admin_token_account_valid($p)) {
