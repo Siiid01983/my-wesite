@@ -109,20 +109,10 @@ function go(view) {
   if (view==='dashboard') renderDash();
   if (view==='bookings') renderBookings();
   if (view==='calendar') {
-    // Slot-only 空き枠管理 (flag on, default): render the slot month grid + editor
-    // and keep the {max,limited} thresholds fresh. Legacy ○△× grid path runs only
-    // when the flag is off (staged-rollout fallback) — it overlays slot_capacity
-    // day-closures via _loadSlotCapClosed (PR #122) exactly as before.
-    if (window.TimelineCalendar && TimelineCalendar.enabled && TimelineCalendar.enabled()) {
-      // Hourly TIMELINE — the Google-Calendar availability manager, now the default
-      // admin calendar (band removal). hm_timeline_ui='0' falls back to the legacy
-      // ○△× grid below.
-      TimelineCalendar.onShow();
-      renderGCalPanel();
-    } else {
-      refreshCalendarUI(); renderGCalPanel(); _syncCalendarFromApi();
-      if (typeof _loadSlotCapClosed==='function') _loadSlotCapClosed(refreshCalendarUI);
-    }
+    // TIMELINE is the ONLY admin calendar (band grid removed). renderGCalPanel is
+    // the Google-Calendar sync panel that sits alongside the timeline.
+    TimelineCalendar.onShow();
+    if (typeof renderGCalPanel === 'function') renderGCalPanel();
   }
   if (view==='analytics') renderAnalytics();
   if (view==='capacity') { loadCapacity(); _syncCapacityFromApi(); }

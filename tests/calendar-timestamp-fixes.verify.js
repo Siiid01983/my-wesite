@@ -155,8 +155,9 @@ describe('C. Day-close: no △ no-op, honest failures, no reconcile clobber', ()
     assert.match(monthCal, /PENDING_TTL/);
   });
 
-  it('migration accepts an admin session token (X-ADMIN-TOKEN)', () => {
-    const mig = read('hm-api/migrate-calendar-to-slotcap.php');
+  it('the legacy→timeline booking migration accepts an admin session token', () => {
+    // (calendar→slotcap migration deleted; the band system is retired.)
+    const mig = read('hm-api/migrate-bookings-to-timeline.php');
     assert.match(mig, /HTTP_X_ADMIN_TOKEN/);
     assert.match(mig, /hm_admin_token_verify/);
   });

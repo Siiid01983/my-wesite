@@ -25,14 +25,11 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_lib.php';
 require_once __DIR__ . '/_db.php';
-require_once __DIR__ . '/_slots.php';      // canonical slot layer (release / band id)
-require_once __DIR__ . '/_capacity.php';   // capacity-aware reserve — LEGACY band bookings only (interval-less)
 
 $isCli = (PHP_SAPI === 'cli');
 
 // Thrown when confirming a booking whose (date, band) is already held by a
 // DIFFERENT real booking — surfaced as HTTP 409 (double-booking guard).
-class HmSlotConflict extends RuntimeException { public $band = ''; }
 
 function bkst_out(array $payload, bool $isCli, int $status = 200): void {
   if ($isCli) {
@@ -156,52 +153,11 @@ try {
     $up = $db->prepare('UPDATE bookings SET status = ? WHERE id = ?');
     $up->execute([$status, $bookingId]);
 
-    // 1b) Slot sync — CONFIRMED reserves its (date, band); CANCELLED releases it.
-    //     Uses the SAME reserve path as create-booking (hm_cap_reserve), so it
-    //     honours the configured per-band capacity + closed state — no capacity-1
-    //     assumption. A reserved row blocks the band in availability.php / the
-    //     capacity 'used' count and shows on the calendar like any reservation.
-    //     Independent of slot_lock_enabled: confirmation ALWAYS records the slot.
-    //     Flexible / 時間指定なし bookings resolve to no band → nothing is locked.
-    // A booking with a reserved INTERVAL (start_at set — every timeline booking)
-    // confirms STATUS-ONLY: the interval was locked atomically at create/reschedule,
-    // so there is nothing to band-reserve and the legacy band confirm would wrongly
-    // 409 (e.g. a date whose bands were closed by the calendar→slotcap migration).
-    // The band arm below therefore runs ONLY for interval-LESS LEGACY bookings
-    // (created before the timeline) — flag-independent, so behaviour never depends
-    // on timeline_enabled, only on whether the booking itself has an interval.
-    $__hasInterval = !empty($bk['start_at']);
-
-    if ($status === 'confirmed' && !$__hasInterval) {
-      $band = hm_slot_band_from_notes($bk['notes']);
-      // SINGLE-SOURCE pre-confirm validation (day closed / band closed / capacity)
-      // — the SAME hm_cap_confirm_check() the admin rest.php + reschedule paths use.
-      // Catches flexible / 時間指定なし bookings (no band → day rule only). Excludes
-      // this booking's own slot. Reopen the day (全日再開) to confirm a closed day.
-      $chk = hm_cap_confirm_check($db, (string)$bdate, $band, $bookingId);
-      if (empty($chk['ok'])) {
-        $c = new HmSlotConflict((string)($chk['reason'] ?? 'slot_taken')); $c->band = (string)($band ?? ''); throw $c;
-      }
-      if ($band !== null) {
-        hm_slot_ensure_table($db);
-        // Already reserved for THIS booking (the normal case when capacity_enabled
-        // reserved it at create-time)? Then confirming is a no-op. Otherwise reserve
-        // now via the capacity engine (claims the lowest free slot_index up to the
-        // configured capacity; 'full' / 'closed' → 409, not a false double-book).
-        $own = $db->prepare('SELECT COUNT(*) FROM booking_slots WHERE booking_id = ? AND booking_date = ? AND time_band = ?');
-        $own->execute([$bookingId, $bdate, $band]);
-        if ((int)$own->fetchColumn() === 0) {
-          $res = hm_cap_reserve($db, $bdate, $band, $bookingId);
-          if (!empty($res['conflict'])) {
-            $c = new HmSlotConflict((string)($res['reason'] ?? 'slot_taken'));
-            $c->band = $band; throw $c;                                        // band full / closed → 409
-          }
-        }
-      }
-    } elseif ($status === 'cancelled') {
-      hm_slot_ensure_table($db);
-      hm_slot_release($db, $bookingId);                                        // free the band
-    }
+    // TIMELINE-ONLY: a booking's reservation IS its interval (start_at/end_at), locked
+    // atomically at create/reschedule via hm_iv_reserve. Confirming is status-only;
+    // cancelling is status-only too — hm_iv_day() excludes cancelled rows, so the
+    // interval is freed automatically. No band reserve/release. (All legacy band
+    // bookings were converted to intervals by migrate-bookings-to-timeline.php.)
 
     // 2) Needs_Revision: also append the note to the booking's revision history
     //    (notes) so it's retained on the booking itself, not only in the message.
@@ -277,10 +233,6 @@ try {
 
   bkst_out(['ok' => true, 'booking_id' => $bookingId, 'status' => $status, 'notified' => $notifyCustomer, 'email' => $emailStatus], $isCli);
 
-} catch (HmSlotConflict $e) {
-  // Confirmation refused: the time-band is full or closed (capacity exhausted).
-  // error='slot_taken' kept for frontend compatibility; 'reason' adds full|closed.
-  bkst_out(['ok' => false, 'error' => 'slot_taken', 'reason' => $e->getMessage(), 'band' => $e->band], $isCli, 409);
 } catch (Throwable $e) {
   if (function_exists('hm_log_error')) hm_log_error('booking-status failed', ['err' => $e->getMessage(), 'booking' => $bookingId, 'status' => $status ?? '']);
   bkst_out(['ok' => false, 'error' => hm_safe_msg('Request failed', $e)], $isCli, 500);

@@ -19,9 +19,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_lib.php';
 require_once __DIR__ . '/_db.php';
-require_once __DIR__ . '/_slots.php';
-require_once __DIR__ . '/_capacity.php';
-require_once __DIR__ . '/_intervals.php';  // hm_iv_reserve — atomic interval move/resize (flag-independent)
+require_once __DIR__ . '/_intervals.php';  // hm_iv_reserve — atomic interval move/resize
 
 $isCli = (PHP_SAPI === 'cli');
 class HmRsConflict extends RuntimeException { public $reason = 'full'; }
@@ -68,9 +66,8 @@ if ($newDate === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $newDate)) {
   rs_out(['ok' => false, 'error' => 'valid booking_date (YYYY-MM-DD) required'], $isCli, 400);
 }
 
-// Time 'HH:MM' out of a datetime; band id out of a time (reuse the slot layer).
-$hm    = fn(?string $dt) => ($dt && preg_match('/(\d{1,2}:\d{2})/', substr((string)$dt, 10), $m)) ? $m[1] : '';
-$bandOf = fn(?string $dt, ?string $notes) => hm_slot_band_id($hm($dt) ?: '') ?? hm_slot_band_from_notes($notes);
+// Time 'HH:MM' out of a datetime.
+$hm = fn(?string $dt) => ($dt && preg_match('/(\d{1,2}:\d{2})/', substr((string)$dt, 10), $m)) ? $m[1] : '';
 
 try {
   $db = hm_db();
@@ -81,62 +78,35 @@ try {
   if ((string)$bk['status'] === 'admin_blocked') rs_out(['ok' => false, 'error' => 'cannot reschedule an admin block'], $isCli, 400);
 
   $oldDate = (string)($bk['booking_date'] ?? '');
-  $oldTime = $hm($bk['start_at']) ?: hm_slot_time_from_notes($bk['notes'] ?? '');
-  $newTime = $hm($newStart);
+  $oldTime = $hm($bk['start_at']);
   $confirmed = in_array((string)$bk['status'], ['confirmed', 'completed'], true);
-  $newBand   = $bandOf($newStart, $bk['notes']);
   $moved = false;
 
-  // INTERVAL move/resize (every timeline reschedule carries start_at + end_at):
-  // hm_iv_reserve does the atomic FOR UPDATE overlap check (excluding this booking's
-  // own row) and sets start_at/end_at — the SAME single authority create-booking
-  // uses. Discriminated by the REQUEST carrying an interval, NOT by timeline_enabled,
-  // so it is flag-independent. A date-only/band reschedule (interval-less — legacy /
-  // portal) falls through to the LEGACY band transfer below, preserving back-compat.
-  $__useInterval = ($newStart !== '' && $newEnd !== '');
-
-  // SINGLE-SOURCE validation of the TARGET slot (LEGACY band path only). Covers a
-  // whole-day closure even for a band-less booking. Excludes this booking's own
-  // reservation. Skipped for an interval move (overlap is the authority there).
-  if ($confirmed && !$__useInterval) {
-    $chk = hm_cap_confirm_check($db, $newDate, $newBand, $bookingId);
-    if (empty($chk['ok'])) rs_out(['ok' => false, 'error' => 'slot_taken', 'reason' => (string)($chk['reason'] ?? 'slot_taken')], $isCli, 409);
+  // TIMELINE-ONLY reschedule. A timeline drag/resize sends start_at + end_at → an
+  // atomic interval move (hm_iv_reserve, FOR UPDATE overlap excluding self). A
+  // date-only reschedule (e.g. portal) shifts the booking's EXISTING interval to the
+  // new date, keeping the time-of-day — still interval, still overlap-checked.
+  if ($newStart === '' && !empty($bk['start_at']) && !empty($bk['end_at'])) {
+    $newStart = $newDate . ' ' . substr((string)$bk['start_at'], 11, 8);
+    $newEnd   = $newDate . ' ' . substr((string)$bk['end_at'],   11, 8);
   }
+  $newTime = $hm($newStart);
 
-  hm_slot_ensure_table($db);
   $db->beginTransaction();
   try {
-    if ($__useInterval) {
-      // Release any stale legacy band row first, so a legacy booking rescheduled with
-      // an interval doesn't leave a ghost booking_slots reservation (back-compat).
-      hm_slot_release($db, $bookingId);
+    if ($newStart !== '' && $newEnd !== '') {
       // Atomic interval move/resize: overlap-checked against every other scheduled
       // booking + admin block for the target day; sets start_at/end_at on success.
       $rv = hm_iv_reserve($db, $bookingId, $newStart, $newEnd);
       if (!empty($rv['conflict'])) { $c = new HmRsConflict(); $c->reason = 'slot_taken'; throw $c; }
       if (!empty($rv['error']))    { $db->rollBack(); rs_out(['ok' => false, 'error' => 'invalid_time', 'reason' => (string)$rv['error']], $isCli, 400); }
       $moved = true;
-      // hm_iv_reserve already set start_at/end_at; just persist the (possibly new) date.
       $db->prepare('UPDATE bookings SET booking_date = ? WHERE id = ?')->execute([$newDate, $bookingId]);
-      $db->commit();
     } else {
-    // Transfer the reservation for a CONFIRMED booking: release-by-booking (removes
-    // every old row → no duplicate/ghost), then reserve the new band. A full/closed
-    // target rolls the whole thing back, so the old reservation is preserved.
-    if ($confirmed && $newBand !== null) {
-      hm_slot_release($db, $bookingId);
-      $res = hm_cap_reserve($db, $newDate, $newBand, $bookingId);
-      if (!empty($res['conflict'])) { $c = new HmRsConflict(); $c->reason = (string)($res['reason'] ?? 'full'); throw $c; }
-      $moved = true;
+      // Unscheduled booking (no interval) — just move the date.
+      $db->prepare('UPDATE bookings SET booking_date = ? WHERE id = ?')->execute([$newDate, $bookingId]);
     }
-    // Persist the new schedule on the booking record (the calendar's source of truth).
-    $sets = ['booking_date = ?']; $vals = [$newDate];
-    if ($newStart !== '') { $sets[] = 'start_at = ?'; $vals[] = $newStart; }
-    if ($newEnd   !== '') { $sets[] = 'end_at = ?';   $vals[] = $newEnd; }
-    $vals[] = $bookingId;
-    $db->prepare('UPDATE bookings SET ' . implode(', ', $sets) . ' WHERE id = ?')->execute($vals);
     $db->commit();
-    }
   } catch (Throwable $e) {
     if ($db->inTransaction()) $db->rollBack();
     if ($e instanceof HmRsConflict) rs_out(['ok' => false, 'error' => 'slot_taken', 'reason' => $e->reason], $isCli, 409);

@@ -14,8 +14,6 @@
     "test:timeline-touch":    "node tests/timeline-touch.e2e.js",
     "test:timeline-integration": "node tests/timeline-integration.e2e.js",
     "test:ops-cal":              "node tests/ops-calendar.e2e.js",
-    "test:slot-month":   "php tests/slot-capacity-month.test.php",
-    "test:slot-engine":  "php tests/slot-capacity-engine.test.php",
     "test:timeline":     "php tests/timeline-windows.test.php",
     "test:all":    "node --test tests/dataProvider.test.js tests/smoke.test.js tests/portalSelfService.test.js tests/architecture-lock.test.js"
   },
