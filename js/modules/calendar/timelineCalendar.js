@@ -616,12 +616,22 @@ window.TimelineCalendar = (function () {
     }, 0);
   }
 
+  // Drop an item from a per-date state map by id, then re-render immediately — so a
+  // deleted booking / unblocked interval disappears instantly, before the reload.
+  function _optimisticDrop(map, id) {
+    Object.keys(map).forEach(function (d) {
+      map[d] = (map[d] || []).filter(function (x) { return String(x.id) !== String(id); });
+    });
+    render();
+  }
   function _deleteBooking(id) {
     if (!window.confirm('この予約をキャンセルしますか？')) return;
-    _post2('/booking-status.php', { booking_id: id, status: 'Cancelled', notify: false }, '予約をキャンセルしました');
+    _post2('/booking-status.php', { booking_id: id, status: 'Cancelled', notify: false }, '予約をキャンセルしました')
+      .then(function (ok) { if (ok) _optimisticDrop(state.bookings, id); });
   }
   function _unblock(id) {
-    _post2('/block-interval.php', { action: 'unblock', id: id }, 'ブロックを解除しました');
+    _post2('/block-interval.php', { action: 'unblock', id: id }, 'ブロックを解除しました')
+      .then(function (ok) { if (ok) _optimisticDrop(state.blocks, id); });
   }
 
   // Resolve which day column the pointer is over (week view cross-day drag).

@@ -32,6 +32,7 @@ const HARNESS = `<!doctype html><html><head><meta charset="utf-8"></head><body>
     window.toast=function(){}; window.confirm=function(){ return true; };
     localStorage.setItem('hm_timeline_ui','1');
     window.__posts=[]; window.__closed=[];   // stateful closures so reopen is testable
+    window.__blocks=[{id:'blk1',reason:'トラック整備',memo:'定期点検',start_at:'2026-08-12 10:00:00',end_at:'2026-08-12 11:00:00'}];
     window.fetch=function(url,opts){
       url=String(url); var method=(opts&&opts.method)||'GET';
       var body=null; try{ body=opts&&opts.body?JSON.parse(opts.body):null; }catch(e){}
@@ -49,13 +50,17 @@ const HARNESS = `<!doctype html><html><head><meta charset="utf-8"></head><body>
           if(body.action==='reopen' && body.date){ window.__closed = window.__closed.filter(function(d){return d!==body.date;});
             return J({ok:true,action:'reopen',reopened:1,still_closed:false}); }
         }
+        if(tag==='block-interval' && body && body.action==='unblock'){
+          var before=window.__blocks.length; window.__blocks=window.__blocks.filter(function(b){return String(b.id)!==String(body.id);});
+          return J({ok:true,action:'unblocked',id:body.id,removed:before-window.__blocks.length,still_blocked:false});
+        }
         return J({ok:true,id:'new1'});
       }
       if(url.indexOf('action=get')!==-1){ return J({ok:true,date:'2026-08-12',windows:[],config:{day_start:'07:00',day_end:'22:00',step:30,durations:[30,60,90,120,180],default_duration:120,active:true}}); }
       if(url.indexOf('action=range')!==-1){ return J({ok:true,
         windows:[{id:'w1',window_date:'2026-08-12',start_at:'2026-08-12 09:00:00',end_at:'2026-08-12 12:00:00'}],
         bookings:[{id:'bk1',customer_name:'田中',status:'confirmed',start_at:'2026-08-12 14:00:00',end_at:'2026-08-12 16:00:00'}],
-        blocks:[{id:'blk1',reason:'トラック整備',memo:'定期点検',start_at:'2026-08-12 10:00:00',end_at:'2026-08-12 11:00:00'}],
+        blocks: window.__blocks.slice(),
         closed: window.__closed.map(function(d){ return {day:d,reason:'休業',closed_by:'admin'}; }) }); }
       return J({ok:true});
     };
@@ -146,14 +151,17 @@ function chk(label, cond) { if (cond) { pass++; console.log('  [ok] ' + label); 
   const dp = await page.evaluate(() => window.__posts.find(p => p.__url === 'booking-status'));
   chk('booking delete → status Cancelled', !!dp && /cancel/i.test(dp.status || '') && dp.booking_id === 'bk1');
 
-  console.log('context menu: right-click block → unblock');
+  console.log('context menu: right-click block → unblock → block DISAPPEARS (BUG 1)');
   await page.evaluate(() => { window.__posts = []; });
+  chk('block present before unblock', (await page.$$('#hmTl .tl-blk')).length === 1);
   await page.$eval('#hmTl .tl-blk', el => { const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: r.left + 5, clientY: r.top + 5 })); });
   await page.waitForSelector('#tlCtxMenu', { timeout: 2000 });
   await page.click('#tlCtxMenu .tl-ctx-item');
-  await page.waitForTimeout(200);
+  await page.waitForFunction(() => document.querySelectorAll('#hmTl .tl-blk').length === 0, { timeout: 3000 });
   const up = await page.evaluate(() => window.__posts.find(p => p.__url === 'block-interval' && p.action === 'unblock'));
   chk('block unblock POSTed', !!up && up.id === 'blk1');
+  chk('block REMOVED from the timeline (no stale block)', (await page.$$('#hmTl .tl-blk')).length === 0);
+  chk('no stale block state on the server side', (await page.evaluate(() => window.__blocks.length)) === 0);
 
   console.log('close-day → reopen CYCLE (the reported bug: reopen must fully clear it)');
   await page.evaluate(() => { window.__posts = []; });

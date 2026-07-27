@@ -179,5 +179,40 @@ $db->exec("UPDATE bookings SET status='cancelled' WHERE id='bk9'");
 $s120b = hm_timeline_slots($db, '2026-09-20', 120, 30);
 ck('cancel returns the slot',      in_array('13:00',$s120b,true), true);
 
+// ── BUG 2: slot generation must CONTINUE after a block (never truncate), and BUG 1:
+//    unblocking must fully restore availability — full data path (admin_blocked row →
+//    hm_iv_day → hm_windows_busy_ranges → hm_tl_gen_slots). ────────────────────────
+echo "\nDB: slots continue AFTER a block; unblock restores them\n";
+$D = '2026-12-05';
+hm_windows_add($db, $D . ' 07:00', $D . ' 21:00');           // working hours 07:00–21:00
+$db->exec("INSERT INTO bookings (id,customer_name,status,booking_date,start_at,end_at)
+           VALUES ('x2','（ブロック）','admin_blocked','$D','$D 08:00:00','$D 16:00:00')");  // block 08:00–16:00
+$g = hm_timeline_slots($db, $D, 30, 30);
+ck('block: slots BEFORE (07:00,07:30 present)', in_array('07:00',$g,true) && in_array('07:30',$g,true), true);
+ck('block: blocked gap absent (08:00–15:30)',   !in_array('08:00',$g,true) && !in_array('12:00',$g,true) && !in_array('15:30',$g,true), true);
+ck('block: slots AFTER present (16:00,17:00,20:30)', in_array('16:00',$g,true) && in_array('17:00',$g,true) && in_array('20:30',$g,true), true);
+ck('block: generation did NOT stop at the block', count($g) === 12, true);   // 07:00,07:30 + 16:00..20:30
+
+// Multiple blocks — gaps on every side.
+$db->exec("INSERT INTO bookings (id,customer_name,status,booking_date,start_at,end_at)
+           VALUES ('x3','（ブロック）','admin_blocked','$D','$D 17:00:00','$D 18:00:00')");
+$g2 = hm_timeline_slots($db, $D, 30, 30);
+ck('two blocks: 16:00 & 16:30 kept', in_array('16:00',$g2,true) && in_array('16:30',$g2,true), true);
+ck('two blocks: 17:00 removed',      !in_array('17:00',$g2,true), true);
+ck('two blocks: 18:00 kept',         in_array('18:00',$g2,true), true);
+
+// BUG 1: unblock (delete the admin_blocked rows) → availability fully restored.
+$del = $db->prepare("DELETE FROM bookings WHERE id = ? AND status = 'admin_blocked'");
+$del->execute(['x2']); ck('unblock x2 removed a row', $del->rowCount(), 1);
+$del->execute(['x3']); ck('unblock x3 removed a row', $del->rowCount(), 1);
+$restored = hm_timeline_slots($db, $D, 30, 30);
+ck('unblock restores 08:00–15:30', in_array('08:00',$restored,true) && in_array('12:00',$restored,true) && in_array('15:30',$restored,true), true);
+ck('unblock restores 17:00',       in_array('17:00',$restored,true), true);
+ck('unblock: full day available (07:00..20:30 = 28 slots)', count($restored), 28);
+// Unblock never removes a REAL booking (status guard).
+$db->exec("INSERT INTO bookings (id,customer_name,status,booking_date,start_at,end_at)
+           VALUES ('real1','客','confirmed','$D','$D 10:00:00','$D 11:00:00')");
+$del->execute(['real1']); ck('unblock leaves a real booking intact', $del->rowCount(), 0);
+
 echo "\n" . ($fail ? "FAIL: $fail failed, $pass passed\n" : "PASS: all $pass checks\n");
 exit($fail ? 1 : 0);

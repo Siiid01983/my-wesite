@@ -134,13 +134,21 @@ try {
     bx_out(['ok' => false, 'error' => 'timeline_disabled — scheduler is temporarily disabled'], $isCli, 409);
   }
 
-  // ── unblock: delete an admin_blocked row by id (status-guarded) ──────────────
+  // ── unblock: delete an admin_blocked row by id (status-guarded so a real booking
+  //    is never removed). Verifies the row is actually gone and NEVER reports a false
+  //    success, so the interval can't stay blocked after an "unblocked" response. ──
   if ($action === 'unblock') {
     $id = trim((string)($param('id') ?? ''));
     if ($id === '') bx_out(['ok' => false, 'error' => 'id required'], $isCli, 400);
     $del = $db->prepare("DELETE FROM bookings WHERE id = ? AND status = 'admin_blocked'");
     $del->execute([$id]);
-    bx_out(['ok' => true, 'action' => 'unblocked', 'id' => $id, 'removed' => $del->rowCount()], $isCli);
+    $removed = $del->rowCount();
+    $chk = $db->prepare("SELECT 1 FROM bookings WHERE id = ? AND status = 'admin_blocked'");
+    $chk->execute([$id]);
+    if ($chk->fetch()) {
+      bx_out(['ok' => false, 'error' => 'unblock failed — interval still blocked', 'id' => $id], $isCli, 500);
+    }
+    bx_out(['ok' => true, 'action' => 'unblocked', 'id' => $id, 'removed' => $removed, 'still_blocked' => false], $isCli);
   }
 
   // ── validate date (block + list both need it) ────────────────────────────────
