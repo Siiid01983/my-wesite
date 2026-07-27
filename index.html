@@ -2914,7 +2914,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   <!-- Drawer: Time — slots render via baRenderTimeSlots() (CMS-managed) -->
   <div class="ba-overlay" id="ba-drawer-time" onclick="baBgClose(event,'time')">
     <div class="ba-drawer">
-      <div class="ba-drawer-top"><div class="ba-drawer-handle"></div><div class="ba-drawer-title">希望時間帯</div></div>
+      <div class="ba-drawer-top"><div class="ba-drawer-handle"></div><div class="ba-drawer-title">希望の開始時刻</div></div>
       <div class="ba-drawer-scroll">
         <div class="ba-filter-list" id="ba-time-host"></div>
       </div>
@@ -2975,7 +2975,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     timeSlots: [{"label":"午前（9:00〜12:00）","value":"午前（9:00〜12:00）"},{"label":"午後（12:00〜15:00）","value":"午後（12:00〜15:00）"},{"label":"夕方（15:00〜18:00）","value":"夕方（15:00〜18:00）"},{"label":"夜間（18:00〜21:00）","value":"夜間（18:00〜21:00）"},{"label":"時間指定なし（当日調整）","value":"時間指定なし"}],
     filters: [{"id":"same-day","label":"当日・翌日対応可","short":"当日対応"},{"id":"english","label":"英語対応可","short":"英語対応"},{"id":"insurance","label":"保険加入済","short":"保険加入"},{"id":"disposal","label":"不用品回収対応","short":"不用品回収"}],
     badges: {"tansin":{"text":"人気","color":"#9AB57A"},"couple":{"text":"人気","color":"#9AB57A"},"student":{"text":"人気","color":"#9AB57A"},"sameday":{"text":"当日対応","color":"#c0392b"}},
-    labels: {"furnitureTitle":"荷物を選択","filterTitle":"絞り込み条件","timeTitle":"希望時間帯","dateTitle":"引越し希望日"}
+    labels: {"furnitureTitle":"荷物を選択","filterTitle":"絞り込み条件","timeTitle":"希望の開始時刻","dateTitle":"引越し希望日"}
   };
 
   // Built-in line-art icons (inline SVG keyed by item id). Per-item override:
@@ -3044,7 +3044,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 
   // Single source of truth for the booking the overlay is assembling.
   function baBlankState() {
-    return { serviceId:'', service:'', fromAddr:'', toAddr:'', dateISO:'', startAt:'', durationMin:0, fromFloor:'', toFloor:'', fromEv:'', toEv:'', disposal:'', workers:2, filters:'', name:'', email:'', phone:'', notes:'' };
+    return { serviceId:'', service:'', fromAddr:'', toAddr:'', dateISO:'', startAt:'', fromFloor:'', toFloor:'', fromEv:'', toEv:'', disposal:'', workers:2, filters:'', name:'', email:'', phone:'', notes:'' };
   }
   // TIMELINE mode (availability.php `timeline`): the customer picks an EXACT start
   // time from the admin's available windows + a duration; the engine reserves
@@ -3052,12 +3052,8 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   // request removed). Resolved once per overlay open by _baFetchMode(); when false
   // (server unavailable) the time step shows a contact fallback, never a band picker.
   var baTimeline = false;
-  var baAvailWindows = null;      // [{start_at,end_at}] admin windows for baState.dateISO
-  var baAvailSlots = null;        // ["HH:MM", …] server slots for the default duration
-  var baSlotsByDur = null;        // { "30":[…], "60":[…], … } SERVER free starts per duration (single source)
-  var baAvailDurations = null;    // [30,60,90,120,180,240] durations the server offers
+  var baAvailSlots = null;        // ["HH:MM", …] the ONLY source: server free start times (admin default duration)
   var baAvailError = false;       // last availability fetch failed (transient) — distinct from "truly no slots"
-  var baDefaultDuration = 120;
   var baState = baBlankState();
   var baCurrentScreen = 'services';
   var baSubmitting = false;
@@ -3247,7 +3243,6 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
         // are retired. If the server doesn't report timeline availability, the time
         // step shows a graceful contact fallback (never a band picker).
         baTimeline = !!(out && out.ok && out.timeline);
-        if (out && out.default_duration) baDefaultDuration = out.default_duration;
       })
       .catch(function () { baTimeline = false; })
       .then(function () { baRenderTimeSlots(); _baApplyModeLabels(); });
@@ -3492,11 +3487,8 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     var picked = document.querySelector('#ba-drawer-time input[name="ba-tl"]:checked');
     if (!picked) { alert('空き開始時刻を選択してください。'); return; }
     if (!baState.dateISO) { alert('先に希望日を選択してください。'); baOpenDrawer('date'); return; }
-    var dur = baState.durationMin || baDefaultDuration || 120;
-    baState.durationMin = dur;
     baState.startAt = baState.dateISO + 'T' + picked.value;   // "YYYY-MM-DDTHH:MM"
-    var endMin = (_baToMin(picked.value) || 0) + dur;
-    el.textContent = picked.value + '〜' + _baMinHm(endMin) + '（' + (dur % 60 === 0 ? (dur / 60) + '時間' : dur + '分') + '）';
+    el.textContent = picked.value;   // start time only — the duration is set by the admin timeline
     el.classList.add('filled');
     baCloseDrawer('time');
   };
@@ -3534,11 +3526,8 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
       rows.push(['引越し先', (baState.toAddr || '—') + (baState.toFloor ? '（' + baState.toFloor + '階・EV' + (baState.toEv || '-') + '）' : '')]);
     }
     rows.push(['希望日',   _baFmtDate(baState.dateISO)]);
-    var _dm = baState.durationMin || baDefaultDuration || 120;
     var _st = baState.startAt ? baState.startAt.slice(11, 16) : '';
-    var _et = _st ? _baMinHm((_baToMin(_st) || 0) + _dm) : '';
-    rows.push(['開始時刻', _st ? (_st + '〜' + _et) : '—']);
-    rows.push(['所要時間', (_dm % 60 === 0 ? (_dm / 60) + '時間' : _dm + '分')]);
+    rows.push(['開始時刻', _st || '—']);
     rows.push(['作業員',   baState.workers + '名']);
     rows.push(['荷物',     items]);
     if (baState.disposal) rows.push(['不用品回収', baState.disposal]);
@@ -3613,7 +3602,8 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
         time:      '',
         items:     _baItemsArray(),
         startAt:     baState.startAt || '',
-        durationMin: baState.durationMin || baDefaultDuration || 120,
+        // No duration sent — the server applies the admin timeline's default_duration
+        // (hm_timeline_default_duration). The customer never chooses a duration.
         fromAddr:  baState.fromAddr,
         toAddr:    single ? '' : baState.toAddr,
         name:      baState.name,
@@ -3735,9 +3725,8 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     host.innerHTML = html;
   }
   // ── Timeline availability (single source = admin availability_windows) ──────
-  // No bands (am/pm/ev/nt), no client slot engine. availability.php returns the
-  // free start times per duration (windows − bookings − blocks − closed); we display.
-  var baAvailIntervals = null;   // [{start_at,end_at}] busy ranges (display only)
+  // No bands (am/pm/ev/nt), no client slot engine, no duration choice. availability.php
+  // returns the free START TIMES for the admin default duration; the client displays them.
   // Fetch real-time availability for a date. availability.php returns
   // 'reserved' for BOTH customer reservations and admin_blocked rows, so this one
   // check hides blocked + booked bands. Fail-open: any error leaves slots
@@ -3761,7 +3750,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     return s;
   }
   function _baFetchAvail(iso) {
-    baAvailIntervals = null; baAvailError = false;
+    baAvailError = false;
     iso = _baDateOnly(iso);   // normalize before it hits the strict server validator
     var base = (window.API_BASE || '').replace(/\/+$/, '');
     if (!iso || !base) { baRenderTimeSlots(); return; }
@@ -3770,17 +3759,14 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     })
       .then(function (r) { return r.json(); })
       .then(function (out) {
-        if (!out || !out.ok) { baAvailError = true; baSlotsByDur = null; return; }
-        // The SERVER is the single source: it already computed the free start times
-        // for every duration (windows − bookings − blocks − closed). We only display.
-        baAvailIntervals  = Array.isArray(out.intervals) ? out.intervals : null;
-        baAvailWindows    = Array.isArray(out.windows) ? out.windows : null;
-        baAvailSlots      = Array.isArray(out.slots) ? out.slots : null;
-        baSlotsByDur      = (out.slots_by_duration && typeof out.slots_by_duration === 'object') ? out.slots_by_duration : null;
-        baAvailDurations  = Array.isArray(out.durations) && out.durations.length ? out.durations : null;
-        if (out.default_duration) baDefaultDuration = out.default_duration;
+        if (!out || !out.ok) { baAvailError = true; baAvailSlots = null; return; }
+        // The SERVER is the single source of truth: availability.php returns `slots`,
+        // the free START TIMES for the admin-configured duration (windows minus
+        // existing bookings, admin blocks and closed days). The client only displays
+        // them — no duration choice, no client-side slot generation.
+        baAvailSlots = Array.isArray(out.slots) ? out.slots : null;
       })
-      .catch(function () { baAvailError = true; baAvailIntervals = null; baAvailWindows = null; baAvailSlots = null; baSlotsByDur = null; })
+      .catch(function () { baAvailError = true; baAvailSlots = null; })
       .then(function () { baRenderTimeSlots(); });
   }
   // Local (not UTC) "YYYY-MM-DD" for TODAY (used as the date-picker minimum).
@@ -3788,30 +3774,13 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     var t = new Date();
     return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
   }
-  // ── TIMELINE mode: available discrete start times inside the admin's windows ──
-  // Pure client generator mirroring the server (hm_tl_gen_slots): a start S is
-  // bookable iff [S,S+dur] fits a window AND overlaps no busy interval.
-  function _baToMin(v) { var m = String(v || '').match(/(\d{2}):(\d{2})/); return m ? (+m[1]) * 60 + (+m[2]) : null; }
-  function _baMinHm(m) { m = Math.max(0, Math.min(1440, m)); return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2); }
-  // SINGLE SOURCE OF TRUTH: the free start times come from the SERVER
-  // (availability.php → hm_timeline_slots → availability_windows − bookings − blocks
-  // − closed), pre-computed for every duration. The customer picker only DISPLAYS
-  // them; there is NO client-side slot engine. Changing the duration re-reads the
-  // matching server list instantly (already fetched) — no recompute, no refetch.
-  function _baServerSlots(dur) {
-    if (baSlotsByDur && Array.isArray(baSlotsByDur[String(dur)])) return baSlotsByDur[String(dur)];
-    // Graceful transition only (older server that sent a flat `slots` for the default
-    // duration): still SERVER data, never a client recomputation.
-    if (Array.isArray(baAvailSlots) && dur === (baDefaultDuration || 120)) return baAvailSlots;
-    return [];
-  }
+  // Start-time picker. The customer chooses ONLY a start time; the booking duration
+  // is fixed by the admin timeline configuration (server default_duration) and applied
+  // server-side at booking time. Start times are the SERVER's free starts for that
+  // duration (availability.php `slots` = windows minus bookings/blocks/closed) — the
+  // client only displays them. No duration UI, no client slot engine.
   function _baRenderTimelineSlots(host) {
-    var dur = baState.durationMin || baDefaultDuration || 120;
-    var durOpts = baAvailDurations || [30, 60, 90, 120, 180, 240];
-    var slots = _baServerSlots(dur);
-    var durHtml = durOpts.map(function (d) {
-      return '<button type="button" class="ba-dur' + (d === dur ? ' on' : '') + '" data-dur="' + d + '" style="padding:8px 12px;border:1px solid ' + (d === dur ? '#2C3626' : '#d5dae1') + ';border-radius:20px;background:' + (d === dur ? '#2C3626' : '#fff') + ';color:' + (d === dur ? '#fff' : '#374151') + ';font:inherit;font-size:13px;font-weight:600;cursor:pointer">' + (d % 60 === 0 ? (d / 60) + '時間' : d + '分') + '</button>';
-    }).join('');
+    var slots = Array.isArray(baAvailSlots) ? baAvailSlots : [];
     var slotHtml;
     if (slots.length) {
       slotHtml = slots.map(function (t) {
@@ -3824,22 +3793,12 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
       slotHtml = '<div style="font-size:13px;color:#6b7280;margin:8px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap">空き時間を読み込めませんでした。'
         + '<button type="button" id="ba-tl-retry" style="padding:7px 14px;border:1px solid #2C3626;border-radius:20px;background:#2C3626;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">再読み込み</button></div>';
     } else {
-      // Truly zero free starts AFTER the timeline calc. If a SHORTER duration still
-      // has openings, say so; otherwise the whole day is full/closed.
-      var anyOther = baSlotsByDur && Object.keys(baSlotsByDur).some(function (k) { return (baSlotsByDur[k] || []).length > 0; });
-      slotHtml = '<p style="font-size:13px;color:#6b7280;margin:8px 0">'
-        + (anyOther ? 'この所要時間では空きがありません。短い所要時間をお選びください。' : 'この日は空き時間がありません。別の日をお選びください。')
-        + '</p>';
+      // Truly zero free start times for this day (fully booked / blocked / closed).
+      slotHtml = '<p style="font-size:13px;color:#6b7280;margin:8px 0">この日は空き時間がありません。別の日をお選びください。</p>';
     }
     host.innerHTML =
-        '<div style="margin-bottom:14px"><div style="font-size:13px;font-weight:600;margin-bottom:8px">所要時間</div>'
-      +   '<div id="ba-tl-durs" style="display:flex;flex-wrap:wrap;gap:8px">' + durHtml + '</div></div>'
-      + '<div><div style="font-size:13px;font-weight:600;margin-bottom:8px">希望の開始時刻</div>'
-      +   '<div id="ba-tl-slots" style="display:flex;flex-wrap:wrap;gap:8px">' + slotHtml + '</div></div>';
-    var durWrap = host.querySelector('#ba-tl-durs');
-    if (durWrap) durWrap.querySelectorAll('.ba-dur').forEach(function (b) {
-      b.onclick = function () { baState.durationMin = parseInt(b.getAttribute('data-dur'), 10) || 120; _baRenderTimelineSlots(host); };
-    });
+      '<div><div style="font-size:13px;font-weight:600;margin-bottom:8px">希望の開始時刻</div>'
+      + '<div id="ba-tl-slots" style="display:flex;flex-wrap:wrap;gap:8px">' + slotHtml + '</div></div>';
     var retry = host.querySelector('#ba-tl-retry');
     if (retry) retry.onclick = function () { if (baState.dateISO) _baFetchAvail(baState.dateISO); };
   }
@@ -3873,7 +3832,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     var defs = {
       furnitureTitle: ['#ba-drawer-furniture', "荷物を選択"],
       dateTitle:      ['#ba-drawer-date', "引越し希望日"],
-      timeTitle:      ['#ba-drawer-time', "希望時間帯"],
+      timeTitle:      ['#ba-drawer-time', "希望の開始時刻"],
       filterTitle:    ['#ba-drawer-filter', "絞り込み条件"]
     };
     Object.keys(defs).forEach(function (k) {

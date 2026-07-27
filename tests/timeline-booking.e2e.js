@@ -91,20 +91,12 @@ const INIT = `
   await page.waitForTimeout(250);
   await page.evaluate(() => window.baOpenDrawer && window.baOpenDrawer('time'));
   await page.waitForTimeout(200);
-  chk('duration chips rendered (incl 4h)', (await page.$$('#ba-time-host .ba-dur')).length === 6);
-  chk('slot chips rendered (3)', (await page.$$('#ba-time-host input[name="ba-tl"]')).length === 3);
+  chk('NO duration selector (.ba-dur removed)', (await page.$$('#ba-time-host .ba-dur')).length === 0);
+  chk('start-time chips rendered from server slots (3)', (await page.$$('#ba-time-host input[name="ba-tl"]')).length === 3);
   chk('no band radios in timeline mode', (await page.$$('#ba-time-host input[name="ba-time"]')).length === 0);
+  chk('no 所要時間 label in the picker', !/所要時間/.test(await page.$eval('#ba-time-host', el => el.textContent)));
 
-  console.log('duration change shows that server list');
-  // 09:00–12:00 window; server reports 180-min → only 09:00 fits.
-  await page.evaluate(() => { document.querySelector('#ba-time-host .ba-dur[data-dur="180"]').click(); });
-  await page.waitForTimeout(150);
-  chk('180min → 1 slot (09:00)', (await page.$$('#ba-time-host input[name="ba-tl"]')).length === 1);
-  // back to 120
-  await page.evaluate(() => { document.querySelector('#ba-time-host .ba-dur[data-dur="120"]').click(); });
-  await page.waitForTimeout(120);
-
-  console.log('confirm sets startAt');
+  console.log('confirm sets startAt (no duration step)');
   await page.evaluate(() => { var r = document.querySelector('#ba-time-host input[name="ba-tl"][value="09:30"]'); if (r) r.checked = true; window.baConfirmTime(); });
   const startAt = await page.evaluate(() => window.__baStateStart ? window.__baStateStart() : null);
   // read via a fresh review build instead:

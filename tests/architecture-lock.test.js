@@ -385,17 +385,23 @@ describe('Hourly timeline (sole scheduler, active by default)', () => {
       'availability.php intervals must be sanitized to start_at/end_at only');
   });
 
-  it('the customer picker DISPLAYS server slots (no second slot engine, no band, no manual fallback)', () => {
+  it('the customer picker shows ONLY server start times — no duration selector, no client engine, no bands', () => {
     const idx = read('index.html');
-    assert.ok(/slots_by_duration/.test(idx) && /_baServerSlots/.test(idx),
-      'index.html must display server slots_by_duration (single source)');
-    assert.ok(!/function\s+_baGenSlots/.test(idx),
-      'index.html must NOT contain a client-side slot generator (_baGenSlots)');
-    assert.ok(!/ba-time-host[^]*?tel:0902489|午前|午後|夕方|深夜/.test(idx) || !/_baGenSlots/.test(idx),
-      'the time picker must not fall back to bands');
-    // The "no availability" wording must live behind the truly-empty branch only.
+    // Start times come straight from the server `slots` (default duration); no client generator.
+    assert.ok(/baAvailSlots/.test(idx) && /out\.slots/.test(idx),
+      'index.html must display the server `slots` (single source of start times)');
+    assert.ok(!/function\s+_baGenSlots/.test(idx) && !/function\s+_baServerSlots/.test(idx),
+      'index.html must NOT contain a client-side slot generator');
+    // Duration selection is fully removed from the customer flow.
+    assert.ok(!/所要時間/.test(idx), 'the "所要時間" (duration) label must be gone from index.html');
+    assert.ok(!/class="ba-dur/.test(idx) && !/ba-tl-durs/.test(idx),
+      'the duration selector (ba-dur / ba-tl-durs) must be removed');
+    assert.ok(!/durationMin/.test(idx),
+      'the client must not track or send a customer-selected duration (server applies the admin default)');
+    // The start-time step + truly-empty message remain.
+    assert.ok(/希望の開始時刻/.test(idx), 'the picker keeps the 希望の開始時刻 (start time) step');
     assert.ok(/この日は空き時間がありません/.test(idx),
-      'the picker keeps a truly-empty message (shown only when the server returns zero slots)');
+      'the truly-empty message remains (shown only when the server returns zero start times)');
   });
 
   it('closed days suppress all availability (windows AND default) — reason never public', () => {

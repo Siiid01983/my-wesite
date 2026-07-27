@@ -230,7 +230,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await cust.evaluate(() => window.openBookingApp && window.openBookingApp('単身引越し')); await sleep(300);
   await cust.evaluate(() => window.baSetDate && window.baSetDate('2099-01-05')); await sleep(250);
   await cust.evaluate(() => window.baOpenDrawer && window.baOpenDrawer('time')); await sleep(200);
-  chk('picker shows 3 server-computed slots + 6 durations', (await cust.$$('#ba-time-host input[name="ba-tl"]')).length === 3 && (await cust.$$('#ba-time-host .ba-dur')).length === 6);
+  chk('picker shows server start times + NO duration selector', (await cust.$$('#ba-time-host input[name="ba-tl"]')).length >= 1 && (await cust.$$('#ba-time-host .ba-dur')).length === 0);
   await cust.close();
 
   console.log('RESCHEDULE (drag booking) + reschedule-conflict (real HTTP)');

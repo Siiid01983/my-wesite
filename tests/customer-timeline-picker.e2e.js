@@ -20,20 +20,14 @@ const BASE = 'http://127.0.0.1:5050';
 let pass = 0, fail = 0;
 function chk(label, cond) { if (cond) { pass++; console.log('  [ok] ' + label); } else { fail++; console.log('  [XX] ' + label); } }
 
-// Server-shaped availability payload. slots_by_duration is what the SERVER computes
-// (windows − bookings − blocks − closed) for each allowed duration.
+// Server-shaped availability payload. `slots` is the SERVER's free START TIMES for the
+// admin default duration (windows − bookings − blocks − closed). The customer picker
+// displays ONLY these; there is no duration selector anymore.
 function payload(over) {
   return Object.assign({
     ok: true, date: '2026-09-15', timeline: true, closed: false,
-    windows: [{ id: 'w1', start_at: '2026-09-15 08:00:00', end_at: '2026-09-15 18:00:00' }],
-    intervals: [], durations: [30, 60, 90, 120, 180, 240], default_duration: 120,
-    slots: ['08:00', '08:30', '09:00'],
-    slots_by_duration: {
-      '30':  ['08:00', '08:30', '09:00', '17:00', '17:30'],
-      '60':  ['08:00', '08:30', '09:00', '16:30', '17:00'],
-      '120': ['08:00', '08:30', '09:00', '15:30', '16:00'],
-      '240': ['08:00', '08:30', '13:00', '14:00'],
-    },
+    intervals: [], default_duration: 120,
+    slots: ['07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00'],
   }, over || {});
 }
 
@@ -45,7 +39,7 @@ function payload(over) {
   let mode = 'ok';   // 'ok' | 'empty' | 'error'
   await ctx.route('**/availability.php*', route => {
     if (mode === 'error') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: false, error: 'boom' }) });
-    if (mode === 'empty') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(payload({ slots: [], slots_by_duration: { '30': [], '60': [], '120': [], '240': [] } })) });
+    if (mode === 'empty') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(payload({ slots: [] })) });
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(payload()) });
   });
   await ctx.addInitScript(() => { window.API_BASE = 'http://mock/hm-api'; window.API_KEY = 'k'; });
@@ -53,32 +47,28 @@ function payload(over) {
   await ctx.goto(BASE + '/index.html', { waitUntil: 'domcontentloaded' });
   await ctx.waitForFunction(() => typeof window.openBookingApp === 'function');
 
-  // ── Open the picker on a date (drawer stays closed; we assert via the DOM, which
-  //    holds the rendered slots regardless of visibility) ──────────────────────
+  // Open the picker on a date; assert via the DOM (slots render regardless of drawer visibility).
   const slotVals = () => ctx.$$eval('#ba-tl-slots .ba-tl-slot input', els => els.map(e => e.value));
-  const clickDur = d => ctx.$eval('#ba-tl-durs .ba-dur[data-dur="' + d + '"]', el => el.click());
   const hostText = () => ctx.$eval('#ba-time-host', el => el.textContent);
 
   await ctx.evaluate(() => { window.openBookingApp('単身引越し'); window.baSetDate('2026-09-15'); });
   await ctx.waitForFunction(() => document.querySelectorAll('#ba-tl-slots .ba-tl-slot').length > 0, { timeout: 5000 });
 
-  console.log('server slots displayed (default duration 120)');
+  console.log('start times come straight from server `slots` — no duration selector');
   let slots = await slotVals();
-  chk('shows the SERVER 120-min slots', JSON.stringify(slots) === JSON.stringify(['08:00', '08:30', '09:00', '15:30', '16:00']));
+  chk('shows exactly the SERVER start times (out.slots)', JSON.stringify(slots) === JSON.stringify(['07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00']));
+  chk('NO duration container (#ba-tl-durs)', !(await ctx.$('#ba-tl-durs')));
+  chk('NO duration buttons (.ba-dur)', (await ctx.$$('.ba-dur')).length === 0);
+  chk('NO 所要時間 label anywhere in the picker', !/所要時間/.test(await hostText()));
+  chk('start-time heading present (希望の開始時刻)', /希望の開始時刻/.test(await hostText()));
   chk('no manual phone number in the picker', !/090-2489-3402/.test(await hostText()));
-  chk('4時間 (240) duration option exists', (await ctx.$$eval('#ba-tl-durs .ba-dur', b => b.map(x => x.textContent))).includes('4時間'));
 
-  console.log('duration change → instant recompute from server list');
-  await clickDur(240);
-  await ctx.waitForTimeout(120);
-  slots = await slotVals();
-  chk('240-min shows its server slots', JSON.stringify(slots) === JSON.stringify(['08:00', '08:30', '13:00', '14:00']));
-  chk('blocked/booked gap absent (no 09:30–12:30 for 4h)', !slots.includes('09:30') && !slots.includes('10:00') && !slots.includes('11:00'));
-
-  await clickDur(30);
-  await ctx.waitForTimeout(120);
-  slots = await slotVals();
-  chk('30-min shows its server slots (incl 17:30)', slots.includes('17:30') && slots.includes('08:00'));
+  console.log('flow: date → pick ONE start time → confirm (no duration step)');
+  await ctx.$eval('#ba-tl-slots input[name="ba-tl"][value="08:30"]', el => { el.checked = true; });
+  await ctx.evaluate(() => window.baConfirmTime());
+  const valTime = (await ctx.$eval('#ba-val-time', el => el.textContent)).trim();
+  chk('confirmed value is the START TIME only (08:30 — no range/duration)', valTime === '08:30');
+  chk('confirmed value has no duration text (時間/分/〜)', !/時間|分|〜/.test(valTime));
 
   // ── Truly-empty day ────────────────────────────────────────────────────────
   console.log('truly-empty day → pick-another-day note (not manual contact)');
