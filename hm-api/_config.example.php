@@ -147,9 +147,11 @@ return [
   //   • 'timeline_default_windows' → business-hours window(s) applied to any date
   //     the admin has NOT drawn windows for, so customers always see bookable slots.
   //     An admin window for a specific date overrides it; a CLOSED day (close-day.php)
-  //     suppresses all availability for that date.
+  //     suppresses all availability for that date. Make this span the WHOLE working
+  //     day (match timeline_day_start–timeline_day_end); a narrow slice here clips the
+  //     customer's start-time list. If omitted entirely, it defaults to the day bounds.
   // 'timeline_disabled'      => false,               // emergency stop (default off)
-  'timeline_default_windows'  => [['09:00', '18:00']], // default open hours per day
+  'timeline_default_windows'  => [['07:00', '22:00']], // full working day (07:00–22:00)
   'timeline_default_duration' => 120,                 // minutes (2h)
   'timeline_durations'        => [30, 60, 90, 120, 180],
   'timeline_slot_step'        => 30,                  // minutes granularity

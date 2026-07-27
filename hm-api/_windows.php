@@ -59,14 +59,16 @@ if (!function_exists('hm_timeline_enabled')) {
   /**
    * Default availability windows (minutes-since-midnight [start,end] pairs) applied
    * to any date the admin has NOT explicitly drawn windows for, so customers always
-   * receive bookable start times out-of-the-box. Config: 'timeline_default_windows'
-   * => [['09:00','18:00'], …]; default is a single 09:00–18:00 business-hours block.
-   * An admin window drawn for a specific date OVERRIDES the default for that date;
-   * a CLOSED day suppresses it entirely (handled in hm_windows_day_ranges).
+   * receive bookable start times out-of-the-box across the WHOLE working day. Config:
+   * 'timeline_default_windows' => [['07:00','21:00'], …]; when unset it falls back to
+   * the business-day bounds (timeline_day_start–timeline_day_end, default 07:00–22:00)
+   * so the customer sees the full day, not a narrow 9–6 slice. An admin window drawn
+   * for a specific date OVERRIDES the default; a CLOSED day suppresses it entirely.
    */
   function hm_timeline_default_windows(): array {
     $cfg = (function_exists('hm_config') ? hm_config() : []);
-    $raw = $cfg['timeline_default_windows'] ?? [['09:00', '18:00']];
+    $bounds = hm_timeline_day_bounds();                         // ['07:00','22:00'] by default
+    $raw = $cfg['timeline_default_windows'] ?? [[$bounds[0], $bounds[1]]];
     $out = [];
     foreach ((array)$raw as $w) {
       if (!is_array($w)) continue;
@@ -171,12 +173,18 @@ if (!function_exists('hm_timeline_enabled')) {
   }
 
   /**
-   * PURE slot generator. Given available windows and busy intervals (both as
-   * [startMin,endMin] arrays), the reservation duration and step, return the
-   * sorted list of bookable start times as "HH:MM" strings.
+   * PURE slot generator: Working Windows − Blocked Intervals − Existing Bookings.
    *
-   * A start S is bookable iff [S, S+duration] fits ENTIRELY inside one (unioned)
-   * window AND [S, S+duration) overlaps NO busy interval.
+   * The working WINDOW bounds the valid START times (when the crew can begin), NOT
+   * the job's end — so a long default duration NEVER clips the tail of the window.
+   * A start S is bookable iff:
+   *   • S is inside a (unioned) window with room for at least one step
+   *     (S + step ≤ windowEnd), AND
+   *   • [S, S+duration) overlaps NO busy interval (block or booking).
+   * Generation NEVER terminates at a block — every step across the whole window is
+   * evaluated, so free starts appear before AND after every blocked interval. A job
+   * whose duration runs past windowEnd is allowed (the last job of the day); overlap
+   * with real busy intervals is still enforced, so conflict detection is unchanged.
    */
   function hm_tl_gen_slots(array $windows, array $busy, int $durationMin, int $stepMin): array {
     if ($durationMin <= 0 || $stepMin <= 0) return [];
@@ -184,11 +192,11 @@ if (!function_exists('hm_timeline_enabled')) {
     $busy = hm_tl_union($busy);
     $slots = [];
     foreach ($wins as $w) {
-      for ($s = $w[0]; $s + $durationMin <= $w[1]; $s += $stepMin) {
-        $e = $s + $durationMin;
+      for ($s = $w[0]; $s + $stepMin <= $w[1]; $s += $stepMin) {   // window bounds the START
+        $e = $s + $durationMin;                                    // job end (may pass windowEnd)
         $free = true;
         foreach ($busy as $b) {
-          if ($s < $b[1] && $e > $b[0]) { $free = false; break; }   // half-open overlap
+          if ($s < $b[1] && $e > $b[0]) { $free = false; break; }  // subtract busy (half-open)
         }
         if ($free) $slots[] = hm_tl_hhmm($s);
       }
@@ -198,12 +206,13 @@ if (!function_exists('hm_timeline_enabled')) {
     return $slots;
   }
 
-  /** Is [startMin,startMin+dur] fully inside a window AND clear of busy? Pure. */
-  function hm_tl_fits(array $windows, array $busy, int $startMin, int $durationMin): bool {
+  /** Is START inside a window (with room for a step) AND [start,start+dur) clear of
+   *  busy? The window bounds the START, not the job's end (mirrors hm_tl_gen_slots). */
+  function hm_tl_fits(array $windows, array $busy, int $startMin, int $durationMin, int $stepMin = 1): bool {
     $e = $startMin + $durationMin;
     $inWindow = false;
     foreach (hm_tl_union($windows) as $w) {
-      if ($startMin >= $w[0] && $e <= $w[1]) { $inWindow = true; break; }
+      if ($startMin >= $w[0] && $startMin + $stepMin <= $w[1]) { $inWindow = true; break; }
     }
     if (!$inWindow) return false;
     foreach (hm_tl_union($busy) as $b) {
@@ -391,7 +400,8 @@ if (!function_exists('hm_timeline_enabled')) {
       hm_windows_day_ranges($db, $date),
       hm_windows_busy_ranges($db, $date),
       $sMin,
-      $durationMin
+      $durationMin,
+      hm_timeline_step()
     );
   }
 }

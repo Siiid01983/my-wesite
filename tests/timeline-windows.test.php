@@ -31,22 +31,26 @@ ck('unsorted normalised',  hm_tl_union([[660,720],[540,600]]), [[540,600],[660,7
 ck('zero-length dropped',  hm_tl_union([[540,540],[600,660]]), [[600,660]]);
 
 echo "\nhm_tl_gen_slots (bookable starts inside windows, minus busy)\n";
-// Window 09:00–12:00 (540–720), 120-min duration, 30-min step, no busy.
-// Valid starts: 09:00,09:30,10:00 (10:00+120=12:00 fits; 10:30+120=12:30 does not).
-ck('2h/30step empty day', hm_tl_gen_slots([[540,720]], [], 120, 30), ['09:00','09:30','10:00']);
-// Busy 10:00–11:00 (600–660) blocks any 2h window overlapping it → only 09:00?
-//   09:00–11:00 overlaps busy → out. 09:30–11:30 overlaps → out. 10:00–12:00 overlaps → out.
-//   → none free for 2h.
-ck('2h blocked by mid busy', hm_tl_gen_slots([[540,720]], [[600,660]], 120, 30), []);
-// Same busy but 60-min duration: 09:00–10:00 ok, 11:00–12:00 ok; 09:30/10:00/10:30 overlap.
-ck('1h around busy',        hm_tl_gen_slots([[540,720]], [[600,660]], 60, 30), ['09:00','11:00']);
+// Window 09:00–12:00 (540–720), 120-min duration, 30-min step, no busy. The window
+// bounds the START (step room, s+30≤720 → last start 11:30); a long job may run past
+// the window end (last job of the day), so the tail is NEVER clipped by duration.
+ck('2h/30step empty day', hm_tl_gen_slots([[540,720]], [], 120, 30), ['09:00','09:30','10:00','10:30','11:00','11:30']);
+// Busy 10:00–11:00 (600–660), 2h duration: starts whose [s,s+120) overlaps are dropped;
+// generation continues PAST the block, so 11:00 & 11:30 (clear of busy) still appear.
+ck('2h continues past busy', hm_tl_gen_slots([[540,720]], [[600,660]], 120, 30), ['11:00','11:30']);
+// Same busy, 60-min duration: 09:00 ok; 09:30/10:00/10:30 overlap; 11:00 & 11:30 ok.
+ck('1h around busy',        hm_tl_gen_slots([[540,720]], [[600,660]], 60, 30), ['09:00','11:00','11:30']);
 // Two 60-min windows (09:00–10:00, 11:00–12:00); 30-min duration+step → two per window.
 ck('two windows 30m',       hm_tl_gen_slots([[540,600],[660,720]], [], 30, 30), ['09:00','09:30','11:00','11:30']);
-ck('duration exceeds window', hm_tl_gen_slots([[540,600]], [], 120, 30), []);
+// A duration longer than the window still yields starts (the job simply runs past the
+// window end); only the step must fit — 540/570 both have step room in 540–600.
+ck('duration exceeds window', hm_tl_gen_slots([[540,600]], [], 120, 30), ['09:00','09:30']);
 
 echo "\nhm_tl_fits (server-side backstop for a chosen start)\n";
 ck('fits open window',      hm_tl_fits([[540,720]], [], 540, 120), true);
-ck('outside window',        hm_tl_fits([[540,720]], [], 630, 120), false);   // 10:30+2h=12:30 > 12:00
+// A start inside the window is valid even if the job runs past the window end.
+ck('start inside, job overruns', hm_tl_fits([[540,720]], [], 630, 120), true);   // 10:30 start ok
+ck('start past window end', hm_tl_fits([[540,720]], [], 730, 120), false);       // 12:10 start: no room
 ck('overlaps busy',         hm_tl_fits([[540,720]], [[600,660]], 540, 120), false);
 ck('no windows → nothing',  hm_tl_fits([], [], 540, 120), false);
 
@@ -79,12 +83,13 @@ $add = hm_windows_add($db, '2026-08-15 09:00', '2026-08-15 12:00');
 ck('add ok',                !empty($add['ok']), true);
 ck('day lists 1 window',    count(hm_windows_day($db, '2026-08-15')), 1);
 
-// Slots for 2h/30step with no bookings → 09:00,09:30,10:00.
-ck('slots empty day',       hm_timeline_slots($db, '2026-08-15', 120, 30), ['09:00','09:30','10:00']);
+// Slots for 2h/30step, no bookings. The window bounds the START (a job may run past
+// the window end — the last job of the day), so 09:00–12:00 gives every 30m to 11:30.
+ck('slots empty day',       hm_timeline_slots($db, '2026-08-15', 120, 30), ['09:00','09:30','10:00','10:30','11:00','11:30']);
 
-// Insert a booking 10:00–11:00 → 1h slots become 09:00 & 11:00.
+// Insert a booking 10:00–11:00 → 60m starts skip anything whose [s,s+60) overlaps it.
 $db->exec("INSERT INTO bookings (id,customer_name,status,booking_date,start_at,end_at) VALUES ('b1','X','pending','2026-08-15','2026-08-15 10:00:00','2026-08-15 11:00:00')");
-ck('slots avoid booking',   hm_timeline_slots($db, '2026-08-15', 60, 30), ['09:00','11:00']);
+ck('slots avoid booking',   hm_timeline_slots($db, '2026-08-15', 60, 30), ['09:00','11:00','11:30']);
 ck('start_ok free',         hm_timeline_start_ok($db, '2026-08-15', '2026-08-15 09:00:00', 60), true);
 ck('start_ok on booking',   hm_timeline_start_ok($db, '2026-08-15', '2026-08-15 10:00:00', 60), false);
 
@@ -92,20 +97,20 @@ ck('start_ok on booking',   hm_timeline_start_ok($db, '2026-08-15', '2026-08-15 
 $db->exec("UPDATE bookings SET status='キャンセル' WHERE id='b1'");
 ck('cancelled frees slot',  hm_timeline_start_ok($db, '2026-08-15', '2026-08-15 10:00:00', 60), true);
 
-// Update (resize) the window to 09:00–10:00 → only 09:00 for 60m.
+// Update (resize) the window to 09:00–10:00 → starts 09:00 & 09:30 (window bounds start).
 $upd = hm_windows_update($db, (string)$add['id'], '2026-08-15 09:00', '2026-08-15 10:00');
 ck('update ok',             !empty($upd['ok']), true);
-ck('resized slots',         hm_timeline_slots($db, '2026-08-15', 60, 30), ['09:00']);
+ck('resized slots',         hm_timeline_slots($db, '2026-08-15', 60, 30), ['09:00','09:30']);
 
-// Delete the explicit window → the date now falls back to the DEFAULT business-
-// hours window (09:00–18:00), so customers still receive slots (the #1 fix). The
-// booking above is cancelled, so a 60m/30-step day yields 09:00 … 17:00.
+// Delete the explicit window → the date falls back to the DEFAULT business-day window
+// (07:00–22:00), so customers see the FULL working day (the #1 production fix). The
+// booking above is cancelled, so a 60m/30-step day yields 07:00 … 21:30 = 30 starts.
 $del = hm_windows_delete($db, (string)$add['id']);
 ck('delete count 1',        (int)($del['deleted'] ?? 0), 1);
 $defSlots = hm_timeline_slots($db, '2026-08-15', 60, 30);
-ck('default window slots',  count($defSlots), 17);              // 09:00 … 17:00
-ck('default first slot',    $defSlots[0] ?? '', '09:00');
-ck('default last slot',     end($defSlots), '17:00');
+ck('default window slots',  count($defSlots), 30);              // 07:00 … 21:30
+ck('default first slot',    $defSlots[0] ?? '', '07:00');
+ck('default last slot',     end($defSlots), '21:30');
 
 // Update a non-existent id → not found.
 $nf = hm_windows_update($db, 'nope', '2026-08-15 09:00', '2026-08-15 10:00');
