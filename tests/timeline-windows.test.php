@@ -165,13 +165,21 @@ foreach (['カスタム臨時休業','手動予約'] as $i => $rsn) {
   ck('custom reason "' . $rsn . '" reopens fully', hm_day_is_closed($db, $d) === false && empty($r['still_closed']), true);
 }
 
-// ── Blocks + bookings remove customer slots (the picker's single source) ───────
-echo "\nDB: blocked / booked intervals disappear from customer slots\n";
-// Fresh day, explicit 08:00–18:00 window; block 09:30–11:00 (admin_blocked row).
+// ── Blocks are a SEPARATE entity (availability_blocks) — NOT bookings ─────────
+//    They remove customer slots + refuse overlapping bookings exactly like a
+//    reservation, but they never touch the bookings table.
+echo "\nDB: availability blocks (own table) remove slots; never in bookings\n";
+hm_blocks_ensure_table($db);
+// Fresh day, explicit 08:00–18:00 window; block 09:30–11:00 via the block engine.
 hm_windows_add($db, '2026-09-20 08:00', '2026-09-20 18:00');
-$db->exec("INSERT INTO bookings (id,customer_name,status,booking_date,start_at,end_at)
-           VALUES ('blk','（ブロック）','admin_blocked','2026-09-20','2026-09-20 09:30:00','2026-09-20 11:00:00')");
-$s60 = hm_timeline_slots($db, '2026-09-20', 60, 30);   // user example #12
+$ba = hm_blocks_add($db, '2026-09-20 09:30', '2026-09-20 11:00', '（ブロック）', '');
+ck('block add ok',                 !empty($ba['ok']), true);
+// The block is in availability_blocks, and NOT in bookings.
+$cntBlk = (int)$db->query("SELECT COUNT(*) FROM availability_blocks")->fetchColumn();
+$cntBk  = (int)$db->query("SELECT COUNT(*) FROM bookings WHERE start_at='2026-09-20 09:30:00'")->fetchColumn();
+ck('block stored in availability_blocks', $cntBlk, 1);
+ck('block NOT written to bookings',       $cntBk, 0);
+$s60 = hm_timeline_slots($db, '2026-09-20', 60, 30);
 ck('60m includes 08:00 & 08:30',  in_array('08:00',$s60,true) && in_array('08:30',$s60,true), true);
 ck('60m excludes the blocked gap', !in_array('09:00',$s60,true) && !in_array('09:30',$s60,true) && !in_array('10:00',$s60,true), true);
 ck('60m resumes at 11:00',         in_array('11:00',$s60,true), true);
@@ -184,40 +192,51 @@ $db->exec("UPDATE bookings SET status='cancelled' WHERE id='bk9'");
 $s120b = hm_timeline_slots($db, '2026-09-20', 120, 30);
 ck('cancel returns the slot',      in_array('13:00',$s120b,true), true);
 
-// ── BUG 2: slot generation must CONTINUE after a block (never truncate), and BUG 1:
-//    unblocking must fully restore availability — full data path (admin_blocked row →
-//    hm_iv_day → hm_windows_busy_ranges → hm_tl_gen_slots). ────────────────────────
-echo "\nDB: slots continue AFTER a block; unblock restores them\n";
+// Conflict detection unchanged: a customer reservation may not overlap a block, and
+// a block may not overlap a real booking or another block.
+echo "\nDB: block ↔ booking conflict detection (both directions)\n";
+$db->exec("INSERT INTO bookings (id,customer_name,status,booking_date) VALUES ('cust1','客','pending','2026-09-20')");
+$rv = hm_iv_reserve($db, 'cust1', '2026-09-20 10:00:00', '2026-09-20 10:30:00');  // overlaps the 09:30–11:00 block
+ck('reserve over a block → conflict', !empty($rv['conflict']), true);
+$rv2 = hm_iv_reserve($db, 'cust1', '2026-09-20 11:00:00', '2026-09-20 11:30:00'); // clear of the block
+ck('reserve clear of block → ok',     !empty($rv2['ok']), true);
+$bx = hm_blocks_add($db, '2026-09-20 11:15', '2026-09-20 11:45', 'x', '');        // overlaps cust1's 11:00–11:30 booking
+ck('block over a booking → conflict', !empty($bx['conflict']), true);
+$bx2 = hm_blocks_add($db, '2026-09-20 09:45', '2026-09-20 10:15', 'x', '');       // overlaps the existing block
+ck('block over a block → conflict',   !empty($bx2['conflict']), true);
+
+// ── Slot generation must CONTINUE after a block (never truncate); delete restores.
+echo "\nDB: slots continue AFTER a block; delete restores them\n";
 $D = '2026-12-05';
 hm_windows_add($db, $D . ' 07:00', $D . ' 21:00');           // working hours 07:00–21:00
-$db->exec("INSERT INTO bookings (id,customer_name,status,booking_date,start_at,end_at)
-           VALUES ('x2','（ブロック）','admin_blocked','$D','$D 08:00:00','$D 16:00:00')");  // block 08:00–16:00
+$b1 = hm_blocks_add($db, "$D 08:00", "$D 16:00", '（ブロック）', '');  // block 08:00–16:00
 $g = hm_timeline_slots($db, $D, 30, 30);
 ck('block: slots BEFORE (07:00,07:30 present)', in_array('07:00',$g,true) && in_array('07:30',$g,true), true);
 ck('block: blocked gap absent (08:00–15:30)',   !in_array('08:00',$g,true) && !in_array('12:00',$g,true) && !in_array('15:30',$g,true), true);
 ck('block: slots AFTER present (16:00,17:00,20:30)', in_array('16:00',$g,true) && in_array('17:00',$g,true) && in_array('20:30',$g,true), true);
 ck('block: generation did NOT stop at the block', count($g) === 12, true);   // 07:00,07:30 + 16:00..20:30
 
-// Multiple blocks — gaps on every side.
-$db->exec("INSERT INTO bookings (id,customer_name,status,booking_date,start_at,end_at)
-           VALUES ('x3','（ブロック）','admin_blocked','$D','$D 17:00:00','$D 18:00:00')");
+// Second block — gaps on every side.
+$b2 = hm_blocks_add($db, "$D 17:00", "$D 18:00", '（ブロック）', '');
 $g2 = hm_timeline_slots($db, $D, 30, 30);
 ck('two blocks: 16:00 & 16:30 kept', in_array('16:00',$g2,true) && in_array('16:30',$g2,true), true);
 ck('two blocks: 17:00 removed',      !in_array('17:00',$g2,true), true);
 ck('two blocks: 18:00 kept',         in_array('18:00',$g2,true), true);
 
-// BUG 1: unblock (delete the admin_blocked rows) → availability fully restored.
-$del = $db->prepare("DELETE FROM bookings WHERE id = ? AND status = 'admin_blocked'");
-$del->execute(['x2']); ck('unblock x2 removed a row', $del->rowCount(), 1);
-$del->execute(['x3']); ck('unblock x3 removed a row', $del->rowCount(), 1);
+// Delete (unblock) → availability fully restored, verified gone.
+$d1 = hm_blocks_delete($db, (string)$b1['id']);
+ck('unblock b1 removed a row',       ($d1['removed'] ?? 0) >= 1 && empty($d1['still']), true);
+$d2 = hm_blocks_delete($db, (string)$b2['id']);
+ck('unblock b2 removed a row',       ($d2['removed'] ?? 0) >= 1 && empty($d2['still']), true);
 $restored = hm_timeline_slots($db, $D, 30, 30);
 ck('unblock restores 08:00–15:30', in_array('08:00',$restored,true) && in_array('12:00',$restored,true) && in_array('15:30',$restored,true), true);
 ck('unblock restores 17:00',       in_array('17:00',$restored,true), true);
 ck('unblock: full day available (07:00..20:30 = 28 slots)', count($restored), 28);
-// Unblock never removes a REAL booking (status guard).
-$db->exec("INSERT INTO bookings (id,customer_name,status,booking_date,start_at,end_at)
-           VALUES ('real1','客','confirmed','$D','$D 10:00:00','$D 11:00:00')");
-$del->execute(['real1']); ck('unblock leaves a real booking intact', $del->rowCount(), 0);
+// Deleting an unknown / non-block id is a harmless no-op (never a false success).
+$dn = hm_blocks_delete($db, 'no-such-block');
+ck('delete missing → no-op',        ($dn['removed'] ?? 0) === 0 && empty($dn['still']), true);
+// And it never touched bookings: the day's blocks are gone but the table exists.
+ck('no admin_blocked rows in bookings', (int)$db->query("SELECT COUNT(*) FROM bookings WHERE status='admin_blocked'")->fetchColumn(), 0);
 
 echo "\n" . ($fail ? "FAIL: $fail failed, $pass passed\n" : "PASS: all $pass checks\n");
 exit($fail ? 1 : 0);

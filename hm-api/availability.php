@@ -58,8 +58,11 @@ try {
   // reasons — so nothing about who booked or why a slot is blocked ever leaks.
   $intervals = [];
   try {
-    foreach (hm_iv_day($db, $date) as $iv) {
+    foreach (hm_iv_day($db, $date) as $iv) {          // real customer bookings
       $intervals[] = ['start_at' => (string)($iv['start_at'] ?? ''), 'end_at' => (string)($iv['end_at'] ?? '')];
+    }
+    foreach (hm_blocks_day($db, $date) as $bk) {      // admin availability blocks (separate table)
+      $intervals[] = ['start_at' => (string)($bk['start_at'] ?? ''), 'end_at' => (string)($bk['end_at'] ?? '')];
     }
   }
   catch (Throwable $ie) { hm_log_error('availability intervals read failed (non-fatal)', ['err' => $ie->getMessage(), 'date' => $date]); }

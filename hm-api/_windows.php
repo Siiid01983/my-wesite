@@ -26,6 +26,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_intervals.php';   // hm_bookings_has_interval_cols, hm_iv_day, hm_iv_normalize
 require_once __DIR__ . '/_slots.php';       // hm_slot_uuid
 require_once __DIR__ . '/_closedays.php';   // hm_day_is_closed — whole-day closures suppress all windows
+require_once __DIR__ . '/_blocks.php';      // hm_blocks_day / hm_blocks_ranges — availability blocks (separate table)
 
 if (!defined('HM_WINDOWS_BUILD')) define('HM_WINDOWS_BUILD', 'timeline-windows-1');
 
@@ -371,12 +372,22 @@ if (!function_exists('hm_timeline_enabled')) {
     return $out;
   }
 
-  /** Busy intervals for a date as [startMin,endMin] pairs (bookings + blocks). */
+  /**
+   * Busy intervals for a date as [startMin,endMin] pairs. TWO distinct sources,
+   * unioned here so slot generation subtracts both but they stay separate entities:
+   *   • real customer bookings  → hm_iv_day  (the `bookings` table)
+   *   • admin availability blocks → hm_blocks_ranges (the `availability_blocks` table)
+   * A block is NOT a booking; it lives in its own table and never consumes a
+   * booking id, yet it removes matching start times exactly like a reservation.
+   */
   function hm_windows_busy_ranges(PDO $db, string $date): array {
     $out = [];
-    foreach (hm_iv_day($db, $date) as $b) {
+    foreach (hm_iv_day($db, $date) as $b) {              // customer reservations
       $a = hm_tl_min((string)$b['start_at']); $z = hm_tl_min((string)$b['end_at']);
       if ($a !== null && $z !== null) $out[] = [$a, $z];
+    }
+    foreach (hm_blocks_ranges($db, $date) as $r) {       // admin availability blocks
+      $out[] = $r;
     }
     return $out;
   }

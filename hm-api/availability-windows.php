@@ -153,18 +153,10 @@ try {
       $bs->execute([$from . ' 00:00:00', $to . ' 23:59:59']);
       $bookings = $bs->fetchAll(PDO::FETCH_ASSOC);
     } catch (Throwable $be) { $bookings = []; }   // start_at column may not exist pre-migration
-    // Manual admin BLOCKS (status='admin_blocked') — rendered distinctly on the
-    // timeline with their reason (customer_name) + memo (notes). Admin-only view.
-    $blocks = [];
-    try {
-      $xs = $db->prepare(
-        "SELECT id, customer_name AS reason, notes AS memo, start_at, end_at FROM bookings
-          WHERE status = 'admin_blocked' AND start_at IS NOT NULL AND end_at IS NOT NULL
-            AND start_at >= ? AND start_at <= ? ORDER BY start_at ASC"
-      );
-      $xs->execute([$from . ' 00:00:00', $to . ' 23:59:59']);
-      $blocks = $xs->fetchAll(PDO::FETCH_ASSOC);
-    } catch (Throwable $xe) { $blocks = []; }
+    // Manual admin BLOCKS — a SEPARATE entity in the `availability_blocks` table
+    // (NOT bookings). Rendered distinctly on the timeline with their reason + memo.
+    // Same {id,reason,memo,start_at,end_at} shape the frontend already consumes.
+    $blocks = hm_blocks_between($db, $from . ' 00:00:00', $to . ' 23:59:59');
     aw_out(['ok' => true, 'from' => $from, 'to' => $to,
             'windows'  => hm_windows_range($db, $from, $to),
             'bookings' => $bookings,

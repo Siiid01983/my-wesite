@@ -517,9 +517,42 @@ describe('Timeline is a complete scheduler (block / booking / menu / sync)', () 
     assert.ok(/setInterval/.test(tlCal), 'timeline must auto-refresh (poll) to catch cross-device changes');
   });
 
-  it('manual blocks are surfaced to the admin range (reason + memo)', () => {
+  it('manual blocks are surfaced to the admin range from availability_blocks', () => {
     const aw = read('hm-api/availability-windows.php');
     assert.ok(/'blocks'\s*=>/.test(aw), 'availability-windows range must return blocks[]');
-    assert.ok(/admin_blocked/.test(aw), 'blocks query must select admin_blocked rows');
+    assert.ok(/hm_blocks_between/.test(aw),
+      'blocks must be sourced from availability_blocks (hm_blocks_between), not the bookings table');
+  });
+});
+
+describe('Blocks are a SEPARATE entity from bookings (availability_blocks)', () => {
+  const blocks = read('hm-api/_blocks.php');
+  const blockEp = read('hm-api/block-interval.php');
+  const windows = read('hm-api/_windows.php');
+  const intervals = read('hm-api/_intervals.php');
+
+  it('the block engine owns its own table, never bookings', () => {
+    assert.ok(/CREATE TABLE IF NOT EXISTS availability_blocks/.test(blocks),
+      '_blocks.php must define the availability_blocks table');
+    assert.ok(/function\s+hm_blocks_add/.test(blocks) && /function\s+hm_blocks_delete/.test(blocks),
+      '_blocks.php must provide add/delete');
+    assert.ok(!/INSERT INTO bookings/.test(blocks),
+      '_blocks.php must NEVER insert into bookings');
+  });
+
+  it('block-interval.php writes to availability_blocks, not bookings', () => {
+    assert.ok(/hm_blocks_add/.test(blockEp) && /hm_blocks_delete/.test(blockEp),
+      'block-interval.php must go through the block engine');
+    assert.ok(!/INSERT INTO bookings/.test(blockEp),
+      'block-interval.php must NEVER insert a bookings row (no admin_blocked booking)');
+    assert.ok(!/status\s*=\s*'admin_blocked'/.test(blockEp),
+      'block-interval.php must not read/write admin_blocked bookings rows anymore');
+  });
+
+  it('slot generation subtracts blocks; conflict detection includes them', () => {
+    assert.ok(/hm_blocks_ranges/.test(windows),
+      'hm_windows_busy_ranges must union availability_blocks into busy ranges');
+    assert.ok(/hm_blocks_overlap_locked/.test(intervals),
+      'hm_iv_reserve must reject a booking that overlaps a block (locked check)');
   });
 });

@@ -29,6 +29,8 @@
 // ════════════════════════════════════════════════════════════════════════════
 declare(strict_types=1);
 
+require_once __DIR__ . '/_blocks.php';   // availability blocks — a booking may not overlap one
+
 if (!defined('HM_INTERVALS_BUILD')) define('HM_INTERVALS_BUILD', 'hourly-wired-1');
 
 if (!function_exists('hm_iv_normalize')) {
@@ -176,6 +178,20 @@ if (!function_exists('hm_iv_normalize')) {
             'with_name' => (string)($row['customer_name'] ?? ''),
           ];
         }
+      }
+
+      // Blocks are a SEPARATE entity (the `availability_blocks` table), so they are
+      // not in the bookings scan above — check them here, locked in the same tx so a
+      // reservation racing a new block still serializes. Locking order is bookings→
+      // blocks in BOTH hm_iv_reserve and hm_blocks_add, so the two never deadlock.
+      $blk = hm_blocks_overlap_locked($db, $start, $end);
+      if ($blk !== null) {
+        if ($ownTx) $db->rollBack();
+        return [
+          'conflict'  => true,
+          'with'      => (string)($blk['id'] ?? ''),
+          'with_name' => (string)($blk['reason'] ?? ''),
+        ];
       }
 
       $up = $db->prepare('UPDATE bookings SET start_at = ?, end_at = ? WHERE id = ?');

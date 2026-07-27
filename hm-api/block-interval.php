@@ -1,14 +1,17 @@
 <?php
 // ════════════════════════════════════════════════════════════════════════════
-//  block-interval.php — Manual ARBITRARY-RANGE calendar blocking (admin, hourly)
+//  block-interval.php — Manual ARBITRARY-RANGE availability blocking (admin)
 //
-//  The interval counterpart to block-slot.php. Where block-slot.php blocks a whole
-//  BAND (am/pm/ev/nt) via a booking_slots row, this blocks an arbitrary time RANGE
-//  by writing an `admin_blocked` row into the `bookings` table with start_at/end_at
-//  set. Because _intervals.php's hm_iv_reserve() counts every non-cancelled row
-//  with an interval as a potential conflict, a block automatically prevents
-//  overlapping bookings AND shows up in availability.php's `intervals` (so the grid
-//  renders it as busy) — no new table needed.
+//  A block is an AVAILABILITY entity, NOT a booking. It is written to its own
+//  `availability_blocks` table (never `bookings`), so it:
+//    • removes matching start times from slot generation (hm_windows_busy_ranges
+//      unions blocks) and refuses overlapping customer bookings (hm_iv_reserve
+//      checks blocks) — conflict detection is unchanged, AND
+//    • consumes NO booking id, sends NO email, creates NO chat/inbox row, and
+//      appears in NO booking / customer / reservation-history list — because it is
+//      simply not a bookings row.
+//  The admin + Ops timelines render blocks distinctly (availability-windows.php
+//  `range` returns them from availability_blocks with {id,reason,memo,start_at,end_at}).
 //
 //  ── Gate ────────────────────────────────────────────────────────────────────
 //  Requires hourly to be live (hm_iv_active = 'hourly_enabled' flag ON AND the
@@ -28,10 +31,10 @@
 //        other blocks; a collision with a REAL booking → 409 slot_taken (no write).
 //        Returns { ok, action:"blocked", id, start, end }.
 //    unblock { id }
-//        DELETE only WHERE status='admin_blocked' — NEVER removes a real booking.
+//        DELETE a row from availability_blocks by id — CANNOT touch a booking.
 //        Returns { ok, action:"unblocked", id, removed }.
 //    list    { date }
-//        Read-only: the day's busy intervals (orders + blocks), same shape as
+//        Read-only: the day's busy intervals (bookings + blocks), same shape as
 //        availability.php `intervals`. Returns { ok, action:"list", date, intervals }.
 //
 //  ── Response (error) ────────────────────────────────────────────────────────
@@ -43,7 +46,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/_lib.php';
 require_once __DIR__ . '/_db.php';
 require_once __DIR__ . '/_slots.php';       // hm_slot_uuid()
-require_once __DIR__ . '/_intervals.php';   // hm_iv_reserve / hm_iv_normalize / hm_iv_day
+require_once __DIR__ . '/_intervals.php';   // hm_iv_normalize / hm_iv_day (busy view)
+require_once __DIR__ . '/_blocks.php';       // availability_blocks engine (blocks live here, NOT in bookings)
 require_once __DIR__ . '/_windows.php';      // hm_timeline_active (unified timeline gate)
 
 $isCli = (PHP_SAPI === 'cli');
@@ -134,21 +138,18 @@ try {
     bx_out(['ok' => false, 'error' => 'timeline_disabled — scheduler is temporarily disabled'], $isCli, 409);
   }
 
-  // ── unblock: delete an admin_blocked row by id (status-guarded so a real booking
-  //    is never removed). Verifies the row is actually gone and NEVER reports a false
-  //    success, so the interval can't stay blocked after an "unblocked" response. ──
+  // ── unblock: delete a row from availability_blocks by id. It can ONLY ever hit a
+  //    block (the table holds nothing else), so a real booking is structurally
+  //    unreachable. Verifies the row is gone and NEVER reports a false success. ──
   if ($action === 'unblock') {
     $id = trim((string)($param('id') ?? ''));
     if ($id === '') bx_out(['ok' => false, 'error' => 'id required'], $isCli, 400);
-    $del = $db->prepare("DELETE FROM bookings WHERE id = ? AND status = 'admin_blocked'");
-    $del->execute([$id]);
-    $removed = $del->rowCount();
-    $chk = $db->prepare("SELECT 1 FROM bookings WHERE id = ? AND status = 'admin_blocked'");
-    $chk->execute([$id]);
-    if ($chk->fetch()) {
-      bx_out(['ok' => false, 'error' => 'unblock failed — interval still blocked', 'id' => $id], $isCli, 500);
+    hm_blocks_ensure_table($db);
+    $res = hm_blocks_delete($db, $id);
+    if (!empty($res['still'])) {
+      bx_out(['ok' => false, 'error' => 'unblock failed — block still present', 'id' => $id], $isCli, 500);
     }
-    bx_out(['ok' => true, 'action' => 'unblocked', 'id' => $id, 'removed' => $removed, 'still_blocked' => false], $isCli);
+    bx_out(['ok' => true, 'action' => 'unblocked', 'id' => $id, 'removed' => (int)($res['removed'] ?? 0), 'still_blocked' => false], $isCli);
   }
 
   // ── validate date (block + list both need it) ────────────────────────────────
@@ -163,12 +164,15 @@ try {
     bx_out(['ok' => false, 'error' => 'invalid date — expected YYYY-MM-DD'], $isCli, 400);
   }
 
-  // ── list: the day's busy intervals (orders + blocks), read-only ──────────────
+  hm_blocks_ensure_table($db);
+
+  // ── list: the day's busy intervals (bookings + blocks), read-only ────────────
   if ($action === 'list') {
-    bx_out(['ok' => true, 'action' => 'list', 'date' => $date, 'intervals' => hm_iv_day($db, $date)], $isCli);
+    $intervals = array_merge(hm_iv_day($db, $date), hm_blocks_day($db, $date));
+    bx_out(['ok' => true, 'action' => 'list', 'date' => $date, 'intervals' => $intervals], $isCli);
   }
 
-  // ── block: insert an admin_blocked interval, overlap-guarded ─────────────────
+  // ── block: insert a row into availability_blocks (NEVER bookings) ─────────────
   $start = hm_iv_normalize(bx_combine($date, $param('start_time')));
   $end   = hm_iv_normalize(bx_combine($date, $param('end_time')));
   if ($start === null) bx_out(['ok' => false, 'error' => 'invalid start_time — expected HH:MM or a full datetime'], $isCli, 400);
@@ -178,45 +182,28 @@ try {
     bx_out(['ok' => false, 'error' => 'start_time and end_time must fall on the given date'], $isCli, 400);
   }
 
-  $reason  = trim((string)($param('reason') ?? ''));
-  $memo    = trim((string)($param('memo') ?? ''));
-  $label   = $reason !== '' ? $reason : '（ブロック）';   // shown as the block's title on the admin timeline
-  $blockId = hm_slot_uuid();
+  $reason = trim((string)($param('reason') ?? ''));
+  $memo   = trim((string)($param('memo') ?? ''));
+  $label  = $reason !== '' ? $reason : '（ブロック）';   // shown as the block's title on the admin timeline
 
-  // Insert the block row first (start_at/end_at NULL), then let hm_iv_reserve set
-  // the interval AND run the overlap check inside ONE transaction. hm_iv_reserve
-  // excludes the row's own id, so a conflict can only be another booking/block.
-  // customer_name holds the REASON (admin-only label); notes holds the MEMO. The
-  // public availability endpoint exposes neither — only the busy time range.
-  $db->beginTransaction();
-  try {
-    $ins = $db->prepare(
-      "INSERT INTO bookings (id, customer_name, status, booking_date, notes, created_at)
-       VALUES (?, ?, 'admin_blocked', ?, ?, NOW())"
-    );
-    $ins->execute([$blockId, $label, $date, ($memo !== '' ? $memo : null)]);
-
-    $res = hm_iv_reserve($db, $blockId, $start, $end);   // runs within this tx (ownTx=false)
-    if (!empty($res['error'])) {
-      $db->rollBack();
-      bx_out(['ok' => false, 'error' => (string)$res['error']], $isCli, 400);
-    }
-    if (!empty($res['conflict'])) {
-      $db->rollBack();
-      bx_out([
-        'ok'        => false,
-        'error'     => 'slot_taken',
-        'with'      => (string)($res['with'] ?? ''),
-        'with_name' => (string)($res['with_name'] ?? ''),
-      ], $isCli, 409);
-    }
-    $db->commit();
-  } catch (Throwable $e) {
-    if ($db->inTransaction()) $db->rollBack();
-    throw $e;
+  // hm_blocks_add atomically checks overlap against BOTH real bookings and other
+  // blocks (locking bookings→blocks in the same order as hm_iv_reserve → no
+  // deadlock), then inserts. A collision with a real booking → 409 slot_taken.
+  $res = hm_blocks_add($db, $start, $end, $label, $memo);
+  if (!empty($res['error'])) {
+    bx_out(['ok' => false, 'error' => (string)$res['error']], $isCli, 400);
+  }
+  if (!empty($res['conflict'])) {
+    bx_out([
+      'ok'        => false,
+      'error'     => 'slot_taken',
+      'with'      => (string)($res['with'] ?? ''),
+      'with_name' => (string)($res['with_name'] ?? ''),
+    ], $isCli, 409);
   }
 
-  bx_out(['ok' => true, 'action' => 'blocked', 'id' => $blockId, 'start' => $start, 'end' => $end,
+  bx_out(['ok' => true, 'action' => 'blocked', 'id' => (string)($res['id'] ?? ''),
+          'start' => (string)($res['start'] ?? $start), 'end' => (string)($res['end'] ?? $end),
           'reason' => $reason, 'memo' => $memo], $isCli);
 
 } catch (Throwable $e) {
