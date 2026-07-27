@@ -157,14 +157,15 @@ if (!function_exists('hm_iv_normalize')) {
     $ownTx = !$db->inTransaction();
     if ($ownTx) $db->beginTransaction();
     try {
-      // Lock the day's scheduled rows so concurrent reservers serialize.
+      // Lock the day's scheduled rows so concurrent reservers serialize. FOR UPDATE
+      // only on engines that support it (MySQL in prod); SQLite (tests) omits it.
+      $fu = hm_blk_for_update($db);
       $lock = $db->prepare(
         "SELECT id, customer_name, start_at, end_at FROM bookings
           WHERE start_at >= ? AND start_at <= ?
             AND status NOT IN ('キャンセル','cancelled')
             AND start_at IS NOT NULL AND end_at IS NOT NULL
-            AND id <> ?
-          FOR UPDATE"
+            AND id <> ?" . $fu
       );
       $lock->execute([$dayStart, $dayEnd, $bookingId]);
 
