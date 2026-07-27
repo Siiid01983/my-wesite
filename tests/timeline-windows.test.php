@@ -123,11 +123,42 @@ $info = hm_day_close_info($db, '2026-08-15');
 ck('closure reason stored', $info['reason'] ?? '', 'スタッフ休暇');
 ck('closure closed_by',     $info['closed_by'] ?? '', 'admin@test');
 ck('close reason required',  hm_day_close($db, '2026-08-16', '', 'admin')['error'] ?? '', 'reason required');
-// Reopen → default window slots return.
+// Reopen → the closure record is DELETED and slots return (the reported bug).
 $ro = hm_day_reopen($db, '2026-08-15');
 ck('reopen ok',             !empty($ro['ok']), true);
-ck('reopened not closed',   hm_day_is_closed($db, '2026-08-16'), false);   // fresh date (cache-safe)
+ck('reopen deleted a row',  ($ro['reopened'] ?? 0) >= 1, true);            // the record was actually removed
+ck('reopen still_closed=false', !empty($ro['still_closed']), false);        // never a false success
+ck('reopened day not closed', hm_day_is_closed($db, '2026-08-15'), false);  // SAME date is now open
 ck('reopened → slots back', count(hm_timeline_slots($db, '2026-08-15', 60, 30)) > 0, true);
+ck('reopened → windows back', count(hm_windows_day_effective($db, '2026-08-15')) > 0, true);
+ck('reopened → start_ok bookable', hm_timeline_start_ok($db, '2026-08-15', '2026-08-15 10:00:00', 120), true);
+
+// Idempotent reopen (reopening an already-open day is a harmless no-op, never errors).
+$ro2 = hm_day_reopen($db, '2026-08-15');
+ck('idempotent reopen ok',  !empty($ro2['ok']) && empty($ro2['still_closed']), true);
+
+// Full close → reopen → re-close → reopen cycle on the SAME date works every time.
+hm_day_close($db, '2026-08-15', 'トラック整備', 'admin');
+ck('re-close closes again',  hm_day_is_closed($db, '2026-08-15'), true);
+hm_day_reopen($db, '2026-08-15');
+ck('re-reopen opens again',  hm_day_is_closed($db, '2026-08-15'), false);
+
+// Multi-day: close a 3-day range, reopen only the middle → middle open, edges closed.
+foreach (['2026-10-01','2026-10-02','2026-10-03'] as $d) hm_day_close($db, $d, '祝日', 'admin');
+hm_day_reopen($db, '2026-10-02');
+ck('multi-day: edge 1 stays closed', hm_day_is_closed($db, '2026-10-01'), true);
+ck('multi-day: middle reopened',     hm_day_is_closed($db, '2026-10-02'), false);
+ck('multi-day: edge 2 stays closed', hm_day_is_closed($db, '2026-10-03'), true);
+$closedRange = hm_closedays_range($db, '2026-10-01', '2026-10-03');
+ck('multi-day: range now lists 2',   count($closedRange), 2);
+// custom reason + manual-reservation reason both close then fully reopen.
+foreach (['カスタム臨時休業','手動予約'] as $i => $rsn) {
+  $d = '2026-11-0' . ($i + 1);
+  hm_day_close($db, $d, $rsn, 'admin');
+  ck('custom reason "' . $rsn . '" closes', hm_day_is_closed($db, $d), true);
+  $r = hm_day_reopen($db, $d);
+  ck('custom reason "' . $rsn . '" reopens fully', hm_day_is_closed($db, $d) === false && empty($r['still_closed']), true);
+}
 
 // ── Blocks + bookings remove customer slots (the picker's single source) ───────
 echo "\nDB: blocked / booked intervals disappear from customer slots\n";

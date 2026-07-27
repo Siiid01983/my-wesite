@@ -83,12 +83,17 @@ if (!function_exists('hm_closedays_ensure_table')) {
     return ['ok' => true, 'day' => $date, 'reason' => $reason, 'closed_by' => $closedBy];
   }
 
-  /** Reopen a previously closed day. */
+  /** Reopen a previously closed day — completely removes the closure record.
+   *  Robust date match: `day = ?` handles the normal DATE value, and `day LIKE 'date%'`
+   *  also removes any variant that carries a time component ('2026-08-15 00:00:00'),
+   *  so a reopen can never leave a stale row behind. Returns the delete count and a
+   *  post-delete `still_closed` check so callers can detect (and never mask) a failure. */
   function hm_day_reopen(PDO $db, string $date): array {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) return ['error' => 'invalid date'];
     hm_closedays_ensure_table($db);
-    $del = $db->prepare("DELETE FROM closed_days WHERE day = ?");
-    $del->execute([$date]);
-    return ['ok' => true, 'day' => $date, 'reopened' => $del->rowCount()];
+    $del = $db->prepare("DELETE FROM closed_days WHERE day = ? OR day LIKE ?");
+    $del->execute([$date, $date . '%']);
+    return ['ok' => true, 'day' => $date, 'reopened' => $del->rowCount(),
+            'still_closed' => hm_day_is_closed($db, $date)];
   }
 }

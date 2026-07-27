@@ -123,6 +123,11 @@ try {
     if ($date === null) cd_out(['ok' => false, 'error' => 'date required — YYYY-MM-DD'], $isCli, 400);
     $res = hm_day_reopen($db, $date);
     if (isset($res['error'])) cd_out(['ok' => false, 'error' => $res['error']], $isCli, 400);
+    // Never report a false success: if the day is somehow still closed, surface it so
+    // the client shows an error instead of a misleading "reopened" that leaves it stuck.
+    if (!empty($res['still_closed'])) {
+      cd_out(['ok' => false, 'error' => 'reopen failed — day still closed', 'date' => $date], $isCli, 500);
+    }
     cd_out(['ok' => true, 'action' => 'reopen'] + $res, $isCli);
   }
 

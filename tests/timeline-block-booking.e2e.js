@@ -31,7 +31,7 @@ const HARNESS = `<!doctype html><html><head><meta charset="utf-8"></head><body>
     window.todayStr=function(){ return '2026-08-12'; };  // Wednesday
     window.toast=function(){}; window.confirm=function(){ return true; };
     localStorage.setItem('hm_timeline_ui','1');
-    window.__posts=[];
+    window.__posts=[]; window.__closed=[];   // stateful closures so reopen is testable
     window.fetch=function(url,opts){
       url=String(url); var method=(opts&&opts.method)||'GET';
       var body=null; try{ body=opts&&opts.body?JSON.parse(opts.body):null; }catch(e){}
@@ -44,6 +44,11 @@ const HARNESS = `<!doctype html><html><head><meta charset="utf-8"></head><body>
                 : url.indexOf('availability-windows')!==-1?'windows'
                 : url.indexOf('reschedule')!==-1?'reschedule':'other';
         window.__posts.push(Object.assign({__url:tag}, body||{}));
+        if(tag==='close-day' && body){
+          if(body.action==='close' && body.date){ if(window.__closed.indexOf(body.date)<0) window.__closed.push(body.date); }
+          if(body.action==='reopen' && body.date){ window.__closed = window.__closed.filter(function(d){return d!==body.date;});
+            return J({ok:true,action:'reopen',reopened:1,still_closed:false}); }
+        }
         return J({ok:true,id:'new1'});
       }
       if(url.indexOf('action=get')!==-1){ return J({ok:true,date:'2026-08-12',windows:[],config:{day_start:'07:00',day_end:'22:00',step:30,durations:[30,60,90,120,180],default_duration:120,active:true}}); }
@@ -51,7 +56,7 @@ const HARNESS = `<!doctype html><html><head><meta charset="utf-8"></head><body>
         windows:[{id:'w1',window_date:'2026-08-12',start_at:'2026-08-12 09:00:00',end_at:'2026-08-12 12:00:00'}],
         bookings:[{id:'bk1',customer_name:'田中',status:'confirmed',start_at:'2026-08-12 14:00:00',end_at:'2026-08-12 16:00:00'}],
         blocks:[{id:'blk1',reason:'トラック整備',memo:'定期点検',start_at:'2026-08-12 10:00:00',end_at:'2026-08-12 11:00:00'}],
-        closed:[]}); }
+        closed: window.__closed.map(function(d){ return {day:d,reason:'休業',closed_by:'admin'}; }) }); }
       return J({ok:true});
     };
   <\/script>
@@ -150,15 +155,28 @@ function chk(label, cond) { if (cond) { pass++; console.log('  [ok] ' + label); 
   const up = await page.evaluate(() => window.__posts.find(p => p.__url === 'block-interval' && p.action === 'unblock'));
   chk('block unblock POSTed', !!up && up.id === 'blk1');
 
-  console.log('close-day: 🚫 → reason dialog → POST close-day');
+  console.log('close-day → reopen CYCLE (the reported bug: reopen must fully clear it)');
   await page.evaluate(() => { window.__posts = []; });
+  // CLOSE the day.
   await page.click('#hmTl .tl-closebtn');
   await page.waitForSelector('#tlCloseDlg', { timeout: 2000 });
   await page.click('#tlCloseDlg .tl-rsn'); // first preset reason
   await page.click('#tlCloseDlg .tl-dlg-ok');
-  await page.waitForTimeout(200);
+  await page.waitForFunction(() => !!document.querySelector('#hmTl .tl-closebtn[data-closed="1"]'), { timeout: 3000 });
   const cp = await page.evaluate(() => window.__posts.find(p => p.__url === 'close-day' && p.action === 'close'));
   chk('close-day POSTed with reason', !!cp && !!cp.reason && !!cp.date);
+  chk('day flips to CLOSED (button becomes reopen ↺)', (await page.$('#hmTl .tl-closebtn[data-closed="1"]')) !== null);
+  chk('closed overlay 休業 shown', (await page.$('#hmTl .tl-closed')) !== null);
+
+  // REOPEN the same day — must remove the closure completely, no reload, no stale state.
+  await page.evaluate(() => { window.__posts = []; });
+  await page.click('#hmTl .tl-closebtn[data-closed="1"]');
+  await page.waitForFunction(() => { var b = document.querySelector('#hmTl .tl-closebtn'); return b && !b.getAttribute('data-closed'); }, { timeout: 3000 });
+  const rp = await page.evaluate(() => window.__posts.find(p => p.__url === 'close-day' && p.action === 'reopen'));
+  chk('reopen POSTed for the same date', !!rp && rp.date === cp.date);
+  chk('day is OPEN again (button back to 🚫)', (await page.$('#hmTl .tl-closebtn[data-closed="1"]')) === null);
+  chk('closed overlay 休業 removed', (await page.$('#hmTl .tl-closed')) === null);
+  chk('no stale closed state on the server side', (await page.evaluate(() => window.__closed.length)) === 0);
 
   console.log('live-sync: BroadcastChannel wired');
   chk('BroadcastChannel sync active', (await page.evaluate(() => typeof BroadcastChannel !== 'undefined')));

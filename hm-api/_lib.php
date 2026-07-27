@@ -267,6 +267,11 @@ function hm_require_staff_read(): void {
 function hm_json($data, int $status = 200): void {
   http_response_code($status);
   header('Content-Type: application/json; charset=utf-8');
+  // API responses are per-request state (availability, closures, bookings) and must
+  // NEVER be cached by the browser/proxy — a stale 200 would keep a reopened day
+  // showing as closed. no-store defeats heuristic GET caching for every endpoint.
+  header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+  header('Pragma: no-cache');
   // JSON_INVALID_UTF8_SUBSTITUTE (PHP 7.2+) replaces malformed UTF-8 bytes with
   // U+FFFD instead of making json_encode() return false — which would echo an
   // EMPTY body and break the client's JSON.parse (see the inbox_messages incident:

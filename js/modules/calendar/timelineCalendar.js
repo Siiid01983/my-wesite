@@ -338,7 +338,10 @@ window.TimelineCalendar = (function () {
   /* ── load windows for the visible range, then render ── */
   function load() {
     var r = rangeOf();
-    fetch(_base() + '/availability-windows.php?action=range&from=' + r.from + '&to=' + r.to, { headers: _headers() })
+    // cache:'no-store' + a timestamp buster guarantee a FRESH range every time — a
+    // reopened day must never be re-read from a stale browser/proxy GET cache.
+    fetch(_base() + '/availability-windows.php?action=range&from=' + r.from + '&to=' + r.to + '&_ts=' + Date.now(),
+          { headers: _headers(), cache: 'no-store' })
       .then(function (res) { return res.json(); })
       .then(function (out) {
         state.windows = {}; state.bookings = {}; state.blocks = {}; state.closed = {};
@@ -467,7 +470,12 @@ window.TimelineCalendar = (function () {
 
   function _reopenDay(ds) {
     _closePost({ action: 'reopen', date: ds }).then(function (ok) {
-      if (ok) { _toast(ds + ' の休業を解除しました'); _syncBroadcast(); load(); }
+      if (!ok) return;
+      // Optimistically drop the closed state so the day flips to bookable INSTANTLY,
+      // then broadcast + hard-reload from the server (no stale cache) to confirm.
+      if (state.closed) delete state.closed[ds];
+      render();
+      _toast(ds + ' の休業を解除しました'); _syncBroadcast(); load();
     });
   }
 

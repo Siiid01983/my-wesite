@@ -3754,8 +3754,10 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     iso = _baDateOnly(iso);   // normalize before it hits the strict server validator
     var base = (window.API_BASE || '').replace(/\/+$/, '');
     if (!iso || !base) { baRenderTimeSlots(); return; }
-    fetch(base + '/availability.php?date=' + encodeURIComponent(iso), {
-      headers: { 'X-API-KEY': window.API_KEY || '' }
+    // cache:'no-store' + timestamp buster: a reopened day must show its slots again
+    // instantly, never a stale (closed) cached availability response.
+    fetch(base + '/availability.php?date=' + encodeURIComponent(iso) + '&_ts=' + Date.now(), {
+      headers: { 'X-API-KEY': window.API_KEY || '' }, cache: 'no-store'
     })
       .then(function (r) { return r.json(); })
       .then(function (out) {
@@ -3867,6 +3869,19 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   baRenderBookingConfig();
   baRenderServices();
   baShowScreen('services');
+
+  // Live sync: when the admin changes the schedule (close / reopen / block / booking)
+  // in another tab of the SAME browser, refresh the customer's availability for the
+  // selected date immediately — a reopened day shows its start times again with no
+  // reload. (Cross-device is covered by the fresh, no-store fetch on every date pick.)
+  try {
+    if ('BroadcastChannel' in window) {
+      var _baSyncChan = new BroadcastChannel('hm_timeline_sync');
+      _baSyncChan.onmessage = function (e) {
+        if (e && e.data && e.data.type === 'timeline_changed' && baState.dateISO) _baFetchAvail(baState.dateISO);
+      };
+    }
+  } catch (_) {}
 })();
 </script>
 
