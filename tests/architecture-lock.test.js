@@ -425,13 +425,19 @@ describe('Hourly timeline (sole scheduler, active by default)', () => {
     assert.ok(!/hm_timeline_active\s*\(/.test(resched), 'reschedule.php must NOT depend on the timeline_enabled flag');
   });
 
-  it('band removal P1: mobile/gcal consumers are band-OPTIONAL (no hard dependency)', () => {
+  it('band removal: mobile consumer is band-OPTIONAL; GCal sync fully removed', () => {
     const mob = read('js/modules/mobile/mobileCalendar.js');
-    const gcal = read('js/modules/calendar/gcalSync.js');
     assert.ok(/typeof CalendarService === 'undefined'/.test(mob),
       'mobileCalendar._availOf must default to available when CalendarService is gone');
-    assert.ok(/window\.CalendarService && CalendarService\.updateAvailability/.test(gcal),
-      'gcalSync must guard the legacy band-availability write (band-optional)');
+    // The Google-Calendar sync (calendar.js + gcalSync.js) fed the retired
+    // calendar_availability layer and is deleted — the timeline is the sole engine.
+    assert.ok(!fs.existsSync(path.join(ROOT, 'js/modules/calendar/gcalSync.js')),
+      'gcalSync.js must be deleted');
+    assert.ok(!fs.existsSync(path.join(ROOT, 'js/modules/calendar/calendar.js')),
+      'calendar.js (GCal settings panel) must be deleted');
+    const admin = read('admin.html');
+    assert.ok(!/calendar\/(calendar|gcalSync)\.js/.test(admin),
+      'admin.html must not load the removed GCal scripts');
   });
 
   it('confirm is band-free (legacy bookings converted by the migration, not runtime)', () => {

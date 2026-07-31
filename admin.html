@@ -1082,11 +1082,9 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 
         <!-- 3. CALENDAR — Timeline (js/modules/calendar/timelineCalendar.js) mounts
              here on go('calendar'); it is the ONLY admin availability calendar. The
-             legacy ○△× month grid, its bulk tools and month print were removed in the
-             timeline final migration. #gcalPanel holds the Google-Calendar sync panel. -->
-        <div id="view-calendar" class="view">
-          <div id="gcalPanel"></div>
-        </div>
+             legacy ○△× month grid, its bulk tools/print, and the Google-Calendar sync
+             panel were all removed in the timeline final migration. -->
+        <div id="view-calendar" class="view"></div>
 
         <!-- 4. ANALYTICS -->
         <div id="view-analytics" class="view">
@@ -1641,9 +1639,7 @@ html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07
 <script src="js/modules/analytics/analyticsExport.js"></script>
 <script src="js/modules/analytics/analyticsDashboard.js"></script>
 
-<script src="js/modules/calendar/calendar.js"></script>
 <script src="js/modules/bookings/pendingRequests.js"></script>
-<script src="js/modules/calendar/gcalSync.js"></script>
 <script src="js/modules/calendar/timelineGestures.js"></script><!-- pointer/touch gesture engine for the hourly timeline -->
 <script src="js/modules/calendar/timelineCalendar.js"></script><!-- hourly TIMELINE (Google-Calendar style; preview flag hm_timeline_ui, default OFF) -->
 <script src="js/modules/pricing/pricing.js"></script>

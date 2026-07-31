@@ -37,8 +37,9 @@ const CalendarService = {
 
   updateAvailability(date, status) {
     // Display-only broadcast. Whole-day open/close is no longer enforced through
-    // a band engine — the Timeline (availability_windows + bookings) is the single
-    // authority. GCalSync's pull path still calls this to surface an imported block.
+    // a band engine — the Timeline (availability_windows + availability_blocks +
+    // bookings) is the single authority. Adapter.setDate is a no-op (calendar_
+    // availability retired); kept only so any stray call-site stays safe.
     Adapter.setDate(date, status);
     document.dispatchEvent(new CustomEvent('calendar:updated', {
       detail: { date, status, availability: this.getAvailability() }

@@ -80,8 +80,6 @@ const PRECACHE = [
 
   /* Feature modules */
   '/js/modules/dashboard/dashboard.js',
-  '/js/modules/calendar/calendar.js',
-  '/js/modules/calendar/gcalSync.js',
   '/js/modules/calendar/timelineGestures.js',
   '/js/modules/calendar/timelineCalendar.js',
   '/js/modules/pricing/pricing.js',

@@ -134,11 +134,14 @@ describe('A. Calendar reads ?date= and opens on that day', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('C. Legacy ○△× day-close machinery is REMOVED (timeline is the calendar)', () => {
-  const monthCal = read('js/modules/calendar/calendar.js');
+  const calendarJs = 'js/modules/calendar/calendar.js';
+  // calendar.js (the ○△× grid, later the GCal settings panel) is fully deleted.
+  const monthCal = fs.existsSync(path.join(root, calendarJs)) ? read(calendarJs) : '';
   const adminBk = read('admin-bookings.js');
   const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '');
 
-  it('the ○△× month grid + bulk tools are gone from calendar.js', () => {
+  it('calendar.js (○△× grid + GCal panel) is deleted; timeline is the only calendar', () => {
+    assert.ok(!fs.existsSync(path.join(root, calendarJs)), 'calendar.js must be deleted');
     for (const fn of ['function renderCalendar', 'function calClick', 'function _syncCalendarFromApi',
                       'function toggleBulk', 'function applyBulk', 'function _loadSlotCapClosed']) {
       assert.ok(!monthCal.includes(fn), `${fn} must be removed from calendar.js`);

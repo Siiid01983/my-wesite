@@ -3,15 +3,20 @@
 --  REVIEW ONLY. DO NOT run until verified on staging. BACK UP THE DATABASE FIRST.
 --  Reversible only from a backup — a DROP is destructive. See rollback note below.
 --
---  ⚠ PRECONDITION: run ONLY after confirming ZERO runtime dependencies:
+--  ✅ PRECONDITIONS MET (verified 2026-08-01 — safe to run):
 --    • availability.php is timeline-only (no booking_slots / slot_capacity read) ✅
 --    • create-booking.php band-free ✅
---    • booking-status.php / reschedule.php: the band path is LEGACY-ONLY (fires
---      only for interval-less bookings). Confirm NO interval-less bookings remain
---      that still need band reserve/transfer, OR accept losing band handling for
---      them, BEFORE dropping. Until then these tables are still written for legacy.
---    • rest.php / slot-capacity.php still reference the band engine — retire those
---      first (delete slot-capacity.php + drop the band allowlist rows in rest.php).
+--    • booking-status.php / reschedule.php act on the INTERVAL authority; the band
+--      arms are gated on interval-less LEGACY rows only ✅
+--    • slot-capacity.php + the whole band PHP engine (_capacity/slot-preflight/
+--      booking-slot/block-slot) are DELETED; rest.php does NOT expose these tables ✅
+--    • apiAdapter.js retired calendar_availability (getAvail derives from timeline;
+--      setDate/clearAvail/syncAvailability are no-ops); GCal sync (calendar.js +
+--      gcalSync.js) DELETED ✅
+--    • git grep confirms ZERO live SQL against booking_slots/slot_capacity/
+--      calendar_availability (only comments + this migration) ✅
+--  Still: BACK UP FIRST — a DROP is destructive. The snapshot tables below let you
+--  restore without a full backup.
 --
 --  These tables hold ONLY band/day-closure state. Bookings keep their schedule in
 --  bookings.start_at/end_at/duration_min + availability_windows (untouched here).

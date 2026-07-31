@@ -108,10 +108,9 @@ function go(view) {
   if (view==='dashboard') renderDash();
   if (view==='bookings') renderBookings();
   if (view==='calendar') {
-    // TIMELINE is the ONLY admin calendar (band grid removed). renderGCalPanel is
-    // the Google-Calendar sync panel that sits alongside the timeline.
+    // TIMELINE is the ONLY admin calendar (band grid + Google-Calendar sync panel
+    // removed — the timeline is the single scheduling surface).
     TimelineCalendar.onShow();
-    if (typeof renderGCalPanel === 'function') renderGCalPanel();
   }
   if (view==='analytics') renderAnalytics();
   if (view==='pricing') { renderPricing(); _syncPricingFromApi(); }
