@@ -28,6 +28,7 @@
 <link rel="stylesheet" href="styles.css" />
 <link rel="stylesheet" href="css/action-center.css" />
 <link rel="stylesheet" href="css/ui-enhancements.css" />
+<link rel="stylesheet" href="css/works-gallery.css" />
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -1524,6 +1525,30 @@ setTimeout(window.HM_revealServiceCards, 2500);
     </div>
   </div>
 </div>
+
+<!-- ============== 作業事例 GALLERY (DB-driven; hidden until data loads) ============== -->
+<section class="section works-gallery" id="works" aria-labelledby="worksTitle" hidden>
+  <div class="container">
+    <header class="section-head">
+      <span class="eyebrow">Our Work</span>
+      <h2 class="section-title" id="worksTitle">作業事例</h2>
+      <p class="section-lead">実際の引越し・作業の様子をご覧ください。</p>
+    </header>
+    <div class="wg-stage" role="group" aria-roledescription="carousel" aria-label="作業事例">
+      <div class="wg-viewport">
+        <div class="wg-track" id="wgTrack"></div>
+      </div>
+      <button class="wg-arrow wg-prev" type="button" aria-label="前へ">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="wg-arrow wg-next" type="button" aria-label="次へ">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <div class="wg-live" id="wgLive" aria-live="polite"></div>
+    </div>
+    <div class="wg-dots" id="wgDots"></div>
+  </div>
+</section>
 
 <!-- ============== COMMITMENTS ============== -->
 <section class="section commitments" id="commitments">
@@ -3891,6 +3916,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 <script src="js/rebook-receiver.js"></script><!-- Customer Portal V2 rebook handoff — additive; no-op unless a rebook is in progress -->
 <script src="js/contact-form.js" defer></script>
 <script src="js/reviews-carousel.js" defer></script>
+<script src="js/works-gallery.js" defer></script>
 <script src="js/back-to-top.js" defer></script>
 
 <!-- Runtime protection layer: enforces BA overlay as the only booking execution path -->

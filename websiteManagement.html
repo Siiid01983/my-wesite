@@ -695,6 +695,10 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
           <span class="wmc-link-badge" id="wmcRevBadge"></span>
           <span class="wmc-phase-tag">Ph4</span>
         </button>
+        <button class="wmc-link" data-view="gallery">
+          <svg class="wmc-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          作業事例ギャラリー
+        </button>
         <button class="wmc-link" data-view="faq">
           <svg class="wmc-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
           FAQ
@@ -1098,6 +1102,43 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- ══ VIEW: 作業事例ギャラリー (Works Gallery) ══ -->
+        <style id="gallery-wmc-styles">
+          #wmc-view-gallery .gal-loading,#wmc-view-gallery .gal-error{padding:24px 4px;color:var(--gray-2);font-size:13px}
+          #wmc-view-gallery .gal-error{color:var(--red)}
+          #wmc-view-gallery .gal-thumb{width:52px;height:40px;object-fit:cover;border-radius:var(--radius-xs);border:1px solid var(--line);display:block}
+          #wmc-view-gallery .gal-thumb-empty{display:flex;align-items:center;justify-content:center;color:var(--gray-3);background:var(--bg-soft)}
+          #wmc-view-gallery .gal-dim{font-size:10px;color:var(--gray-3);margin-top:2px}
+          #wmc-view-gallery .gal-cat{font-size:11px;padding:2px 9px;border-radius:20px;background:var(--bg-soft);border:1px solid var(--line);color:var(--gray-1)}
+          #wmc-view-gallery .gal-drag{cursor:grab;color:var(--gray-3);font-size:16px;text-align:center;user-select:none}
+          #wmc-view-gallery tr.gal-row-dragging{opacity:.4}
+          #wmc-view-gallery tr.gal-row-over td{box-shadow:inset 0 2px 0 var(--navy)}
+          #wmc-view-gallery .gal-empty{text-align:center;padding:28px 8px}
+          .gal-pill{font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--line);cursor:pointer;background:#fff;color:var(--gray-1);font-weight:600}
+          .gal-pill.on{background:rgba(29,158,117,.10);border-color:rgba(29,158,117,.30);color:#0c6b4e}
+          .gal-pill.off{color:var(--gray-2)}
+          .gal-pill.feat.on{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.35);color:#b45309}
+          /* modal (appended to <body>) */
+          .gal-modal{position:fixed;inset:0;z-index:9999;display:none;align-items:flex-start;justify-content:center;background:rgba(11,15,23,.55);padding:5vh 16px;overflow-y:auto}
+          .gal-modal.open{display:flex}
+          .gal-modal-card{background:#fff;border-radius:var(--radius-lg);width:100%;max-width:560px;box-shadow:var(--shadow-xl);overflow:hidden}
+          .gal-modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+          .gal-modal-body{padding:20px;max-height:64vh;overflow-y:auto}
+          .gal-modal-foot{display:flex;gap:10px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--line)}
+          .gal-x{background:none;border:none;font-size:16px;cursor:pointer;color:var(--gray-2);line-height:1}
+          .gal-form{display:flex;flex-direction:column;gap:14px}
+          .gal-drop{border:1.5px dashed var(--line);border-radius:var(--radius);min-height:150px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--bg-soft);overflow:hidden}
+          .gal-drop:hover{border-color:var(--navy)}
+          .gal-drop-hint{text-align:center;color:var(--gray-2);font-size:13px;line-height:1.6}
+          .gal-preview{max-width:100%;max-height:260px;object-fit:contain;display:block}
+          .gal-hint{font-size:11px;color:var(--gray-2);margin-top:5px;line-height:1.5}
+          .gal-field-err{font-size:11px;color:var(--red);margin-top:5px;min-height:1em}
+          .gal-check{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--gray-1);cursor:pointer}
+        </style>
+        <div class="wmc-view" id="wmc-view-gallery">
+          <div id="view-gallery"></div>
         </div>
 
         <!-- ══ VIEW: FAQ ══ -->
@@ -1614,6 +1655,7 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
 <script src="js/modules/hero/hero.js"></script>
 <script src="js/modules/services/servicesEditor.js"></script>
 <script src="js/modules/reviews/reviewsEditor.js"></script>
+<script src="js/modules/gallery/galleryEditor.js"></script>
 <script src="js/modules/faq/faq.js"></script>
 <script src="js/modules/header/header.js"></script>
 <script src="js/modules/content/contentRegistry.js"></script>
@@ -1636,6 +1678,7 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
   /* Breadcrumb labels for new views */
   if (typeof WMC_BREADCRUMBS !== 'undefined') {
     WMC_BREADCRUMBS.hero     = 'ヒーローセクション';
+    WMC_BREADCRUMBS.gallery  = '作業事例ギャラリー';
     WMC_BREADCRUMBS.faq      = 'FAQ 管理';
     WMC_BREADCRUMBS.header   = 'ヘッダー編集';
     WMC_BREADCRUMBS.content  = 'コンテンツ & アイコン';
@@ -1658,6 +1701,7 @@ html.dark .rev-st-pending{color:#f59e0b}html.dark .rev-st-approved{color:#34d399
       if (view === 'hero')     { if (typeof renderHero        === 'function') renderHero(); }
       if (view === 'services') { if (typeof renderServices     === 'function') renderServices(); }
       if (view === 'reviews')  { if (typeof renderReviews      === 'function') renderReviews(); }
+      if (view === 'gallery')  { if (typeof renderGallery      === 'function') renderGallery(); }
       if (view === 'faq')      { if (typeof renderFaq          === 'function') renderFaq(); }
       if (view === 'header')   { if (typeof renderHeader       === 'function') renderHeader(); }
       if (view === 'content')  { if (typeof renderContent      === 'function') renderContent(); }
