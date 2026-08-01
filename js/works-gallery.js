@@ -208,7 +208,10 @@
     else startAnim();
     updateActive();
   }
-  function currentIndex() { return (((Math.round(S.pos) % S.n) + S.n) % S.n); }
+  // Based on TARGET (not the mid-animation pos) so dots + the live-region
+  // announcement update instantly on interaction rather than lagging a step
+  // behind the ~easing settle.
+  function currentIndex() { return (((Math.round(S.target) % S.n) + S.n) % S.n); }
 
   function updateActive() {
     var idx = currentIndex();

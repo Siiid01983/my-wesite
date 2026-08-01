@@ -77,7 +77,7 @@
 /* Arrows — reuse the neutral token palette; restyled minimally to match. */
 .wg-arrow {
   position: absolute; top: 50%; transform: translateY(-50%);
-  z-index: 20;
+  z-index: 200;                        /* above every card (cards use z 90–100) so edge arrows stay clickable */
   width: 44px; height: 44px;
   display: flex; align-items: center; justify-content: center;
   border-radius: 50%;
