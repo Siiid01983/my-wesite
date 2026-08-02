@@ -38,6 +38,7 @@ const PRECACHE = [
   '/css/ui-enhancements.css',
   '/css/chat-bubbles.css',
   '/css/works-gallery.css',
+  '/css/home-stats.css',
   '/js/reviews-carousel.js',
   '/js/works-gallery.js',
   '/js/back-to-top.js',

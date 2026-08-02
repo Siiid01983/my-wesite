@@ -29,6 +29,7 @@
 <link rel="stylesheet" href="css/action-center.css" />
 <link rel="stylesheet" href="css/ui-enhancements.css" />
 <link rel="stylesheet" href="css/works-gallery.css" />
+<link rel="stylesheet" href="css/home-stats.css" />
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -1305,6 +1306,42 @@ body { padding-bottom: 76px; }
 })();
 </script>
 
+<!-- ============== 作業事例 GALLERY (moved directly below hero; DB-driven, hidden until data loads) ============== -->
+<section class="section works-gallery" id="works" aria-labelledby="worksTitle" hidden>
+  <div class="container">
+    <header class="section-head">
+      <span class="eyebrow">Our Work</span>
+      <h2 class="section-title" id="worksTitle">作業事例</h2>
+      <p class="section-lead">実際の引越し・作業の様子をご覧ください。</p>
+    </header>
+    <div class="wg-stage" role="group" aria-roledescription="carousel" aria-label="作業事例">
+      <div class="wg-viewport">
+        <div class="wg-track" id="wgTrack"></div>
+      </div>
+      <button class="wg-arrow wg-prev" type="button" aria-label="前へ">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="wg-arrow wg-next" type="button" aria-label="次へ">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <div class="wg-live" id="wgLive" aria-live="polite"></div>
+    </div>
+    <div class="wg-dots" id="wgDots"></div>
+  </div>
+</section>
+
+<!-- ============== UNIFIED TRUST + STATS BAR (single premium info bar, directly below the gallery) ============== -->
+<section class="trust-strip" aria-label="実績と安心の体制">
+  <div class="container ustrip-inner">
+    <div class="ustat"><span class="trust-key">15,000+</span><span class="trust-sub">引越し実績</span></div>
+    <div class="ustat"><span class="trust-key">14年</span><span class="trust-sub">の経験</span></div>
+    <div class="ustat"><span class="trust-key">国土交通省認可</span><span class="trust-sub">第431320058126号</span></div>
+    <div class="ustat"><span class="trust-key">損害補償保険</span><span class="trust-sub">加入済</span></div>
+    <div class="ustat"><span class="trust-key">最短2時間</span><span class="trust-sub">返信対応</span></div>
+    <div class="ustat"><span class="trust-key">対応エリア</span><span class="trust-sub">東京・埼玉・神奈川・千葉</span></div>
+  </div>
+</section>
+
 <!-- ============== BOOKING (Action Center — first content below hero) ============== -->
 <section class="section booking" id="booking">
   <div class="container">
@@ -1467,88 +1504,6 @@ setTimeout(window.HM_revealServiceCards, 2500);
   });
 })();
 </script>
-
-<!-- ============== TRUST STRIP (moved below the Action Center) ============== -->
-<section class="trust-strip" aria-label="安心の体制">
-  <div class="container trust-strip-inner">
-    <div class="trust-item">
-      <span class="trust-key" data-content-key="trust_item1_key">14 Years of Experience</span>
-      <span class="trust-sub" data-content-key="trust_item1_sub">14年の実績</span>
-    </div>
-    <div class="trust-item">
-      <span class="trust-key" data-content-key="trust_item2_key">国土交通省 認可</span>
-      <span class="trust-sub" data-content-key="trust_item2_sub">第 431320058126 号</span>
-    </div>
-    <div class="trust-item">
-      <span class="trust-key" data-content-key="trust_item3_key">損害補償保険</span>
-      <span class="trust-sub" data-content-key="trust_item3_sub">万一も全額補償</span>
-    </div>
-    <div class="trust-item">
-      <span class="trust-key" data-content-key="trust_item4_key">最短2時間で返信</span>
-      <span class="trust-sub" data-content-key="trust_item4_sub">当日引越し対応</span>
-    </div>
-  </div>
-</section>
-
-<!-- ============== TRUST BADGES ============== -->
-<div class="trust-badges-row" aria-label="認定・許認可">
-  <div class="container">
-    <div class="trust-badges-inner" role="list">
-      <span class="trust-badge-pill" role="listitem">
-        <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
-        <span data-content-key="trust_badge1" data-content-hide="closest:.trust-badge-pill">国土交通省認可</span>
-      </span>
-      <span class="trust-badge-pill" role="listitem">
-        <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
-        <span data-content-key="trust_badge2" data-content-hide="closest:.trust-badge-pill">保険加入済</span>
-      </span>
-      <span class="trust-badge-pill" role="listitem">
-        <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
-        <span data-content-key="trust_badge3" data-content-hide="closest:.trust-badge-pill">古物商許可</span>
-      </span>
-      <span class="trust-badge-pill" role="listitem">
-        <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
-        <span data-content-key="trust_badge4" data-content-hide="closest:.trust-badge-pill">オンライン予約対応</span>
-      </span>
-    </div>
-    <div class="insurance-card" role="region" aria-label="損害賠償保険情報">
-      <div class="insurance-card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
-      </div>
-      <div class="insurance-card-body">
-        <div class="insurance-card-title">
-          引越業者損害賠償保険 加入済
-          <span class="insurance-card-verified">認証済</span>
-        </div>
-        <div class="insurance-card-sub">第431320058126号 &nbsp;·&nbsp; 国土交通省認可</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ============== 作業事例 GALLERY (DB-driven; hidden until data loads) ============== -->
-<section class="section works-gallery" id="works" aria-labelledby="worksTitle" hidden>
-  <div class="container">
-    <header class="section-head">
-      <span class="eyebrow">Our Work</span>
-      <h2 class="section-title" id="worksTitle">作業事例</h2>
-      <p class="section-lead">実際の引越し・作業の様子をご覧ください。</p>
-    </header>
-    <div class="wg-stage" role="group" aria-roledescription="carousel" aria-label="作業事例">
-      <div class="wg-viewport">
-        <div class="wg-track" id="wgTrack"></div>
-      </div>
-      <button class="wg-arrow wg-prev" type="button" aria-label="前へ">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
-      <button class="wg-arrow wg-next" type="button" aria-label="次へ">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-      </button>
-      <div class="wg-live" id="wgLive" aria-live="polite"></div>
-    </div>
-    <div class="wg-dots" id="wgDots"></div>
-  </div>
-</section>
 
 <!-- ============== COMMITMENTS ============== -->
 <section class="section commitments" id="commitments">
