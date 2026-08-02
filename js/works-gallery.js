@@ -49,7 +49,17 @@
 
   function fetchData() {
     var base = apiBase();
-    if (!base) return;                 // no backend configured → stay hidden
+    if (!base) {
+      // window.API_BASE / API_KEY are set asynchronously by js/core/bootstrap.js
+      // (it dynamically loads js/config/env.js during its staged startup). This
+      // defer script's init() can run BEFORE that completes, so we must WAIT for
+      // the globals rather than give up permanently — otherwise the feed is never
+      // requested and the section stays hidden even though gallery.php has data.
+      fetchData._tries = (fetchData._tries || 0) + 1;
+      if (fetchData._tries > 150) return;   // ~15s ceiling, then stop quietly
+      setTimeout(fetchData, 100);
+      return;
+    }
     fetch(base + '/gallery.php', { headers: { 'X-API-KEY': window.API_KEY || '' }, cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) {
