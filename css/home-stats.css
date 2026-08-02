@@ -1,0 +1,41 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   home-stats.css — Unified Trust + Statistics bar (single premium info bar
+   directly below the Works gallery).
+
+   Reuses .trust-strip (section bg / height / borders) and .trust-key / .trust-sub
+   (typography) from styles.css so it matches the old strip exactly. Its own grid
+   (.ustrip-inner / .ustat) carries 6 items responsively WITHOUT inheriting the
+   4-item .trust-item nth-child divider rules. New file — styles.css untouched.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.ustrip-inner {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0;
+}
+.ustat {
+  text-align: center;
+  padding: 12px 20px;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+}
+.ustat:last-child { border-right: 0; }
+
+/* Tablet — 2 rows of 3 */
+@media (max-width: 900px) {
+  .ustrip-inner { grid-template-columns: repeat(3, 1fr); }
+  .ustat { padding: 18px 14px; }
+  .ustat:nth-child(3n) { border-right: 0; }
+  .ustat:nth-child(-n+3) { border-bottom: 1px solid var(--line); }
+}
+
+/* Mobile — 3 rows of 2 */
+@media (max-width: 560px) {
+  .ustrip-inner { grid-template-columns: repeat(2, 1fr); }
+  .ustat { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .ustat:nth-child(2n) { border-right: 0; }
+  .ustat:nth-child(n+5) { border-bottom: 0; }   /* last row (items 5 & 6) */
+}
