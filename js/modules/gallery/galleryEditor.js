@@ -273,11 +273,11 @@ function _galEnsureModal() {
             <input type="file" id="galFile" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="_galPick(this.files[0])">
             <div id="galFileErr" class="gal-field-err"></div>
           </div>
-          <div class="m-field"><label class="m-label">タイトル <span style="color:var(--red)">*</span></label>
-            <input class="m-input" id="galTitle" maxlength="120" placeholder="例：世田谷区 単身引越し"></div>
-          <div class="m-field"><label class="m-label">代替テキスト（alt）<span style="color:var(--red)">*</span></label>
-            <input class="m-input" id="galAlt" maxlength="200" placeholder="例：トラックに家具を積み込む作業員">
-            <div class="gal-hint">画像が表示できない時の説明・SEO・スクリーンリーダー（音声読み上げ）用。写真の内容を簡潔に。</div></div>
+          <div class="m-field"><label class="m-label">タイトル（任意）</label>
+            <input class="m-input" id="galTitle" maxlength="120" placeholder="例：世田谷区 単身引越し（任意）"></div>
+          <div class="m-field"><label class="m-label">代替テキスト（alt・任意）</label>
+            <input class="m-input" id="galAlt" maxlength="200" placeholder="例：トラックに家具を積み込む作業員（任意）">
+            <div class="gal-hint">任意。入力すると SEO・スクリーンリーダー対応が向上します。空欄の場合は自動で設定されます。</div></div>
           <div class="m-field"><label class="m-label">説明（任意）</label>
             <textarea class="m-input" id="galDesc" maxlength="400" rows="2" placeholder="任意の補足説明"></textarea></div>
           <div class="m-row">
@@ -386,8 +386,8 @@ async function submitGal() {
   const active   = document.getElementById('galActive').checked;
   const featured = document.getElementById('galFeatured').checked;
 
-  if (!title) { _galToast('タイトルを入力してください'); return; }
-  if (!alt)   { _galToast('代替テキスト（alt）を入力してください'); return; }
+  // Title / alt / category / description are all optional — an image can be saved
+  // with just the photo. Only the image itself is required (on create).
   if (!_galEditId && !_galFile) { _galToast('画像を選択してください'); return; }
 
   _galSetBusy(true);

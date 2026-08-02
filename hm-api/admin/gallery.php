@@ -106,8 +106,9 @@ function gallery_create(): void {
   $altText  = gallery_str($_POST['alt_text'] ?? '', 200);
   $desc     = gallery_str($_POST['description'] ?? '', 400);
   $category = gallery_str($_POST['category'] ?? 'general', 40) ?: 'general';
-  if ($title === '')   { gallery_unlink($img['files']); g_err('タイトルは必須です', 422); }
-  if ($altText === '') { gallery_unlink($img['files']); g_err('代替テキスト（alt）は必須です', 422); }
+  // Text fields are optional — an image can be saved with just the photo. Keep a
+  // baseline alt for SEO/a11y: fall back to the title, then a generic label.
+  if ($altText === '') $altText = ($title !== '' ? $title : '作業事例');
 
   $isActive   = gallery_bool($_POST['is_active']   ?? '1');
   $isFeatured = gallery_bool($_POST['is_featured'] ?? '0');
@@ -155,8 +156,10 @@ function gallery_update(): void {
     }
   };
 
-  if (array_key_exists('title', $body))       $addStr('title', $body['title'], 120);
-  if (array_key_exists('alt_text', $body))    $addStr('alt_text', $body['alt_text'], 200);
+  // title / alt_text are optional on update too (NOT NULL cols → store '' / a
+  // generic fallback for alt) so a photo can be saved without them.
+  if (array_key_exists('title', $body))    { $sets[] = 'title = ?';    $args[] = gallery_str((string)$body['title'], 120); }
+  if (array_key_exists('alt_text', $body)) { $av = gallery_str((string)$body['alt_text'], 200); $sets[] = 'alt_text = ?'; $args[] = ($av !== '' ? $av : '作業事例'); }
   if (array_key_exists('description', $body)) $addStr('description', $body['description'], 400, true);
   if (array_key_exists('category', $body)) {
     $c = gallery_str((string)$body['category'], 40); $sets[] = 'category = ?'; $args[] = ($c !== '' ? $c : 'general');
