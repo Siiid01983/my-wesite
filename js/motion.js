@@ -32,9 +32,9 @@
     { sel: '.hero-reasons-grid > .reason-card',      effect: 'zoom',  stagger: true },
     { sel: '.trust-strip .ustat',                    effect: 'zoom',  stagger: true, counter: true },
     { sel: '.commit-grid > .commit-card',            effect: 'zoom',  stagger: true },
-    { sel: '.process-timeline > .process-step',      effect: 'zoom',  stagger: true },
-    { sel: '#revGridEl > .review-card',              effect: 'zoom',  stagger: true },
-    { sel: '#faqListEl > .faq-item',                 effect: 'slide', stagger: true },
+    { sel: '.process-timeline > .process-step',      effect: 'slide',  stagger: true },
+    { sel: '#revGridEl > .review-card',              effect: 'strong', stagger: true },
+    { sel: '#faqListEl > .faq-item',                 effect: 'fade',   stagger: true },
     { sel: '.section-head',                          effect: 'title', stagger: false },
     { sel: '.hero-reasons-title',                    effect: 'title', stagger: false },
     { sel: '.booking-cta-band',                      effect: 'zoom',  stagger: false }
@@ -60,6 +60,9 @@
     el.classList.add('hm-reveal');
     if (effect === 'title') el.classList.add('hm-title');
     else if (effect === 'slide') el.classList.add('hm-slide');
+    else if (effect === 'fade') el.classList.add('hm-fade');
+    else if (effect === 'strong') el.classList.add('hm-strong');
+    // 'zoom' is the base .hm-reveal keyframe — no extra class needed.
     if (i > 0) el.style.animationDelay = (Math.min(i, STAGGER_CAP) * STAGGER_MS) + 'ms';
     if (counterEl) el.__hmCounter = counterEl;
 

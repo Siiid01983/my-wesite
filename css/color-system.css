@@ -1,0 +1,94 @@
+/* ============================================================================
+   COLOR SYSTEM  —  css/color-system.css
+   Additive warm-accent theme layer for the public marketing page.
+
+   Goal: add warmth + energy while staying Japanese-premium-minimal. NO redesign,
+   NO layout change. Colour only. Protected surfaces are intentionally untouched:
+     • Hero  (.btn-hero-book, hero section)
+     • Booking overlay (ba-* classes)
+     • Timeline / calendar scheduler
+   Those keep the existing dark-navy (`--ink` #0b0f17) brand color.
+
+   Loading: linked LAST in <head> (after the big inline <style> block in
+   index.html) so equal-specificity colour overrides win by source order — no
+   !important, no specificity hacks.
+   ========================================================================== */
+
+:root {
+  --c-orange:      #F58220;   /* primary accent — CTAs, active nav, key icons   */
+  --c-orange-dark: #d96f12;   /* CTA hover                                       */
+  --c-sky:         #F5F9FF;   /* alt section background (statistics / process)   */
+  --c-green:       #5CB85C;   /* success / licensed / positive                   */
+  --c-yellow:      #FFD166;   /* stars / satisfaction / featured                 */
+  --c-blue-ink:    #3B82C4;   /* readable icon blue (rotation only)              */
+  --c-warm-white:  #FCFCFC;   /* page base                                       */
+  --c-gray-light:  #F8F9FA;   /* "Why Hello Moving" section background           */
+}
+
+/* ---------------------------------------------------------------------------
+   1) PAGE BASE + ALTERNATING SECTION BACKGROUNDS
+   White sections stay white (they inherit the warm-white body); only the two
+   accent sections get a soft tint so the page reads as calm white with rhythm.
+   --------------------------------------------------------------------------- */
+body { background: var(--c-warm-white); }
+
+.trust-strip      { background: var(--c-sky); }         /* Statistics → sky blue   */
+.section.process  { background: var(--c-sky); }         /* Process    → sky blue   */
+#reasons          { background: var(--c-gray-light); }  /* Why HM     → light gray */
+
+/* ---------------------------------------------------------------------------
+   2) CARDS — stay white, slightly stronger resting shadow (radius unchanged).
+   (.svc-img-card keeps its own shadow from ui-enhancements.css.)
+   --------------------------------------------------------------------------- */
+.reason-card,
+.commit-card,
+.review-card {
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(11, 15, 23, .05);
+}
+
+/* ---------------------------------------------------------------------------
+   3) ICONS — accent instead of uniform dark. The four "reasons" icons rotate
+   Orange → Blue → Green → Yellow (never rainbow; one accent per card).
+   --------------------------------------------------------------------------- */
+.reason-card:nth-child(1) .reason-ico { color: var(--c-orange);   background: rgba(245, 130, 32, .12); }
+.reason-card:nth-child(2) .reason-ico { color: var(--c-blue-ink); background: rgba(59, 130, 196, .12); }
+.reason-card:nth-child(3) .reason-ico { color: var(--c-green);    background: rgba(92, 184, 92, .12); }
+.reason-card:nth-child(4) .reason-ico { color: #d99a00;           background: rgba(255, 209, 102, .18); }
+
+/* ---------------------------------------------------------------------------
+   4) BUTTONS
+   Primary CTA → orange (header CTA, mobile CTA, contact submit, booking band,
+   midpage quote, footer CTA). Secondary buttons stay dark-navy (unchanged).
+   --------------------------------------------------------------------------- */
+.btn-primary            { background: var(--c-orange); color: #fff; }
+.btn-primary:hover      { background: var(--c-orange-dark); }
+
+.booking-cta-btn        { background: var(--c-orange); }
+.booking-cta-btn:hover  { background: var(--c-orange-dark); }
+
+.midpage-cta .btn-light { background: var(--c-orange); color: #fff; }
+.midpage-cta .btn-light:hover { background: var(--c-orange-dark); }
+
+.hm-ft__cta-primary       { background: var(--c-orange); color: #fff; }
+.hm-ft__cta-primary:hover { background: var(--c-orange-dark); }
+
+/* ---------------------------------------------------------------------------
+   5) ACTIVE NAVIGATION — orange hover colour + underline.
+   --------------------------------------------------------------------------- */
+.nav a:hover          { color: var(--c-orange); }
+.nav a::after         { background: var(--c-orange); }
+
+/* ---------------------------------------------------------------------------
+   6) REVIEWS — stars warm yellow; licensed/insurance mark green.
+   --------------------------------------------------------------------------- */
+.review-stars,
+.gmb-stars { color: var(--c-yellow); }
+/* (The reviews-section insurance/licensed shield is already green — left as-is.) */
+
+/* ---------------------------------------------------------------------------
+   7) GALLERY — active nav dot + arrows orange; inactive dot light gray.
+   --------------------------------------------------------------------------- */
+.wg-dot           { background: #d5d8dc; }
+.wg-dot.is-active { background: var(--c-orange); }
+.wg-arrow         { color: var(--c-orange); }

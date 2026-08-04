@@ -41,8 +41,10 @@
   .hm-reveal.hm-in {
     animation: hmReveal 720ms cubic-bezier(.22, .61, .36, 1) both;
   }
-  .hm-reveal.hm-title.hm-in { animation-name: hmRevealTitle; } /* fade+slide, no zoom */
-  .hm-reveal.hm-slide.hm-in { animation-name: hmRevealSlide; } /* fade+slide, no zoom */
+  .hm-reveal.hm-title.hm-in  { animation-name: hmRevealTitle; }  /* fade+slide, no zoom  */
+  .hm-reveal.hm-slide.hm-in  { animation-name: hmRevealSlide; }  /* slide only, no zoom  */
+  .hm-reveal.hm-strong.hm-in { animation-name: hmRevealStrong; } /* stronger zoom (reviews) */
+  .hm-reveal.hm-fade.hm-in   { animation-name: hmRevealFade; }   /* fade only (faq)      */
 
   /* After the entrance finishes, remove the animation so its forwards-fill
      state can't win over :hover transforms; lock the visible resting state. */
@@ -66,6 +68,14 @@
   from { opacity: 0; transform: translateY(30px); }
   to   { opacity: 1; transform: none; }
 }
+@keyframes hmRevealStrong {            /* reviews — slightly stronger zoom */
+  from { opacity: 0; transform: translateY(24px) scale(.90); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes hmRevealFade {              /* faq — fade only, no movement */
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
 
 /* ---------------------------------------------------------------------------
    2) HOVER POLISH  (desktop pointers only; excludes .svc-img-card, which already
@@ -84,8 +94,23 @@
     .commit-card:hover,
     .review-card:hover,
     .process-step:hover {
-      transform: translateY(-4px) scale(1.03);
+      transform: translateY(-4px) scale(1.015);   /* subtle, Apple-calm */
       box-shadow: 0 18px 40px -14px rgba(44, 54, 38, .28);
+    }
+
+    /* Icons animate INDEPENDENTLY of the card: the card lifts a touch while the
+       icon scales a touch more. (.step-num already carries `transition: all`
+       in styles.css, so it is not re-declared here — only its hover transform.) */
+    .reason-ico,
+    .commit-num,
+    .review-card .avatar {
+      transition: transform .25s cubic-bezier(.22, .61, .36, 1);
+    }
+    .reason-card:hover  .reason-ico,
+    .commit-card:hover  .commit-num,
+    .process-step:hover .step-num,
+    .review-card:hover  .avatar {
+      transform: scale(1.08);
     }
   }
 }
