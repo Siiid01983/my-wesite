@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ja" class="v2-dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0C0E0B" />
+<meta name="color-scheme" content="dark" />
+<meta name="robots" content="noindex, nofollow" />
+<title>マイページ ログイン — Hello Moving</title>
+
+<link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Noto+Serif+JP:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="css/v2-tokens.css" /><!-- shared V2 palette -->
+<style>
+/* ============================================================================
+   LOGIN V2 — cinematic dark auth screen (echoes the homepage hero).
+   Functional hooks preserved: #loginForm #email #referenceField #reference
+   #adminNote #loginBtn #authAlert #authAlertMsg + .optional/.show behaviours.
+   ========================================================================== */
+* { box-sizing: border-box; }
+* { margin: 0; padding: 0; }
+html, body { min-height: 100%; }
+body {
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  background: var(--surface-0);
+  color: var(--text-1);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.7;
+  letter-spacing: .02em;
+}
+a { color: inherit; text-decoration: none; }
+img, svg { display: block; max-width: 100%; }
+button, input { font: inherit; color: inherit; }
+
+/* ── ambient dark background (route-line + glows), like the hero ──────────── */
+.lv2-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+  background: radial-gradient(120% 90% at 50% -10%, #16201b 0%, var(--surface-0) 52%, #070a07 100%); }
+.lv2-glow { position: absolute; width: 60vw; height: 60vw; max-width: 720px; max-height: 720px;
+  border-radius: 50%; filter: blur(90px); opacity: .5; }
+.lv2-glow--a { top: -20%; left: -8%;  background: radial-gradient(circle, rgba(245,166,35,.34), transparent 62%);
+  animation: lv2Float 18s ease-in-out infinite; }
+.lv2-glow--b { bottom: -24%; right: -12%; background: radial-gradient(circle, rgba(53,180,92,.28), transparent 62%);
+  animation: lv2Float 22s ease-in-out infinite reverse; }
+.lv2-route { position: absolute; inset: 0; width: 100%; height: 100%; }
+.lv2-route path { fill: none; stroke: rgba(255,255,255,.10); stroke-width: 1.5; stroke-linecap: round;
+  stroke-dasharray: 2600; stroke-dashoffset: 2600; animation: lv2Draw 3s var(--v2-ease) .2s forwards; }
+
+/* ── layout ──────────────────────────────────────────────────────────────── */
+.lv2-wrap { position: relative; z-index: 1; min-height: 100vh; min-height: 100svh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 20px; }
+
+.lv2-card {
+  width: 100%; max-width: 424px;
+  background: var(--surface-1); border: 1px solid var(--line); border-radius: 22px;
+  box-shadow: 0 40px 90px -40px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.06);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  padding: 40px 38px 34px;
+  animation: lv2Up .7s var(--v2-ease) both;
+}
+
+.lv2-brand { display: flex; width: fit-content; align-items: center; gap: 11px; margin-bottom: 22px; }
+.lv2-logo { width: 40px; height: 40px; border-radius: 11px; overflow: hidden; flex-shrink: 0;
+  box-shadow: 0 6px 18px -6px rgba(53,180,92,.5); }
+.lv2-logo img { width: 100%; height: 100%; object-fit: contain; }
+.lv2-brand-name { font-weight: 700; font-size: 17px; letter-spacing: .04em; }
+
+.lv2-eyebrow { display: inline-flex; align-items: center; gap: 8px; font-family: 'Inter', sans-serif;
+  font-size: 11px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: var(--text-2); margin-bottom: 12px; }
+.lv2-eyebrow::before { content: ""; width: 16px; height: 1.5px; background: var(--brand); }
+.lv2-title { font-family: 'Noto Serif JP', serif; font-weight: 600; font-size: 26px; line-height: 1.35; letter-spacing: .02em; }
+.lv2-sub { margin-top: 8px; font-size: 13.5px; color: var(--text-2); }
+
+/* ── error alert (JS toggles .show) ──────────────────────────────────────── */
+.alert { display: none; margin-top: 20px; padding: 12px 14px; border-radius: 11px;
+  background: rgba(224,79,79,.12); border: 1px solid rgba(224,79,79,.35); color: #ffb4b4; font-size: 13px; }
+.alert.show { display: block; }
+
+/* ── form ────────────────────────────────────────────────────────────────── */
+#loginForm { margin-top: 24px; }
+.lv2-field { margin-bottom: 16px; transition: opacity .2s var(--v2-ease); }
+.lv2-field label { display: block; font-size: 12px; font-weight: 600; letter-spacing: .08em; color: var(--text-2); margin-bottom: 7px; }
+.lv2-field input {
+  width: 100%; padding: 14px 15px; border-radius: 11px;
+  background: var(--surface-2); border: 1px solid var(--line); color: var(--text-1);
+  font-size: 15px; transition: border-color .18s, box-shadow .18s;
+}
+.lv2-field input::placeholder { color: rgba(169,176,163,.55); }
+.lv2-field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(245,166,35,.22); }
+.lv2-hint { margin-top: 6px; font-size: 11.5px; color: var(--text-2); }
+/* admin state: reference field de-emphasised (JS adds .optional) */
+.lv2-field.optional { opacity: .5; }
+.lv2-field.optional label::after { content: "（任意）"; color: var(--text-2); font-weight: 400; }
+
+.lv2-admin-note { text-align: center; font-size: 11.5px; color: var(--text-2); margin: 6px 0 18px; }
+
+.lv2-btn {
+  width: 100%; min-height: 52px; border: 0; border-radius: 12px; cursor: pointer;
+  background: var(--accent); color: var(--surface-0); font-weight: 800; font-size: 15px; letter-spacing: .04em;
+  box-shadow: 0 12px 30px -10px rgba(245,166,35,.6);
+  transition: transform .15s var(--v2-ease), background .2s var(--v2-ease), box-shadow .2s var(--v2-ease);
+}
+.lv2-btn:hover { background: var(--accent-d); transform: translateY(-2px); box-shadow: 0 18px 40px -12px rgba(245,166,35,.7); }
+.lv2-btn:active { transform: scale(.98); }
+.lv2-btn:disabled { opacity: .6; cursor: default; transform: none; }
+
+.lv2-foot { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--text-2); line-height: 1.9; text-align: center; }
+.lv2-foot a { color: var(--accent); font-weight: 600; }
+.lv2-foot a:hover { color: var(--accent-d); }
+
+.lv2-pagefoot { position: relative; z-index: 1; margin-top: 22px; font-family: 'Inter', sans-serif;
+  font-size: 11px; letter-spacing: .1em; color: var(--text-2); opacity: .7; }
+
+@keyframes lv2Up   { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+@keyframes lv2Draw { to { stroke-dashoffset: 0; } }
+@keyframes lv2Float { 0%,100% { transform: translate3d(0,0,0); } 50% { transform: translate3d(3%, -3%, 0); } }
+
+@media (max-width: 440px) {
+  .lv2-card { padding: 32px 24px 28px; border-radius: 18px; }
+  .lv2-title { font-size: 23px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lv2-card, .lv2-glow, .lv2-route path { animation: none; }
+  .lv2-route path { stroke-dashoffset: 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="lv2-bg" aria-hidden="true">
+  <span class="lv2-glow lv2-glow--a"></span>
+  <span class="lv2-glow lv2-glow--b"></span>
+  <svg class="lv2-route" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+    <path d="M-60 620 C 300 540, 520 700, 760 500 S 1180 300, 1520 380" />
+  </svg>
+</div>
+
+<main class="lv2-wrap">
+  <div class="lv2-card">
+    <a class="lv2-brand" href="index.html" aria-label="Hello Moving ホーム">
+      <span class="lv2-logo"><img src="/icons/icon.svg" alt="Hello Moving" /></span>
+      <span class="lv2-brand-name">Hello Moving</span>
+    </a>
+
+    <span class="lv2-eyebrow">Customer Portal</span>
+    <h1 class="lv2-title">マイページ ログイン</h1>
+    <p class="lv2-sub">ご予約時のメールアドレスと予約番号（確認番号）を入力してください。</p>
+
+    <div class="alert" id="authAlert" role="alert" aria-live="assertive">
+      <span id="authAlertMsg"></span>
+    </div>
+
+    <!-- Email + Confirmation Number login form (IDs preserved) -->
+    <form id="loginForm" novalidate>
+      <div class="lv2-field">
+        <label for="email">メールアドレス</label>
+        <input type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com" required />
+        <div class="lv2-hint">ご予約時に登録されたメールアドレスをご入力ください。</div>
+      </div>
+      <div class="lv2-field" id="referenceField">
+        <label for="reference">予約番号（確認番号）</label>
+        <input type="text" id="reference" name="reference" autocomplete="off" inputmode="text" placeholder="HM-00000000-XXXX" required />
+        <div class="lv2-hint">ご予約確認メールに記載の予約番号をご入力ください。</div>
+      </div>
+      <p class="lv2-admin-note" id="adminNote">管理者はメールアドレスのみでログインできます</p>
+      <button type="submit" class="lv2-btn" id="loginBtn">ログイン</button>
+    </form>
+
+    <div class="lv2-foot">
+      予約番号がご不明な場合は、ご予約確認メールをご確認ください。<br />
+      ご不明な点は <a href="index.html#contact">お問い合わせ</a> ください。
+    </div>
+  </div>
+
+  <footer class="lv2-pagefoot">© Hello Moving — Customer Portal</footer>
+</main>
+
+<!-- API infrastructure (reused, unmodified) -->
+<script src="js/services/diagnostics.js"></script>
+<script src="js/lib/apiClient.js"></script>
+<script src="js/config/appConfig.js"></script>
+<script src="js/config/env.public.js"></script><!-- committed same-origin fallback -->
+<script src="js/config/env.js" onerror="console.warn('[Portal] js/config/env.js missing — using env.public.js fallback')"></script>
+<script src="js/services/dataClient.js"></script>
+<script src="bookingService.js"></script>
+<!-- Portal auth (API Auth Magic Link + session helper) -->
+<script src="js/portal/portalLogin.js?v=2"></script>
+<script src="js/portal/portalAuth.js"></script>
+
+<script>
+(function () {
+  'use strict';
+  const form     = document.getElementById('loginForm');
+  const btn      = document.getElementById('loginBtn');
+  const alertEl  = document.getElementById('authAlert');
+  const alertMsg = document.getElementById('authAlertMsg');
+
+  function showError(msg) { alertMsg.textContent = msg; alertEl.classList.add('show'); }
+  function clearError()   { alertEl.classList.remove('show'); }
+
+  function _isAdmin(email) {
+    return !!(window.PortalLogin &&
+              typeof PortalLogin.isAdminEmail === 'function' &&
+              PortalLogin.isAdminEmail(email));
+  }
+  const emailEl = document.getElementById('email');
+  const refField = document.getElementById('referenceField');
+  function syncAdminUI() {
+    const admin = _isAdmin(emailEl.value.trim());
+    if (refField) refField.classList.toggle('optional', admin);
+  }
+  emailEl.addEventListener('input', syncAdminUI);
+
+  // One-time handoff from the index.html "My Booking" modal.
+  (function consumeBookingHandoff() {
+    let raw;
+    try { raw = sessionStorage.getItem('hm_portal_handoff'); } catch (_) { raw = null; }
+    if (!raw) return;
+    try { sessionStorage.removeItem('hm_portal_handoff'); } catch (_) {}
+    let data = null;
+    try { data = JSON.parse(raw); } catch (_) { data = null; }
+    if (!data || !data.email || !data.ref) return;
+    if (!data.ts || (Date.now() - data.ts) > 5 * 60 * 1000) return;
+    emailEl.value = data.email;
+    document.getElementById('reference').value = data.ref;
+    syncAdminUI();
+    if (!window.PortalLogin || !PortalLogin.isConfigured()) return;
+    btn.disabled = true; btn.textContent = 'ログイン中…';
+    PortalLogin.loginWithReference(data.email, data.ref).then(function (res) {
+      if (res && res.ok) { location.replace('portal.html'); return; }
+      btn.disabled = false; btn.textContent = 'ログイン';
+      showError('メールアドレスまたは予約番号が正しくありません。');
+    }).catch(function () {
+      btn.disabled = false; btn.textContent = 'ログイン';
+      showError('接続エラーが発生しました。しばらくしてから再度お試しください。');
+    });
+  })();
+
+  // Deep-link prefill: login.html?ref=<reference>[&view=chat]
+  (function prefillReferenceFromQuery() {
+    try {
+      var qs    = new URLSearchParams(location.search);
+      var qref  = qs.get('ref');
+      var refEl = document.getElementById('reference');
+      if (qref && refEl && !refEl.value) { refEl.value = qref.trim(); if (emailEl) emailEl.focus(); }
+      if ((qs.get('view') || '').toLowerCase() === 'chat') {
+        sessionStorage.setItem('hm_after_login_view', 'chat');
+        if (qref) sessionStorage.setItem('hm_after_login_ref', qref.trim());
+      }
+    } catch (_) {}
+  })();
+
+  // Already authenticated → go to the portal.
+  (async function () {
+    try {
+      if (window.PortalLogin && PortalLogin.isConfigured()) {
+        const s = await PortalLogin.waitForSession(0);
+        if (s) { location.replace('portal.html'); return; }
+      }
+      if (window.PortalAuth && PortalAuth.getSession()) { location.replace('portal.html'); }
+    } catch (_) {}
+  })();
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    clearError();
+    const email = document.getElementById('email').value.trim();
+    const ref   = document.getElementById('reference').value.trim();
+    const admin = _isAdmin(email);
+    if (!email) { showError('メールアドレスを入力してください。'); return; }
+    if (!admin && !ref) { showError('メールアドレスと予約番号を入力してください。'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError('正しいメールアドレスを入力してください。'); return; }
+    if (!window.PortalLogin || !PortalLogin.isConfigured()) {
+      showError('現在ログインできません。しばらくしてから再度お試しください。'); return;
+    }
+    btn.disabled = true; btn.textContent = 'ログイン中…';
+    try {
+      const res = await PortalLogin.loginWithReference(email, ref);
+      if (!res.ok) {
+        let msg;
+        if (res.error === 'bad-email') msg = '正しいメールアドレスを入力してください。';
+        else if (res.error === 'rate-limited') msg = '試行回数が上限に達しました。しばらくしてから再度お試しください。';
+        else if (res.error === 'unavailable' || res.error === 'server-misconfigured') msg = '現在ログインできません。しばらくしてから再度お試しください。';
+        else msg = 'メールアドレスまたは予約番号が正しくありません。';
+        showError(msg); btn.disabled = false; btn.textContent = 'ログイン'; return;
+      }
+      location.replace('portal.html');
+    } catch (err) {
+      console.error('[Portal login]', err);
+      showError('接続エラーが発生しました。しばらくしてから再度お試しください。');
+      btn.disabled = false; btn.textContent = 'ログイン';
+    }
+  });
+})();
+</script>
+</body>
+</html>
