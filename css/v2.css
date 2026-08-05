@@ -1200,3 +1200,94 @@ html.v2-dark #bookingCalendar .hm-day-avail:hover {
 }
 /* 4.9 rating — a touch more presence */
 html.v2-dark #reviews .gmb-score { font-weight: 800 !important; }
+
+/* ============================================================================
+   HOMEPAGE POLISH — richer depth to match Hero/Portfolio
+   ========================================================================== */
+/* Service photos: a subtle dark wash — mutes any failed-image color fallback,
+   gives real photos a cinematic mood, and lifts overlaid-title legibility. */
+html.v2-dark .svc-img-card__photo { position: relative; }
+html.v2-dark .svc-img-card__photo::before {
+  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(6,9,13,.30) 0%, rgba(6,9,13,.12) 40%, rgba(6,9,13,.30) 100%);
+}
+html.v2-dark .svc-img-card__photo img { position: relative; z-index: 0; }
+html.v2-dark .svc-img-card__body { z-index: 3; }
+html.v2-dark .svc-img-card__badge { z-index: 4; }
+
+/* Stats — presence without awkward label wrapping (6-across is narrow) */
+html.v2-dark .trust-strip { padding: clamp(48px, 6vw, 76px) 0 !important; }
+html.v2-dark .trust-key { font-size: clamp(18px, 2.3vw, 27px) !important; line-height: 1.3; }
+
+/* Section atmosphere — faint warm top-glow adds Hero/Portfolio depth to flat
+   dark content sections (content stays above via z-index). */
+html.v2-dark #booking, html.v2-dark #reviews { position: relative; isolation: isolate; }
+html.v2-dark #booking::after, html.v2-dark #reviews::after {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 360px; z-index: 0; pointer-events: none;
+  background: radial-gradient(58% 100% at 50% 0%, rgba(245,166,35,.05), transparent 72%);
+}
+html.v2-dark #booking > .container, html.v2-dark #reviews > .container { position: relative; z-index: 1; }
+
+/* ============================================================================
+   ITERATION 2 — elevate the weakest info sections to Hero/Portfolio level
+   ========================================================================== */
+
+/* CONTACT — anchor the form in a premium glass card (was floating/transparent) */
+html.v2-dark .cta-final .cta-form {
+  background: var(--surface-1) !important;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 36px 38px 34px !important;
+  box-shadow: 0 34px 80px -44px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.05);
+}
+html.v2-dark .cta-final .cta-form h3 { color: var(--text-1); font-size: 18px; font-weight: 700; letter-spacing: .02em; }
+html.v2-dark .cta-final .cta-form label span { color: var(--text-2); font-size: 12.5px; font-weight: 600; letter-spacing: .04em; }
+html.v2-dark .cta-final .cta-form input,
+html.v2-dark .cta-final .cta-form textarea {
+  background: var(--surface-2) !important; border: 1px solid var(--line) !important;
+  color: var(--text-1) !important; border-radius: 11px; padding: 13px 15px;
+}
+html.v2-dark .cta-final .cta-form input:focus,
+html.v2-dark .cta-final .cta-form textarea:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(245,166,35,.2) !important; }
+html.v2-dark .cta-final .cta-form input::placeholder,
+html.v2-dark .cta-final .cta-form textarea::placeholder { color: rgba(169,176,163,.5) !important; }
+
+/* COMPANY — refined credentials rows (premium key/value, hover, tracked labels) */
+html.v2-dark .company-table { border-radius: 18px; overflow: hidden; max-width: 780px; margin-inline: auto; }
+html.v2-dark .company-row { grid-template-columns: 210px 1fr; border-bottom: 1px solid var(--line); transition: background .18s var(--v2-ease); }
+html.v2-dark .company-row:last-child { border-bottom: 0; }
+html.v2-dark .company-row:hover { background: rgba(255,255,255,.022); }
+html.v2-dark .company-row dt {
+  padding: 21px 26px; font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--text-2); background: rgba(255,255,255,.015); border-right: 1px solid var(--line);
+}
+html.v2-dark .company-row dd { padding: 21px 30px; font-size: 15px; color: var(--text-1); line-height: 1.85; }
+html.v2-dark .company-sub { color: var(--text-2); }
+
+/* FAQ — generous, premium accordion */
+html.v2-dark .faq-list { max-width: 720px; margin-inline: auto; }
+html.v2-dark .faq-item { margin-bottom: 14px; padding: 2px 28px; border-radius: 16px; border: 1px solid var(--line);
+  transition: border-color .2s var(--v2-ease), background .2s var(--v2-ease); }
+html.v2-dark .faq-item:hover { border-color: rgba(255,255,255,.2); }
+html.v2-dark .faq-item[open] { background: var(--surface-2); border-color: rgba(245,166,35,.4); }
+html.v2-dark .faq-item summary { padding: 26px 46px 26px 0; font-size: 16.5px; font-weight: 700; }
+html.v2-dark .faq-item summary::after { font-size: 24px; right: 4px; }
+html.v2-dark .faq-item p { font-size: 15px; line-height: 2; padding-bottom: 26px; color: var(--text-2); }
+
+/* FOOTER — a touch more finale presence */
+html.v2-dark .hm-ft__cta-title { font-size: clamp(26px, 3.6vw, 38px) !important; }
+
+/* Failed/slow service image → the dark tinted fallback (set in SERVICE_CONFIG)
+   already reads as an intentional dark tile; keep the overlaid title legible. */
+html.v2-dark .svc-img-card__photo { background-color: var(--surface-1); }
+
+/* Company table — stack on mobile (my 210px label column was forcing a broken
+   narrow value column at <640px, overriding the base mobile stack). */
+@media (max-width: 640px) {
+  html.v2-dark .company-row { grid-template-columns: 1fr !important; }
+  html.v2-dark .company-row dt {
+    border-right: 0 !important; border-bottom: 1px solid var(--line);
+    padding: 16px 20px 10px !important; background: rgba(255,255,255,.015) !important;
+  }
+  html.v2-dark .company-row dd { padding: 12px 20px 18px !important; }
+}
