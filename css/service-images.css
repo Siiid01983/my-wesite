@@ -1,0 +1,33 @@
+/* ============================================================================
+   SERVICE CARD IMAGES  —  css/service-images.css   (additive, premium polish)
+
+   The service card photo box already ships rounded corners, aspect-ratio: 3/2
+   (no CLS), object-fit: cover, hover zoom and lazy loading (index.html inline
+   styles + ui-enhancements.css). This file adds ONLY the missing premium touch
+   from the brief — a SUBTLE bottom overlay — plus a slightly smoother zoom easing.
+   No layout, color-palette, or structural change.
+   ========================================================================== */
+
+/* Subtle bottom gradient — grounds the photo and lifts badge/edge legibility.
+   pointer-events:none so the whole card stays one clickable booking link. */
+.svc-img-card__photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(11, 15, 23, .16) 0%, rgba(11, 15, 23, 0) 42%);
+  border-radius: inherit;
+}
+
+/* Keep the badge above the overlay. */
+.svc-img-card__badge { z-index: 2; }
+
+/* Premium easing on the existing hover zoom (transform target unchanged). */
+.svc-img-card__photo img {
+  transition: transform .45s cubic-bezier(.22, .61, .36, 1);
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svc-img-card__photo img { transition: none; }
+}
