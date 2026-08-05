@@ -1,0 +1,63 @@
+/* ============================================================================
+   PREMIUM POLISH  —  css/premium-polish.css   (additive; loaded after motion.css
+   + color-system.css so its overrides win by source order)
+
+   The warm color system (color-system.css) and motion system (motion.css/js)
+   already ship. This file adds ONLY the remaining deltas from the "warmer / more
+   alive" brief that are pure CSS:
+     • tighter vertical rhythm (section whitespace −~25%, still breathing)
+     • richer card-icon hover (scale 1.12 + slight rotate)
+     • a warm-yellow star glow
+     • base styles for the cursor-follow 3D tilt (js/tilt.js)
+
+   No layout, typography, brand, hero, booking, timeline or WMC change.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   1) SPACING — reduce the whitespace BETWEEN sections by ~25% (keep breathing
+   room). Only the generic marketing `.section` rhythm + the stats strip; hero,
+   booking overlay and timeline are untouched (different classes).
+   --------------------------------------------------------------------------- */
+.section      { padding: 105px 0; }               /* was 140 */
+.trust-strip  { padding: 42px 0; }                /* was 56  */
+
+@media (max-width: 1024px) { .section { padding: 75px 0; } }   /* was 100 */
+@media (max-width: 720px)  { .section { padding: 60px 0; } }   /* was 80  */
+
+/* ---------------------------------------------------------------------------
+   2) CARD ICONS — richer hover (scale + slight rotate). The reasons icons are
+   the true icon set; override motion.css's scale(1.08). Desktop pointers only,
+   motion-safe. (Card numbers/letters keep motion.css's subtle scale.)
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  @media (hover: hover) and (pointer: fine) {
+    .reason-ico { transition: transform .25s cubic-bezier(.22, .61, .36, 1); }
+    .reason-card:hover .reason-ico { transform: scale(1.12) rotate(3deg); }
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   3) STARS — warm-yellow glow (color already set to #FFD166 in color-system.css).
+   --------------------------------------------------------------------------- */
+.review-stars,
+.gmb-stars {
+  text-shadow: 0 0 8px rgba(255, 209, 102, .55);
+}
+@media (hover: hover) and (pointer: fine) {
+  .review-card:hover .review-stars { text-shadow: 0 0 12px rgba(255, 209, 102, .75); }
+}
+
+/* ---------------------------------------------------------------------------
+   4) 3D TILT base — the cursor-follow rotation itself is applied inline by
+   js/tilt.js (desktop pointers only, motion-safe). These rules just guarantee a
+   smooth GPU-composited return and prevent any flat-back seam. Mobile/touch and
+   reduced-motion never get the tilt (js bails), so no rule is needed there.
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  @media (hover: hover) and (pointer: fine) {
+    .svc-img-card,
+    .review-card,
+    .ustat,
+    .reason-card { backface-visibility: hidden; }
+  }
+}
