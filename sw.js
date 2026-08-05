@@ -166,7 +166,7 @@ const PRECACHE = [
   '/ops/js/bookings.js',
   '/ops/js/customers.js',
   '/ops/js/chat.js',
-  '/ops/js/calendar.js',
+  '/ops/js/opsCalendar.js',
   '/ops/js/notifications.js',
   '/ops/js/settings.js',
 ];
