@@ -1,0 +1,32 @@
+/* ============================================================================
+   HELLO MOVING V2 — shared design tokens (single source of truth)
+   Used across every V2 surface: homepage (index.html), login (login-v2.html),
+   and the customer portal. Opt in by adding `v2-dark` (or `v2`) to <html>/<body>.
+
+   The homepage's css/v2.css still declares these inline for now; keep the values
+   here in sync (or migrate the homepage to link this file) so all V2 surfaces
+   share ONE palette and never drift.
+   ========================================================================== */
+.v2-dark,
+.v2 {
+  color-scheme: dark;
+
+  /* Surfaces — layered dark, no pure black/white */
+  --surface-0: #0C0E0B;   /* page background          */
+  --surface-1: #151812;   /* cards, panels            */
+  --surface-2: #1E221B;   /* raised / inputs / hover  */
+  --line:      rgba(255, 255, 255, 0.10);
+
+  /* Text */
+  --text-1:    #EDEFE9;   /* body + headings          */
+  --text-2:    #A9B0A3;   /* captions, meta, labels   */
+
+  /* Accents */
+  --accent:    #F5A623;   /* PRIMARY CTA / focus       */
+  --accent-d:  #db8c10;   /* CTA hover                 */
+  --brand:     #35B45C;   /* brand green (decorative)  */
+  --line-green:#06C755;   /* LINE                      */
+  --star:      #FFD166;
+
+  --v2-ease:   cubic-bezier(.22, .61, .36, 1);
+}

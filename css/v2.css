@@ -1,0 +1,1283 @@
+/* ============================================================================
+   HELLO MOVING V2  —  css/v2.css
+   Loaded ONLY by index.html, scoped under `.v2` on <body>. Redesign of the
+   public homepage EXPERIENCE only — every functional hook (booking overlay,
+   #serviceCardsGrid renderer, ContentLoader ids, contact form) is preserved.
+
+   Concept: A fully DARK, premium homepage — warm olive-charcoal surfaces with a
+   single orange accent. A fine route-line motif threads the hero and reappears
+   as the Process spine. Apple-Keynote restraint · Riot/Steam interaction energy.
+
+   Palette:  surface #0C0E0B / #151812 / #1E221B · text #EDEFE9 / #A9B0A3
+             accent #F5A623 · brand green #35B45C · LINE #06C755 · star #FFD166
+             (all tokens sourced from css/v2-tokens.css — single source of truth)
+   Type:     DM Serif Display (display, restraint) · DM Sans (body) · JP stack.
+   NOTE: never targets .ba-* / #booking-app (booking kept exactly as-is).
+   ========================================================================== */
+
+.v2 {
+  color-scheme: dark;                 /* native scrollbars/controls follow dark */
+  /* Palette tokens (--surface-*, --text-*, --accent*, --brand, --line-green,
+     --star) come from css/v2-tokens.css — the single source of truth. */
+  --ease:      cubic-bezier(.22,.61,.36,1);
+  /* legacy --v2-* names retained + aliased so all existing rules keep working */
+  --v2-ink: var(--surface-0);  --v2-ink-2: var(--surface-1);
+  --v2-paper: var(--surface-0); --v2-lift: var(--surface-1);
+  --v2-band: var(--surface-1);  --v2-sky: var(--surface-1);
+  --v2-card: var(--surface-1);
+  --v2-accent: var(--accent);   --v2-accent-d: var(--accent-d);
+  --v2-forest: var(--brand);    --v2-line: var(--line);
+  --v2-star: var(--star);       --v2-ease: var(--ease);
+  background: var(--surface-0);
+  color: var(--text-1);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* smooth in-page anchor stops clear of the fixed header */
+.v2 section[id] { scroll-margin-top: 84px; }
+
+/* ============================================================================
+   HEADER — transparent over the dark hero, solid light on scroll
+   ========================================================================== */
+.v2 #siteHeader {
+  position: fixed; top: 0; left: 0; right: 0;
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition: background .35s var(--v2-ease), border-color .35s var(--v2-ease),
+              box-shadow .35s var(--v2-ease);
+}
+/* hero-context: light text on dark */
+.v2 #siteHeader .brand-name,
+.v2 #siteHeader .brand-sub,
+.v2 #siteHeader .nav a,
+.v2 #siteHeader .header-contact-link,
+.v2 #siteHeader .nav-toggle-label { color: #fff; }
+.v2 #siteHeader .nav a { opacity: .82; }
+.v2 #siteHeader .nav a:hover { opacity: 1; color: #fff; }
+.v2 #siteHeader .header-topbar { background: rgba(255,255,255,.06); color: rgba(255,255,255,.72); border: 0; }
+.v2 #siteHeader .nav-toggle span { background: #fff; }
+
+/* scrolled: frosted light bar */
+.v2 #siteHeader.v2-scrolled {
+  background: rgba(234,236,239,.82);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  backdrop-filter: saturate(180%) blur(16px);
+  border-bottom-color: var(--v2-line);
+  box-shadow: 0 8px 30px -18px rgba(11,15,23,.28);
+}
+.v2 #siteHeader.v2-scrolled .brand-name { color: var(--v2-ink); }
+.v2 #siteHeader.v2-scrolled .brand-sub  { color: #6b7280; }
+.v2 #siteHeader.v2-scrolled .nav a,
+.v2 #siteHeader.v2-scrolled .header-contact-link { color: var(--v2-ink); }
+.v2 #siteHeader.v2-scrolled .header-topbar { background: transparent; color: #6b7280; }
+.v2 #siteHeader.v2-scrolled .nav-toggle span { background: var(--v2-ink); }
+
+/* ============================================================================
+   HERO — cinematic dark
+   ========================================================================== */
+.v2hero {
+  position: relative;
+  min-height: 100svh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+  padding: 168px 0 120px;
+  color: #fff;
+  background: radial-gradient(120% 90% at 50% -10%, #16202b 0%, var(--v2-ink) 46%, #070a0f 100%);
+  overflow: hidden;
+  isolation: isolate;
+}
+/* dark → light seam: the hero dissolves into the paper content below */
+.v2hero::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 160px;
+  background: linear-gradient(to bottom, rgba(252,252,252,0) 0%, var(--v2-paper) 100%);
+  z-index: 3; pointer-events: none;
+}
+
+.v2hero__bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
+.v2hero__glow {
+  position: absolute; width: 62vw; height: 62vw; max-width: 820px; max-height: 820px;
+  border-radius: 50%; filter: blur(90px); opacity: .5; will-change: transform;
+}
+.v2hero__glow--a { top: -18%; left: -6%;  background: radial-gradient(circle, rgba(245,130,32,.42), transparent 62%); animation: v2Float 16s ease-in-out infinite; }
+.v2hero__glow--b { bottom: -22%; right: -10%; background: radial-gradient(circle, rgba(154,181,122,.34), transparent 62%); animation: v2Float 20s ease-in-out infinite reverse; }
+
+.v2hero__route { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+.v2hero__route-line {
+  stroke: rgba(255,255,255,.16); stroke-width: 1.5; stroke-linecap: round;
+  stroke-dasharray: 3000; stroke-dashoffset: 3000;
+  animation: v2Draw 3.2s var(--v2-ease) .3s forwards;
+}
+.v2hero__route-dot { fill: var(--v2-accent); filter: drop-shadow(0 0 8px rgba(245,130,32,.9)); }
+
+.v2hero__grain {
+  position: absolute; inset: 0; z-index: 2; opacity: .05; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.v2hero__inner { position: relative; z-index: 4; max-width: 920px; }
+
+.v2hero__eyebrow {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-family: var(--font-en); font-size: 12px; font-weight: 600;
+  letter-spacing: .22em; text-transform: uppercase;
+  color: rgba(255,255,255,.72);
+  padding: 8px 16px; border: 1px solid rgba(255,255,255,.16); border-radius: 999px;
+  background: rgba(255,255,255,.04);
+}
+.v2hero__eyebrow::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--v2-accent); box-shadow: 0 0 10px var(--v2-accent); }
+
+.v2hero__title { margin: 26px 0 0; line-height: 1.06; }
+.v2hero__title .ja {
+  display: block;
+  font-family: var(--font-jp); font-weight: 700;
+  font-size: clamp(38px, 7.4vw, 84px);
+  letter-spacing: .01em; color: #fff;
+  text-shadow: 0 2px 40px rgba(0,0,0,.35);
+}
+.v2hero__sub {
+  margin: 22px auto 0; max-width: 620px;
+  font-size: clamp(15px, 2.1vw, 18.5px); line-height: 1.9;
+  color: rgba(255,255,255,.72); letter-spacing: .02em;
+}
+
+.v2hero__cta { margin-top: 36px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+/* Buttons */
+.v2btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 16px 30px; border-radius: 999px;
+  font-family: var(--font-jp); font-weight: 700; font-size: 15px; letter-spacing: .04em;
+  cursor: pointer; text-decoration: none; border: 1px solid transparent;
+  transition: transform .2s var(--v2-ease), box-shadow .25s var(--v2-ease), background .2s var(--v2-ease);
+}
+.v2btn svg { transition: transform .25s var(--v2-ease); }
+.v2btn--primary { background: var(--v2-accent); color: #fff; box-shadow: 0 12px 34px -10px rgba(245,130,32,.7); }
+.v2btn--primary:hover { background: var(--v2-accent-d); transform: translateY(-2px); box-shadow: 0 18px 44px -10px rgba(245,130,32,.8); }
+.v2btn--primary:hover svg { transform: translateX(4px); }
+.v2btn--primary:active { transform: scale(.98); }
+.v2btn--ghost { background: rgba(255,255,255,.04); color: #fff; border-color: rgba(255,255,255,.28); }
+.v2btn--ghost:hover { background: rgba(255,255,255,.1); transform: translateY(-2px); }
+
+/* hero trust row */
+.v2hero__trust {
+  margin: 54px auto 0; padding: 0; list-style: none;
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: 0; max-width: 780px;
+}
+.v2hero__trust li {
+  flex: 1 1 auto; min-width: 140px; padding: 6px 26px; position: relative;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.v2hero__trust li + li::before { content: ""; position: absolute; left: 0; top: 12%; height: 76%; width: 1px; background: rgba(255,255,255,.14); }
+.v2hero__trust b { font-family: var(--font-serif); font-weight: 500; font-size: clamp(20px, 3vw, 27px); color: #fff; letter-spacing: .02em; }
+.v2hero__trust b i { font-style: normal; font-size: .62em; color: var(--v2-accent); margin-left: 2px; }
+.v2hero__trust span { font-size: 11px; letter-spacing: .12em; color: rgba(255,255,255,.55); }
+
+.v2hero__scroll {
+  position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%);
+  z-index: 4; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: rgba(255,255,255,.55); text-decoration: none;
+  font-family: var(--font-en); font-size: 10px; letter-spacing: .28em; text-transform: uppercase;
+}
+.v2hero__scroll i { width: 1px; height: 34px; background: linear-gradient(rgba(255,255,255,.6), transparent); animation: v2ScrollPulse 1.8s ease-in-out infinite; }
+
+/* hero load orchestration (above the fold → run on load, staggered) */
+.v2 .reveal-up { opacity: 0; transform: translateY(26px); animation: v2Up .85s var(--v2-ease) forwards; }
+.v2hero__eyebrow.reveal-up { animation-delay: .10s; }
+.v2hero__title .ja.reveal-up { animation-delay: .22s; }
+.v2hero__sub.reveal-up { animation-delay: .36s; }
+.v2hero__cta.reveal-up { animation-delay: .50s; }
+.v2hero__trust.reveal-up { animation-delay: .64s; }
+
+@keyframes v2Up   { to { opacity: 1; transform: none; } }
+@keyframes v2Draw { to { stroke-dashoffset: 0; } }
+@keyframes v2Float { 0%,100% { transform: translate3d(0,0,0); } 50% { transform: translate3d(2.5%, -3%, 0); } }
+@keyframes v2ScrollPulse { 0%,100% { transform: scaleY(.5); opacity: .4; transform-origin: top; } 50% { transform: scaleY(1); opacity: 1; } }
+
+/* ============================================================================
+   LIGHT CONTENT — editorial section headers (elevate the existing markup)
+   ========================================================================== */
+.v2 .section-head .eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  color: var(--v2-accent); font-weight: 700; letter-spacing: .2em;
+}
+.v2 .section-head .eyebrow::before { content: ""; width: 22px; height: 1.5px; background: var(--v2-accent); }
+.v2 .section-head .section-title { letter-spacing: .015em; }
+
+/* Cards: a touch more depth (over the existing card system) */
+.v2 .reason-card,
+.v2 .commit-card,
+.v2 .review-card { box-shadow: 0 6px 26px -12px rgba(11,15,23,.14); }
+
+/* ============================================================================
+   PROCESS — the route-line reappears as the timeline spine
+   ========================================================================== */
+.v2 .process-timeline { position: relative; }
+.v2 .process-timeline::before {
+  content: ""; position: absolute; z-index: 0;
+  left: 32px; right: 32px; top: 32px; height: 2px;
+  background: linear-gradient(to right, transparent, var(--v2-accent) 12%, var(--v2-forest) 88%, transparent);
+  opacity: .45;
+}
+.v2 .process-step { position: relative; z-index: 1; }
+.v2 .process-step .step-num {
+  border-color: var(--v2-accent); color: var(--v2-forest);
+  box-shadow: 0 0 0 6px var(--v2-sky), 0 8px 20px -8px rgba(245,130,32,.5);
+}
+.v2 .process-step:hover .step-num { background: var(--v2-accent); color: #fff; border-color: var(--v2-accent); }
+
+@media (max-width: 900px) {
+  .v2 .process-timeline::before { display: none; }   /* vertical stack — no spine */
+}
+
+/* ============================================================================
+   SECTION HEADERS — one editorial system for every section
+   ========================================================================== */
+.v2 .section-head { max-width: 720px; margin-inline: auto; }
+.v2 .section-head .section-title {
+  font-family: var(--font-serif); font-weight: 500;
+  font-size: clamp(28px, 4.4vw, 44px); line-height: 1.18; color: var(--v2-ink);
+}
+.v2 .section-head .section-lead { color: #59606c; font-size: clamp(14.5px, 1.7vw, 16px); }
+
+/* ============================================================================
+   PAGE CONTINUITY — one product, not stacked sections
+   Consistent, tighter vertical rhythm + NO hard hairline seams between sections,
+   so scrolling never announces "here starts another section".
+   ========================================================================== */
+.v2 .section { padding: clamp(64px, 8vw, 100px) 0; }
+.v2 .section + .section { border-top: 0; }
+.v2 .section-head { margin-bottom: clamp(34px, 4.5vw, 52px); }
+.v2 .section-head .eyebrow { margin-bottom: 14px; }
+
+/* ============================================================================
+   1) PORTFOLIO (Works) — the strongest section after the hero.
+   A framed, softly-lit stage that makes the Cover Flow the centrepiece.
+   (Cover Flow behaviour is untouched — works-gallery.js / .css own the cards.)
+   ========================================================================== */
+.v2 .works-gallery {
+  position: relative; isolation: isolate;
+  padding: clamp(78px, 10vw, 124px) 0;              /* the biggest stage on the page */
+  background: radial-gradient(130% 92% at 50% -12%, #f2f4f7 0%, var(--v2-sky) 48%, #dde6f3 100%);
+}
+.v2 .works-gallery::before {   /* immersive light-pools + edge focus on the centre project */
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(60% 42% at 16% 26%, rgba(245,130,32,.07), transparent 70%),
+    radial-gradient(60% 42% at 84% 74%, rgba(44,54,38,.07), transparent 70%),
+    linear-gradient(to right, rgba(231,238,251,.85) 0%, transparent 16%, transparent 84%, rgba(231,238,251,.85) 100%);
+}
+.v2 .works-gallery > .container { position: relative; z-index: 1; }
+.v2 .works-gallery .section-head { margin-bottom: clamp(40px, 5vw, 64px); }
+.v2 .works-gallery .section-head .eyebrow { color: var(--v2-accent); }
+.v2 .works-gallery .section-title { font-size: clamp(32px, 5vw, 52px); }
+/* project overlay reads as a real completed job, not a caption */
+.v2 .wg-overlay { backdrop-filter: blur(3px); }
+.v2 .wg-arrow { border-color: rgba(11,15,23,.06); background: rgba(255,255,255,.96); box-shadow: 0 16px 40px -16px rgba(11,15,23,.34); }
+.v2 .wg-arrow:hover { color: var(--v2-accent); }
+.v2 .wg-dot.is-active { background: var(--v2-accent); }
+
+/* ============================================================================
+   2) SERVICES — premium showcase (Apple / Airbnb / Tesla).
+   Completely LIGHT (dark band removed). A cinematic full-width FEATURED banner
+   leads, then large image tiles with a minimal caption — image dominates, text
+   is secondary. Restyles the live #serviceCardsGrid output; booking links stay.
+   ========================================================================== */
+.v2 .booking-cta-band { display: none; }          /* remove the dark ribbon — let it breathe */
+
+.v2 #serviceCardsGrid {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 22px;
+}
+.v2 #serviceCardsGrid .svc-img-card {
+  grid-column: span 2;                            /* 3 tiles per row */
+  position: relative; border: 0; border-radius: 22px; overflow: hidden;
+  background: #fff; box-shadow: 0 22px 50px -26px rgba(11,15,23,.34);
+}
+.v2 .svc-img-card__photo { aspect-ratio: 4 / 5; }  /* big image dominates */
+.v2 .svc-img-card__photo::after { display: none; }
+.v2 .svc-img-card__desc { display: none; }          /* less text */
+
+/* minimal caption BELOW the image — title + arrow, that's it */
+.v2 .svc-img-card__body {
+  position: static; background: none; margin: 0;
+  padding: 15px 18px 17px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.v2 .svc-img-card__title {
+  color: var(--v2-ink); font-family: var(--font-serif); font-weight: 500;
+  font-size: 16.5px; letter-spacing: .01em; line-height: 1.3;
+}
+.v2 .svc-img-card__body::after {
+  content: "\2192"; flex: 0 0 auto; color: var(--v2-accent);
+  font-size: 19px; font-weight: 700; transition: transform .25s var(--v2-ease);
+}
+.v2 .svc-img-card:hover .svc-img-card__body::after { transform: translateX(4px); }
+.v2 .svc-img-card__badge { z-index: 4; }
+
+/* FEATURED (first) service → cinematic full-width banner, title overlaid */
+.v2 #serviceCardsGrid .svc-img-card:first-child { grid-column: 1 / -1; }
+.v2 #serviceCardsGrid .svc-img-card:first-child .svc-img-card__photo { aspect-ratio: 24 / 9; }
+.v2 #serviceCardsGrid .svc-img-card:first-child .svc-img-card__body {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 72px 34px 30px;
+  background: linear-gradient(to top, rgba(6,9,13,.88) 4%, rgba(6,9,13,.35) 44%, transparent 100%);
+  justify-content: flex-start;
+}
+.v2 #serviceCardsGrid .svc-img-card:first-child .svc-img-card__title {
+  color: #fff; font-size: clamp(21px, 3vw, 32px);
+}
+.v2 #serviceCardsGrid .svc-img-card:first-child .svc-img-card__body::after {
+  content: "予約する \2192"; font-size: 13px; letter-spacing: .06em;
+  margin-left: 16px; align-self: center; color: #fff;
+}
+
+/* ============================================================================
+   3) TRUST + WHY HELLO MOVING
+   ========================================================================== */
+/* Stats strip → premium light band, serif numbers with an accent underline. */
+.v2 .trust-strip {
+  background: var(--v2-band);
+  border-top: 0; border-bottom: 0;
+}
+.v2 .ustat { position: relative; }
+.v2 .trust-key {
+  font-family: var(--font-serif); font-weight: 500;
+  font-size: clamp(19px, 2.6vw, 26px); color: var(--v2-ink); letter-spacing: .02em;
+}
+.v2 .ustat .trust-key::after {
+  content: ""; display: block; width: 26px; height: 2px; margin: 10px auto 0;
+  background: var(--v2-accent); border-radius: 2px; opacity: .9;
+}
+.v2 .trust-sub { color: #7a828e; }
+
+/* Why cards → premium tiles, icon in a soft tinted plate, lift on hover. */
+.v2 #reasons { background: var(--v2-sky); }
+.v2 .hero-reasons-title {
+  font-family: var(--font-serif); font-weight: 500;
+  font-size: clamp(26px, 4vw, 40px); color: var(--v2-ink);
+}
+.v2 .reason-card {
+  background: #fff; border: 1px solid #eef1f5; border-radius: 20px; padding: 34px 22px;
+  box-shadow: 0 12px 34px -18px rgba(11,15,23,.22);
+}
+.v2 .reason-ico { width: 58px; height: 58px; border-radius: 16px; }
+.v2 .reason-card h3 { font-size: 16px; letter-spacing: .02em; }
+
+/* ============================================================================
+   4) COMMITMENTS — quiet numbered ledger (keeps the page cohesive)
+   ========================================================================== */
+.v2 .commit-card {
+  background: #fff; border: 1px solid #eef1f5; border-radius: 18px;
+  box-shadow: 0 12px 30px -18px rgba(11,15,23,.2);
+}
+.v2 .commit-num { color: var(--v2-accent); opacity: .9; }
+
+/* ============================================================================
+   5) PROCESS — glowing nodes on the route spine (spine set earlier)
+   ========================================================================== */
+.v2 .process { background: var(--v2-sky); }
+.v2 .process-step h3 { letter-spacing: .02em; }
+
+/* ============================================================================
+   6) REVIEWS — editorial testimonials with a serif quote mark
+   ========================================================================== */
+.v2 .review-card {
+  border: 1px solid #eef1f5; border-radius: 20px; padding: 34px 30px 28px; background: #fff;
+  box-shadow: 0 14px 36px -20px rgba(11,15,23,.22);
+}
+.v2 .review-card::before {
+  content: "\201C"; position: absolute; top: 10px; right: 22px;
+  font-family: var(--font-serif); font-size: 84px; line-height: 1;
+  color: var(--v2-accent); opacity: .12; pointer-events: none;
+}
+.v2 .review-card h3 { font-family: var(--font-serif); font-weight: 500; color: var(--v2-ink); }
+.v2 .review-card .avatar {
+  background: linear-gradient(135deg, var(--v2-accent), #ffb066); color: #fff; border: 0;
+}
+.v2 .gmb-badge { border-radius: 16px; }
+
+/* ============================================================================
+   7) FAQ — premium accordion (hairline tiles, +/- affordance)
+   ========================================================================== */
+.v2 .faq-list { max-width: 760px; margin-inline: auto; }
+.v2 .faq-item {
+  background: #fff; border: 1px solid var(--v2-line); border-radius: 14px;
+  margin-bottom: 12px; padding: 2px 22px; transition: border-color .2s var(--v2-ease), box-shadow .2s var(--v2-ease);
+}
+.v2 .faq-item[open] { border-color: rgba(245,130,32,.4); box-shadow: 0 12px 30px -18px rgba(245,130,32,.3); }
+.v2 .faq-item summary {
+  list-style: none; cursor: pointer; position: relative;
+  padding: 20px 40px 20px 0; font-weight: 700; color: var(--v2-ink); font-size: 15.5px;
+}
+.v2 .faq-item summary::-webkit-details-marker { display: none; }
+.v2 .faq-item summary::after {
+  content: "+"; position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
+  font-size: 22px; font-weight: 400; color: var(--v2-accent); transition: transform .25s var(--v2-ease);
+}
+.v2 .faq-item[open] summary::after { content: "\2212"; }
+.v2 .faq-item p { color: #59606c; padding-bottom: 20px; }
+
+/* ============================================================================
+   8) FINAL CTA (#contact) — calm premium close before the footer
+   ========================================================================== */
+/* Keep it DARK (bookends the dark hero + footer); apply the V2 accent. */
+.v2 .cta-final { background: radial-gradient(120% 90% at 50% -10%, #16202b 0%, var(--v2-ink) 52%, #070a0f 100%); }
+.v2 .cta-final .eyebrow.light { color: var(--v2-accent); }
+
+/* ============================================================================
+   9) FOOTER — keep the navy identity; warm the CTA strip accent
+   ========================================================================== */
+.v2 .hm-ft__cta-strip { background: linear-gradient(120deg, #12261c 0%, #1d5435 100%); }
+.v2 .hm-ft__cta-primary { background: var(--v2-accent); color: #fff; }
+.v2 .hm-ft__cta-primary:hover { background: var(--v2-accent-d); }
+
+/* ============================================================================
+   SECTION RESPONSIVE
+   ========================================================================== */
+@media (max-width: 900px) {
+  .v2 #serviceCardsGrid { grid-template-columns: repeat(2, 1fr); }
+  .v2 #serviceCardsGrid .svc-img-card { grid-column: auto; }
+  .v2 #serviceCardsGrid .svc-img-card:first-child { grid-column: 1 / -1; }
+  .v2 #serviceCardsGrid .svc-img-card:first-child .svc-img-card__photo { aspect-ratio: 16 / 9; }
+}
+@media (max-width: 560px) {
+  .v2 #serviceCardsGrid { grid-template-columns: 1fr; }
+  .v2 #serviceCardsGrid .svc-img-card:first-child .svc-img-card__photo { aspect-ratio: 4 / 5; }
+  .v2 #serviceCardsGrid .svc-img-card:first-child .svc-img-card__body { padding: 48px 20px 20px; }
+}
+
+/* ============================================================================
+   RESPONSIVE
+   ========================================================================== */
+@media (max-width: 720px) {
+  .v2hero { padding: 128px 0 92px; min-height: 92svh; }
+  .v2hero__trust { margin-top: 40px; }
+  .v2hero__trust li { min-width: 45%; padding: 12px 14px; }
+  .v2hero__trust li + li::before { display: none; }
+  .v2hero__cta { flex-direction: column; width: 100%; max-width: 320px; margin-inline: auto; }
+  .v2btn { justify-content: center; width: 100%; }
+}
+
+/* ============================================================================
+   FULL DARK THEME — the hero color across the ENTIRE page.
+   Appended last so it wins by source order. Flips text to light, cards to glass,
+   and the light section fills to dark. Cover Flow / footer keep their own dark
+   identity; the booking overlay (.ba-* / #booking-app) is never touched.
+   ========================================================================== */
+.v2 { background: var(--v2-paper); color: rgba(255,255,255,.8); }
+.v2 main { background: var(--v2-paper); }
+
+/* CLEAR alternating tiers — visible section separation (base ↔ lifted band),
+   each lifted band capped with a faint top hairline for extra definition. */
+.v2 #works, .v2 #reasons, .v2 #commitments, .v2 #reviews, .v2 #company {
+  background: var(--v2-lift);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+}
+.v2 .trust-strip, .v2 #booking, .v2 #flow, .v2 #faq { background: var(--v2-paper); }
+
+/* content text → light (base markup uses near-black ink/gray) */
+.v2 main h2, .v2 main h3, .v2 main h4,
+.v2 main .section-title, .v2 main .hero-reasons-title,
+.v2 main summary, .v2 main strong, .v2 main .trust-key { color: #fff; }
+.v2 main p, .v2 main li, .v2 main em, .v2 main td, .v2 main .meta em,
+.v2 main .section-lead, .v2 main .trust-sub { color: rgba(255,255,255,.68); }
+/* stragglers with inline light-theme colors (e.g. the insurance card) */
+.v2 main [style*="--ink"]  { color: #fff !important; }
+.v2 main [style*="--gray"] { color: rgba(255,255,255,.68) !important; }
+
+/* my earlier light rules → dark equivalents (same selectors, later wins) */
+.v2 .section-head .section-title { color: #fff; }
+.v2 .section-head .section-lead  { color: rgba(255,255,255,.6); }
+.v2 .hero-reasons-title          { color: #fff; }
+.v2 .trust-key                   { color: #fff; }
+.v2 .trust-sub                   { color: rgba(255,255,255,.5); }
+.v2 .svc-img-card__title         { color: #fff; }
+.v2 .review-card h3              { color: #fff; }
+.v2 .review-card p               { color: rgba(255,255,255,.68); }
+.v2 .faq-item summary            { color: #fff; }
+.v2 .faq-item p                  { color: rgba(255,255,255,.66); }
+
+/* cards → glass panels */
+.v2 .reason-card,
+.v2 .commit-card,
+.v2 .review-card,
+.v2 .faq-item {
+  background: var(--v2-card);
+  border: 1px solid var(--v2-line);
+  box-shadow: 0 18px 44px -26px rgba(0,0,0,.7);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.v2 .svc-img-card { background: var(--v2-card); box-shadow: 0 24px 54px -28px rgba(0,0,0,.8); }
+.v2 .faq-item[open] { border-color: rgba(245,130,32,.5); box-shadow: 0 16px 40px -22px rgba(245,130,32,.35); }
+
+/* Portfolio stage → dark, accent light-pools only */
+.v2 .works-gallery { background: var(--v2-sky); }
+.v2 .works-gallery::before {
+  background:
+    radial-gradient(60% 42% at 16% 26%, rgba(245,130,32,.10), transparent 70%),
+    radial-gradient(60% 42% at 84% 74%, rgba(154,181,122,.10), transparent 70%);
+}
+.v2 .wg-arrow { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.12); color: #fff; }
+.v2 .wg-arrow:hover { color: var(--v2-accent); background: rgba(255,255,255,.12); }
+
+/* Process nodes on dark */
+.v2 .process-step .step-num {
+  background: #0e1420; color: var(--v2-accent);
+  border-color: var(--v2-accent);
+  box-shadow: 0 0 0 6px var(--v2-sky), 0 0 22px -4px rgba(245,130,32,.6);
+}
+.v2 .process-step:hover .step-num { background: var(--v2-accent); color: #fff; }
+
+/* Header: scrolled state → dark frosted (keeps light text) */
+.v2 #siteHeader.v2-scrolled {
+  background: rgba(11,15,23,.72);
+  border-bottom-color: rgba(255,255,255,.08);
+  box-shadow: 0 8px 30px -18px rgba(0,0,0,.6);
+}
+.v2 #siteHeader.v2-scrolled .brand-name { color: #fff; }
+.v2 #siteHeader.v2-scrolled .brand-sub  { color: rgba(255,255,255,.6); }
+.v2 #siteHeader.v2-scrolled .nav a,
+.v2 #siteHeader.v2-scrolled .header-contact-link { color: #fff; }
+.v2 #siteHeader.v2-scrolled .header-topbar { background: transparent; color: rgba(255,255,255,.6); }
+.v2 #siteHeader.v2-scrolled .nav-toggle span { background: #fff; }
+
+/* GMB / review rating badge + company table read on dark */
+.v2 .gmb-badge { background: var(--v2-card); border: 1px solid var(--v2-line); }
+.v2 .gmb-score, .v2 .gmb-platform { color: #fff !important; }
+.v2 .gmb-meta { color: rgba(255,255,255,.6) !important; }
+.v2 main table td, .v2 main table th { border-color: rgba(255,255,255,.1); }
+.v2 .commit-num { color: var(--v2-accent); }
+
+/* ── Availability calendar section (was #f7f7f4 + white day cells) ──────────*/
+.v2 .booking-calendar-section { background: var(--v2-lift); color: rgba(255,255,255,.8); }
+.v2 .calendar-day {
+  background: rgba(255,255,255,.05); color: #fff; border-color: rgba(255,255,255,.1);
+}
+.v2 .cal-day-num { color: #fff; }
+.v2 .calendar-day.available { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.12); color: #fff; }
+.v2 .calendar-day.available:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.24); }
+.v2 .calendar-day.empty { background: transparent; }
+.v2 .park-btn { background: rgba(255,255,255,.08); color: #fff; border-color: rgba(255,255,255,.16); }
+
+/* ── Contact form fields (dark cta-final) ──────────────────────────────────*/
+.v2 .cta-form label { color: rgba(255,255,255,.82); }
+.v2 .cta-form input,
+.v2 .cta-form select,
+.v2 .cta-form textarea {
+  background: rgba(255,255,255,.06); color: #fff; border-color: rgba(255,255,255,.16);
+}
+.v2 .cta-form input::placeholder,
+.v2 .cta-form textarea::placeholder { color: rgba(255,255,255,.4); }
+.v2 .cta-form input:focus,
+.v2 .cta-form select:focus,
+.v2 .cta-form textarea:focus {
+  border-color: var(--v2-accent); box-shadow: 0 0 0 3px rgba(245,130,32,.18);
+}
+.v2 .cta-form select option { color: #111; }   /* native dropdown list stays legible */
+
+/* ── Mobile menu ────────────────────────────────────────────────────────────*/
+.v2 .mobile-nav { background: #0e141e; border-top-color: rgba(255,255,255,.1); }
+.v2 .mobile-nav li a { color: #fff; border-bottom-color: rgba(255,255,255,.08); }
+
+/* ── Company info table → glass ────────────────────────────────────────────*/
+.v2 .company-table {
+  background: var(--v2-card); border-color: var(--v2-line);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.v2 .company-row { border-bottom-color: rgba(255,255,255,.08); }
+.v2 .company-row dt {
+  background: rgba(255,255,255,.03); color: rgba(255,255,255,.55);
+  border-right-color: rgba(255,255,255,.08);
+}
+.v2 .company-row dd { color: rgba(255,255,255,.85); }
+
+/* ── Back-to-top button → glass ────────────────────────────────────────────*/
+.v2 .back-to-top {
+  background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.16);
+  color: #fff; box-shadow: 0 10px 26px rgba(0,0,0,.55);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.v2 .back-to-top:hover { background: rgba(255,255,255,.14); border-color: rgba(245,130,32,.5); color: var(--v2-accent); }
+
+/* ============================================================================
+   BOOKING OVERLAY — dark theme (SCOPED .v2 only; production index.html keeps its
+   original light sheet). No structure/JS change — only colors. The overlay's own
+   token `--ba-forest` drives BOTH text and button fills, so we remap it to a
+   LIGHT text color and repaint the button/accent surfaces in V2 orange.
+   ========================================================================== */
+.v2 #booking-app {
+  --ba-forest: #EDEFF3;                 /* was dark green → LIGHT (drives text)  */
+  --ba-muted:  rgba(255,255,255,.5);
+  --ba-border: rgba(255,255,255,.12);
+  --ba-canvas: rgba(255,255,255,.06);   /* input field fills                     */
+  --ba-active: rgba(245,130,32,.16);    /* selected-item tint                    */
+  --ba-olive:  var(--v2-accent);        /* focus / selected / counter accent     */
+}
+/* hardcoded light surfaces → dark */
+.v2 #booking-app .ba-panel        { background: #0E141E; }
+.v2 #booking-app .ba-hdr          { background: #121A26; }
+.v2 #booking-app .ba-card         { background: rgba(255,255,255,.05); box-shadow: 0 1px 4px rgba(0,0,0,.45); }
+.v2 #booking-app .ba-row:active   { background: rgba(255,255,255,.06); }
+.v2 #booking-app .ba-cta-wrap     { background: #0E141E; }
+.v2 #booking-app .ba-drawer,
+.v2 #booking-app .ba-drawer-footer{ background: #10161F; }
+.v2 #booking-app .ba-pref-btn     { background: transparent; }
+.v2 #booking-app .ba-pref-btn:hover{ background: rgba(255,255,255,.06); }
+.v2 #booking-app .ba-item-card    { background: rgba(255,255,255,.05); }
+.v2 #booking-app .ba-counter      { background: rgba(255,255,255,.06); }
+.v2 #booking-app .ba-wbtn         { background: rgba(255,255,255,.08); }
+/* button/accent fills that used the green token → V2 orange */
+.v2 #booking-app .ba-cta,
+.v2 #booking-app .ba-drawer-cta,
+.v2 #booking-app .ba-wbtn.on,
+.v2 #booking-app .ba-success-icon { background: var(--v2-accent); color: #fff; }
+.v2 #booking-app .ba-cta:hover,
+.v2 #booking-app .ba-drawer-cta:hover { background: var(--v2-accent-d); }
+.v2 #booking-app .ba-ev-check input   { accent-color: var(--v2-accent); }
+/* keep item icons + native select list legible on dark */
+.v2 #booking-app .ba-item-img svg  { color: rgba(255,255,255,.75); }
+.v2 #booking-app select option     { color: #111; }
+
+/* ============================================================================
+   REDUCED MOTION — everything settles instantly, no ambient motion
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .v2 .reveal-up { opacity: 1; transform: none; animation: none; }
+  .v2hero__route-line { animation: none; stroke-dashoffset: 0; }
+  .v2hero__glow, .v2hero__scroll i, .v2hero__route-dot { animation: none; }
+}
+
+/* ============================================================================
+   SPEC ALIGNMENT — layered dark scale, token-driven, audience-tuned (20–40,
+   mobile). Appended last so it is canonical. Depth from borders + a 1px top
+   highlight (no glass/glow). Accent orange = primary CTA ONLY.
+   ========================================================================== */
+
+/* — Surfaces: page is surface-0; cards provide the depth ------------------- */
+.v2 main,
+.v2 #works, .v2 #reasons, .v2 #commitments, .v2 #reviews, .v2 #company,
+.v2 .trust-strip, .v2 #booking, .v2 #flow, .v2 #faq,
+.v2 .booking-calendar-section, .v2 .midpage-cta {
+  background: var(--surface-0);
+  box-shadow: none;
+}
+.v2 .works-gallery { background: var(--surface-0); }
+
+/* — Cards → solid surface-1 + hairline + subtle top highlight (depth) ------- */
+.v2 .reason-card, .v2 .commit-card, .v2 .review-card, .v2 .faq-item,
+.v2 .company-table, .v2 .gmb-badge {
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+.v2 .svc-img-card { background: var(--surface-1); box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
+.v2 .faq-item[open] { border-color: rgba(245,166,35,.5); }
+
+/* — Text: body + headings = text-1 (readable); text-2 for meta/labels only -- */
+.v2 main h1, .v2 main h2, .v2 main h3, .v2 main h4,
+.v2 main .section-title, .v2 main .hero-reasons-title, .v2 main summary,
+.v2 main strong, .v2 main .trust-key, .v2 main .review-card h3,
+.v2 main .svc-img-card__title { color: var(--text-1); }
+.v2 main p, .v2 main li, .v2 main dd,
+.v2 main .section-lead, .v2 main .review-card p, .v2 main .faq-item p { color: var(--text-1); }
+.v2 main .trust-sub, .v2 main .company-row dt, .v2 main .review-meta-line,
+.v2 main .gmb-meta, .v2 main .review-card footer em,
+.v2 .section-head .eyebrow, .v2 .cta-form label { color: var(--text-2); }
+
+/* audience: bolder heading presence vs body */
+.v2 .section-head .section-title { font-size: clamp(30px, 5vw, 50px); }
+
+/* — Accent discipline: decorative marks use brand-green / text-2, NOT orange
+     (orange stays for conversion CTAs + the process nodes per spec) --------- */
+.v2 .section-head .eyebrow::before { background: var(--brand); }
+.v2 .svc-img-card__body::after { color: var(--text-2); }
+.v2 #serviceCardsGrid .svc-img-card:first-child .svc-img-card__body::after { color: #fff; }
+.v2 .faq-item summary::after { color: var(--text-2); }
+.v2 .faq-item[open] summary::after { color: var(--brand); }
+.v2 .review-card::before { color: var(--text-1); opacity: .06; }
+
+/* — Reasons icon tiles: same hue @14% over surface-1, brightened glyphs ----- */
+.v2 .reason-card:nth-child(1) .reason-ico { color: #FBB040; background: rgba(245,166,35,.14); }
+.v2 .reason-card:nth-child(2) .reason-ico { color: #6FB6E8; background: rgba(59,130,196,.14); }
+.v2 .reason-card:nth-child(3) .reason-ico { color: #6FD08A; background: rgba(53,180,92,.14); }
+.v2 .reason-card:nth-child(4) .reason-ico { color: #FFD166; background: rgba(255,209,102,.14); }
+
+/* — Process (01–05): connector = line; circles = accent border, text-1 num -- */
+.v2 .process-timeline::before { background: var(--line); opacity: 1; }
+.v2 .process-step .step-num {
+  background: var(--surface-1); border: 2px solid var(--accent); color: var(--text-1);
+  box-shadow: none;
+}
+.v2 .process-step:hover .step-num { background: var(--accent); color: var(--surface-0); }
+
+/* — Reviews: avatars = surface-2 with text-1 initials ---------------------- */
+.v2 .review-card .avatar { background: var(--surface-2); color: var(--text-1); border: 1px solid var(--line); }
+
+/* — Header: surface-0 @92% + blur when scrolled; outline お問い合わせ button -- */
+.v2 #siteHeader .nav a { color: var(--text-1); }
+.v2 #siteHeader.v2-scrolled { background: rgba(12,14,11,.92); border-bottom-color: var(--line); }
+.v2 #siteHeader.v2-scrolled .nav a,
+.v2 #siteHeader.v2-scrolled .header-contact-link { color: var(--text-1); }
+.v2 #siteHeader .header-contact-link:not(.header-contact-line) {
+  border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; color: var(--text-1);
+}
+
+/* — Forms / calendar inputs: surface-2, line border, text-1, text-2 placeholder,
+     accent focus ring (explicit so browsers don't render them light) -------- */
+.v2 .cta-form input, .v2 .cta-form select, .v2 .cta-form textarea {
+  background: var(--surface-2); border-color: var(--line); color: var(--text-1);
+}
+.v2 .cta-form input::placeholder, .v2 .cta-form textarea::placeholder { color: var(--text-2); }
+.v2 .cta-form input:focus, .v2 .cta-form select:focus, .v2 .cta-form textarea:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px rgba(245,166,35,.28);
+}
+.v2 .calendar-day, .v2 .calendar-day.available {
+  background: var(--surface-2); border-color: var(--line); color: var(--text-1);
+}
+.v2 .calendar-day.available:hover { background: var(--surface-1); border-color: rgba(245,166,35,.5); }
+/* booking overlay: point its input token at surface-2, tint to accent */
+.v2 #booking-app { --ba-canvas: var(--surface-2); --ba-active: rgba(245,166,35,.16); }
+.v2 #booking-app .ba-panel { background: var(--surface-1); }
+.v2 #booking-app .ba-hdr   { background: var(--surface-2); }
+
+/* — Sticky bottom CTA bar (base uses !important, so we must too) ------------ */
+.v2 .sticky-cta {
+  background: var(--surface-0) !important;
+  border-top: 1px solid var(--line) !important;
+  box-shadow: none !important;
+  padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;  /* iOS home indicator */
+}
+.v2 .sticky-btn {
+  background: var(--surface-2) !important; color: var(--text-1) !important;
+  border-color: var(--line) !important;
+}
+.v2 .sticky-btn.sticky-quote {           /* primary = brightest thing on the bar */
+  background: var(--accent) !important; color: #fff !important; border-color: var(--accent) !important;
+}
+.v2 .sticky-btn.sticky-line {            /* LINE stays green */
+  background: var(--line-green) !important; color: #fff !important; border-color: var(--line-green) !important;
+}
+
+/* — Mobile: never drop body copy below 16px ------------------------------- */
+@media (max-width: 560px) {
+  .v2 main p, .v2 .section-lead, .v2 .review-card p, .v2 .faq-item p { font-size: 16px; }
+}
+
+/* — Fix A: DARK labels on orange CTAs → ~9.6:1 (outdoor-legible). The hero
+     primary button is intentionally excluded (kept white-on-orange as the
+     reference). `!important` matches the sticky bar's own !important base. ---- */
+.v2 .btn-primary,
+.v2 .booking-cta-btn,
+.v2 .midpage-cta .btn-light,
+.v2 .hm-ft__cta-primary,
+.v2 .sticky-btn.sticky-quote,
+.v2 #booking-app .ba-cta,
+.v2 #booking-app .ba-drawer-cta,
+.v2 #booking-app .ba-wbtn.on,
+.v2 #booking-app .ba-success-icon {
+  color: var(--surface-0) !important;
+}
+
+/* — Print: force light so quotes / confirmations stay printable ------------ */
+@media print {
+  .v2, .v2 main, .v2 .section, .v2 .cta-final, .v2 .booking-calendar-section,
+  .v2hero, .v2 .reason-card, .v2 .commit-card, .v2 .review-card, .v2 .faq-item,
+  .v2 .company-table { background: #fff !important; color: #111 !important; }
+  .v2 main h1, .v2 main h2, .v2 main h3, .v2 main h4, .v2 main .section-title,
+  .v2 main p, .v2 main td, .v2 main dd, .v2 main summary,
+  .v2hero__title .ja, .v2hero__sub { color: #111 !important; }
+  .v2 .reason-card, .v2 .commit-card, .v2 .review-card, .v2 .faq-item,
+  .v2 .company-table { border-color: #ddd !important; box-shadow: none !important; }
+  .v2 #siteHeader, .v2 .sticky-cta, .v2 .back-to-top, .v2hero__bg { display: none !important; }
+}
+
+/* ============================================================================
+   STEP B — HARDENED OVERRIDES (html.v2-dark scope)
+   Higher specificity than every legacy rule found in STEP A, so no !important is
+   needed (script.js writes NO inline styles to the header — it only toggles the
+   `.scrolled` class). KEY FIX: the dark header state is keyed off `.scrolled`
+   (script.js's real class), so it no longer depends on js/v2.js running.
+   ========================================================================== */
+
+/* — Sticky header ---------------------------------------------------------- */
+html.v2-dark #siteHeader { background: transparent; border-bottom: 1px solid transparent; }
+html.v2-dark #siteHeader.scrolled,
+html.v2-dark #siteHeader.v2-scrolled {                 /* (1,2,1) > styles.css .site-header.scrolled (0,2,0) */
+  background: rgba(12,14,11,0.92);
+  border-bottom-color: var(--line);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  backdrop-filter: saturate(180%) blur(16px);
+}
+html.v2-dark #siteHeader .nav a          { color: var(--text-1); }
+html.v2-dark #siteHeader .header-topbar  { background: transparent; color: var(--text-2); }
+html.v2-dark #siteHeader .nav-toggle span{ background: var(--text-1); }
+/* LINE contact keeps its green identity; お問い合わせ = outline button */
+html.v2-dark #siteHeader .header-contact-link { color: var(--text-1); }
+html.v2-dark #siteHeader .header-contact-link:not(.header-contact-line) {
+  border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px;
+}
+/* wordmark stays LIGHT in every header state (removes the stale dark rule) */
+html.v2-dark #siteHeader .brand-name,
+html.v2-dark #siteHeader.scrolled .brand-name,
+html.v2-dark #siteHeader.v2-scrolled .brand-name { color: var(--text-1); }
+html.v2-dark #siteHeader .brand-sub,
+html.v2-dark #siteHeader.scrolled .brand-sub,
+html.v2-dark #siteHeader.v2-scrolled .brand-sub  { color: var(--text-2); }
+
+/* — Mobile drawer ---------------------------------------------------------- */
+html.v2-dark #mobileNav        { background: var(--surface-1); border-top-color: var(--line); }
+html.v2-dark #mobileNav li a   { color: var(--text-1); border-bottom-color: var(--line); }
+
+/* — 選ばれる4つの理由: section + cards + pastel icon tiles ------------------- */
+html.v2-dark #reasons { background: var(--surface-0); box-shadow: none; }
+html.v2-dark #reasons .reason-card,
+html.v2-dark .reason-card {
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+html.v2-dark .reason-card:nth-child(1) .reason-ico { color:#FBB040; background: rgba(245,166,35,0.14); }
+html.v2-dark .reason-card:nth-child(2) .reason-ico { color:#6FB6E8; background: rgba(59,130,196,0.14); }
+html.v2-dark .reason-card:nth-child(3) .reason-ico { color:#6FD08A; background: rgba(53,180,92,0.14); }
+html.v2-dark .reason-card:nth-child(4) .reason-ico { color:#FFD166; background: rgba(255,209,102,0.14); }
+
+/* — the other section cards (consistency) ---------------------------------- */
+html.v2-dark .commit-card,
+html.v2-dark .review-card,
+html.v2-dark .faq-item,
+html.v2-dark .company-table,
+html.v2-dark .svc-img-card {
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+/* — ↑トップへ floating button ----------------------------------------------- */
+html.v2-dark .back-to-top {
+  background: var(--surface-2); border-color: var(--line); color: var(--text-1);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.55);
+}
+html.v2-dark .back-to-top:hover { background: var(--surface-1); border-color: rgba(245,166,35,0.5); color: var(--accent); }
+
+/* ============================================================================
+   LEGACY !important NEUTRALIZER
+   index.html carries an inline "curama" customization <style> that forces a
+   LIGHT theme with !important on many elements (see STEP A audit). Those beat
+   specificity, so here we match each selector under html.v2-dark and use
+   !important to win. Every !important below exists ONLY to override a legacy
+   STYLESHEET !important (NOT a JS-written inline style):
+     .site-header (611) · .site-header.scrolled (616) · .trust-strip (762) ·
+     .trust-badges-row (763) · .review-card (872) · .faq-item (892) ·
+     .gmb-badge (1075) · .commit-card (1078) · .company-row (1136)
+   (.sticky-cta / .sticky-btn are already overridden earlier with !important.)
+   ========================================================================== */
+html.v2-dark #siteHeader { background: transparent !important; border-bottom-color: transparent !important; }
+html.v2-dark #siteHeader.scrolled,
+html.v2-dark #siteHeader.v2-scrolled {
+  background: rgba(12,14,11,0.92) !important;
+  border-bottom: 1px solid var(--line) !important;
+}
+html.v2-dark .trust-strip {
+  background: var(--surface-0) !important;
+  border-top: 0 !important; border-bottom: 1px solid var(--line) !important;
+}
+html.v2-dark .trust-badges-row { background: var(--surface-0) !important; border-color: var(--line) !important; }
+html.v2-dark .review-card,
+html.v2-dark .faq-item,
+html.v2-dark .commit-card,
+html.v2-dark .gmb-badge,
+html.v2-dark .company-table {
+  background: var(--surface-1) !important;
+  border: 1px solid var(--line) !important;
+}
+html.v2-dark .company-row { border-bottom: 1px solid var(--line) !important; }
+
+/* ============================================================================
+   VISUAL AUDIT FIXES — from the rendered-page review (agent-browser)
+   ========================================================================== */
+
+/* #1 · Calendar — real classes are .calendar-wrapper / .hm-day* (not .calendar-day) */
+html.v2-dark .calendar-wrapper { background: var(--surface-1) !important; border: 1px solid var(--line) !important; box-shadow: none !important; }
+html.v2-dark #bookingCalendar { color: var(--text-1); }
+html.v2-dark #bookingCalendar .hm-day { background: var(--surface-2) !important; color: var(--text-1) !important; border-color: var(--line) !important; }
+html.v2-dark #bookingCalendar .hm-day-past { color: var(--text-2) !important; opacity: .45; }
+html.v2-dark #bookingCalendar .hm-day-avail { background: rgba(245,166,35,.14) !important; border-color: rgba(245,166,35,.45) !important; color: var(--text-1) !important; }
+
+/* #2 · Contact form card — was solid white on the dark contact band */
+html.v2-dark .cta-form { background: transparent !important; }
+
+/* #3 · De-duplicate stats: drop the hero trust row (the stats strip below covers it) */
+.v2 .v2hero__trust { display: none; }
+
+/* #4 · Hero headline — tame size + balance lines so 「結。」 isn't orphaned */
+.v2hero__title .ja { font-size: clamp(34px, 6vw, 66px); text-wrap: balance; line-break: strict; }
+
+/* #6 · Process nodes — make the numbered circles read */
+html.v2-dark .process-step .step-num {
+  background: var(--surface-2) !important; border: 2px solid var(--accent) !important;
+  color: var(--text-1) !important; font-weight: 700;
+  box-shadow: 0 0 0 5px var(--surface-0), 0 0 20px -4px rgba(245,166,35,.5);
+}
+
+/* #8 · Bolder section titles (weight + scale contrast for a mobile 20–40 audience) */
+.v2 .section-head .section-title { font-weight: 700; font-size: clamp(30px, 5.2vw, 52px); letter-spacing: .01em; }
+
+/* #6b · Process step labels were too dim */
+html.v2-dark .process-step h3 { color: var(--text-1) !important; }
+html.v2-dark .process-step p  { color: var(--text-2) !important; }
+
+/* ============================================================================
+   #7 SECTION RHYTHM + #10 FOCAL POINTS (rendered-review pass)
+   ========================================================================== */
+
+/* Alternating tiers: 0-1-0-1… so the eye gets rhythm. Lifted bands = surface-1,
+   and their inner cards climb one tier to surface-2 so they still separate. */
+html.v2-dark .trust-strip,
+html.v2-dark #booking,
+html.v2-dark #flow,
+html.v2-dark #faq,
+html.v2-dark .booking-calendar-section {
+  background: var(--surface-1) !important;
+}
+html.v2-dark #flow .process-step,
+html.v2-dark #faq .faq-item { background: var(--surface-2) !important; }
+/* (reasons / commitments / reviews / company stay surface-0 with surface-1 cards) */
+
+/* #10a · Stats = a real "by the numbers" focal band: lifted + hairlines + bigger */
+html.v2-dark .trust-strip { border-top: 1px solid var(--line) !important; border-bottom: 1px solid var(--line) !important; }
+.v2 .trust-key { font-size: clamp(22px, 3vw, 33px); }
+
+/* #10b · Reviews 4.9 → dark focal card with a soft accent glow (JS-injected
+   inline style, so !important is warranted). */
+html.v2-dark #reviews [style*="rgb(255, 255, 255)"] {
+  background: var(--surface-1) !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: 0 0 48px -12px rgba(245,166,35,0.30) !important;
+}
+
+/* #10c · Mid-page CTA gets its own beat (hairline band) mid-scroll */
+html.v2-dark .midpage-cta {
+  background: var(--surface-1) !important;
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+
+/* #10d · Amplify the 4.9 rating into a genuine focal number */
+html.v2-dark #reviews .gmb-score {
+  font-size: clamp(48px, 7vw, 68px) !important;
+  color: var(--text-1) !important; line-height: 1; font-weight: 700;
+}
+html.v2-dark #reviews .gmb-stars { font-size: 22px !important; }
+
+/* ============================================================================
+   REVIEWS polish
+   ========================================================================== */
+/* reviewer names were dark-on-dark (styles.css .review-card .meta strong = --ink) */
+html.v2-dark #revGridEl .review-card .meta strong,
+html.v2-dark .review-card .meta strong { color: var(--text-1); }
+html.v2-dark .review-card .meta em { color: var(--text-2); }
+
+/* featured-first testimonial layout (1 big + 3) — balances 4 reviews, adds identity */
+html.v2-dark #revGridEl {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: start;
+}
+html.v2-dark #revGridEl .review-card:first-child {
+  grid-column: 1 / -1; padding: 40px 46px;
+}
+html.v2-dark #revGridEl .review-card:first-child h3 { font-size: clamp(20px, 2.6vw, 30px); line-height: 1.4; }
+html.v2-dark #revGridEl .review-card:first-child p  { font-size: 16px; }
+html.v2-dark #revGridEl .review-card:first-child .review-stars { font-size: 18px; }
+
+@media (max-width: 860px) {
+  html.v2-dark #revGridEl { grid-template-columns: 1fr; }
+  html.v2-dark #revGridEl .review-card:first-child { grid-column: auto; padding: 28px; }
+}
+
+/* ============================================================================
+   PORTFOLIO polish
+   ========================================================================== */
+/* featured ribbon → accent (was a plain white pill) */
+html.v2-dark .wg-badge {
+  background: var(--accent) !important; color: var(--surface-0) !important;
+  border: 0 !important; font-weight: 700 !important;
+  box-shadow: 0 6px 18px -6px rgba(245,166,35,.6) !important;
+}
+/* nav arrows → dark glass, accent on hover */
+html.v2-dark .wg-arrow {
+  background: rgba(20,24,18,.72) !important; border: 1px solid var(--line) !important;
+  color: var(--text-1) !important; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+html.v2-dark .wg-arrow:hover { background: var(--accent) !important; border-color: var(--accent) !important; color: var(--surface-0) !important; }
+
+/* ============================================================================
+   SERVICES v2 — premium showcase PANELS (image dominates; title overlaid)
+   Every tile becomes an image panel with an elegant bottom-gradient title +
+   accent arrow, matching the featured banner. No caption strips / no "cards".
+   ========================================================================== */
+html.v2-dark #serviceCardsGrid { gap: 16px; }
+html.v2-dark #serviceCardsGrid .svc-img-card {
+  border: 0 !important; border-radius: 20px; overflow: hidden;
+  box-shadow: 0 24px 56px -30px rgba(0,0,0,.85);
+}
+html.v2-dark #serviceCardsGrid .svc-img-card .svc-img-card__body {
+  position: absolute !important; left: 0; right: 0; bottom: 0; z-index: 3;
+  margin: 0; padding: 60px 22px 20px;
+  background: linear-gradient(to top, rgba(6,9,13,.94) 6%, rgba(6,9,13,.45) 46%, transparent 100%);
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;
+}
+html.v2-dark #serviceCardsGrid .svc-img-card__title {
+  color: #fff !important; font-family: var(--font-jp); font-weight: 700;
+  font-size: 18px; letter-spacing: .01em; line-height: 1.35;
+}
+html.v2-dark #serviceCardsGrid .svc-img-card__body::after {
+  content: "→"; flex: 0 0 auto; color: var(--accent); font-size: 20px; font-weight: 700;
+  transition: transform .3s var(--ease); align-self: flex-end;
+}
+html.v2-dark #serviceCardsGrid .svc-img-card:hover .svc-img-card__body::after { transform: translateX(5px); }
+/* taller panels so the image truly dominates */
+html.v2-dark #serviceCardsGrid .svc-img-card:not(:first-child) .svc-img-card__photo { aspect-ratio: 4 / 5; }
+
+/* ============================================================================
+   WHY HELLO MOVING — custom editorial: 2×2 horizontal cards (icon | copy)
+   ========================================================================== */
+html.v2-dark .hero-reasons-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 18px; max-width: 900px; margin-inline: auto; }
+html.v2-dark .reason-card {
+  display: grid !important; grid-template-columns: auto 1fr; grid-template-rows: auto auto;
+  column-gap: 20px; row-gap: 4px; text-align: left !important; align-items: start;
+  padding: 30px 28px !important;
+}
+html.v2-dark .reason-card .reason-ico { grid-row: 1 / 3; align-self: center; width: 60px !important; height: 60px !important; border-radius: 16px; }
+html.v2-dark .reason-card h3 { grid-column: 2; align-self: end; margin: 0; font-size: 17px; }
+html.v2-dark .reason-card p  { grid-column: 2; align-self: start; text-align: left; margin: 0; }
+
+/* ============================================================================
+   PROCESS — premium product JOURNEY (open steps on a lit path, not boxed cards)
+   ========================================================================== */
+html.v2-dark #flow .process-step { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+html.v2-dark .process-timeline::before {
+  height: 2px !important; top: 34px !important;
+  background: linear-gradient(to right, transparent, var(--accent) 14%, var(--brand) 86%, transparent) !important;
+  opacity: .8 !important;
+}
+html.v2-dark .process-step .step-num {
+  width: 68px !important; height: 68px !important; font-size: 19px !important;
+  background: var(--surface-0) !important; border: 2px solid var(--accent) !important;
+  box-shadow: 0 0 0 6px var(--surface-1), 0 0 26px -4px rgba(245,166,35,.55) !important;
+}
+
+/* ============================================================================
+   REVIEWS — emotional success stories (featured = large serif quote)
+   ========================================================================== */
+html.v2-dark #revGridEl .review-card:first-child { padding: 48px 54px !important; }
+html.v2-dark #revGridEl .review-card:first-child h3 {
+  font-family: var(--font-serif); font-weight: 500;
+  font-size: clamp(23px, 2.8vw, 32px) !important; line-height: 1.5; color: var(--text-1);
+}
+html.v2-dark #revGridEl .review-card:first-child p { font-size: 17px !important; line-height: 2; color: var(--text-1); }
+html.v2-dark #revGridEl .review-card:first-child::before { font-size: 120px !important; opacity: .1 !important; top: 16px; }
+
+/* ============================================================================
+   FAQ — minimal but premium
+   ========================================================================== */
+html.v2-dark .faq-item { border-radius: 16px; padding: 3px 26px !important; }
+html.v2-dark .faq-item summary { padding: 24px 40px 24px 0 !important; font-size: 16px; }
+html.v2-dark .faq-item p { font-size: 15px; line-height: 1.9; }
+
+/* ============================================================================
+   FOOTER — a premium ending (grander closing statement)
+   ========================================================================== */
+html.v2-dark .hm-ft__cta-strip { padding: 54px 0 !important; }
+html.v2-dark .hm-ft__cta-title { font-size: clamp(24px, 3.4vw, 34px) !important; letter-spacing: .01em; }
+html.v2-dark .hm-ft__cta-kicker { letter-spacing: .22em; }
+
+/* ============================================================================
+   MOBILE (≤375px focus) — first-class touch + spacing
+   ========================================================================== */
+@media (max-width: 560px) {
+  /* comfortable touch targets */
+  .v2 .v2btn, html.v2-dark .btn-primary, html.v2-dark .booking-cta-btn { min-height: 52px; }
+  html.v2-dark #serviceCardsGrid { gap: 14px; }
+  html.v2-dark .reason-card { padding: 22px 20px !important; column-gap: 16px; }
+  html.v2-dark .reason-card .reason-ico { width: 52px !important; height: 52px !important; }
+  html.v2-dark #revGridEl .review-card:first-child { padding: 30px 26px !important; }
+  html.v2-dark #revGridEl .review-card:first-child h3 { font-size: 21px !important; }
+  html.v2-dark #revGridEl .review-card:first-child p { font-size: 16px !important; }
+  /* process journey → readable stacked on mobile (spine hidden already <900) */
+  html.v2-dark .process-step .step-num { width: 60px !important; height: 60px !important; }
+  html.v2-dark .hm-ft__cta-inner { flex-direction: column; align-items: flex-start; gap: 18px; }
+  html.v2-dark .hm-ft__cta-btns { width: 100%; }
+  html.v2-dark .hm-ft__cta-btns a { flex: 1 1 auto; justify-content: center; }
+}
+
+/* ============================================================================
+   MOBILE FIXES (≤640px) — Why single-column; Process vertical journey
+   ========================================================================== */
+@media (max-width: 640px) {
+  /* WHY → 1 column so the horizontal icon|copy cards have room to breathe */
+  html.v2-dark .hero-reasons-grid { grid-template-columns: 1fr !important; }
+  html.v2-dark .reason-card { padding: 20px 18px !important; column-gap: 16px; }
+
+  /* PROCESS → vertical product journey (node left, copy right) */
+  html.v2-dark .process-timeline { display: flex !important; flex-direction: column !important; gap: 22px !important; }
+  html.v2-dark .process-timeline::before { display: none !important; }
+  html.v2-dark .process-step {
+    display: grid !important; grid-template-columns: auto 1fr; column-gap: 16px; row-gap: 2px;
+    text-align: left !important; align-items: start; padding: 0 !important;
+  }
+  html.v2-dark .process-step .step-num {
+    grid-row: 1 / 3; align-self: start; margin: 0 !important;
+    width: 56px !important; height: 56px !important; font-size: 17px !important;
+    box-shadow: 0 0 22px -4px rgba(245,166,35,.55) !important;
+  }
+  html.v2-dark .process-step h3 { grid-column: 2; align-self: center; text-align: left !important; margin: 0 0 2px; }
+  html.v2-dark .process-step p  { grid-column: 2; text-align: left !important; }
+}
+
+/* ============================================================================
+   COMMITMENTS — refined Japanese "ledger of promises" (kanji + hairline)
+   ========================================================================== */
+html.v2-dark .commit-card { padding: 34px 30px !important; }
+html.v2-dark .commit-num {
+  color: var(--accent) !important; font-size: 42px !important; line-height: 1;
+  display: inline-block; padding-bottom: 16px; margin-bottom: 18px !important;
+  border-bottom: 1px solid var(--line); min-width: 46px;
+}
+html.v2-dark .commit-card h3 { font-size: 17px; margin-bottom: 8px; }
+
+/* ============================================================================
+   COMPANY — refined data table
+   ========================================================================== */
+html.v2-dark .company-table { border-radius: 18px; }
+html.v2-dark .company-row { grid-template-columns: 220px 1fr; }
+html.v2-dark .company-row dt { letter-spacing: .08em; font-weight: 600; }
+html.v2-dark .company-row dd { font-size: 15px; }
+
+/* ============================================================================
+   CALENDAR — contrast + polish
+   ========================================================================== */
+html.v2-dark .hm-cal-month { color: var(--text-1) !important; font-weight: 700 !important; }
+html.v2-dark .hm-nav-btn {
+  color: var(--text-1) !important; background: var(--surface-2) !important;
+  border: 1px solid var(--line) !important; border-radius: 10px !important;
+}
+html.v2-dark .hm-nav-btn:hover { color: var(--accent) !important; border-color: rgba(245,166,35,.5) !important; }
+html.v2-dark .hm-dow { color: var(--text-2) !important; }
+html.v2-dark .hm-dow-sun { color: #ff8080 !important; }
+html.v2-dark .hm-dow-sat { color: #7ab4ff !important; }
+/* available days: subtle GREEN tint (matches the ○ marker) instead of heavy brown */
+html.v2-dark #bookingCalendar .hm-day-avail {
+  background: rgba(53,180,92,.08) !important; border-color: rgba(53,180,92,.28) !important; color: var(--text-1) !important;
+}
+html.v2-dark #bookingCalendar .hm-day-avail:hover {
+  background: rgba(53,180,92,.18) !important; border-color: rgba(53,180,92,.55) !important;
+}
+
+/* ============================================================================
+   TABLET (≤900px) — Process becomes the vertical journey here too (5-across is
+   too cramped below 900). Centered column keeps it premium on tablet.
+   ========================================================================== */
+@media (max-width: 900px) {
+  html.v2-dark .process-timeline { display: flex !important; flex-direction: column !important; gap: 24px !important; max-width: 560px; margin-inline: auto; }
+  html.v2-dark .process-timeline::before { display: none !important; }
+  html.v2-dark .process-step {
+    display: grid !important; grid-template-columns: auto 1fr; column-gap: 18px; row-gap: 2px;
+    text-align: left !important; align-items: start; padding: 0 !important;
+  }
+  html.v2-dark .process-step .step-num { grid-row: 1 / 3; align-self: start; margin: 0 !important; width: 58px !important; height: 58px !important; font-size: 18px !important; }
+  html.v2-dark .process-step h3 { grid-column: 2; align-self: center; text-align: left !important; margin: 0 0 2px; }
+  html.v2-dark .process-step p  { grid-column: 2; text-align: left !important; }
+}
+/* 4.9 rating — a touch more presence */
+html.v2-dark #reviews .gmb-score { font-weight: 800 !important; }
+
+/* ============================================================================
+   HOMEPAGE POLISH — richer depth to match Hero/Portfolio
+   ========================================================================== */
+/* Service photos: a subtle dark wash — mutes any failed-image color fallback,
+   gives real photos a cinematic mood, and lifts overlaid-title legibility. */
+html.v2-dark .svc-img-card__photo { position: relative; }
+html.v2-dark .svc-img-card__photo::before {
+  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(6,9,13,.30) 0%, rgba(6,9,13,.12) 40%, rgba(6,9,13,.30) 100%);
+}
+html.v2-dark .svc-img-card__photo img { position: relative; z-index: 0; }
+html.v2-dark .svc-img-card__body { z-index: 3; }
+html.v2-dark .svc-img-card__badge { z-index: 4; }
+
+/* Stats — presence without awkward label wrapping (6-across is narrow) */
+html.v2-dark .trust-strip { padding: clamp(48px, 6vw, 76px) 0 !important; }
+html.v2-dark .trust-key { font-size: clamp(18px, 2.3vw, 27px) !important; line-height: 1.3; }
+
+/* Section atmosphere — faint warm top-glow adds Hero/Portfolio depth to flat
+   dark content sections (content stays above via z-index). */
+html.v2-dark #booking, html.v2-dark #reviews { position: relative; isolation: isolate; }
+html.v2-dark #booking::after, html.v2-dark #reviews::after {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 360px; z-index: 0; pointer-events: none;
+  background: radial-gradient(58% 100% at 50% 0%, rgba(245,166,35,.05), transparent 72%);
+}
+html.v2-dark #booking > .container, html.v2-dark #reviews > .container { position: relative; z-index: 1; }
+
+/* ============================================================================
+   ITERATION 2 — elevate the weakest info sections to Hero/Portfolio level
+   ========================================================================== */
+
+/* CONTACT — anchor the form in a premium glass card (was floating/transparent) */
+html.v2-dark .cta-final .cta-form {
+  background: var(--surface-1) !important;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 36px 38px 34px !important;
+  box-shadow: 0 34px 80px -44px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.05);
+}
+html.v2-dark .cta-final .cta-form h3 { color: var(--text-1); font-size: 18px; font-weight: 700; letter-spacing: .02em; }
+html.v2-dark .cta-final .cta-form label span { color: var(--text-2); font-size: 12.5px; font-weight: 600; letter-spacing: .04em; }
+html.v2-dark .cta-final .cta-form input,
+html.v2-dark .cta-final .cta-form textarea {
+  background: var(--surface-2) !important; border: 1px solid var(--line) !important;
+  color: var(--text-1) !important; border-radius: 11px; padding: 13px 15px;
+}
+html.v2-dark .cta-final .cta-form input:focus,
+html.v2-dark .cta-final .cta-form textarea:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(245,166,35,.2) !important; }
+html.v2-dark .cta-final .cta-form input::placeholder,
+html.v2-dark .cta-final .cta-form textarea::placeholder { color: rgba(169,176,163,.5) !important; }
+
+/* COMPANY — refined credentials rows (premium key/value, hover, tracked labels) */
+html.v2-dark .company-table { border-radius: 18px; overflow: hidden; max-width: 780px; margin-inline: auto; }
+html.v2-dark .company-row { grid-template-columns: 210px 1fr; border-bottom: 1px solid var(--line); transition: background .18s var(--v2-ease); }
+html.v2-dark .company-row:last-child { border-bottom: 0; }
+html.v2-dark .company-row:hover { background: rgba(255,255,255,.022); }
+html.v2-dark .company-row dt {
+  padding: 21px 26px; font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--text-2); background: rgba(255,255,255,.015); border-right: 1px solid var(--line);
+}
+html.v2-dark .company-row dd { padding: 21px 30px; font-size: 15px; color: var(--text-1); line-height: 1.85; }
+html.v2-dark .company-sub { color: var(--text-2); }
+
+/* FAQ — generous, premium accordion */
+html.v2-dark .faq-list { max-width: 720px; margin-inline: auto; }
+html.v2-dark .faq-item { margin-bottom: 14px; padding: 2px 28px; border-radius: 16px; border: 1px solid var(--line);
+  transition: border-color .2s var(--v2-ease), background .2s var(--v2-ease); }
+html.v2-dark .faq-item:hover { border-color: rgba(255,255,255,.2); }
+html.v2-dark .faq-item[open] { background: var(--surface-2); border-color: rgba(245,166,35,.4); }
+html.v2-dark .faq-item summary { padding: 26px 46px 26px 0; font-size: 16.5px; font-weight: 700; }
+html.v2-dark .faq-item summary::after { font-size: 24px; right: 4px; }
+html.v2-dark .faq-item p { font-size: 15px; line-height: 2; padding-bottom: 26px; color: var(--text-2); }
+
+/* FOOTER — a touch more finale presence */
+html.v2-dark .hm-ft__cta-title { font-size: clamp(26px, 3.6vw, 38px) !important; }
+
+/* Failed/slow service image → the dark tinted fallback (set in SERVICE_CONFIG)
+   already reads as an intentional dark tile; keep the overlaid title legible. */
+html.v2-dark .svc-img-card__photo { background-color: var(--surface-1); }
+
+/* Company table — stack on mobile (my 210px label column was forcing a broken
+   narrow value column at <640px, overriding the base mobile stack). */
+@media (max-width: 640px) {
+  html.v2-dark .company-row { grid-template-columns: 1fr !important; }
+  html.v2-dark .company-row dt {
+    border-right: 0 !important; border-bottom: 1px solid var(--line);
+    padding: 16px 20px 10px !important; background: rgba(255,255,255,.015) !important;
+  }
+  html.v2-dark .company-row dd { padding: 12px 20px 18px !important; }
+}
