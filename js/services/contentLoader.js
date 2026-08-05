@@ -478,10 +478,37 @@ window.ContentLoader = (function () {
   var _SLUG_ALIAS = { 'emergency': 'sameday' };
   function _canonSlug(s) { return _SLUG_ALIAS[s] || s; }
 
+  /* Fetch the DB-backed service-card images (hm-api/service-images.php). Resolves
+     to a { slug: url } map (WebP preferred), or null on ANY failure — callers then
+     fall back to the hm_service_images KV map and finally the built-in
+     SERVICE_CONFIG placeholder. Public read: X-API-KEY only, like works-gallery.js.
+     Never throws; a missing table / offline API simply yields null. */
+  function _fetchServiceImagesApi() {
+    var base = String(window.API_BASE || '').replace(/\/+$/, '');
+    if (!base || typeof fetch !== 'function') return Promise.resolve(null);
+    var headers = {};
+    if (window.API_KEY) headers['X-API-KEY'] = window.API_KEY;
+    return fetch(base + '/service-images.php', { headers: headers, credentials: 'omit' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (!j || !Array.isArray(j.data)) return null;
+        var map = {};
+        j.data.forEach(function (row) {
+          if (!row || !row.service_slug) return;
+          var url = row.image_webp || row.image_url;   // WebP preferred
+          if (url) map[_canonSlug(row.service_slug)] = url;
+        });
+        return map;
+      })
+      .catch(function () { return null; });
+  }
+
   /* Build the per-slug override map from live CMS data and hand it to the
      homepage renderer (window.HM_renderServiceCards). Falls back silently on a
-     page that does not expose the renderer. */
-  function _applyServicesToGrid(svcs, imageCfg) {
+     page that does not expose the renderer.
+     Precedence for a card's image: apiImages (DB table) > imageCfg (KV map) >
+     SERVICE_CONFIG default (applied by the renderer itself). */
+  function _applyServicesToGrid(svcs, imageCfg, apiImages) {
     if (typeof window.HM_renderServiceCards !== 'function') return;
     var overrides = {};
     (svcs || []).forEach(function (s) {
@@ -505,6 +532,17 @@ window.ContentLoader = (function () {
         if (cfg && cfg.image_url) {
           overrides[slug] = overrides[slug] || {};
           overrides[slug].image = cfg.image_url;
+        }
+      });
+    }
+    /* DB-backed images win (highest precedence) when present. */
+    if (apiImages && typeof apiImages === 'object') {
+      Object.keys(apiImages).forEach(function (k) {
+        var url  = apiImages[k];
+        var slug = _canonSlug(k);
+        if (url) {
+          overrides[slug] = overrides[slug] || {};
+          overrides[slug].image = url;
         }
       });
     }
@@ -637,7 +675,16 @@ window.ContentLoader = (function () {
         if (svcRes.error) console.warn('[ContentLoader] services read error:', svcRes.error.message);
         svcsForGrid = _kvVal('hm_services');   // KV/local fallback snapshot
       }
+      /* Render immediately with KV/default images (unchanged behavior), then
+         upgrade with the DB-backed images once service-images.php resolves. The
+         upgrade re-render only fires when the API actually returns images, so a
+         missing table / offline API is a zero-cost no-op (no regression). */
       _applyServicesToGrid(svcsForGrid, imgCfg);
+      _fetchServiceImagesApi().then(function (apiImages) {
+        if (apiImages && Object.keys(apiImages).length) {
+          _applyServicesToGrid(svcsForGrid, imgCfg, apiImages);
+        }
+      });
 
       /* reviews table ──────────────────────────────────── */
       if (revRes.data && revRes.data.length) {

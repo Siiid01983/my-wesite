@@ -39,9 +39,12 @@ const PRECACHE = [
   '/css/chat-bubbles.css',
   '/css/works-gallery.css',
   '/css/home-stats.css',
+  '/css/motion.css',
+  '/css/service-images.css',
   '/js/reviews-carousel.js',
   '/js/works-gallery.js',
   '/js/back-to-top.js',
+  '/js/motion.js',
   '/script.js',
   '/bookingService.js',
 
