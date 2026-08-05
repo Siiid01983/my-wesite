@@ -1,6 +1,6 @@
 'use strict';
 /* ============================================================================
-   HELLO MOVING V2  —  js/v2.js   (index-v2.html only)
+   HELLO MOVING V2  —  js/v2.js   (index.html only)
    Tiny experience layer on top of the existing scripts:
      1. Header: transparent-over-hero → frosted-light once scrolled past ~10% vh.
      2. Hero ambient parallax: glows + route drift subtly toward the cursor

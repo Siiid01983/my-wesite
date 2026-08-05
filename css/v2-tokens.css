@@ -1,6 +1,6 @@
 /* ============================================================================
    HELLO MOVING V2 — shared design tokens (single source of truth)
-   Used across every V2 surface: homepage (index-v2.html), login (login-v2.html),
+   Used across every V2 surface: homepage (index.html), login (login-v2.html),
    and the customer portal. Opt in by adding `v2-dark` (or `v2`) to <html>/<body>.
 
    The homepage's css/v2.css still declares these inline for now; keep the values

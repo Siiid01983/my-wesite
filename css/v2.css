@@ -1,6 +1,6 @@
 /* ============================================================================
    HELLO MOVING V2  —  css/v2.css
-   Loaded ONLY by index-v2.html, scoped under `.v2` on <body>. Redesign of the
+   Loaded ONLY by index.html, scoped under `.v2` on <body>. Redesign of the
    public homepage EXPERIENCE only — every functional hook (booking overlay,
    #serviceCardsGrid renderer, ContentLoader ids, contact form) is preserved.
 
@@ -863,7 +863,7 @@ html.v2-dark .back-to-top:hover { background: var(--surface-1); border-color: rg
 
 /* ============================================================================
    LEGACY !important NEUTRALIZER
-   index-v2.html carries an inline "curama" customization <style> that forces a
+   index.html carries an inline "curama" customization <style> that forces a
    LIGHT theme with !important on many elements (see STEP A audit). Those beat
    specificity, so here we match each selector under html.v2-dark and use
    !important to win. Every !important below exists ONLY to override a legacy
