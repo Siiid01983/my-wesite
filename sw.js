@@ -15,7 +15,7 @@
    Bump CACHE_VERSION to force cache replacement on next deploy.
    ════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'v23';
+const CACHE_VERSION = 'v24';
 const STATIC_CACHE  = 'hm-static-' + CACHE_VERSION;
 const FONT_CACHE    = 'hm-fonts-'  + CACHE_VERSION;
 const ALL_CACHES    = [STATIC_CACHE, FONT_CACHE];
@@ -39,9 +39,15 @@ const PRECACHE = [
   '/css/chat-bubbles.css',
   '/css/works-gallery.css',
   '/css/home-stats.css',
+  '/css/motion.css',
+  '/css/service-images.css',
+  '/css/v2-tokens.css',
+  '/css/v2.css',
   '/js/reviews-carousel.js',
   '/js/works-gallery.js',
   '/js/back-to-top.js',
+  '/js/motion.js',
+  '/js/v2.js',
   '/script.js',
   '/bookingService.js',
 

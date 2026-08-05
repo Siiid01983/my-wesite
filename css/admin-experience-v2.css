@@ -1,0 +1,137 @@
+/* ============================================================================
+   HELLO MOVING V2 — Admin EXPERIENCE layer (admin-v2.html only)
+   Palette is frozen; this file changes NO colours. It refines the *experience*:
+   typographic hierarchy, spacing rhythm, dashboard composition, icon balance,
+   and adds premium empty / loading / skeleton states — all by enhancing the
+   panel's EXISTING classes (.topbar/.panel/.stat-*/.empty/table/.sb-*), so it
+   works across every view without touching core markup or JS.
+
+   Scoped under html.v2-dark; loads AFTER admin-dark-v2.css.
+   ========================================================================== */
+
+/* ── Rhythm: more air around content ─────────────────────────────────────── */
+html.v2-dark .content { padding: 26px 28px 40px; }
+html.v2-dark .topbar { height: 58px; padding: 0 24px; }
+html.v2-dark .topbar-title { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+
+/* ── Sidebar: calmer grouping + icon balance ─────────────────────────────── */
+html.v2-dark .sb-brand { padding: 18px 16px; }
+html.v2-dark .sb-section { padding: 16px 14px 5px; font-size: 10px; letter-spacing: 0.1em; }
+html.v2-dark .sb-nav .sb-section:first-of-type { padding-top: 8px; }
+html.v2-dark .sb-link { padding: 9px 13px; margin: 2px 8px; font-size: 12.5px; gap: 11px; }
+html.v2-dark .sb-link svg { opacity: 0.55; width: 16px; height: 16px; }
+html.v2-dark .sb-link:hover svg, html.v2-dark .sb-link.active svg { opacity: 1; }
+
+/* ── Stat cards: stronger figure/label hierarchy ─────────────────────────── */
+html.v2-dark .stat-grid { gap: 16px; margin-bottom: 26px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+html.v2-dark .stat-card { padding: 20px 22px; border-radius: 14px; }
+html.v2-dark .stat-label { font-size: 11px; letter-spacing: 0.06em; margin-bottom: 9px; color: var(--gray-1); }
+html.v2-dark .stat-val { font-size: 32px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+html.v2-dark .stat-sub { font-size: 12px; margin-top: 5px; }
+
+/* ── Panels: grouping + breathing ────────────────────────────────────────── */
+html.v2-dark .panel { border-radius: 14px; margin-bottom: 24px; }
+html.v2-dark .panel-head { padding: 15px 20px; }
+html.v2-dark .panel-title { font-size: 15px; letter-spacing: -0.005em; }
+html.v2-dark .panel-body { padding: 20px; }
+
+/* ── Tables: generous rows, quiet chrome, aligned numerals ───────────────── */
+html.v2-dark thead th { padding: 12px 16px; font-size: 11px; letter-spacing: 0.06em; }
+html.v2-dark tbody td { padding: 14px 16px; font-size: 13px; }
+html.v2-dark .td-mono, html.v2-dark td:last-child { font-variant-numeric: tabular-nums; }
+
+/* ── Premium empty state (enhances the shared .empty component) ───────────── */
+html.v2-dark .empty { padding: 56px 24px; color: var(--gray-1); }
+html.v2-dark .empty svg {
+  opacity: 1; margin-bottom: 16px; width: 22px; height: 22px; padding: 15px;
+  box-sizing: content-box; color: var(--gray-2);
+  background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 16px;
+}
+html.v2-dark .empty p { font-size: 14px; font-weight: 500; color: var(--gray-1); letter-spacing: 0.005em; margin: 0; }
+
+/* ── Skeleton system (shimmer) — for perceived-performance loading ────────── */
+@keyframes v2shimmer { 100% { transform: translateX(100%); } }
+.v2-skel { position: relative; overflow: hidden; background: var(--bg-soft-2, #1E221B); border-radius: 8px; }
+.v2-skel::after {
+  content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  animation: v2shimmer 1.4s ease-in-out infinite;
+}
+.v2-skel-line   { height: 12px; border-radius: 6px; }
+.v2-skel-line.sm{ height: 10px; }
+.v2-skel-title  { height: 20px; width: 42%; border-radius: 7px; }
+.v2-skel-num    { height: 30px; width: 60%; border-radius: 8px; }
+.v2-skel-circle { border-radius: 50%; }
+.v2-skel-card   { border-radius: 14px; height: 96px; }
+
+/* Skeleton scaffolds the experience JS injects (dashboard boot) */
+.v2-skel-stats { display: grid; gap: 16px; margin-bottom: 26px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.v2-skel-panel { background: var(--bg-soft, #151812); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-bottom: 24px; }
+.v2-skel-row   { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line-2, rgba(255,255,255,.06)); }
+.v2-skel-row:last-child { border-bottom: 0; }
+.v2-skel-row .g { flex: 1; display: grid; gap: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-skel::after { animation: none; }
+}
+
+/* ── Inline loading spinner (for "読み込み中" contexts) ───────────────────── */
+.v2-spin { width: 20px; height: 20px; border: 2px solid var(--line); border-top-color: var(--accent, #F5A623); border-radius: 50%; animation: v2spin 0.7s linear infinite; display: inline-block; }
+@keyframes v2spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .v2-spin { animation-duration: 1.6s; } }
+
+/* ════════════════════════════════════════════════════════════════════════
+   POLISH PASS — production-grade experience refinements
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── Table scan speed: the identifier column leads, data stays full-contrast
+      but quieter in weight so the eye tracks names top-to-bottom fast. ────── */
+html.v2-dark tbody td:first-child { font-weight: 600; color: var(--ink); }
+html.v2-dark thead th:first-child { color: var(--gray-1); }
+
+/* ── Stat cards: guarantee equal presence so a card with no sub-line still
+      aligns with its neighbours (visual balance). ───────────────────────── */
+html.v2-dark .stat-card { min-height: 104px; display: flex; flex-direction: column; }
+html.v2-dark .stat-card .stat-sub { margin-top: auto; padding-top: 6px; }
+
+/* ── Accessibility: a real keyboard focus ring on every control ──────────── */
+html.v2-dark button:focus-visible,
+html.v2-dark .sb-link:focus-visible,
+html.v2-dark a:focus-visible,
+html.v2-dark [role="button"]:focus-visible,
+html.v2-dark input:focus-visible,
+html.v2-dark textarea:focus-visible,
+html.v2-dark select:focus-visible {
+  outline: 2px solid var(--accent, #F5A623);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+html.v2-dark tbody tr { transition: background .12s ease; }
+
+/* ── Modals lift off the backdrop as a raised surface (readable separation,
+      not decoration — the base modal sits at page-bg over a dim overlay). ─── */
+html.v2-dark .modal { background: var(--bg-soft); box-shadow: 0 28px 80px rgba(0,0,0,.6); }
+html.v2-dark .modal-title { letter-spacing: -0.01em; }
+
+/* ── Mobile: kill the flex-overflow and tighten chrome ──────────────────── */
+html.v2-dark .main { min-width: 0; }          /* let the flex column shrink to viewport */
+html.v2-dark .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* Title never gets overlapped by actions — it truncates instead. */
+html.v2-dark .topbar > div:first-child { flex: 1 1 auto; min-width: 0; }
+html.v2-dark .topbar-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 560px) {
+  html.v2-dark .content { padding: 16px 16px 32px; }
+  html.v2-dark .topbar { padding: 0 12px; height: 54px; gap: 8px; }
+  html.v2-dark .topbar-title { font-size: 16px; }
+  html.v2-dark .stat-grid { gap: 12px; grid-template-columns: repeat(2, 1fr); }
+  html.v2-dark .stat-card { padding: 16px 16px; min-height: 92px; }
+  html.v2-dark .stat-val { font-size: 27px; }
+
+  /* Action buttons collapse to icon-only so the title keeps its room.
+     font-size:0 drops the text label; the SVG keeps its fixed w/h attrs. */
+  html.v2-dark .topbar-actions { gap: 6px; }
+  html.v2-dark .topbar-actions .btn { font-size: 0; padding: 9px; gap: 0; }
+  html.v2-dark .topbar-actions .btn svg { margin: 0; }
+}

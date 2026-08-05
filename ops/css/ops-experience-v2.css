@@ -1,0 +1,79 @@
+/* ============================================================================
+   HELLO MOVING V2 — Ops EXPERIENCE layer (*-v2.html reference page only)
+   No colour changes (palette frozen). Refines the experience to match Admin V2:
+   premium empty states, a shimmer skeleton, and calmer spacing/typography — all
+   by enhancing Ops' EXISTING classes (.ops-empty/.ops-card/.ops-row/.ops-section
+   -title). Mobile-first, so spacing moves are gentle. Scoped html.v2-dark; loads
+   AFTER ops-dark-v2.css.
+   ========================================================================== */
+
+/* ── Premium empty state (enhances the shared .ops-empty component) ───────── */
+html.v2-dark .ops-empty { padding: 60px 24px; color: var(--hm-muted); }
+html.v2-dark .ops-empty svg {
+  width: 26px; height: 26px; padding: 16px; box-sizing: content-box;
+  color: var(--hm-muted); background: rgba(255,255,255,0.03);
+  border: 1px solid var(--hm-line); border-radius: 18px; margin-bottom: 16px;
+}
+html.v2-dark .ops-empty h3 { font-size: 1.02rem; letter-spacing: -0.01em; color: var(--hm-ink); margin: 0 0 6px; }
+html.v2-dark .ops-empty p { font-size: 0.86rem; line-height: 1.55; max-width: 30ch; margin: 0 auto; }
+
+/* ── Typography hierarchy ────────────────────────────────────────────────── */
+html.v2-dark .ops-section-title { font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hm-muted); margin-bottom: 10px; }
+html.v2-dark .ops-row-title { font-size: 0.96rem; letter-spacing: -0.005em; }
+html.v2-dark .ops-stat .ops-stat-num { letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+
+/* ── Breathing (gentle, mobile-aware) ────────────────────────────────────── */
+html.v2-dark .ops-card { padding: 4px; }
+html.v2-dark .ops-row { padding: 14px 14px; gap: 13px; }
+html.v2-dark .ops-stat { padding: 16px 16px; }
+
+/* ── Skeleton system (matches Admin's shimmer) ───────────────────────────── */
+@keyframes ops-shimmer { 100% { transform: translateX(100%); } }
+.ops-skel { position: relative; overflow: hidden; background: #1E221B; border-radius: 8px; }
+.ops-skel::after {
+  content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  animation: ops-shimmer 1.4s ease-in-out infinite;
+}
+.ops-skel-line   { height: 12px; border-radius: 6px; }
+.ops-skel-line.sm{ height: 10px; }
+.ops-skel-circle { border-radius: 50%; }
+.ops-skel-row {
+  display: flex; align-items: center; gap: 13px; padding: 14px;
+  background: var(--hm-card); border: 1px solid var(--hm-line);
+  border-radius: var(--radius, 16px); margin-bottom: 10px;
+}
+.ops-skel-row .g { flex: 1; display: grid; gap: 8px; }
+@media (prefers-reduced-motion: reduce) { .ops-skel::after { animation: none; } }
+
+/* ── POLISH PASS ─────────────────────────────────────────────────────────── */
+
+/* Accessibility: a visible keyboard focus ring on every control */
+html.v2-dark .ops-btn:focus-visible,
+html.v2-dark .ops-chip:focus-visible,
+html.v2-dark .ops-nav a:focus-visible,
+html.v2-dark .ops-row.tap:focus-visible,
+html.v2-dark .ops-search input:focus-visible,
+html.v2-dark input:focus-visible,
+html.v2-dark textarea:focus-visible,
+html.v2-dark select:focus-visible {
+  outline: 2px solid var(--hm-accent);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+/* Row meta recedes so the title wins the scan (secondary never competes) */
+html.v2-dark .ops-row-sub { color: var(--hm-muted); }
+html.v2-dark .ops-row-end .ops-row-meta { font-variant-numeric: tabular-nums; }
+
+/* Touch feedback: rows/cards give a subtle press response */
+html.v2-dark .ops-row.tap:active,
+html.v2-dark .ops-card.tap:active { transform: scale(0.99); }
+
+/* Success / error toasts must be legible on dark — the base uses a light
+   --hm-ink background with white text (invisible on the dark theme). */
+html.v2-dark .ops-toast {
+  background: #20241C;
+  color: var(--hm-ink);
+  border: 1px solid rgba(255,255,255,0.12);
+}
