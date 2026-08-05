@@ -1,0 +1,108 @@
+/* ============================================================================
+   HELLO MOVING V2 — Admin panel dark theme (admin-v2.html only)
+   admin.html already ships a GitHub-style dark mode (html.dark). This file
+   RE-PALETTES that dark to the shared V2 identity: warm olive-charcoal surfaces
+   + a single orange accent, matching index-v2 / portal-v2. Because the panel is
+   token-driven, most of the work is a scoped token redefinition under
+   html.v2-dark; the rest are targeted overrides for hardcoded (non-token) hues.
+
+   admin-v2.html carries BOTH classes: <html class="v2-dark dark"> — so admin's
+   own .dark component rules still apply, and these (linked AFTER the inline
+   <style>, same specificity) win on load order. No markup / JS changes.
+   Pairs with css/v2-tokens.css (shared V2 palette).
+   ========================================================================== */
+
+/* ── Token flip: GitHub-dark → V2 warm-olive/orange ───────────────────────── */
+html.v2-dark {
+  --bg:        #0C0E0B;              /* page / topbar / body background          */
+  --bg-soft:   #151812;             /* panels, stat cards, sidebar footer       */
+  --bg-soft-2: #1E221B;             /* table head / row hover / tracks          */
+  --ink:       #EDEFE9;             /* primary text                             */
+  --ink-2:     #C2C7BC;             /* strong secondary text                    */
+  --gray-1:    #A9B0A3;             /* labels / muted text                      */
+  --gray-2:    #808779;            /* faint meta                               */
+  --line:      rgba(255,255,255,0.10);
+  --line-2:    rgba(255,255,255,0.06);
+
+  --navy:      #0A0C08;             /* sidebar + login backdrop (deep warm)     */
+  --blue:      #F5A623;             /* PRIMARY accent → orange (CTAs, focus)    */
+  --blue-2:    #db8c10;             /* accent hover                             */
+  --green:     #47C46A;             /* success on dark                          */
+  color-scheme: dark;
+}
+
+/* ── Body / page atmosphere ──────────────────────────────────────────────── */
+html.v2-dark body {
+  background:
+    radial-gradient(1100px 480px at 82% -8%, rgba(245,166,35,0.05), transparent 60%),
+    radial-gradient(900px 520px at 0% 108%, rgba(53,180,92,0.04), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+/* ── Sidebar — warm slab with an orange active rail ──────────────────────── */
+html.v2-dark .sidebar {
+  background: linear-gradient(180deg, #0C0F09 0%, #090B07 100%);
+  border-right: 1px solid var(--line);
+}
+html.v2-dark .sb-mark { background: linear-gradient(135deg, var(--blue), var(--blue-2)); color: #0C0E0B; }
+html.v2-dark .sb-link.active {
+  background: rgba(245,166,35,0.13);
+  color: #fff;
+  box-shadow: inset 3px 0 0 var(--blue);
+}
+html.v2-dark .sb-link.active svg { color: var(--blue); opacity: 1; }
+html.v2-dark .sb-logout:hover { background: rgba(224,79,79,0.18); border-color: rgba(224,79,79,0.32); color: #ff8a8a; }
+
+/* ── Topbar (sticky glass) ───────────────────────────────────────────────── */
+html.v2-dark .topbar {
+  background: rgba(12,14,11,0.88);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+
+/* ── Panels / stat cards / tables — raised warm surfaces ─────────────────── */
+html.v2-dark .panel,
+html.v2-dark .stat-card {
+  background: var(--bg-soft);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+html.v2-dark thead th { background: var(--bg-soft-2); }
+html.v2-dark tbody tr:hover { background: var(--bg-soft-2); }
+
+/* Status badges stay SEMANTIC (admin's own html.dark rules handle them:
+   new=blue, confirmed=green, review=amber, cancel=red, done=gray). Orange is
+   reserved for interactive chrome only — matching Ops. Do NOT recolour them. */
+
+/* ── Login / force-change screens ────────────────────────────────────────── */
+html.v2-dark #loginScreen {
+  background:
+    radial-gradient(circle at 20% 45%, rgba(245,166,35,0.10) 0%, transparent 58%),
+    radial-gradient(circle at 82% 22%, rgba(53,180,92,0.07) 0%, transparent 52%),
+    var(--navy);
+}
+html.v2-dark .login-card {
+  background: var(--bg-soft);
+  box-shadow: 0 40px 90px rgba(0,0,0,0.62), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+html.v2-dark .login-mark { background: linear-gradient(135deg, var(--blue), var(--blue-2)); box-shadow: 0 6px 16px rgba(245,166,35,0.32); }
+html.v2-dark .login-input { background: #1E221B; border-color: var(--line); color: var(--ink); }
+html.v2-dark .login-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(245,166,35,0.18); }
+html.v2-dark .login-btn { background: var(--blue); color: #0C0E0B; }
+html.v2-dark .login-btn:hover:not(:disabled) { background: var(--blue-2); box-shadow: 0 6px 16px rgba(245,166,35,0.3); }
+html.v2-dark .login-btn .login-spinner { border-color: rgba(12,14,11,0.35); border-top-color: #0C0E0B; }
+html.v2-dark .login-forgot { color: var(--blue); }
+
+/* ── Inputs / selects across the panel ───────────────────────────────────── */
+html.v2-dark input:not([type="checkbox"]):not([type="radio"]),
+html.v2-dark textarea,
+html.v2-dark select {
+  background: #1E221B; border-color: var(--line); color: var(--ink);
+}
+html.v2-dark input:focus, html.v2-dark textarea:focus, html.v2-dark select:focus {
+  border-color: var(--blue); box-shadow: 0 0 0 3px rgba(245,166,35,0.16); outline: none;
+}
+html.v2-dark input::placeholder, html.v2-dark textarea::placeholder { color: rgba(169,176,163,0.5); }
+html.v2-dark select option { color: #111; }
+
+/* ── Checkboxes / radios / range → orange ────────────────────────────────── */
+html.v2-dark input[type="checkbox"], html.v2-dark input[type="radio"] { accent-color: var(--blue); }

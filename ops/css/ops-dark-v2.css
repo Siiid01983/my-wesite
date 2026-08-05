@@ -1,0 +1,107 @@
+/* ============================================================================
+   HELLO MOVING V2 — Ops console dark theme (*-v2.html pages only)
+   Ops is a brand-green, mobile-first system with NO built-in dark mode. This
+   file adds one, aligned to the shared V2 identity (warm olive-charcoal surfaces
+   + a single orange accent, green kept decorative).
+
+   Nuance vs admin: ops' --hm-green is used for BOTH surface backgrounds (topbar,
+   bottom nav, login) AND the interactive accent (buttons, active states). So the
+   token flip sends --hm-green to a dark SURFACE, and the accent role is
+   redirected to orange via targeted overrides below. Status colours (.st-*) stay
+   semantic. Opt in with <html class="v2-dark"> + link this AFTER css/ops.css.
+   ========================================================================== */
+
+/* ── Token flip: brand-green light → V2 warm-dark ─────────────────────────── */
+html.v2-dark {
+  --hm-green:   #12150F;            /* now a dark surface (topbar / nav / login) */
+  --hm-green-2: #0C0E0B;
+  --hm-sage:    #9AB57A;            /* kept as a soft secondary tint            */
+  --hm-cream:   #151812;            /* bottom sheets / raised                   */
+  --hm-ink:     #EDEFE9;
+  --hm-muted:   #A9B0A3;
+  --hm-line:    rgba(255,255,255,0.10);
+  --hm-card:    #151812;
+  --hm-bg:      #0C0E0B;
+
+  --hm-accent:  #F5A623;            /* V2 orange — the single interactive accent */
+  --hm-accent-d:#db8c10;
+  color-scheme: dark;
+}
+
+/* ── Page atmosphere ─────────────────────────────────────────────────────── */
+html.v2-dark body {
+  background:
+    radial-gradient(700px 380px at 100% -6%, rgba(245,166,35,0.05), transparent 60%),
+    var(--hm-bg);
+  color: var(--hm-ink);
+}
+
+/* ── Topbar / bottom nav — warm-dark slabs, orange active ────────────────── */
+html.v2-dark .ops-top { border-bottom: 1px solid var(--hm-line); }
+html.v2-dark .ops-nav { background: rgba(18,21,15,0.94); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-top: 1px solid var(--hm-line); }
+html.v2-dark .ops-nav a.active { color: var(--hm-accent); }
+html.v2-dark .ops-nav a.active svg { color: var(--hm-accent); }
+
+/* ── Cards / rows ────────────────────────────────────────────────────────── */
+html.v2-dark .ops-card,
+html.v2-dark .ops-row { box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); }
+html.v2-dark .ops-section-title { color: var(--hm-muted); }
+
+/* ── Stats — dark plate, orange figure + edge ────────────────────────────── */
+html.v2-dark .ops-stat .ops-stat-num { color: var(--hm-accent); }
+html.v2-dark .ops-stat.accent {
+  background: linear-gradient(150deg, #1E221B, #151812);
+  border-color: rgba(245,166,35,0.4);
+}
+html.v2-dark .ops-stat.accent .ops-stat-num { color: var(--hm-accent); }
+
+/* ── Quick-action tiles ──────────────────────────────────────────────────── */
+html.v2-dark .ops-quick { background: var(--hm-card); }
+html.v2-dark .ops-quick svg { color: var(--hm-accent); }
+
+/* ── Avatars / notif icons (were light-green plates) ─────────────────────── */
+html.v2-dark .ops-avatar { background: rgba(245,166,35,0.14); color: var(--hm-accent); }
+html.v2-dark .ops-notif-ico.booking { background: rgba(53,180,92,0.15); color: #47C46A; }
+
+/* ── Filter chips — orange when active ───────────────────────────────────── */
+html.v2-dark .ops-chip { background: #1E221B; color: var(--hm-muted); border-color: var(--hm-line); }
+html.v2-dark .ops-chip.active { background: var(--hm-accent); color: #0C0E0B; border-color: var(--hm-accent); }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+html.v2-dark .ops-btn { background: var(--hm-accent); color: #0C0E0B; }
+html.v2-dark .ops-btn:active { background: var(--hm-accent-d); }
+html.v2-dark .ops-btn.ghost { background: #1E221B; color: var(--hm-accent); border: 1px solid var(--hm-line); }
+html.v2-dark .ops-btn.sage { background: var(--hm-sage); color: #0C0E0B; }
+
+/* ── Search / inputs ─────────────────────────────────────────────────────── */
+html.v2-dark .ops-search,
+html.v2-dark .ops-search input,
+html.v2-dark input, html.v2-dark textarea, html.v2-dark select {
+  background: #1E221B; color: var(--hm-ink); border-color: var(--hm-line);
+}
+html.v2-dark input::placeholder, html.v2-dark textarea::placeholder,
+html.v2-dark .ops-search input::placeholder { color: rgba(169,176,163,0.5); }
+html.v2-dark input:focus, html.v2-dark textarea:focus, html.v2-dark select:focus {
+  border-color: var(--hm-accent); box-shadow: 0 0 0 3px rgba(245,166,35,0.16); outline: none;
+}
+
+/* ── Bottom sheet ────────────────────────────────────────────────────────── */
+html.v2-dark .ops-sheet { background: var(--hm-cream); }
+html.v2-dark .ops-sheet h2 { color: var(--hm-ink); }
+
+/* ── Chat bubbles (operator out-bubble → orange, in-bubble → raised) ──────── */
+html.v2-dark .ops-msg { background: #1E221B; color: var(--hm-ink); }
+html.v2-dark .ops-msg.out { background: var(--hm-accent); color: #0C0E0B; }
+
+/* ── Calendar ────────────────────────────────────────────────────────────── */
+html.v2-dark .ops-cal-head .ops-cal-nav svg { color: var(--hm-accent); }
+html.v2-dark .ops-week .day.selected { background: var(--hm-accent); color: #0C0E0B; border-color: var(--hm-accent); }
+
+/* ── Login overlay ───────────────────────────────────────────────────────── */
+html.v2-dark .ops-login {
+  background:
+    radial-gradient(circle at 25% 30%, rgba(245,166,35,0.10), transparent 55%),
+    var(--hm-green);
+}
+html.v2-dark .ops-login-logo { background: linear-gradient(135deg, var(--hm-accent), var(--hm-accent-d)); color: #0C0E0B; }
+html.v2-dark .ops-login .ops-btn { background: var(--hm-accent); color: #0C0E0B; }

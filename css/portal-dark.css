@@ -1,0 +1,94 @@
+/* ============================================================================
+   HELLO MOVING V2 — Customer Portal dark theme (portal-v2.html only)
+   The portal is fully token-driven, so most of the dark theme is a scoped
+   REDEFINITION of its :root tokens under html.v2-dark; the rest are targeted
+   overrides for hardcoded (non-token) colours. No markup/JS changes — every
+   data-view, panel, and portal module keeps working.
+
+   Load order: after portal.html's inline <style> so these win. Pairs with
+   css/v2-tokens.css (the shared V2 palette).
+   ========================================================================== */
+
+/* ── Token flip (html.v2-dark beats the inline :root) ─────────────────────── */
+html.v2-dark {
+  --bg:        #151812;              /* cards / panels / header / sidebar        */
+  --bg-soft:   #0C0E0B;              /* page background                          */
+  --ink:       #EDEFE9;             /* primary text                            */
+  --gray-1:    #C2C7BC;             /* strong secondary text                   */
+  --gray-2:    #A9B0A3;             /* muted text                              */
+  --gray-3:    #808779;            /* faint labels                            */
+  --gray-4:    #5c6257;
+  --line:      rgba(255,255,255,0.10);
+  --line-2:    rgba(255,255,255,0.07);
+  --line-3:    rgba(255,255,255,0.055);
+  --navy:      #F5A623;             /* primary accent (nav-active, brand, icons) */
+  --navy-2:    #db8c10;
+  --ok:        #47C46A;             /* success green on dark                   */
+  color-scheme: dark;
+}
+
+/* ── Surfaces / depth ─────────────────────────────────────────────────────── */
+html.v2-dark body { background: var(--bg-soft); color: var(--ink); }
+html.v2-dark .p-header,
+html.v2-dark .p-sidebar { background: rgba(21,24,18,0.92); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+html.v2-dark .panel,
+html.v2-dark .dcard {
+  background: var(--bg);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+html.v2-dark .dcard:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 16px 40px -22px rgba(0,0,0,0.8); border-color: rgba(255,255,255,0.16); }
+
+/* ── Brand + nav ──────────────────────────────────────────────────────────── */
+html.v2-dark .p-brand-logo { background: var(--navy); color: #0C0E0B; }
+html.v2-dark .p-brand-name { color: var(--ink); }
+html.v2-dark .p-nav-item.active { color: #0C0E0B; }               /* dark label on orange */
+html.v2-dark .p-nav-item.active svg { color: #0C0E0B; }
+html.v2-dark .p-burger { color: var(--gray-1); }
+html.v2-dark .p-logout:hover { border-color: var(--navy); color: var(--navy); }
+
+/* ── Dashboard card icon tiles → accent glyph on a dark plate ─────────────── */
+html.v2-dark .dcard-ico { background: rgba(245,166,35,0.14); color: var(--navy); }
+
+/* ── Status badges (hardcoded light greens) ──────────────────────────────── */
+html.v2-dark .badge { background: rgba(255,255,255,0.06); color: var(--gray-1); border-color: var(--line); }
+html.v2-dark .badge.confirmed { background: rgba(71,196,106,0.15); color: var(--ok); border-color: rgba(71,196,106,0.35); }
+
+/* ── Forms / inputs across the portal (self-service, chat composer, etc.) ─── */
+html.v2-dark input, html.v2-dark textarea, html.v2-dark select {
+  background: #1E221B; border-color: var(--line); color: var(--ink);
+}
+html.v2-dark input::placeholder, html.v2-dark textarea::placeholder { color: rgba(169,176,163,0.5); }
+html.v2-dark input:focus, html.v2-dark textarea:focus, html.v2-dark select:focus {
+  border-color: var(--navy); box-shadow: 0 0 0 3px rgba(245,166,35,0.2); outline: none;
+}
+html.v2-dark select option { color: #111; }
+
+/* ── Primary buttons (portal CTAs use --navy fills) → dark label ──────────── */
+html.v2-dark .btn-primary,
+html.v2-dark button[class*="primary"] { color: #0C0E0B; }
+
+/* ── Modals / drawers / overlays ──────────────────────────────────────────── */
+html.v2-dark .p-overlay { background: rgba(0,0,0,0.55); }
+
+/* ── Chat bubbles (chat-bubbles.css uses light surfaces) ──────────────────── */
+html.v2-dark .cb-bubble.them,
+html.v2-dark .bubble.them { background: #1E221B; color: var(--ink); }
+html.v2-dark .cb-bubble.me,
+html.v2-dark .bubble.me { background: var(--navy); color: #0C0E0B; }
+
+/* ── Chat (js/portal/chat.js injects hardcoded light surfaces at render → !important) */
+html.v2-dark .pchat { background: var(--surface-0) !important; border-color: var(--line) !important; }
+html.v2-dark .pchat-bar { background: rgba(21,24,18,0.96) !important; border-top-color: var(--line) !important; }
+html.v2-dark .pchat-input { background: #1E221B !important; border-color: var(--line) !important; color: var(--ink) !important; }
+html.v2-dark .pchat-input:focus { background: #1E221B !important; border-color: var(--navy) !important; }
+html.v2-dark .pchat-day { background: rgba(255,255,255,0.07); color: var(--gray-2); }
+html.v2-dark .pchat-row.them .pchat-bubble { background: #1E221B; color: var(--ink); border-color: var(--line); }
+/* .me bubble stays LINE green (#06C755) with white text — brand-correct */
+
+/* ── Chat onboarding modal (inline-styled JS card #chatGuideOverlay > div) ── */
+html.v2-dark #chatGuideOverlay > div { background: var(--surface-1) !important; box-shadow: 0 24px 70px rgba(0,0,0,0.75) !important; }
+
+/* ── Self-service buttons (.ss-btn = accent fill; .danger was a white card) ── */
+html.v2-dark .ss-btn { color: #0C0E0B; }
+html.v2-dark .ss-btn.danger { background: rgba(224,79,79,0.13) !important; color: #ff8a8a !important; border-color: rgba(224,79,79,0.4) !important; }
+html.v2-dark .ss-btn.danger:hover { background: #c0392b !important; color: #fff !important; border-color: #c0392b !important; }

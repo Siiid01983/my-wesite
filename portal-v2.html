@@ -1,0 +1,1929 @@
+<!DOCTYPE html>
+<html lang="ja" class="v2-dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0C0E0B" />
+<meta name="robots" content="noindex, nofollow" />
+<title>マイページ — Hello Moving</title>
+
+<link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Noto+Serif+JP:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/chat-bubbles.css" /><!-- shared LINE-style chat bubbles (also used by the admin Inbox) -->
+<link rel="stylesheet" href="css/portal-v2.css" /><!-- Customer Portal V2 (Phase 2) — scoped to .pv2; inert while flag OFF -->
+
+<style>
+  :root {
+    --navy: #0a1f44;
+    --navy-2: #112a55;
+    --ink: #0b0f17;
+    --gray-1: #3a4150;
+    --gray-2: #6b7280;
+    --gray-3: #9aa1ad;
+    --gray-4: #c4c8d0;
+    --line: #e6e8ec;
+    --line-2: #eef0f3;
+    --line-3: #f3f5f8;
+    --bg: #ffffff;
+    --bg-soft: #f7f8fa;
+    --ok: #1e7e46;
+    --radius: 14px;
+    --radius-sm: 10px;
+    --sidebar-w: 250px;
+    --header-h: 66px;
+    --font-jp: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    --font-serif: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif;
+    --font-en: "Inter", "Helvetica Neue", Arial, sans-serif;
+    --easing: cubic-bezier(.2,.7,.2,1);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  * { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-jp);
+    color: var(--ink);
+    background: var(--bg-soft);
+    line-height: 1.8;
+    letter-spacing: .03em;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; cursor: pointer; background: none; border: 0; color: inherit; }
+
+  /* ---------- Header ---------- */
+  .p-header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: var(--header-h);
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 22px;
+    z-index: 50;
+  }
+  .p-burger {
+    display: none;
+    width: 38px; height: 38px;
+    border-radius: 9px;
+    align-items: center; justify-content: center;
+    color: var(--gray-1);
+  }
+  .p-burger:hover { background: var(--line-3); }
+  .p-burger svg { width: 20px; height: 20px; }
+  .p-brand {
+    display: flex; align-items: center; gap: 11px;
+  }
+  .p-brand-logo {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--navy);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-en);
+    font-weight: 700;
+    font-size: 18px;
+  }
+  .p-brand-name {
+    font-family: var(--font-en);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--navy);
+  }
+  .p-header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .p-user {
+    text-align: right;
+    line-height: 1.4;
+  }
+  .p-user .p-user-name { font-size: 13.5px; font-weight: 500; }
+  .p-user .p-user-ref  { font-size: 11px; color: var(--gray-3); font-family: var(--font-en); }
+  .p-logout {
+    font-size: 12.5px;
+    color: var(--gray-1);
+    padding: 8px 15px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    transition: all .2s var(--easing);
+  }
+  .p-logout:hover { border-color: var(--navy); color: var(--navy); }
+
+  /* ---------- Admin mode ---------- */
+  .p-badge-admin {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: #fdecea;
+    color: #c0392b;
+    border: 1px solid #f3c6c0;
+    font-family: var(--font-en);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    white-space: nowrap;
+  }
+  .p-badge-admin::before {
+    content: '';
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #c0392b;
+  }
+  .admin-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 6px;
+    padding: 13px 26px;
+    border-radius: 999px;
+    background: var(--navy);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all .2s var(--easing);
+  }
+  .admin-cta:hover { background: var(--navy-2); transform: translateY(-1px); }
+  .admin-cta svg { width: 18px; height: 18px; }
+
+  /* ---------- Sidebar ---------- */
+  .p-sidebar {
+    position: fixed;
+    top: var(--header-h); bottom: 0; left: 0;
+    width: var(--sidebar-w);
+    background: var(--bg);
+    border-right: 1px solid var(--line);
+    padding: 22px 14px;
+    overflow-y: auto;
+    z-index: 40;
+    transition: transform .3s var(--easing);
+  }
+  .p-nav-label {
+    font-size: 10.5px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--gray-3);
+    font-family: var(--font-en);
+    padding: 0 12px;
+    margin: 6px 0 12px;
+  }
+  .p-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    text-align: left;
+    padding: 11px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    color: var(--gray-1);
+    margin-bottom: 3px;
+    transition: background .2s var(--easing), color .2s var(--easing);
+  }
+  .p-nav-item svg { width: 18px; height: 18px; flex-shrink: 0; opacity: .8; }
+  .p-nav-item:hover { background: var(--line-3); color: var(--ink); }
+  .p-nav-item.active { background: var(--navy); color: #fff; }
+  .p-nav-item.active svg { opacity: 1; }
+
+  /* ---------- Main ---------- */
+  .p-main {
+    margin-left: var(--sidebar-w);
+    padding: calc(var(--header-h) + 30px) 32px 60px;
+    min-height: 100vh;
+  }
+  .p-main-inner { max-width: 920px; margin: 0 auto; }
+
+  .p-page-head { margin-bottom: 28px; }
+  .p-page-title {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 24px;
+    letter-spacing: .05em;
+  }
+  .p-page-sub { font-size: 13.5px; color: var(--gray-2); margin-top: 4px; }
+
+  .panel {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 26px 28px;
+    margin-bottom: 22px;
+  }
+  .panel-title {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line-2);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px 28px;
+  }
+  .info-cell .k {
+    font-size: 11.5px;
+    letter-spacing: .08em;
+    color: var(--gray-3);
+    margin-bottom: 4px;
+  }
+  .info-cell .v { font-size: 15px; color: var(--ink); }
+  .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--line-3);
+    color: var(--gray-1);
+    border: 1px solid var(--line);
+  }
+  .badge.confirmed { background: #e7f4ec; color: var(--ok); border-color: #bfe3cd; }
+
+  .skeleton {
+    color: var(--gray-3);
+    font-size: 14px;
+    padding: 40px 0;
+    text-align: center;
+  }
+
+  .p-overlay {
+    display: none;
+    position: fixed;
+    inset: var(--header-h) 0 0 0;
+    background: rgba(11,15,23,.35);
+    z-index: 35;
+  }
+
+  /* ---------- Dashboard cards ---------- */
+  .dash-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(232px, 1fr));
+    gap: 18px;
+    margin-bottom: 22px;
+  }
+  .dcard {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px 22px 20px;
+    display: flex;
+    flex-direction: column;
+    min-height: 132px;
+    transition: box-shadow .2s var(--easing), transform .2s var(--easing);
+  }
+  .dcard:hover { box-shadow: 0 10px 30px rgba(11,15,23,.07); transform: translateY(-2px); }
+  .dcard-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--gray-2);
+    margin-bottom: 14px;
+  }
+  .dcard-ico {
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    background: var(--line-3);
+    color: var(--navy);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .dcard-ico svg { width: 18px; height: 18px; }
+  .dcard-label {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: .06em;
+  }
+  .dcard-value {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    line-height: 1.35;
+    color: var(--ink);
+    margin-top: auto;
+  }
+  .dcard-value.sm { font-size: 16px; font-weight: 500; }
+  .dcard-meta {
+    font-size: 12px;
+    color: var(--gray-2);
+    margin-top: 6px;
+  }
+  /* Latest-updates card spans full width with a timeline */
+  .dcard.wide { grid-column: 1 / -1; min-height: 0; }
+  .timeline { margin-top: 4px; }
+  .tl-item {
+    position: relative;
+    padding: 0 0 16px 22px;
+    border-left: 2px solid var(--line);
+  }
+  .tl-item:last-child { padding-bottom: 0; border-left-color: transparent; }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -6px; top: 3px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--gray-4);
+    border: 2px solid var(--bg);
+  }
+  .tl-item.cur::before { background: var(--navy); }
+  .tl-text { font-size: 13.5px; color: var(--ink); }
+  .tl-date { font-size: 11.5px; color: var(--gray-3); font-family: var(--font-en); margin-top: 2px; }
+
+  .badge.warn   { background: #fbf3e3; color: #9a6b12; border-color: #ecd9ad; }
+  .badge.cancel { background: #fdecea; color: #c0392b; border-color: #f3c6c0; }
+
+  /* ---------- Communication Center ---------- */
+  .comm-list { display: flex; flex-direction: column; gap: 14px; }
+  .comm-item {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 16px 18px;
+    background: var(--bg-soft);
+  }
+  /* Company → customer (outbound) */
+  .comm-item.in  { background: #f5f8ff; border-color: #d9e4f7; }
+  /* Customer → company reply (inbound) */
+  .comm-item.out { background: #f4faf6; border-color: #cfe8d8; }
+  .comm-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .comm-dir {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+  .comm-dir.in  { color: #2456b8; background: #e8f0fc; border: 1px solid #c6d8f5; }
+  .comm-dir.out { color: #1e7e46; background: #e7f4ec; border: 1px solid #bfe3cd; }
+  .comm-subject {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+    flex: 1;
+    min-width: 0;
+  }
+  .comm-date {
+    font-size: 11.5px;
+    color: var(--gray-3);
+    font-family: var(--font-en);
+    flex-shrink: 0;
+  }
+  .comm-route { font-size: 11.5px; color: var(--gray-2); margin-bottom: 8px; }
+  .comm-body {
+    font-size: 13.5px;
+    color: var(--ink);
+    white-space: pre-wrap;
+    line-height: 1.7;
+    padding-top: 8px;
+    border-top: 1px solid var(--line-2);
+  }
+  .comm-empty {
+    text-align: center;
+    color: var(--gray-3);
+    font-size: 13.5px;
+    padding: 36px 0;
+  }
+
+  /* ---------- Documents Center ---------- */
+  .doc-list { display: flex; flex-direction: column; gap: 10px; }
+  .doc-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 13px 16px;
+    background: var(--bg-soft);
+  }
+  .doc-ico {
+    width: 38px; height: 38px;
+    border-radius: 9px;
+    background: var(--line-3);
+    color: var(--navy);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .doc-ico svg { width: 19px; height: 19px; }
+  .doc-info { flex: 1; min-width: 0; }
+  .doc-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .doc-meta { font-size: 11.5px; color: var(--gray-3); margin-top: 2px; }
+  .doc-dl {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--navy);
+    background: var(--bg);
+    transition: all .2s var(--easing);
+    white-space: nowrap;
+  }
+  .doc-dl:hover { border-color: var(--navy); background: var(--navy); color: #fff; }
+  .doc-dl svg { width: 15px; height: 15px; }
+  .doc-dl[disabled] { opacity: .5; cursor: progress; }
+  .doc-empty { font-size: 13px; color: var(--gray-3); padding: 14px 2px; }
+
+  @media (max-width: 480px) {
+    .doc-item { gap: 10px; padding: 12px 13px; }
+    .doc-dl { padding: 8px 12px; }
+    .doc-dl span { display: none; }
+  }
+
+  /* ---------- Photo Upload (Phase 5E) ---------- */
+  .photo-hint { font-size: 12px; color: var(--gray-3); margin: -4px 0 12px; }
+  .ph-up {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    border-radius: 999px;
+    border: 1px dashed var(--gray-4);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--navy);
+    background: var(--bg-soft);
+    cursor: pointer;
+    transition: all .2s var(--easing);
+  }
+  .ph-up:hover { border-color: var(--navy); background: var(--navy); color: #fff; }
+  .ph-up svg { width: 16px; height: 16px; }
+  .ph-up.busy { opacity: .55; cursor: progress; pointer-events: none; }
+  .ph-up input[type=file] { display: none; }
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .photo-tile {
+    position: relative;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--line-3);
+    aspect-ratio: 1 / 1;
+  }
+  .photo-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-tile .ph-broken {
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; font-size: 11.5px; color: var(--gray-3); text-align: center; padding: 8px;
+  }
+  .photo-del {
+    position: absolute;
+    top: 7px; right: 7px;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(11,15,23,.62);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: background .2s var(--easing);
+  }
+  .photo-del:hover { background: #c0392b; }
+  .photo-del svg { width: 15px; height: 15px; }
+  .photo-del[disabled] { opacity: .5; cursor: progress; }
+  .photo-cap {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    padding: 5px 8px;
+    font-size: 10.5px;
+    color: #fff;
+    background: linear-gradient(transparent, rgba(11,15,23,.7));
+    font-family: var(--font-en);
+  }
+  .photo-empty { font-size: 13px; color: var(--gray-3); padding: 12px 2px; }
+
+  @media (max-width: 480px) {
+    .photo-grid { grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 9px; }
+  }
+
+  /* ---------- Estimate Approval (Phase 5F) ---------- */
+  .approve-bar {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-top: 22px;
+    padding: 20px 24px;
+    border: 1px solid #bae6fd;
+    border-radius: var(--radius);
+    background: linear-gradient(180deg, #f0f9ff, #ffffff);
+  }
+  .approve-info { flex: 1; min-width: 0; }
+  .approve-title { font-size: 15px; font-weight: 600; color: var(--navy); }
+  .approve-sub { font-size: 12.5px; color: var(--gray-2); margin-top: 4px; line-height: 1.7; }
+  .approve-btn {
+    flex-shrink: 0;
+    padding: 12px 26px;
+    border: none;
+    border-radius: 999px;
+    background: var(--navy);
+    color: #fff;
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: var(--font-jp);
+    cursor: pointer;
+    transition: all .2s var(--easing);
+    white-space: nowrap;
+  }
+  .approve-btn:hover { background: var(--navy-2); transform: translateY(-1px); }
+  .approve-btn[disabled] { opacity: .55; cursor: progress; transform: none; }
+  .approve-done {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 22px; padding: 16px 22px;
+    border: 1px solid #bfe3cd; border-radius: var(--radius);
+    background: #e7f4ec; color: var(--ok);
+    font-size: 13.5px; font-weight: 600;
+  }
+  @media (max-width: 560px) {
+    .approve-bar { flex-direction: column; align-items: stretch; gap: 14px; }
+    .approve-btn { width: 100%; }
+  }
+
+  /* ---------- Customer Reviews (Phase 5G) ---------- */
+  .rev-locked {
+    display: flex; align-items: center; gap: 14px;
+    padding: 8px 4px; color: var(--gray-2); font-size: 13.5px; line-height: 1.7;
+  }
+  .rev-locked-ico { font-size: 26px; }
+  .rev-locked-sub { font-size: 12px; color: var(--gray-3); }
+  .rev-stars { display: inline-flex; gap: 4px; }
+  .rev-star {
+    font-size: 30px; line-height: 1; color: var(--gray-4); cursor: pointer;
+    transition: color .12s var(--easing), transform .12s var(--easing);
+    user-select: none;
+  }
+  .rev-star:hover { transform: scale(1.12); }
+  .rev-star.on { color: #f5a623; }
+  .rev-stars.static .rev-star { font-size: 20px; cursor: default; }
+  .rev-stars.static .rev-star:hover { transform: none; }
+  .rev-field { margin-top: 18px; }
+  .rev-label { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
+  .rev-textarea {
+    width: 100%; min-height: 120px; resize: vertical;
+    padding: 12px 14px; font-size: 14px; font-family: var(--font-jp);
+    color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    background: var(--bg); line-height: 1.8;
+  }
+  .rev-textarea:focus { outline: none; border-color: var(--navy); }
+  .rev-submit {
+    margin-top: 20px; padding: 12px 28px; border: none; border-radius: 999px;
+    background: var(--navy); color: #fff; font-size: 13.5px; font-weight: 600;
+    font-family: var(--font-jp); cursor: pointer; transition: all .2s var(--easing);
+  }
+  .rev-submit:hover { background: var(--navy-2); transform: translateY(-1px); }
+  .rev-submit[disabled] { opacity: .55; cursor: progress; transform: none; }
+  .rev-err { margin-top: 12px; font-size: 12.5px; color: #c0392b; display: none; }
+  .rev-done {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+    padding: 12px 16px; border: 1px solid #bfe3cd; border-radius: var(--radius-sm);
+    background: #e7f4ec; color: var(--ok); font-size: 13px; font-weight: 600;
+  }
+  .rev-meta { font-size: 12px; color: var(--gray-3); margin-top: 6px; }
+  .rev-body { font-size: 14px; color: var(--gray-1); line-height: 1.9; margin-top: 10px; white-space: pre-wrap; }
+  .rev-photos {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px; margin-top: 14px;
+  }
+  .rev-photo {
+    position: relative; aspect-ratio: 1/1; border: 1px solid var(--line);
+    border-radius: var(--radius-sm); overflow: hidden; background: var(--line-3);
+  }
+  .rev-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .rev-add {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 6px;
+    padding: 9px 16px; border-radius: 999px; border: 1px dashed var(--gray-4);
+    font-size: 12.5px; font-weight: 500; color: var(--navy); background: var(--bg-soft);
+    cursor: pointer; transition: all .2s var(--easing);
+  }
+  .rev-add:hover { border-color: var(--navy); background: var(--navy); color: #fff; }
+  .rev-add.busy { opacity: .55; cursor: progress; pointer-events: none; }
+  .rev-add input[type=file] { display: none; }
+
+  /* ---------- Self-Service (Phase 6C) ---------- */
+  .ss-form { display: flex; flex-direction: column; gap: 14px; }
+  .ss-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 18px; }
+  .ss-field { display: flex; flex-direction: column; gap: 6px; }
+  .ss-label { font-size: 12px; font-weight: 600; color: var(--gray-1); letter-spacing: .04em; }
+  .ss-input {
+    width: 100%; padding: 11px 13px; font-size: 14px; font-family: var(--font-jp);
+    color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    background: var(--bg); line-height: 1.6;
+  }
+  .ss-input:focus { outline: none; border-color: var(--navy); }
+  textarea.ss-input { min-height: 84px; resize: vertical; }
+  .ss-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .ss-btn {
+    padding: 11px 24px; border: none; border-radius: 999px; background: var(--navy);
+    color: #fff; font-size: 13.5px; font-weight: 600; font-family: var(--font-jp);
+    cursor: pointer; transition: all .2s var(--easing); white-space: nowrap;
+  }
+  .ss-btn:hover { background: var(--navy-2); transform: translateY(-1px); }
+  .ss-btn[disabled] { opacity: .55; cursor: progress; transform: none; }
+  .ss-btn.danger { background: #fff; color: #c0392b; border: 1px solid #f3c6c0; }
+  .ss-btn.danger:hover { background: #c0392b; color: #fff; border-color: #c0392b; }
+  .ss-err { font-size: 12.5px; color: #c0392b; display: none; }
+  .ss-hint { font-size: 12px; color: var(--gray-3); }
+  .ss-note {
+    display: flex; align-items: center; gap: 10px; padding: 14px 18px;
+    border: 1px solid #ecd9ad; border-radius: var(--radius-sm);
+    background: #fbf3e3; color: #9a6b12; font-size: 13px; font-weight: 600;
+  }
+  .ss-locked { font-size: 13px; color: var(--gray-3); padding: 6px 2px; }
+
+  /* Progress stepper */
+  .step-track { display: flex; align-items: flex-start; margin: 6px 0 4px; }
+  .step {
+    flex: 1; position: relative; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 9px;
+  }
+  .step::before {
+    content: ''; position: absolute; top: 15px; left: -50%; width: 100%;
+    height: 2px; background: var(--line); z-index: 0;
+  }
+  .step:first-child::before { display: none; }
+  .step.done::before, .step.current::before { background: var(--navy); }
+  .step-dot {
+    position: relative; z-index: 1; width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg); border: 2px solid var(--line); color: var(--gray-3);
+    font-family: var(--font-en); font-size: 13px; font-weight: 600;
+  }
+  .step.done .step-dot { background: var(--navy); border-color: var(--navy); color: #fff; }
+  .step.current .step-dot { border-color: var(--navy); color: var(--navy); box-shadow: 0 0 0 4px rgba(10,31,68,.1); }
+  .step-name { font-size: 12px; color: var(--gray-2); }
+  .step.current .step-name, .step.done .step-name { color: var(--ink); font-weight: 500; }
+  .step-cancel {
+    display: flex; align-items: center; gap: 8px; padding: 14px 18px;
+    border: 1px solid #f3c6c0; border-radius: var(--radius-sm);
+    background: #fdecea; color: #c0392b; font-size: 13.5px; font-weight: 600;
+  }
+
+  /* Inline toast */
+  .ss-toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(12px);
+    background: var(--navy); color: #fff; padding: 12px 22px; border-radius: 999px;
+    font-size: 13px; font-weight: 500; box-shadow: 0 12px 34px rgba(11,15,23,.22);
+    opacity: 0; pointer-events: none; transition: opacity .25s var(--easing), transform .25s var(--easing);
+    z-index: 80; max-width: 90vw;
+  }
+  .ss-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 880px) {
+    :root { --sidebar-w: 230px; }
+    .p-burger { display: flex; }
+    .p-sidebar { transform: translateX(-100%); box-shadow: 0 20px 50px rgba(11,15,23,.12); }
+    .p-sidebar.open { transform: translateX(0); }
+    .p-overlay.show { display: block; }
+    .p-main { margin-left: 0; padding: calc(var(--header-h) + 22px) 18px 50px; }
+    .info-grid { grid-template-columns: 1fr; }
+    .p-user .p-user-name { display: none; }
+  }
+  @media (max-width: 560px) {
+    .dash-cards { grid-template-columns: 1fr; gap: 14px; }
+    .dcard { min-height: 0; }
+  }
+  @media (max-width: 480px) {
+    .p-header { padding: 0 14px; gap: 10px; }
+    .panel { padding: 20px 18px; }
+    .dcard-value { font-size: 18px; }
+  }
+</style>
+<link rel="stylesheet" href="css/v2-tokens.css" /><!-- V2 shared palette -->
+<link rel="stylesheet" href="css/portal-dark.css?v=2" /><!-- Portal V2 dark theme -->
+<script src="js/utils/brandSize.js"></script><!-- single-source logo sizing -->
+</head>
+<body>
+  <!-- ===================== HEADER ===================== -->
+  <header class="p-header">
+    <button class="p-burger" id="burger" aria-label="メニュー">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="p-brand">
+      <div class="p-brand-logo"><img src="/icons/icon.svg" alt="Hello Moving" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;display:block"></div>
+      <div class="p-brand-name">Hello Moving</div>
+    </div>
+    <div class="p-header-right">
+      <div class="p-user">
+        <div class="p-user-name" id="userName">—</div>
+        <div class="p-user-ref" id="userRef">—</div>
+      </div>
+      <button class="p-logout" id="logoutBtn">ログアウト</button>
+    </div>
+  </header>
+
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="p-sidebar" id="sidebar">
+    <div class="p-nav-label">マイページ</div>
+    <button class="p-nav-item active" data-view="overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span>ダッシュボード</span>
+    </button>
+    <button class="p-nav-item" data-view="booking">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>予約内容</span>
+    </button>
+    <button class="p-nav-item" data-view="progress">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <span>進捗</span>
+    </button>
+    <button class="p-nav-item" data-view="chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>チャット</span>
+    </button>
+    <button class="p-nav-item" data-view="photos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      <span>写真</span>
+    </button>
+    <button class="p-nav-item" data-view="reviews">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <span>口コミ投稿</span>
+    </button>
+    <button class="p-nav-item" data-view="support">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.7 2.34a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.74-1.74a2 2 0 0 1 2.11-.45c.74.34 1.53.57 2.34.7A2 2 0 0 1 22 16.92z"/></svg>
+      <span>お問い合わせ</span>
+    </button>
+  </aside>
+  <div class="p-overlay" id="overlay"></div>
+
+  <!-- ===================== MAIN ===================== -->
+  <main class="p-main">
+    <div class="p-main-inner" id="content">
+      <div class="skeleton" id="loading">読み込み中…</div>
+    </div>
+  </main>
+
+  <!-- Self-hosted data client (PHP + MySQL API) -->
+  <script src="js/services/diagnostics.js"></script>
+  <script src="js/lib/apiClient.js"></script>
+  <script src="js/config/appConfig.js"></script>
+  <script src="js/config/env.public.js"></script><!-- committed same-origin fallback -->
+  <script src="js/config/env.js" onerror="console.warn('[Portal] js/config/env.js missing — using env.public.js fallback')"></script>
+  <script src="js/services/dataClient.js"></script>
+  <script src="js/services/auditService.js"></script>
+  <script src="bookingService.js"></script>
+  <script src="js/lib/chatFormat.js"></script><!-- shared chat/booking display helpers (HMFmt) -->
+  <script src="js/lib/imageCompress.js"></script><!-- client-side image downscale before upload -->
+  <script src="js/portal/portalLogin.js"></script>
+  <script src="js/portal/portalAuth.js"></script>
+  <script src="js/portal/portalComms.js"></script>
+  <script src="js/portal/message.js"></script>
+  <script src="js/portal/chat.js"></script>
+  <script src="js/portal/portalDocs.js"></script>
+  <script src="js/portal/portalPhotos.js"></script>
+  <script src="js/portal/portalApproval.js"></script>
+  <script src="js/portal/portalReviews.js"></script>
+  <script src="js/portal/portalSelfService.js"></script>
+  <!-- Customer Portal V2 (Phase 2) — feature flag + dormant scaffold. Additive; -->
+  <!-- inert (no DOM/style) while CUSTOMER_PORTAL_V2_ENABLED=false. -->
+  <script src="js/config/portalFlags.js"></script>
+  <script src="js/portal/portalV2.js"></script>
+
+  <script>
+  /* Portal V2 preview harness — DEV ONLY, gated by ?preview=1. Stubs the auth
+     session + a sample booking so the dark theme renders without a live backend.
+     Completely inert in production (no query param). */
+  (function () {
+    if (new URLSearchParams(location.search).get('preview') !== '1') return;
+    var SESS = { name: '田中 太郎', ref: 'HM-20260805-A1B2', email: 'tanaka@example.com', authed: false };
+    var BOOKING = {
+      id: 'HM-20260805-A1B2', _dbId: 1, name: '田中 太郎', email: 'tanaka@example.com',
+      phone: '090-1234-5678', service: '単身引越し', status: 'confirmed',
+      date: '2026-08-20', time: '午前（9:00〜12:00）',
+      fromAddr: '東京都世田谷区○○ 1-2-3', toAddr: '東京都目黒区△△ 4-5-6',
+      items: '冷蔵庫、洗濯機、ベッド、テーブル、本棚', workers: 2,
+      notes: 'エレベーターあり。午前中希望。', createdAt: '2026-08-01T10:00:00Z'
+    };
+    window.PortalAuth = window.PortalAuth || {};
+    PortalAuth.resolveSession    = function () { return Promise.resolve(SESS); };
+    PortalAuth.getSession        = function () { return SESS; };
+    PortalAuth.logout            = function () { return Promise.resolve(); };
+    PortalAuth.getCurrentBooking = function () { return Promise.resolve(BOOKING); };
+    window.PortalLogin = window.PortalLogin || {};
+    if (typeof PortalLogin.isAdminEmail !== 'function') PortalLogin.isAdminEmail = function () { return false; };
+  })();
+  </script>
+
+  <script>
+  (async function () {
+    'use strict';
+
+    const $ = id => document.getElementById(id);
+
+    // ---- Route guard: require a valid session ----
+    // Resolves the server-verified email+reference session (sessionStorage
+    // token); bounces unauthenticated visitors to login.html.
+    const sess = await PortalAuth.resolveSession('login.html');
+    if (!sess) return; // redirected to login
+
+    // Header identity (from session — instant; ref is filled once booking loads)
+    $('userName').textContent = sess.name || 'お客様';
+    $('userRef').textContent  = sess.ref || '';
+
+    // ---- Mobile drawer ----
+    const sidebar = $('sidebar'), overlay = $('overlay');
+    function closeDrawer() { sidebar.classList.remove('open'); overlay.classList.remove('show'); }
+    $('burger').addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('show');
+    });
+    overlay.addEventListener('click', closeDrawer);
+
+    // ---- Logout (secure: ends the API Auth session + any legacy token) ----
+    $('logoutBtn').addEventListener('click', async () => {
+      try { await PortalAuth.logout(); } catch (_) {}
+      location.replace('login.html');
+    });
+
+    // ---- Admin mode (currently inert) ----
+    // Gated on sess.authed, which is only ever set by a server-VERIFIED session.
+    // The magic-link/JWT path that produced authed sessions was removed, so this
+    // is presently unreachable (isAdmin is always false). Retained as the seam
+    // for a future server-verified admin session; a legacy/spoofable token must
+    // never grant admin mode. Elevated tooling lives behind admin.html's login.
+    const isAdmin = !!(sess.authed && sess.email &&
+      window.PortalLogin &&
+      typeof PortalLogin.isAdminEmail === 'function' &&
+      PortalLogin.isAdminEmail(sess.email));
+
+    if (isAdmin) {
+      const ADMIN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
+      // Header badge
+      const right = document.querySelector('.p-header-right');
+      if (right && !$('adminBadge')) {
+        const b = document.createElement('span');
+        b.id = 'adminBadge';
+        b.className = 'p-badge-admin';
+        b.textContent = 'ADMIN MODE';
+        right.insertBefore(b, right.firstChild);
+      }
+      // Replace the customer sidebar nav with a link into the admin console.
+      document.querySelectorAll('.p-nav-item').forEach(n => { n.style.display = 'none'; });
+      if (sidebar && !$('adminNav')) {
+        const a = document.createElement('a');
+        a.id = 'adminNav';
+        a.className = 'p-nav-item active';
+        a.href = 'admin.html';
+        a.innerHTML = ADMIN_ICON + '<span>管理画面へ</span>';
+        sidebar.appendChild(a);
+      }
+      // Header identity + landing content
+      $('userName').textContent = '管理者';
+      $('userRef').textContent  = sess.email;
+      $('content').innerHTML = `
+        <div class="p-page-head">
+          <div class="p-page-title">管理者モード</div>
+          <div class="p-page-sub">${esc(sess.email)} としてログインしています。</div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">ADMIN MODE <span class="p-badge-admin" style="margin-left:auto">ADMIN MODE</span></div>
+          <p style="font-size:13.5px;color:var(--gray-2);line-height:1.9;margin-bottom:6px">
+            管理者アカウントでログインしました。お客様の予約データはこの画面には表示されません
+            （行レベルセキュリティにより保護されています）。管理機能は管理コンソールからご利用ください。
+          </p>
+          <a class="admin-cta" href="admin.html">${ADMIN_ICON}<span>管理コンソールを開く</span></a>
+        </div>`;
+      return; // skip the customer booking flow entirely
+    }
+
+    // ---- Helpers ----
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+        ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    }
+    function fmtDate(ds) {
+      if (!ds) return '—';
+      const d = new Date(ds + 'T00:00:00');
+      if (isNaN(d)) return esc(ds);
+      const dow = ['日','月','火','水','木','金','土'][d.getDay()];
+      return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${dow}）`;
+    }
+    function statusBadge(st) {
+      const cls = st === '確定' || st === '完了' ? ' confirmed' : '';
+      return `<span class="badge${cls}">${esc(st || '新規')}</span>`;
+    }
+    function fmtDateTime(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      if (isNaN(d)) return esc(iso);
+      const p = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    }
+    // Quote status derived from the booking status (no separate quote table touched).
+    function quoteStatus(st) {
+      if (st === 'キャンセル') return { label: 'キャンセル', cls: 'cancel' };
+      if (st === '確定' || st === '完了') return { label: '確定済み', cls: 'confirmed' };
+      return { label: '確認中', cls: 'warn' };
+    }
+    // Assigned staff derived from the workers field on the booking record.
+    function staffDisplay(b) {
+      if (b.workers) {
+        const n = String(b.workers).replace(/[^0-9]/g, '');
+        return n ? `${n}名 体制` : esc(b.workers);
+      }
+      return '割り当て準備中';
+    }
+    // Build a small status timeline from the record's known data only.
+    function buildTimeline(b) {
+      const items = [];
+      items.push({ text: 'ご予約を受け付けました', date: fmtDateTime(b.createdAt), cur: false });
+      const st = b.status || '新規';
+      if (st === '確認中') items.push({ text: '内容を確認しています', date: '', cur: true });
+      if (st === '確定')   items.push({ text: 'ご予約が確定しました', date: '', cur: true });
+      if (st === '完了') {
+        items.push({ text: 'ご予約が確定しました', date: '', cur: false });
+        items.push({ text: 'お引越しが完了しました', date: '', cur: true });
+      }
+      if (st === 'キャンセル') items.push({ text: 'ご予約はキャンセルされました', date: '', cur: true });
+      if (st === '新規') items.push({ text: '担当者からのご連絡をお待ちください', date: '', cur: true });
+      // newest first
+      return items.reverse();
+    }
+    const ICONS = {
+      status:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+      date:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+      staff:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+      quote:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>',
+      updates: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    };
+
+    // ---- Lightweight toast (success feedback) ----
+    let _toastTimer = null;
+    function ssToast(msg) {
+      let t = document.getElementById('ssToast');
+      if (!t) {
+        t = document.createElement('div');
+        t.id = 'ssToast';
+        t.className = 'ss-toast';
+        document.body.appendChild(t);
+      }
+      t.textContent = msg;
+      requestAnimationFrame(() => t.classList.add('show'));
+      clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    // ---- Self-service management panels (Phase 6C) ----
+    // Rendered inside the 予約内容 view. Each panel is gated by the booking
+    // status so customers only see actions valid for their current state.
+    function managePanels(b) {
+      const SS = window.PortalSelfService;
+      if (!SS) return '';
+      const today = (() => { const d = new Date(); const p = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; })();
+
+      const reschedule = SS.canReschedule(b) ? `
+        <div class="panel">
+          <div class="panel-title">予約の変更（Reschedule）</div>
+          <div class="ss-form">
+            <div class="ss-row">
+              <div class="ss-field">
+                <label class="ss-label" for="ssDate">引越し希望日</label>
+                <input class="ss-input" type="date" id="ssDate" value="${esc(b.date || '')}" min="${today}">
+              </div>
+              <div class="ss-field">
+                <label class="ss-label" for="ssTime">希望時間帯</label>
+                <input class="ss-input" type="text" id="ssTime" value="${esc(b.time || '')}" placeholder="例：午前中 / 13:00〜">
+              </div>
+            </div>
+            <div class="ss-err" id="ssReschedErr"></div>
+            <div class="ss-actions">
+              <button class="ss-btn" id="ssReschedBtn">変更を保存</button>
+              <span class="ss-hint">変更内容は担当者が確認します。</span>
+            </div>
+          </div>
+        </div>` : '';
+
+      const contact = SS.canEditContact(b) ? `
+        <div class="panel">
+          <div class="panel-title">連絡先の更新（Update Contact）</div>
+          <div class="ss-form">
+            <div class="ss-row">
+              <div class="ss-field">
+                <label class="ss-label" for="ssName">お名前</label>
+                <input class="ss-input" type="text" id="ssName" value="${esc(b.name || '')}" maxlength="80">
+              </div>
+              <div class="ss-field">
+                <label class="ss-label" for="ssPhone">電話番号</label>
+                <input class="ss-input" type="tel" id="ssPhone" value="${esc(b.phone || '')}" placeholder="090-0000-0000">
+              </div>
+            </div>
+            <div class="ss-field">
+              <label class="ss-label">メールアドレス</label>
+              <input class="ss-input" type="email" value="${esc(b.email || '')}" disabled
+                     title="メールアドレスはログインに使用するため変更できません">
+              <span class="ss-hint">メールアドレスはログインに使用するため変更できません。</span>
+            </div>
+            <div class="ss-err" id="ssContactErr"></div>
+            <div class="ss-actions"><button class="ss-btn" id="ssContactBtn">連絡先を更新</button></div>
+          </div>
+        </div>` : '';
+
+      let cancel = '';
+      if (SS.hasCancellationRequest(b)) {
+        cancel = `
+        <div class="panel">
+          <div class="panel-title">キャンセルのご依頼（Cancellation）</div>
+          <div class="ss-note">キャンセルのご依頼を受付けました。担当者がご連絡いたします。</div>
+        </div>`;
+      } else if (SS.canCancel(b)) {
+        cancel = `
+        <div class="panel">
+          <div class="panel-title">キャンセルのご依頼（Request Cancellation）</div>
+          <div class="ss-form">
+            <div class="ss-field">
+              <label class="ss-label" for="ssCancelReason">キャンセル理由（任意）</label>
+              <textarea class="ss-input" id="ssCancelReason" maxlength="500" placeholder="差し支えなければ理由をお聞かせください。"></textarea>
+            </div>
+            <div class="ss-err" id="ssCancelErr"></div>
+            <div class="ss-actions">
+              <button class="ss-btn danger" id="ssCancelBtn">キャンセルを依頼する</button>
+              <span class="ss-hint">ご依頼後、担当者が確認のうえ手続きいたします。</span>
+            </div>
+          </div>
+        </div>`;
+      }
+
+      const inner = reschedule + contact + cancel;
+      if (!inner) return '';
+      return `<div class="p-page-head" style="margin-top:8px"><div class="p-page-title" style="font-size:18px">予約の管理</div></div>${inner}`;
+    }
+
+    // ---- Render views from a single booking record ----
+    const VIEWS = {
+      overview(b) {
+        const qs = quoteStatus(b.status);
+        const tl = buildTimeline(b);
+        return `
+          <div class="p-page-head">
+            <div class="p-page-title">こんにちは、${esc(b.name || 'お客様')} 様</div>
+            <div class="p-page-sub">ご予約番号 ${esc(b.id)} のダッシュボードです。</div>
+          </div>
+          <button data-goto="chat" class="admin-cta" style="margin:0 0 18px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>チャットで相談する</span>
+          </button>
+          <div class="dash-cards">
+            <!-- Card 1: Booking Status -->
+            <div class="dcard">
+              <div class="dcard-head"><span class="dcard-ico">${ICONS.status}</span><span class="dcard-label">予約ステータス</span></div>
+              <div class="dcard-value">${statusBadge(b.status)}</div>
+              <div class="dcard-meta">予約番号 ${esc(b.id)}</div>
+            </div>
+            <!-- Card 2: Move Date -->
+            <div class="dcard">
+              <div class="dcard-head"><span class="dcard-ico">${ICONS.date}</span><span class="dcard-label">引越し日</span></div>
+              <div class="dcard-value sm">${fmtDate(b.date)}</div>
+              <div class="dcard-meta">${b.time ? '時間帯：' + esc(b.time) : '時間帯：未定'}</div>
+            </div>
+            <!-- Card 3: Assigned Staff -->
+            <div class="dcard">
+              <div class="dcard-head"><span class="dcard-ico">${ICONS.staff}</span><span class="dcard-label">担当スタッフ</span></div>
+              <div class="dcard-value sm">${esc(staffDisplay(b))}</div>
+              <div class="dcard-meta">${esc(b.service || 'サービス未定')}</div>
+            </div>
+            <!-- Card 4: Quote Status -->
+            <div class="dcard">
+              <div class="dcard-head"><span class="dcard-ico">${ICONS.quote}</span><span class="dcard-label">見積もりステータス</span></div>
+              <div class="dcard-value"><span class="badge ${qs.cls}">${esc(qs.label)}</span></div>
+              <div class="dcard-meta">出発：${esc(b.fromAddr || '—')}</div>
+            </div>
+            <!-- Card 5: Latest Updates -->
+            <div class="dcard wide">
+              <div class="dcard-head"><span class="dcard-ico">${ICONS.updates}</span><span class="dcard-label">最新の更新</span></div>
+              <div class="timeline">
+                ${tl.map((it, i) => `
+                  <div class="tl-item${it.cur && i === 0 ? ' cur' : ''}">
+                    <div class="tl-text">${esc(it.text)}</div>
+                    ${it.date ? `<div class="tl-date">${esc(it.date)}</div>` : ''}
+                  </div>`).join('')}
+              </div>
+            </div>
+          </div>
+          ${(window.PortalApproval && PortalApproval.canApprove(b)) ? `
+          <div class="approve-bar" id="approveBar">
+            <div class="approve-info">
+              <div class="approve-title">お見積もりの承認（Approve Estimate）</div>
+              <div class="approve-sub">内容をご確認のうえ、お見積もりを承認してください。承認すると予約が確定します。</div>
+            </div>
+            <button class="approve-btn" id="approveEstimateBtn">お見積もりを承認</button>
+          </div>` : ''}`;
+      },
+      booking(b) {
+        const items = (b.items && b.items.length) ? b.items.map(esc).join('、') : '—';
+        return `
+          <div class="p-page-head">
+            <div class="p-page-title">予約内容</div>
+            <div class="p-page-sub">ご予約番号 ${esc(b.id)}</div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">お客様情報</div>
+            <div class="info-grid">
+              <div class="info-cell"><div class="k">お名前</div><div class="v">${esc(b.name || '—')}</div></div>
+              <div class="info-cell"><div class="k">メールアドレス</div><div class="v">${esc(b.email || '—')}</div></div>
+              <div class="info-cell"><div class="k">電話番号</div><div class="v">${esc(b.phone || '—')}</div></div>
+              <div class="info-cell"><div class="k">ステータス</div><div class="v">${statusBadge(b.status)}</div></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">引越し詳細</div>
+            <div class="info-grid">
+              <div class="info-cell"><div class="k">希望日</div><div class="v">${fmtDate(b.date)}</div></div>
+              <div class="info-cell"><div class="k">希望時間</div><div class="v">${esc(b.time || '—')}</div></div>
+              <div class="info-cell"><div class="k">出発地</div><div class="v">${esc(b.fromAddr || '—')}</div></div>
+              <div class="info-cell"><div class="k">到着地</div><div class="v">${esc(b.toAddr || '—')}</div></div>
+              <div class="info-cell"><div class="k">荷物</div><div class="v">${items}</div></div>
+              <div class="info-cell"><div class="k">サービス</div><div class="v">${esc(b.service || '—')}</div></div>
+            </div>
+          </div>
+          ${b.notes ? `<div class="panel"><div class="panel-title">備考</div><div class="v">${esc(b.notes)}</div></div>` : ''}
+          ${managePanels(b)}`;
+      },
+      progress(b) {
+        const pr = (window.PortalSelfService && PortalSelfService.progressSteps(b)) || { cancelled: false, steps: [] };
+        const tl = buildTimeline(b);
+        const stepper = pr.cancelled
+          ? `<div class="step-cancel">✕ ご予約はキャンセルされました。</div>`
+          : `<div class="step-track">${pr.steps.map((s, i) => `
+              <div class="step ${s.done ? 'done' : ''} ${s.current ? 'current' : ''}">
+                <div class="step-dot">${s.done ? '✓' : (i + 1)}</div>
+                <div class="step-name">${esc(s.label)}</div>
+              </div>`).join('')}</div>`;
+        return `
+          <div class="p-page-head">
+            <div class="p-page-title">進捗</div>
+            <div class="p-page-sub">ご予約番号 ${esc(b.id)} の進行状況です。</div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">現在のステータス ${statusBadge(b.status)}</div>
+            ${stepper}
+          </div>
+          ${PortalSelfService.hasCancellationRequest(b) ? `<div class="ss-note">キャンセルのご依頼を受付けました。担当者がご連絡いたします。</div>` : ''}
+          <div class="panel">
+            <div class="panel-title">最新の更新</div>
+            <div class="timeline">
+              ${tl.map((it, i) => `
+                <div class="tl-item${it.cur && i === 0 ? ' cur' : ''}">
+                  <div class="tl-text">${esc(it.text)}</div>
+                  ${it.date ? `<div class="tl-date">${esc(it.date)}</div>` : ''}
+                </div>`).join('')}
+            </div>
+          </div>`;
+      },
+      support(b) {
+        return `
+          <div class="p-page-head">
+            <div class="p-page-title">お問い合わせ</div>
+            <div class="p-page-sub">ご予約に関するご質問はお気軽にご連絡ください。</div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">サポート窓口</div>
+            <div class="info-grid">
+              <div class="info-cell"><div class="k">電話</div><div class="v">090-2489-3402</div></div>
+              <div class="info-cell"><div class="k">受付時間</div><div class="v">8:00 – 20:00（年中無休）</div></div>
+              <div class="info-cell"><div class="k">予約番号</div><div class="v">${esc(b.id)}</div></div>
+            </div>
+            <p style="margin-top:18px;font-size:13px;color:var(--gray-2)">
+              お問い合わせの際は、上記の予約番号をお伝えください。
+            </p>
+          </div>`;
+      },
+      chat(b) {
+        // LINE-style chat room — mounted by PortalChat (js/portal/chat.js), which
+        // AJAX-polls hm-api/chat.php (thread_id 'chat:<bookingId>' over the
+        // existing inbox_messages). Container only; the controller renders inside.
+        return `
+          <div class="p-page-head" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div>
+              <div class="p-page-title">チャット</div>
+              <div class="p-page-sub">ご予約番号 ${esc(b.id)} ・ 担当者と直接やり取りできます。</div>
+            </div>
+            <button id="chatHelpBtn" class="p-logout" title="チャットの使い方" style="padding:8px 14px">？ 使い方</button>
+          </div>
+          <div id="chatRoot"></div>`;
+      },
+      documents(b) {
+        // Container only — populated asynchronously by loadDocuments().
+        return `
+          <div class="p-page-head">
+            <div class="p-page-title">ドキュメント</div>
+            <div class="p-page-sub">ご予約番号 ${esc(b.id)} に関する書類をご確認・ダウンロードいただけます。</div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">書類をアップロード（Upload Document）</div>
+            <div class="photo-hint">PDF・画像・文書ファイル（最大 ${Math.round((window.PortalDocs && PortalDocs.ATTACH_MAX_BYTES || 15728640) / 1048576)}MB）。添付ファイルとして保存されます。</div>
+            <label class="ph-up" id="docUpLabel">
+              ${PH_UP_ICON}<span>ファイルを選択</span>
+              <input type="file" id="docUpInput">
+            </label>
+          </div>
+          <div id="docSections"><div class="skeleton">読み込み中…</div></div>`;
+      },
+      photos(b) {
+        // Container only — populated asynchronously by loadPhotos().
+        return `
+          <div class="p-page-head">
+            <div class="p-page-title">写真</div>
+            <div class="p-page-sub">お引越しのお写真をアップロードしてください。ご予約番号 ${esc(b.id)} に紐づいて保存されます。</div>
+          </div>
+          <div id="photoSections"><div class="skeleton">読み込み中…</div></div>`;
+      },
+      reviews(b) {
+        // Container only — populated asynchronously by loadReviews().
+        return `
+          <div class="p-page-head">
+            <div class="p-page-title">口コミ投稿</div>
+            <div class="p-page-sub">サービスのご感想をお聞かせください。いただいた口コミは確認後に公開されます。</div>
+          </div>
+          <div id="reviewSection"><div class="skeleton">読み込み中…</div></div>`;
+      },
+    };
+
+    // Doc section metadata (labels + icons). Mirrors PortalDocs.SECTIONS order,
+    // with the Download Center appended as an aggregate of everything.
+    const DOC_META = {
+      estimates:   { label: '見積書（Estimate PDF）' },
+      contracts:   { label: '契約書（Contracts）' },
+      attachments: { label: '添付ファイル（Attachments）' },
+    };
+    const DOC_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+    const DL_ICON  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+
+    function fmtSize(bytes) {
+      if (bytes == null) return '';
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(0) + ' KB';
+      return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+    function docItem(f) {
+      const meta = [f.uploadedAt ? 'アップロード日：' + fmtDateTime(f.uploadedAt) : 'アップロード日：—',
+                    fmtSize(f.size)].filter(Boolean).join(' ・ ');
+      return `
+        <div class="doc-item">
+          <div class="doc-ico">${DOC_ICON}</div>
+          <div class="doc-info">
+            <div class="doc-name">${esc(f.name)}</div>
+            <div class="doc-meta">${esc(meta)}</div>
+          </div>
+          <button class="doc-dl" data-path="${esc(f.path)}">${DL_ICON}<span>ダウンロード</span></button>
+        </div>`;
+    }
+    function docSection(title, files) {
+      const body = files.length
+        ? `<div class="doc-list">${files.map(docItem).join('')}</div>`
+        : '<div class="doc-empty">書類はまだありません。</div>';
+      return `<div class="panel"><div class="panel-title">${esc(title)} <span style="font-weight:400;color:var(--gray-3);font-size:12px">${files.length ? files.length + '件' : ''}</span></div>${body}</div>`;
+    }
+
+    async function loadDocuments() {
+      const host = $('docSections');
+      if (!host || !_booking) return;
+      let docs = { sections: {}, all: [] };
+      try {
+        docs = await PortalDocs.list([_booking.id, _booking._dbId]);
+      } catch (err) {
+        console.error('[Portal] documents load failed:', err);
+        host.innerHTML = '<div class="panel"><div class="doc-empty">書類を読み込めませんでした。</div></div>';
+        return;
+      }
+      let html = '';
+      PortalDocs.SECTIONS.forEach(s => {
+        html += docSection((DOC_META[s.id] || {}).label || s.label, docs.sections[s.id] || []);
+      });
+      // Download Center — every downloadable file in one place.
+      html += docSection('ダウンロードセンター（Download Center）', docs.all);
+      host.innerHTML = html;
+    }
+
+    // Delegated download handler — resolves a scoped signed URL on demand.
+    async function handleDocDownload(btn) {
+      const path = btn.getAttribute('data-path');
+      if (!path) return;
+      btn.disabled = true;
+      try {
+        const url = await PortalDocs.getDownloadUrl([_booking.id, _booking._dbId], path);
+        if (!url) { alert('このファイルにアクセスできません。'); return; }
+        window.open(url, '_blank', 'noopener');
+      } catch (err) {
+        console.error('[Portal] download failed:', err);
+        alert('ダウンロードに失敗しました。');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+    document.addEventListener('click', e => {
+      const btn = e.target.closest && e.target.closest('.doc-dl');
+      if (btn) handleDocDownload(btn);
+    });
+
+    // ---------- Photo Upload (Phase 5E) ----------
+    const PH_UP_ICON  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+    const PH_DEL_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+
+    // Booking id new uploads are filed under (the HM-reference shown to the customer).
+    function _uploadId() { return _booking && (_booking.id || _booking._dbId); }
+    // Both identifiers naming this one booking — used for scoped list/delete.
+    function _scopeIds() { return _booking ? [_booking.id, _booking._dbId] : []; }
+
+    function photoTile(p) {
+      const cap = p.uploadedAt ? fmtDateTime(p.uploadedAt) : '';
+      const img = p.url
+        ? `<img src="${esc(p.url)}" alt="${esc(p.name)}" loading="lazy"
+                onerror="this.parentNode.innerHTML='&lt;div class=ph-broken&gt;プレビューを読み込めません&lt;/div&gt;'">`
+        : '<div class="ph-broken">プレビューを読み込めません</div>';
+      return `
+        <div class="photo-tile">
+          ${img}
+          ${cap ? `<div class="photo-cap">${esc(cap)}</div>` : ''}
+          <button class="photo-del" data-path="${esc(p.path)}" title="削除">${PH_DEL_ICON}</button>
+        </div>`;
+    }
+    function photoSection(cat, photos) {
+      const grid = photos.length
+        ? `<div class="photo-grid">${photos.map(photoTile).join('')}</div>`
+        : '<div class="photo-empty">まだ写真はありません。</div>';
+      const count = photos.length ? `<span style="font-weight:400;color:var(--gray-3);font-size:12px">${photos.length}件</span>` : '';
+      return `
+        <div class="panel">
+          <div class="panel-title">${esc(cat.label)} ${count}</div>
+          <div class="photo-hint">JPEG・PNG など画像ファイル（最大 ${Math.round(PortalPhotos.MAX_BYTES / 1048576)}MB）</div>
+          <label class="ph-up" data-cat="${esc(cat.id)}">
+            ${PH_UP_ICON}<span>写真をアップロード</span>
+            <input type="file" accept="image/*" data-cat="${esc(cat.id)}">
+          </label>
+          <div class="ph-cat-grid" data-cat="${esc(cat.id)}">${grid}</div>
+        </div>`;
+    }
+
+    async function loadPhotos() {
+      const host = $('photoSections');
+      if (!host || !_booking) return;
+      let data = {};
+      try {
+        data = await PortalPhotos.list(_scopeIds());
+      } catch (err) {
+        console.error('[Portal] photos load failed:', err);
+        host.innerHTML = '<div class="panel"><div class="photo-empty">写真を読み込めませんでした。</div></div>';
+        return;
+      }
+      host.innerHTML = PortalPhotos.CATEGORIES.map(c => photoSection(c, data[c.id] || [])).join('');
+    }
+
+    // Upload handler — change on a category's hidden file input.
+    async function handlePhotoUpload(input) {
+      const file = input.files && input.files[0];
+      const cat  = input.getAttribute('data-cat');
+      if (!file || !cat) return;
+      const label = input.closest('.ph-up');
+      if (label) label.classList.add('busy');
+      try {
+        const res = await PortalPhotos.upload(_uploadId(), cat, file);
+        if (!res.ok) {
+          const msg = ({
+            'too-large': 'ファイルサイズが大きすぎます。',
+            'not-an-image': '画像ファイルを選択してください。',
+            'no-booking': '予約情報を確認できませんでした。',
+            'storage-unavailable': 'ストレージに接続できませんでした。',
+          })[res.error] || 'アップロードに失敗しました。';
+          alert(msg);
+          return;
+        }
+        await loadPhotos();
+      } catch (err) {
+        console.error('[Portal] upload failed:', err);
+        alert('アップロードに失敗しました。');
+      } finally {
+        if (label) label.classList.remove('busy');
+        input.value = '';
+      }
+    }
+    document.addEventListener('change', e => {
+      const input = e.target.closest && e.target.closest('.ph-up input[type=file]');
+      if (input) handlePhotoUpload(input);
+    });
+
+    // Delete handler — only the customer's own in-scope photos (module-guarded too).
+    async function handlePhotoDelete(btn) {
+      const path = btn.getAttribute('data-path');
+      if (!path) return;
+      if (!confirm('この写真を削除しますか？')) return;
+      btn.disabled = true;
+      try {
+        const res = await PortalPhotos.remove(_scopeIds(), path);
+        if (!res.ok) { alert('削除できませんでした。'); btn.disabled = false; return; }
+        await loadPhotos();
+      } catch (err) {
+        console.error('[Portal] delete failed:', err);
+        alert('削除に失敗しました。');
+        btn.disabled = false;
+      }
+    }
+    document.addEventListener('click', e => {
+      const btn = e.target.closest && e.target.closest('.photo-del');
+      if (btn) handlePhotoDelete(btn);
+    });
+
+    // ---------- Estimate Approval (Phase 5F) ----------
+    async function handleApprove(btn) {
+      if (!_booking || !window.PortalApproval) return;
+      if (!confirm('お見積もりを承認しますか？承認すると予約が確定します。')) return;
+      btn.disabled = true;
+      btn.textContent = '送信中…';
+      try {
+        const res = await PortalApproval.approve(_booking.id);
+        if (!res.ok) {
+          alert(res.error === 'not-approvable'
+            ? 'このお見積もりは承認できる状態ではありません。'
+            : '承認に失敗しました。時間をおいて再度お試しください。');
+          btn.disabled = false;
+          btn.textContent = 'お見積もりを承認';
+          return;
+        }
+        // Reflect the new state locally, then re-render the dashboard. The
+        // approve bar disappears and the quote card shows 確定済み.
+        _booking.status = res.to || '確定';
+        render('overview');
+        const host = $('content');
+        const head = host && host.querySelector('.dash-cards');
+        if (head) {
+          const note = document.createElement('div');
+          note.className = 'approve-done';
+          note.textContent = '✓ お見積もりを承認しました。ありがとうございます。';
+          head.parentNode.insertBefore(note, head.nextSibling);
+        }
+      } catch (err) {
+        console.error('[Portal] approve failed:', err);
+        alert('承認に失敗しました。');
+        btn.disabled = false;
+        btn.textContent = 'お見積もりを承認';
+      }
+    }
+    document.addEventListener('click', e => {
+      const btn = e.target.closest && e.target.closest('#approveEstimateBtn');
+      if (btn) handleApprove(btn);
+    });
+
+    // ---------- Self-Service: reschedule / contact / cancel (Phase 6C) ----------
+    // After a successful write, refresh the local record and re-render so the
+    // forms (and the progress view) reflect the new state. The display id is
+    // kept as the customer-facing reference, mirroring init().
+    function _applyUpdated(updated) {
+      if (!updated) return;
+      _booking = updated;
+      _booking.id = (sess && sess.ref) || _booking.id;
+      $('userRef').textContent = _booking.id || '';
+    }
+    function _showErr(id, msg) {
+      const el = $(id);
+      if (el) { el.textContent = msg; el.style.display = 'block'; }
+    }
+    const _SS_ERR = {
+      'bad-date':         '正しい日付を選択してください。',
+      'past-date':        '過去の日付は選択できません。',
+      'not-reschedulable':'この予約は変更できない状態です。',
+      'bad-phone':        '電話番号を正しくご入力ください。',
+      'bad-name':         'お名前をご入力ください。',
+      'no-change':        '変更内容がありません。',
+      'locked':           'この予約は編集できない状態です。',
+      'not-cancellable':  'この予約はキャンセルできない状態です。',
+      'already-requested':'すでにキャンセルを申請済みです。',
+      'not-found':        '予約情報を確認できませんでした。',
+    };
+    function _ssMsg(err) { return _SS_ERR[err] || '処理に失敗しました。時間をおいて再度お試しください。'; }
+
+    async function handleReschedule(btn) {
+      if (!_booking || !window.PortalSelfService) return;
+      const errId = 'ssReschedErr';
+      const el = $(errId); if (el) el.style.display = 'none';
+      const date = ($('ssDate') && $('ssDate').value || '').trim();
+      const time = ($('ssTime') && $('ssTime').value || '').trim();
+      btn.disabled = true; btn.textContent = '保存中…';
+      try {
+        const res = await PortalSelfService.reschedule(_booking, { date, time });
+        if (!res.ok) { _showErr(errId, _ssMsg(res.error)); btn.disabled = false; btn.textContent = '変更を保存'; return; }
+        _applyUpdated(res.booking);
+        render('booking');
+        ssToast('予約日時を変更しました。');
+      } catch (err) {
+        console.error('[Portal] reschedule failed:', err);
+        _showErr(errId, _ssMsg()); btn.disabled = false; btn.textContent = '変更を保存';
+      }
+    }
+
+    async function handleContact(btn) {
+      if (!_booking || !window.PortalSelfService) return;
+      const errId = 'ssContactErr';
+      const el = $(errId); if (el) el.style.display = 'none';
+      const name  = ($('ssName')  && $('ssName').value  || '').trim();
+      const phone = ($('ssPhone') && $('ssPhone').value || '').trim();
+      btn.disabled = true; btn.textContent = '更新中…';
+      try {
+        const res = await PortalSelfService.updateContact(_booking, { name, phone });
+        if (!res.ok) { _showErr(errId, _ssMsg(res.error)); btn.disabled = false; btn.textContent = '連絡先を更新'; return; }
+        _applyUpdated(res.booking);
+        $('userName').textContent = _booking.name || 'お客様';
+        render('booking');
+        ssToast('連絡先を更新しました。');
+      } catch (err) {
+        console.error('[Portal] contact update failed:', err);
+        _showErr(errId, _ssMsg()); btn.disabled = false; btn.textContent = '連絡先を更新';
+      }
+    }
+
+    async function handleCancelRequest(btn) {
+      if (!_booking || !window.PortalSelfService) return;
+      const errId = 'ssCancelErr';
+      const el = $(errId); if (el) el.style.display = 'none';
+      if (!confirm('キャンセルを依頼しますか？担当者が確認のうえ手続きいたします。')) return;
+      const reason = ($('ssCancelReason') && $('ssCancelReason').value || '').trim();
+      btn.disabled = true; btn.textContent = '送信中…';
+      try {
+        const res = await PortalSelfService.requestCancellation(_booking, { reason });
+        if (!res.ok) { _showErr(errId, _ssMsg(res.error)); btn.disabled = false; btn.textContent = 'キャンセルを依頼する'; return; }
+        _applyUpdated(res.booking);
+        render('booking');
+        ssToast('キャンセルのご依頼を受付けました。');
+      } catch (err) {
+        console.error('[Portal] cancel request failed:', err);
+        _showErr(errId, _ssMsg()); btn.disabled = false; btn.textContent = 'キャンセルを依頼する';
+      }
+    }
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest) return;
+      if (e.target.closest('#ssReschedBtn')) return handleReschedule(e.target.closest('#ssReschedBtn'));
+      if (e.target.closest('#ssContactBtn')) return handleContact(e.target.closest('#ssContactBtn'));
+      if (e.target.closest('#ssCancelBtn'))  return handleCancelRequest(e.target.closest('#ssCancelBtn'));
+    });
+
+    // ---------- Self-Service: document upload (Phase 6C) ----------
+    async function handleDocUpload(input) {
+      const file = input.files && input.files[0];
+      if (!file || !_booking || !window.PortalDocs || !PortalDocs.uploadAttachment) return;
+      const label = input.closest('.ph-up');
+      if (label) label.classList.add('busy');
+      try {
+        const res = await PortalDocs.uploadAttachment(_uploadId(), file);
+        if (!res.ok) {
+          alert(res.error === 'too-large' ? 'ファイルサイズが大きすぎます。'
+              : res.error === 'storage-unavailable' ? 'ストレージに接続できませんでした。'
+              : 'アップロードに失敗しました。');
+          return;
+        }
+        await loadDocuments();
+        ssToast('書類をアップロードしました。');
+      } catch (err) {
+        console.error('[Portal] document upload failed:', err);
+        alert('アップロードに失敗しました。');
+      } finally {
+        if (label) label.classList.remove('busy');
+        input.value = '';
+      }
+    }
+    document.addEventListener('change', e => {
+      const input = e.target.closest && e.target.closest('#docUpInput');
+      if (input) handleDocUpload(input);
+    });
+
+    // ---------- Customer Reviews (Phase 5G) ----------
+    let _revRating = 0;        // current star selection in the form
+    const REV_ADD_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+
+    function starsInput() {
+      let h = '<div class="rev-stars" id="revStars">';
+      for (let i = 1; i <= 5; i++) h += `<span class="rev-star" data-v="${i}">★</span>`;
+      return h + '</div>';
+    }
+    function starsStatic(n) {
+      let h = '<div class="rev-stars static">';
+      for (let i = 1; i <= 5; i++) h += `<span class="rev-star${i <= (n || 0) ? ' on' : ''}">★</span>`;
+      return h + '</div>';
+    }
+
+    function renderReviewForm() {
+      return `
+        <div class="panel">
+          <div class="panel-title">口コミを投稿</div>
+          <div class="rev-field">
+            <div class="rev-label">サービスの評価（Rate Service）</div>
+            ${starsInput()}
+          </div>
+          <div class="rev-field">
+            <div class="rev-label">ご感想（Leave Review）</div>
+            <textarea class="rev-textarea" id="revText" placeholder="サービスのご感想をお聞かせください。" maxlength="2000"></textarea>
+          </div>
+          <div class="rev-field">
+            <div class="rev-label">写真（任意・Upload Photos）</div>
+            <div class="rev-photos" id="revPhotoGrid"></div>
+            <label class="rev-add" id="revPhotoAdd">
+              ${REV_ADD_ICON}<span>写真を追加</span>
+              <input type="file" accept="image/*" id="revPhotoInput">
+            </label>
+          </div>
+          <div class="rev-err" id="revErr"></div>
+          <button class="rev-submit" id="revSubmitBtn">口コミを送信</button>
+        </div>`;
+    }
+
+    function renderExistingReview(r) {
+      const status = r.approved ? '公開審査済み（承認済み）' : '確認中（公開前）';
+      return `
+        <div class="panel">
+          <div class="rev-done">✓ 口コミをご投稿いただきありがとうございました。</div>
+          ${starsStatic(r.rating)}
+          <div class="rev-meta">ステータス：${esc(status)} ・ ${fmtDateTime(r.created_at)}</div>
+          <div class="rev-body">${esc(r.review_text || '')}</div>
+          <div class="rev-photos" id="revPhotoGrid"></div>
+        </div>`;
+    }
+
+    async function loadReviewPhotos() {
+      const grid = $('revPhotoGrid');
+      if (!grid || !_booking) return;
+      let photos = [];
+      try { photos = await PortalReviews.listPhotos([_booking.id, _booking._dbId]); } catch (_) {}
+      grid.innerHTML = photos.map(p => p.url
+        ? `<div class="rev-photo"><img src="${esc(p.url)}" alt="${esc(p.name)}" loading="lazy"></div>`
+        : '').join('');
+    }
+
+    async function loadReviews() {
+      const host = $('reviewSection');
+      if (!host || !_booking) return;
+      // Availability: only after booking completion.
+      if (!PortalReviews.canReview(_booking)) {
+        host.innerHTML = `
+          <div class="panel"><div class="rev-locked">
+            <div class="rev-locked-ico">🔒</div>
+            <div>口コミはお引越しの完了後にご利用いただけます。
+              <br><span class="rev-locked-sub">現在のステータス：${esc(_booking.status || '新規')}</span></div>
+          </div></div>`;
+        return;
+      }
+      // Duplicate prevention: an existing review is shown read-only (no second form).
+      let existing = null;
+      try { existing = await PortalReviews.existingReview([_booking.id, _booking._dbId]); } catch (_) {}
+      if (existing) {
+        host.innerHTML = renderExistingReview(existing);
+        loadReviewPhotos();
+        return;
+      }
+      _revRating = 0;
+      host.innerHTML = renderReviewForm();
+    }
+
+    // Star selection
+    document.addEventListener('click', e => {
+      const star = e.target.closest && e.target.closest('#revStars .rev-star');
+      if (!star) return;
+      _revRating = parseInt(star.getAttribute('data-v'), 10) || 0;
+      const stars = star.parentNode.querySelectorAll('.rev-star');
+      stars.forEach((s, i) => s.classList.toggle('on', i < _revRating));
+    });
+
+    // Review photo upload (uploads immediately to the booking's review folder)
+    async function handleReviewPhoto(input) {
+      const file = input.files && input.files[0];
+      if (!file || !_booking) return;
+      const label = input.closest('.rev-add');
+      if (label) label.classList.add('busy');
+      try {
+        const res = await PortalReviews.uploadPhoto(_booking.id || _booking._dbId, file);
+        if (!res.ok) {
+          alert(res.error === 'too-large' ? 'ファイルサイズが大きすぎます。'
+              : res.error === 'not-an-image' ? '画像ファイルを選択してください。'
+              : 'アップロードに失敗しました。');
+          return;
+        }
+        loadReviewPhotos();
+      } catch (err) {
+        console.error('[Portal] review photo failed:', err);
+        alert('アップロードに失敗しました。');
+      } finally {
+        if (label) label.classList.remove('busy');
+        input.value = '';
+      }
+    }
+    document.addEventListener('change', e => {
+      const input = e.target.closest && e.target.closest('#revPhotoInput');
+      if (input) handleReviewPhoto(input);
+    });
+
+    // Submit review
+    async function handleReviewSubmit(btn) {
+      if (!_booking) return;
+      const errEl = $('revErr');
+      const text = ($('revText') && $('revText').value || '').trim();
+      if (errEl) errEl.style.display = 'none';
+      if (!_revRating) { if (errEl) { errEl.textContent = '評価（星）を選択してください。'; errEl.style.display = 'block'; } return; }
+      if (!text)       { if (errEl) { errEl.textContent = 'ご感想をご入力ください。'; errEl.style.display = 'block'; } return; }
+      btn.disabled = true; btn.textContent = '送信中…';
+      try {
+        const res = await PortalReviews.submit(_booking, { rating: _revRating, text: text });
+        if (!res.ok) {
+          const msg = res.error === 'duplicate' ? 'この予約の口コミはすでに投稿済みです。'
+                    : res.error === 'not-completed' ? '口コミはお引越しの完了後にご利用いただけます。'
+                    : '口コミの送信に失敗しました。';
+          if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+          if (res.error === 'duplicate') { loadReviews(); return; }
+          btn.disabled = false; btn.textContent = '口コミを送信';
+          return;
+        }
+        loadReviews();   // re-render → shows the submitted review (read-only)
+      } catch (err) {
+        console.error('[Portal] review submit failed:', err);
+        if (errEl) { errEl.textContent = '口コミの送信に失敗しました。'; errEl.style.display = 'block'; }
+        btn.disabled = false; btn.textContent = '口コミを送信';
+      }
+    }
+    document.addEventListener('click', e => {
+      const btn = e.target.closest && e.target.closest('#revSubmitBtn');
+      if (btn) handleReviewSubmit(btn);
+    });
+
+    // Render one communication row (read-only). Direction maps to the role:
+    //  outbound = 会社からのメッセージ (company → customer)
+    //  inbound  = お客様からの返信     (customer → company)
+    function renderComm(c) {
+      const isOutbound = c.direction !== 'inbound';
+      const cls   = isOutbound ? 'in' : 'out';
+      const label = isOutbound ? '会社からのメッセージ' : 'お客様からの返信';
+      const route = isOutbound
+        ? `${esc(c.sender_email)} → ${esc(c.customer_email)}`
+        : `${esc(c.customer_email)} → ${esc(c.sender_email)}`;
+      return `
+        <div class="comm-item ${cls}">
+          <div class="comm-head">
+            <span class="comm-dir ${cls}">${label}</span>
+            <span class="comm-subject">${esc(c.subject || '（件名なし）')}</span>
+            <span class="comm-date">${fmtDateTime(c.created_at)}</span>
+          </div>
+          <div class="comm-route">${route}</div>
+          <div class="comm-body">${esc(c.message)}</div>
+        </div>`;
+    }
+
+    // Fetch + render the booking-scoped communication history.
+    async function loadMessages() {
+      const list = $('commList');
+      if (!list || !_booking) return;
+      let rows = [];
+      try {
+        // Pass both identifiers of this one booking (HM-reference + numeric DB id),
+        // since existing messages may be filed under either. Still single-booking scope.
+        rows = await PortalComms.fetchForBooking([_booking.id, _booking._dbId], sess.email);
+      } catch (err) {
+        console.error('[Portal] messages load failed:', err);
+        list.innerHTML = '<div class="comm-empty">メッセージを読み込めませんでした。</div>';
+        return;
+      }
+      const countEl = $('commCount');
+      if (countEl) countEl.textContent = rows.length ? `${rows.length}件` : '';
+      list.innerHTML = rows.length
+        ? `<div class="comm-list">${rows.map(renderComm).join('')}</div>`
+        : '<div class="comm-empty">まだメッセージはありません。</div>';
+    }
+
+    // In-content links that jump to a sidebar view (e.g. the dashboard's
+    // 「チャットで相談する」 button). Delegates to the real nav button so the
+    // active state, render and drawer-close all happen through one path.
+    document.addEventListener('click', e => {
+      const t = e.target.closest && e.target.closest('[data-goto]');
+      if (!t) return;
+      const nav = document.querySelector('.p-nav-item[data-view="' + t.getAttribute('data-goto') + '"]');
+      if (nav) nav.click();
+    });
+
+    let _booking = null;
+    function render(view) {
+      const content = $('content');
+      // Always stop the chat poll loop when leaving/re-rendering; mountChat()
+      // restarts it when the chat view is the destination.
+      if (window.PortalChat) PortalChat.unmount();
+      if (!_booking) { content.innerHTML = '<div class="skeleton">予約情報を読み込めませんでした。</div>'; return; }
+      content.innerHTML = (VIEWS[view] || VIEWS.overview)(_booking);
+      if (view === 'chat')      mountChat();
+      if (view === 'documents') loadDocuments();
+      if (view === 'photos')    loadPhotos();
+      if (view === 'reviews')   loadReviews();
+    }
+
+    // ---- Chat mount + onboarding ----
+    function mountChat() {
+      const root = $('chatRoot');
+      if (!root || !window.PortalChat) return;
+      PortalChat.mount(root, {
+        email: (sess && sess.email) || _booking.email || '',
+        ref:   _booking.id || (sess && sess.ref) || '',
+        name:  (sess && sess.name) || _booking.name || 'お客様',
+      });
+      const help = $('chatHelpBtn');
+      if (help) help.addEventListener('click', () => showChatGuide(true));
+      showChatGuide(false);   // one-time welcome on first visit
+    }
+
+    const CHAT_GUIDE_KEY = 'hm_chat_welcome_seen';
+    function closeChatGuide() { const ov = $('chatGuideOverlay'); if (ov) ov.style.display = 'none'; }
+    function showChatGuide(force) {
+      if (!force) { try { if (localStorage.getItem(CHAT_GUIDE_KEY)) return; } catch (_) {} }
+      let ov = $('chatGuideOverlay');
+      if (!ov) {
+        ov = document.createElement('div');
+        ov.id = 'chatGuideOverlay';
+        ov.style.cssText = 'position:fixed;inset:0;z-index:120;background:rgba(11,15,23,.5);display:flex;align-items:center;justify-content:center;padding:20px';
+        ov.innerHTML = `
+          <div style="background:#fff;border-radius:16px;max-width:400px;width:100%;padding:28px 26px;text-align:center;box-shadow:0 20px 60px rgba(11,15,23,.25)">
+            <div style="font-size:40px;margin-bottom:8px">💬</div>
+            <h3 style="font-family:var(--font-serif);font-size:20px;margin-bottom:12px;color:var(--ink)">チャットへようこそ</h3>
+            <p style="font-size:13.5px;color:var(--gray-2);line-height:1.9;text-align:left;margin-bottom:20px">
+              担当者と直接やり取りできるチャットです。<br>
+              ・ご質問やご要望をいつでも送信できます<br>
+              ・写真やPDF（見積書・図面など）も添付できます<br>
+              ・担当者からの返信もこの画面に表示されます</p>
+            <button id="chatGuideClose" class="ss-btn" style="width:100%">はじめる</button>
+          </div>`;
+        document.body.appendChild(ov);
+        ov.addEventListener('click', e => { if (e.target === ov) closeChatGuide(); });
+      }
+      ov.style.display = 'flex';
+      const c = $('chatGuideClose');
+      if (c) c.onclick = closeChatGuide;
+      try { localStorage.setItem(CHAT_GUIDE_KEY, '1'); } catch (_) {}
+    }
+
+    // ---- Sidebar navigation ----
+    document.querySelectorAll('.p-nav-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.p-nav-item').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        render(btn.dataset.view);
+        closeDrawer();
+      });
+    });
+
+    // ---- Load the authorised booking, then render ----
+    (async function init() {
+      try {
+        _booking = await PortalAuth.getCurrentBooking();
+      } catch (err) {
+        console.error('[Portal] load failed:', err);
+      }
+      if (!_booking) {
+        // Session valid but booking no longer accessible (revoked / deleted / mismatch)
+        $('content').innerHTML =
+          '<div class="skeleton">予約情報を取得できませんでした。再度ログインしてください。</div>';
+        return;
+      }
+      // Show the reference the customer logged in with (handles legacy numeric ids)
+      _booking.id = sess.ref || _booking.id;
+      // Refresh header with the freshest record
+      $('userName').textContent = _booking.name || 'お客様';
+      $('userRef').textContent  = _booking.id || '';
+      // Deep-link from the post-booking「チャットで相談する」CTA (set on the
+      // booking success screen): land the customer directly in the Chat tab.
+      let _startView = 'overview';
+      try {
+        if (sessionStorage.getItem('hm_after_login_view') === 'chat') {
+          sessionStorage.removeItem('hm_after_login_view');
+          sessionStorage.removeItem('hm_after_login_ref');
+          _startView = 'chat';
+        }
+      } catch (_) {}
+      if (_startView === 'chat') {
+        const navBtn = document.querySelector('.p-nav-item[data-view="chat"]');
+        if (navBtn) navBtn.click(); else render('overview');
+      } else {
+        render('overview');
+      }
+    })();
+  })();
+  </script>
+</body>
+</html>
