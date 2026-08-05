@@ -1,0 +1,1756 @@
+﻿<!DOCTYPE html>
+<html lang="ja" class="v2-dark dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin — Hello Moving</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="manifest" href="/manifest-admin.json" />
+<meta name="theme-color" content="#0a1f44" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="mobile.css?v=23" />
+<style>
+/* ── Variables ── */
+:root{
+  --bg:#fff;--bg-soft:#f8f9fa;--bg-soft-2:#f0f2f5;
+  --ink:#0b0f17;--ink-2:#1e2532;
+  --gray-1:#6b7280;--gray-2:#9ca3af;
+  --line:rgba(0,0,0,.08);--line-2:rgba(0,0,0,.05);
+  --navy:#0a1f44;--blue:#2563eb;--blue-2:#1d4ed8;
+  --green:#10b981;--red:#ef4444;--yellow:#f59e0b;
+  --sw:230px
+}
+html.dark{
+  --bg:#0d1117;--bg-soft:#161b22;--bg-soft-2:#1c2128;
+  --ink:#e6edf3;--ink-2:#c9d1d9;
+  --gray-1:#8b949e;--gray-2:#6e7681;
+  --line:rgba(255,255,255,.08);--line-2:rgba(255,255,255,.04)
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}
+body{font-family:'Noto Sans JP','Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+
+/* ── Login screen ── */
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--navy);padding:20px;background-image:radial-gradient(circle at 20% 50%,rgba(29,158,117,.08) 0%,transparent 60%),radial-gradient(circle at 80% 20%,rgba(37,99,235,.06) 0%,transparent 50%)}
+.login-card{background:var(--bg);border-radius:20px;padding:44px 40px 36px;width:100%;max-width:380px;box-shadow:0 32px 80px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06)}
+.login-brand{display:flex;align-items:center;gap:13px;margin-bottom:32px;justify-content:center}
+.login-mark{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1D9E75,#059669);color:#fff;font-weight:700;font-size:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(29,158,117,.35)}
+.login-name{font-weight:700;font-size:17px;color:var(--ink);line-height:1.2}
+.login-sub{font-size:11px;color:var(--gray-2);letter-spacing:.03em}
+.login-title{text-align:center;font-size:20px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.login-title-sub{text-align:center;font-size:12px;color:var(--gray-2);margin-bottom:28px}
+.login-field{margin-bottom:16px}
+.login-label{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;color:var(--gray-1);margin-bottom:6px}
+.login-input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;font-family:inherit;color:var(--ink);background:var(--bg);transition:.15s}
+.login-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.login-input.has-error{border-color:var(--red);box-shadow:0 0 0 3px rgba(239,68,68,.1)}
+.login-remember{display:flex;align-items:center;gap:8px;margin-bottom:20px;margin-top:-4px}
+.login-remember input[type="checkbox"]{width:15px;height:15px;accent-color:var(--blue);cursor:pointer}
+.login-remember label{font-size:12px;color:var(--gray-1);cursor:pointer;user-select:none}
+.login-btn{width:100%;padding:13px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;justify-content:center;gap:8px;position:relative}
+.login-btn:hover:not(:disabled){background:var(--blue-2);transform:translateY(-1px);box-shadow:0 6px 16px rgba(37,99,235,.3)}
+.login-btn:disabled{opacity:.7;cursor:not-allowed;transform:none;box-shadow:none}
+.login-spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:lspin .6s linear infinite;display:none}
+.login-btn.loading .login-spinner{display:block}
+.login-btn.loading .login-btn-text{opacity:.8}
+@keyframes lspin{to{transform:rotate(360deg)}}
+.login-err{color:var(--red);font-size:12px;text-align:center;margin-top:12px;display:none;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:9px 12px}
+.login-forgot-wrap{text-align:center;margin-top:18px}
+.login-forgot{font-size:12px;color:var(--blue);text-decoration:none;background:none;border:none;cursor:pointer;font-family:inherit;padding:0}
+.login-forgot:hover{text-decoration:underline}
+.login-divider{height:1px;background:var(--line);margin:20px 0}
+.login-field-hint{font-size:11px;color:var(--red);margin-top:4px;display:none}
+html.dark .login-card{background:var(--bg-soft);box-shadow:0 32px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.06)}
+html.dark .login-input{background:var(--bg);border-color:rgba(255,255,255,.12);color:var(--ink)}
+html.dark .login-input:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(96,165,250,.12)}
+
+/* ── App layout ── */
+#adminApp{display:none;min-height:100vh}
+.layout{display:flex;min-height:100vh}
+
+/* ── Sidebar ── */
+.sidebar{width:var(--sw);flex-shrink:0;background:var(--navy);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;overflow-y:auto;transition:transform .25s}
+.sb-brand{padding:16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.sb-mark{width:32px;height:32px;border-radius:8px;background:#1D9E75;color:#fff;font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-name{font-weight:700;font-size:13px;color:#fff;line-height:1.2}
+.sb-sub{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.04em}
+.sb-nav{flex:1;padding:8px 0}
+.sb-section{padding:8px 14px 3px;font-size:10px;letter-spacing:.08em;color:rgba(255,255,255,.3);text-transform:uppercase;font-weight:600}
+.sb-link{display:flex;align-items:center;gap:9px;padding:8px 12px;color:rgba(255,255,255,.6);font-size:12px;font-weight:500;border-radius:6px;margin:1px 7px;cursor:pointer;border:none;background:none;width:calc(100% - 14px);text-align:left;transition:background .15s,color .15s;font-family:inherit}
+.sb-link:hover{background:rgba(255,255,255,.07);color:#fff}
+.sb-link.active{background:rgba(255,255,255,.13);color:#fff}
+.sb-link svg{opacity:.7;flex-shrink:0}
+.sb-link.active svg,.sb-link:hover svg{opacity:1}
+.sb-footer{padding:10px 14px;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:6px}
+.sb-logout{width:100%;padding:8px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.1);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;transition:.15s}
+.sb-logout:hover{background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.3);color:#f87171}
+
+/* ── Main area ── */
+.main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:52px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:var(--bg);position:sticky;top:0;z-index:50;gap:12px}
+.topbar-title{font-weight:700;font-size:15px;color:var(--ink)}
+.topbar-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.content{padding:20px;flex:1}
+.view{display:none}
+.view.active{display:block}
+
+/* ── Stat grid ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.stat-label{font-size:11px;font-weight:600;color:var(--gray-1);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.stat-val{font-size:26px;font-weight:700;color:var(--ink);line-height:1}
+.stat-sub{font-size:11px;color:var(--gray-2);margin-top:3px}
+.stat-period{font-size:10px;color:var(--gray-2);margin-top:8px;padding-top:7px;border-top:1px solid var(--line-2);display:flex;align-items:center;gap:3px;opacity:.8}
+
+/* ── Cards & panels ── */
+.panel{background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:20px}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap;gap:8px}
+.panel-title{font-weight:700;font-size:14px;color:var(--ink)}
+.panel-body{padding:16px}
+
+/* ── Table ── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead th{font-size:11px;font-weight:600;color:var(--gray-1);text-transform:uppercase;letter-spacing:.05em;padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);background:var(--bg-soft-2);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--line-2);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--bg-soft-2)}
+tbody td{padding:10px 12px;font-size:13px;color:var(--ink);vertical-align:middle}
+.td-sm{font-size:11px;color:var(--gray-2)}
+.td-mono{font-size:11px;color:var(--gray-1);font-variant-numeric:tabular-nums}
+
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-new{background:rgba(37,99,235,.1);color:#2563eb;border:1px solid rgba(37,99,235,.2)}
+.badge-review{background:rgba(245,158,11,.12);color:#b45309;border:1px solid rgba(245,158,11,.2)}
+.badge-confirmed{background:rgba(16,185,129,.1);color:#059669;border:1px solid rgba(16,185,129,.2)}
+.badge-done{background:rgba(107,114,128,.1);color:#4b5563;border:1px solid rgba(107,114,128,.2)}
+.badge-cancel{background:rgba(239,68,68,.08);color:#b91c1c;border:1px solid rgba(239,68,68,.15)}
+html.dark .badge-new{color:#60a5fa}
+html.dark .badge-review{color:#f59e0b}
+html.dark .badge-confirmed{color:#34d399}
+html.dark .badge-done{color:#9ca3af}
+html.dark .badge-cancel{color:#f87171}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:.15s;white-space:nowrap}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-2)}
+.btn-ghost{background:none;border:1px solid var(--line);color:var(--ink)}
+.btn-ghost:hover{border-color:var(--blue);color:var(--blue)}
+.btn-danger{background:none;border:1px solid rgba(239,68,68,.3);color:var(--red)}
+.btn-danger:hover{background:rgba(239,68,68,.08)}
+.btn-green{background:var(--green);color:#fff}
+.btn-green:hover{background:#059669}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-icon{padding:5px;border-radius:6px;line-height:0}
+
+/* ── Inputs ── */
+.input{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--bg);transition:.15s}
+.input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.sel{padding:7px 26px 7px 10px;border:1px solid var(--line);border-radius:8px;font-size:12px;font-family:inherit;color:var(--ink);background:var(--bg);cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%236b7280' d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;background-size:14px}
+.sel:focus{outline:none;border-color:var(--blue)}
+html.dark .input,.html.dark .sel{background:var(--bg-soft);border-color:rgba(255,255,255,.1);color:var(--ink)}
+html.dark .sel{background-color:var(--bg-soft)}
+
+/* ── Calendar ── */
+.cal-wrap{background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.cal-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line)}
+.cal-month{font-weight:700;font-size:15px;color:var(--ink)}
+.cal-nav{background:none;border:1px solid var(--line);color:var(--ink);width:32px;height:32px;border-radius:7px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:.15s;font-family:inherit}
+.cal-nav:hover:not(:disabled){border-color:var(--blue);color:var(--blue)}
+.cal-nav:disabled{opacity:.3;cursor:not-allowed}
+.cal-controls{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:12px;color:var(--gray-1);flex-wrap:wrap}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;padding:10px;background:var(--bg-soft)}
+.cal-dow{text-align:center;padding:5px 2px;font-size:10px;font-weight:600;color:var(--gray-2)}
+.cal-day{aspect-ratio:1;border-radius:7px;border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;background:var(--bg);transition:.15s;font-family:inherit;font-size:12px;font-weight:500;padding:2px;position:relative}
+.cal-day:hover:not(.cal-empty):not(.cal-past){border-color:var(--blue);box-shadow:0 0 0 2px rgba(37,99,235,.15)}
+.cal-empty{border:none;background:none;pointer-events:none}
+.cal-past{opacity:.3;cursor:not-allowed}
+.cal-today{border-color:var(--blue)!important;border-width:2px}
+.cal-today .c-num{color:var(--blue);font-weight:700}
+.cal-avail{border-color:rgba(16,185,129,.3);background:var(--bg)}
+.cal-limited{border-color:rgba(245,158,11,.45);background:rgba(254,243,199,.25)}
+.cal-booked{border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.06)}
+.cal-selected{box-shadow:0 0 0 2px #2563eb!important;border-color:#2563eb!important;background:rgba(37,99,235,.08)!important}
+.c-num{font-size:12px;line-height:1}
+.c-sym{font-size:10px;line-height:1;font-weight:700}
+.sym-a{color:#10b981}.sym-l{color:#f59e0b}.sym-b{color:#ef4444}
+.cal-legend{display:flex;gap:12px;padding:10px 16px;border-top:1px solid var(--line);font-size:11px;color:var(--gray-2);flex-wrap:wrap}
+.cal-leg{display:flex;align-items:center;gap:4px}
+html.dark .cal-day{background:var(--bg-soft);border-color:rgba(255,255,255,.08)}
+html.dark .cal-limited{background:rgba(245,158,11,.08)}
+html.dark .cal-booked{background:rgba(239,68,68,.08)}
+
+/* ── Pricing / Disposal / Capacity forms ── */
+.settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line-2);gap:12px}
+.settings-row:last-child{border-bottom:none}
+.settings-label{font-size:13px;font-weight:500;color:var(--ink)}
+.settings-sub{font-size:11px;color:var(--gray-2);margin-top:2px}
+.price-input{width:110px;padding:7px 10px;border:1px solid var(--line);border-radius:7px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--bg);text-align:right}
+.price-input:focus{outline:none;border-color:var(--blue)}
+html.dark .price-input{background:var(--bg-soft);border-color:rgba(255,255,255,.1)}
+
+/* ── Toggle switch ── */
+.toggle-wrap{display:flex;align-items:center;gap:8px}
+.toggle{position:relative;width:38px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;border-radius:11px;background:var(--gray-2);transition:.2s;cursor:pointer}
+.toggle input:checked~.toggle-track{background:var(--green)}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s;pointer-events:none}
+.toggle input:checked~.toggle-thumb{left:19px}
+
+/* ── Analytics charts ── */
+.chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:20px}
+.chart-card{background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;padding:16px}
+.chart-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:12px}
+.chart-canvas{width:100%;height:180px;display:block}
+
+/* ── Dashboard two-panel row ── */
+.dash-panels{display:flex;gap:16px;align-items:flex-start}
+.activity-panel{width:300px;flex-shrink:0}
+@media(max-width:900px){.dash-panels{flex-direction:column}.activity-panel{width:100%}}
+
+/* ── Activity feed ── */
+.activity-item{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line-2)}
+.activity-item:last-child{border-bottom:none;padding-bottom:0}
+.activity-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ai-blue{background:rgba(37,99,235,.1);color:var(--blue)}
+.ai-green{background:rgba(16,185,129,.1);color:var(--green)}
+.ai-yellow{background:rgba(245,158,11,.1);color:#b45309}
+.ai-purple{background:rgba(139,92,246,.1);color:#7c3aed}
+html.dark .ai-yellow{color:#f59e0b}
+html.dark .ai-purple{color:#a78bfa}
+.activity-body{flex:1;min-width:0}
+.activity-title{font-size:13px;font-weight:500;color:var(--ink);line-height:1.4}
+.activity-meta{font-size:11px;color:var(--gray-2);margin-top:2px}
+
+/* ── Quick actions ── */
+.qa-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:20px}
+.qa-btn{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--bg-soft);border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:13px;font-weight:500;color:var(--ink);font-family:inherit;transition:.15s;text-align:left;width:100%}
+.qa-btn:hover{border-color:var(--blue);background:rgba(37,99,235,.04)}
+.qa-btn svg{color:var(--blue);flex-shrink:0}
+html.dark .qa-btn:hover{background:rgba(37,99,235,.1)}
+
+/* ── Modal ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:24px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal-title{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:16px}
+.m-field{margin-bottom:12px}
+.m-label{display:block;font-size:12px;font-weight:600;color:var(--gray-1);margin-bottom:4px}
+.m-input,.m-sel,.m-ta{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--bg);transition:.15s;box-sizing:border-box}
+.m-input:focus,.m-sel:focus,.m-ta:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.m-ta{resize:vertical;min-height:64px}
+.m-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.m-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+html.dark .m-input,.html.dark .m-sel,.html.dark .m-ta{background:var(--bg-soft)}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:20px;right:20px;background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;pointer-events:none;max-width:280px}
+#toast.show{opacity:1;transform:translateY(0)}
+
+/* ── Empty state ── */
+.empty{text-align:center;padding:40px 20px;color:var(--gray-2)}
+.empty svg{opacity:.25;margin-bottom:10px}
+.empty p{font-size:14px}
+
+/* ── Search bar ── */
+.search-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.search-input{padding:7px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--bg);flex:1;min-width:160px}
+.search-input:focus{outline:none;border-color:var(--blue)}
+html.dark .search-input{background:var(--bg-soft);border-color:rgba(255,255,255,.1)}
+
+/* ── Session timer ── */
+.session-info{font-size:10px;color:rgba(255,255,255,.35);text-align:center;padding-bottom:4px}
+
+/* ── Mobile ── */
+.mob-btn{display:none;background:none;border:none;cursor:pointer;padding:5px;color:var(--ink);line-height:0}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-230px)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .mob-btn{display:flex}
+  .m-row{grid-template-columns:1fr}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .chart-grid{grid-template-columns:1fr}
+  .settings-grid{grid-template-columns:1fr}
+  .qa-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:400px){
+  .stat-grid,.qa-grid{grid-template-columns:1fr}
+}
+/* ── Reviews ── */
+.star-row{display:flex;gap:2px}
+.star-btn{background:none;border:none;cursor:pointer;font-size:24px;color:var(--gray-2);padding:0 3px;line-height:1;transition:color .1s;font-family:inherit}
+.star-btn.on{color:#f59e0b}
+.td-truncate{max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rev-preview{background:var(--bg-soft-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:12px}
+.rev-preview-lbl{font-size:10px;font-weight:600;color:var(--gray-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.rev-card-stars{font-size:15px;letter-spacing:2px;margin-bottom:4px}
+.rev-card-text{font-size:13px;color:var(--ink);line-height:1.55;font-style:italic;margin-bottom:6px}
+.rev-card-name{font-size:11px;font-weight:600;color:var(--gray-1)}
+/* Review status */
+.rev-st{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.rev-st-pending{background:rgba(245,158,11,.12);color:#b45309;border:1px solid rgba(245,158,11,.2)}
+.rev-st-approved{background:rgba(16,185,129,.1);color:#059669;border:1px solid rgba(16,185,129,.2)}
+.rev-st-rejected{background:rgba(239,68,68,.08);color:#b91c1c;border:1px solid rgba(239,68,68,.15)}
+.rev-pub-dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;flex-shrink:0}
+html.dark .rev-st-pending{color:#f59e0b}
+html.dark .rev-st-approved{color:#34d399}
+html.dark .rev-st-rejected{color:#f87171}
+/* Review stats bar */
+.rev-stats-bar{display:flex;gap:16px;padding:9px 16px;border-bottom:1px solid var(--line);font-size:12px;color:var(--gray-1);flex-wrap:wrap}
+.rev-stats-bar strong{color:var(--ink)}
+.rev-stats-bar .warn{color:#b45309}
+html.dark .rev-stats-bar .warn{color:#f59e0b}
+/* Public review form */
+#reviewPublicForm{min-height:100vh;display:none;align-items:center;justify-content:center;background:var(--navy);padding:20px;background-image:radial-gradient(circle at 20% 50%,rgba(29,158,117,.08) 0%,transparent 60%),radial-gradient(circle at 80% 20%,rgba(37,99,235,.06) 0%,transparent 50%)}
+.pub-verify-banner{display:flex;align-items:center;gap:10px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:10px 14px;margin-bottom:20px}
+.pub-verify-check{width:28px;height:28px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;font-weight:700}
+.pub-star-btn{background:none;border:none;cursor:pointer;font-size:28px;color:var(--gray-2);padding:0 4px;line-height:1;transition:color .1s;font-family:inherit}
+.pub-star-btn.on{color:#f59e0b}
+.pub-success{text-align:center;padding:10px 0 20px}
+.pub-success-icon{width:56px;height:56px;border-radius:50%;background:rgba(16,185,129,.15);color:var(--green);font-size:28px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.pub-success-title{font-size:18px;font-weight:700;color:var(--ink);margin-bottom:8px}
+.pub-success-sub{font-size:13px;color:var(--gray-1);line-height:1.6}
+.rev-tab-cnt{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:9px;font-size:10px;font-weight:700;padding:0 5px;background:rgba(245,158,11,.2);color:#b45309;margin-left:4px;vertical-align:middle}
+.rev-tab-cnt:empty{display:none}
+html.dark .rev-tab-cnt{color:#f59e0b}
+/* ── Hero Manager ── */
+.hero-layout{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}
+@media(max-width:900px){.hero-layout{grid-template-columns:1fr}}
+.hero-prev-card{background:linear-gradient(135deg,#0a1f44 0%,#1a3a6e 100%);border-radius:12px;padding:28px 22px;min-height:190px;display:flex;flex-direction:column;justify-content:center}
+.hero-prev-headline{font-size:17px;font-weight:700;color:#fff;line-height:1.35;margin-bottom:8px;word-break:break-word}
+.hero-prev-sub{font-size:12px;color:rgba(255,255,255,.75);line-height:1.55;margin-bottom:18px;word-break:break-word}
+.hero-prev-btns{display:flex;gap:8px;flex-wrap:wrap}
+.hero-prev-btn{padding:7px 14px;border-radius:7px;font-size:11px;font-weight:600;white-space:nowrap}
+.hero-prev-btn-p{background:#1D9E75;color:#fff}
+.hero-prev-btn-s{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)}
+.hero-save-ind{font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;margin-left:6px;font-weight:500}
+/* ── Hero Editor extras ── */
+.hbadge-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.hbadge-inp{flex:1;padding:7px 10px;border:1px solid var(--line);border-radius:7px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--bg)}
+.hbadge-inp:focus{outline:none;border-color:var(--blue)}
+.hhist-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line-2)}
+.hhist-item:last-child{border-bottom:none;padding-bottom:0}
+.hhist-meta{flex:1;min-width:0}
+.hhist-time{font-size:12px;font-weight:600;color:var(--ink)}
+.hhist-snap{font-size:11px;color:var(--gray-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hmpick{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:none;align-items:center;justify-content:center;padding:20px}
+.hmpick.open{display:flex}
+.hmpick-box{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:20px;max-width:560px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.hmpick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:12px}
+.hmpick-img{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:.15s;display:block}
+.hmpick-img:hover{border-color:var(--blue)}
+/* ── Services Editor ── */
+.svc-prev-wrap{background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;padding:18px;min-height:260px;max-height:600px;overflow-y:auto}
+.svc-prev-eyebrow{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--gray-2);text-transform:uppercase;margin-bottom:5px}
+.svc-prev-title{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:3px;line-height:1.3}
+.svc-prev-lead{font-size:11px;color:var(--gray-2);margin-bottom:12px;line-height:1.55}
+.svc-prev-card{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:7px}
+.svc-prev-card:last-child{margin-bottom:0}
+.svc-prev-card-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.05em;padding:2px 7px;border-radius:12px;background:rgba(37,99,235,.1);color:#2563eb;border:1px solid rgba(37,99,235,.2);margin-bottom:6px}
+.svc-prev-card-title{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:3px}
+.svc-prev-card-desc{font-size:10px;color:var(--gray-2);line-height:1.5;margin-bottom:4px}
+.svc-prev-card-cta{font-size:10px;color:var(--blue);font-weight:600}
+.svc-prev-card-feat{background:linear-gradient(135deg,#0a1f44 0%,#1a3a6e 100%);border-color:transparent}
+.svc-prev-card-feat .svc-prev-card-badge{background:rgba(239,68,68,.2);color:#f87171;border-color:rgba(239,68,68,.3)}
+.svc-prev-card-feat .svc-prev-card-title{color:#fff}
+.svc-prev-card-feat .svc-prev-card-desc{color:rgba(255,255,255,.65)}
+.svc-save-ind{font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;margin-left:6px;font-weight:500}
+/* ── Reviews Editor ── */
+.rev-save-ind{font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;margin-left:6px;font-weight:500}
+.rev-prev-wrap{background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;padding:18px;min-height:260px;max-height:580px;overflow-y:auto}
+.rev-prev-rcard{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:7px}
+.rev-prev-rcard:last-child{margin-bottom:0}
+.rev-prev-stars{color:#f59e0b;font-size:11px;letter-spacing:1px;margin-bottom:4px}
+.rev-prev-headline{font-size:11px;font-weight:700;color:var(--ink);margin-bottom:3px;line-height:1.4}
+.rev-prev-text{font-size:10px;color:var(--gray-2);line-height:1.5;margin-bottom:5px;font-style:italic}
+.rev-prev-footer{font-size:10px;font-weight:600;color:var(--gray-1)}
+.rev-prev-gmb{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:8px;margin-bottom:12px}
+.rev-prev-gmb-g{width:22px;height:22px;border-radius:5px;background:#4285f4;color:#fff;font-size:13px;font-weight:900;font-family:Georgia,serif;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rev-prev-gmb-score{font-size:17px;font-weight:700;color:var(--ink);line-height:1}
+.rev-prev-gmb-stars{color:#f59e0b;font-size:11px}
+.rev-prev-gmb-meta{font-size:9px;color:var(--gray-2)}
+/* ── FAQ Editor ── */
+.faq-save-ind{font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;margin-left:6px;font-weight:500}
+.faq-prev-wrap{background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;padding:18px;min-height:260px;max-height:580px;overflow-y:auto}
+.faq-prev-item{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:7px}
+.faq-prev-item:last-child{margin-bottom:0}
+.faq-prev-q{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:4px;line-height:1.4}
+.faq-prev-a{font-size:10px;color:var(--gray-2);line-height:1.55}
+/* ── Company Editor ── */
+.company-save-ind{font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;margin-left:6px;font-weight:500}
+.comp-prev-wrap{background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;padding:18px;min-height:260px;max-height:580px;overflow-y:auto}
+.comp-prev-row{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-2);align-items:flex-start}
+.comp-prev-row:last-child{border-bottom:none;padding-bottom:0}
+.comp-prev-dt{font-size:11px;font-weight:600;color:var(--gray-1);width:90px;flex-shrink:0;padding-top:1px;text-transform:uppercase;letter-spacing:.04em}
+.comp-prev-dd{font-size:12px;color:var(--ink);flex:1;line-height:1.5}
+/* ── Footer Editor ── */
+.footer-save-ind{font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;margin-left:6px;font-weight:500}
+.footer-prev-wrap{background:linear-gradient(135deg,#0a1f44 0%,#1a3a6e 100%);border-radius:12px;padding:18px;min-height:260px;max-height:580px;overflow-y:auto}
+.footer-prev-brand-desc{font-size:10px;color:rgba(255,255,255,.55);margin:4px 0 12px;line-height:1.5}
+.footer-prev-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.footer-prev-col-h4{font-size:10px;font-weight:700;color:#fff;margin-bottom:5px;letter-spacing:.05em;text-transform:uppercase}
+.footer-prev-link{font-size:9px;color:rgba(255,255,255,.55);margin-bottom:2px}
+.footer-prev-bottom{border-top:1px solid rgba(255,255,255,.1);padding-top:8px;font-size:9px;color:rgba(255,255,255,.3);line-height:1.6}
+.footer-link-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.footer-link-row:last-child{margin-bottom:0}
+.footer-link-inp{flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px;font-family:inherit;color:var(--ink);background:var(--bg)}
+.footer-link-inp:focus{outline:none;border-color:var(--blue)}
+.footer-link-inp.href{flex:0.7;font-size:11px;color:var(--gray-1)}
+/* ── Backup Center ── */
+.import-msg{font-size:11px;margin-top:5px;font-weight:500;min-height:14px}
+.import-ok{color:var(--green)}
+.import-err{color:var(--red)}
+
+/* ── Security page ── */
+.sec-pass-msg{font-size:12px;min-height:18px;margin-bottom:10px;font-weight:500}
+.sec-pass-ok{color:var(--green)}
+.sec-pass-err{color:var(--red)}
+/* Security score ring */
+.sec-score-panel .panel-body{padding:20px 22px}
+.sec-ring-wrap{position:relative;width:76px;height:76px;flex-shrink:0}
+.sec-ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.sec-check-list{display:flex;flex-direction:column;gap:6px}
+.sec-check-item{display:flex;align-items:flex-start;gap:7px;font-size:12.5px;color:var(--ink);line-height:1.4}
+/* Avatar */
+.sec-avatar{width:40px;height:40px;border-radius:50%;color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+/* Session progress */
+.sec-prog-track{height:6px;background:var(--bg-soft-2);border-radius:3px;overflow:hidden}
+.sec-prog-bar{height:100%;border-radius:3px;transition:width .4s ease}
+/* Password strength */
+.sec-strength-wrap{display:flex;align-items:center;gap:8px}
+.sec-strength-track{flex:1;height:5px;background:var(--bg-soft-2);border-radius:3px;overflow:hidden}
+.sec-strength-bar{height:100%;border-radius:3px;transition:width .3s,background .3s}
+.sec-strength-label{font-size:11px;font-weight:600;min-width:60px}
+.login-err-lock{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.25);color:#92400e}
+html.dark .login-err-lock{color:#f59e0b}
+.hc-banner{max-width:380px;width:100%;margin-top:12px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.28);border-radius:12px;padding:12px 14px;color:#92400e}
+html.dark .hc-banner{background:rgba(245,158,11,.07);color:#fbbf24;border-color:rgba(245,158,11,.22)}
+
+/* ── In-App Health Banner ── */
+#hmHealthBanner{display:none}
+.hmhb-inner{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:12px;font-weight:500;line-height:1.4;flex-wrap:wrap}
+#hmHealthBanner.hmhb-healthy .hmhb-inner{background:rgba(16,185,129,.1);border-bottom:1px solid rgba(16,185,129,.25);color:#065f46}
+#hmHealthBanner.hmhb-warning .hmhb-inner{background:rgba(245,158,11,.1);border-bottom:1px solid rgba(245,158,11,.28);color:#92400e}
+#hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.08);border-bottom:1px solid rgba(239,68,68,.22);color:#991b1b}
+html.dark #hmHealthBanner.hmhb-healthy .hmhb-inner{background:rgba(16,185,129,.08);color:#34d399;border-color:rgba(16,185,129,.2)}
+html.dark #hmHealthBanner.hmhb-warning .hmhb-inner{background:rgba(245,158,11,.07);color:#fbbf24;border-color:rgba(245,158,11,.22)}
+html.dark #hmHealthBanner.hmhb-error   .hmhb-inner{background:rgba(239,68,68,.07);color:#f87171;border-color:rgba(239,68,68,.2)}
+.hmhb-dismiss{margin-left:auto;background:none;border:none;cursor:pointer;font-size:18px;line-height:1;opacity:.55;color:inherit;padding:0 2px;flex-shrink:0}
+.hmhb-dismiss:hover{opacity:.9}
+.hmhb-link{background:none;border:none;cursor:pointer;font-size:11px;font-weight:700;color:inherit;text-decoration:underline;padding:0;font-family:inherit}
+
+/* ── Customer Management ── */
+.cust-avatar{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--blue-2));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0;user-select:none}
+.cust-avatar-lg{width:52px;height:52px;border-radius:14px;font-size:22px}
+.cust-profile-hdr{display:flex;align-items:center;gap:14px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.cust-detail-grid{background:var(--bg-soft);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:16px}
+.cust-detail-row{display:flex;align-items:flex-start;padding:9px 14px;border-bottom:1px solid var(--line-2);gap:12px}
+.cust-detail-row:last-child{border-bottom:none}
+.cust-detail-label{font-size:11px;font-weight:600;color:var(--gray-1);width:88px;flex-shrink:0;padding-top:1px;text-transform:uppercase;letter-spacing:.04em}
+.cust-detail-val{font-size:13px;color:var(--ink);flex:1;word-break:break-all}
+.cust-hist-title{font-weight:700;font-size:13px;color:var(--ink);margin-bottom:10px}
+.cust-stats-bar{padding:9px 16px;border-bottom:1px solid var(--line);display:flex;gap:18px;font-size:12px;color:var(--gray-1);flex-wrap:wrap}
+.cust-stats-bar strong{color:var(--ink)}
+
+/* ── Media Library ── */
+.media-tabs{display:flex;border-bottom:1px solid var(--line);margin-bottom:16px}
+.media-tab{padding:10px 20px;font-size:13px;font-weight:600;color:var(--gray-1);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;font-family:inherit;transition:.15s}
+.media-tab:hover:not(.active){color:var(--ink)}
+.media-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.media-upload-zone{border:2px dashed var(--line);border-radius:12px;padding:28px 20px;text-align:center;cursor:pointer;transition:.2s;margin-bottom:10px;background:var(--bg-soft)}
+.media-upload-zone:hover,.media-upload-zone.drag-over{border-color:var(--blue);background:rgba(37,99,235,.04)}
+.media-upload-zone p{font-size:13px;color:var(--gray-1);margin:8px 0 4px}
+.media-upload-zone span{font-size:11px;color:var(--gray-2)}
+.media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:14px}
+.media-card{background:var(--bg-soft);border:1px solid var(--line);border-radius:10px;overflow:hidden;transition:border-color .15s}
+.media-card:hover{border-color:var(--blue)}
+.media-thumb{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;background:var(--bg-soft-2);cursor:pointer}
+.media-thumb-vid{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;background:var(--bg-soft-2);cursor:pointer}
+.media-card-body{padding:10px}
+.media-card-name{font-size:12px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
+.media-card-meta{font-size:11px;color:var(--gray-2);margin-bottom:6px}
+.media-card-actions{display:flex;gap:5px}
+.media-preview-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:2000;display:none;align-items:center;justify-content:center;padding:20px}
+.media-preview-overlay.open{display:flex}
+.media-preview-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);color:#fff;width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;font-family:inherit;line-height:1}
+.media-preview-close:hover{background:rgba(255,255,255,.22)}
+.media-preview-img{max-width:90vw;max-height:82vh;border-radius:8px;display:block;object-fit:contain;box-shadow:0 8px 40px rgba(0,0,0,.6)}
+.media-preview-vid{max-width:90vw;max-height:82vh;border-radius:8px;display:block;box-shadow:0 8px 40px rgba(0,0,0,.6)}
+.media-preview-name{color:rgba(255,255,255,.7);font-size:13px;font-weight:500;margin-top:12px;text-align:center;max-width:80vw;word-break:break-all}
+.media-preview-meta{color:rgba(255,255,255,.4);font-size:11px;margin-top:4px;text-align:center}
+/* Media toolbar */
+.media-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.media-search-wrap{flex:1;min-width:160px;position:relative;display:flex;align-items:center}
+.media-search-wrap svg{position:absolute;left:9px;pointer-events:none;color:var(--gray-2)}
+.media-search{width:100%;padding:7px 10px 7px 30px;border:1px solid var(--line);border-radius:8px;background:var(--bg-soft);font-size:12.5px;color:var(--ink);outline:none;font-family:inherit}
+.media-search:focus{border-color:var(--blue)}
+.media-toggle-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg-soft);font-size:12px;color:var(--gray-1);cursor:pointer;white-space:nowrap;transition:.15s;font-family:inherit}
+.media-toggle-btn:hover{border-color:var(--blue);color:var(--blue)}
+.media-toggle-btn.on{background:rgba(37,99,235,.08);border-color:var(--blue);color:var(--blue)}
+.media-toggle-dot{width:26px;height:14px;border-radius:9px;background:var(--gray-2);position:relative;transition:.2s;flex-shrink:0}
+.media-toggle-btn.on .media-toggle-dot{background:var(--blue)}
+.media-toggle-dot::after{content:'';position:absolute;width:10px;height:10px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.2s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.media-toggle-btn.on .media-toggle-dot::after{left:14px}
+/* Folder pills */
+.media-folder-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:12px;min-height:30px}
+.media-folder-pill{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border:1px solid var(--line);border-radius:20px;font-size:12px;cursor:pointer;transition:.15s;white-space:nowrap;background:var(--bg-soft);color:var(--gray-1);font-family:inherit;line-height:1.2}
+.media-folder-pill:hover:not(.active){border-color:var(--blue);color:var(--blue)}
+.media-folder-pill.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.media-folder-add{border-style:dashed;color:var(--blue);background:transparent}
+.media-folder-add:hover{background:rgba(37,99,235,.06)!important}
+.media-folder-pill-opts,.media-folder-pill-del{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;font-size:10px;line-height:1;padding:0;border:none;cursor:pointer;background:rgba(0,0,0,.1);color:inherit;font-family:inherit;transition:.15s;flex-shrink:0}
+.media-folder-pill-opts:hover,.media-folder-pill-del:hover{background:rgba(0,0,0,.25)!important;color:inherit}
+.media-folder-pill.active .media-folder-pill-opts,.media-folder-pill.active .media-folder-pill-del{background:rgba(255,255,255,.22)}
+/* Stats bar */
+.media-stats-bar{font-size:11.5px;color:var(--gray-2);margin-bottom:10px;padding:0 2px}
+/* Card badges */
+.media-card-badges{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
+.media-badge{font-size:10px;border-radius:4px;padding:1px 5px;display:inline-block;line-height:1.6;white-space:nowrap}
+.media-badge-folder{background:rgba(37,99,235,.08);color:var(--blue);max-width:80px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+.media-badge-compress{background:rgba(16,185,129,.1);color:var(--green)}
+.media-badge-webp{background:rgba(245,158,11,.1);color:var(--yellow)}
+/* Folder select in card */
+.media-folder-sel{width:100%;margin-bottom:6px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg-soft);font-size:11.5px;color:var(--gray-1);cursor:pointer;font-family:inherit;outline:none}
+.media-folder-sel:focus{border-color:var(--blue)}
+/* Folder modal input */
+.media-folder-input{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;color:var(--ink);background:var(--bg-soft);outline:none;font-family:inherit;margin-top:6px}
+.media-folder-input:focus{border-color:var(--blue)}
+@media(max-width:768px){.media-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:380px){.media-grid{grid-template-columns:1fr}}
+
+/* ── Changelog v2 ── */
+.cl-header{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px;padding:14px 16px;background:var(--bg-soft);border:1px solid var(--line);border-radius:12px}
+.cl-header-info{flex:1;min-width:200px}
+.cl-header-title{font-weight:600;font-size:14px;color:var(--ink);margin-bottom:4px}
+.cl-header-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cl-stats{font-size:12px;color:var(--gray-1);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.cl-dot{color:var(--gray-2)}
+.cl-stat-feat{color:#2563eb;font-weight:500}
+.cl-stat-imp{color:#059669;font-weight:500}
+.cl-stat-fix{color:#b91c1c;font-weight:500}
+.cl-type-filters{display:flex;gap:4px;flex-wrap:wrap}
+.cl-type-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--line);border-radius:20px;font-size:12px;cursor:pointer;background:var(--bg-soft);color:var(--gray-1);font-family:inherit;transition:.15s;white-space:nowrap}
+.cl-type-btn:hover{border-color:var(--blue);color:var(--blue)}
+.cl-type-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.cl-pill{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:17px;padding:0 4px;border-radius:9px;font-size:10px;font-weight:700;background:var(--bg-soft-2);color:var(--gray-2)}
+.cl-type-btn.active .cl-pill{background:rgba(255,255,255,.25);color:#fff}
+.cl-released-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;margin-top:20px}
+.cl-section-label{font-size:11px;font-weight:700;color:var(--gray-1);text-transform:uppercase;letter-spacing:.07em}
+.cl-text-btn{font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;font-family:inherit}
+.cl-text-btn:hover{text-decoration:underline}
+/* Timeline */
+.cl-timeline{position:relative;padding-left:24px}
+.cl-timeline::before{content:'';position:absolute;left:5px;top:14px;bottom:14px;width:2px;background:var(--line);border-radius:1px}
+.cl-ver{position:relative;margin-bottom:12px}
+.cl-ver::before{content:'';position:absolute;left:-21px;top:17px;width:12px;height:12px;border-radius:50%;background:var(--bg-soft);border:2px solid var(--gray-2);transition:.2s;z-index:1}
+.cl-ver.cl-ver-latest::before{background:var(--blue);border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+.cl-ver-head{display:flex;align-items:center;gap:9px;padding:10px 14px;background:var(--bg-soft);border:1px solid var(--line);border-radius:10px;cursor:pointer;flex-wrap:wrap;user-select:none;transition:background .15s}
+.cl-ver.cl-ver-collapsed .cl-ver-head{border-radius:10px}
+.cl-ver:not(.cl-ver-collapsed) .cl-ver-head{border-radius:10px 10px 0 0;border-bottom-color:var(--line-2)}
+.cl-ver-head:hover{background:var(--bg-soft-2)}
+.cl-ver-num{font-size:14px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
+.cl-latest-badge{padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.25)}
+.cl-ver-date{font-size:12px;color:var(--gray-2)}
+.cl-ver-count{font-size:11.5px;color:var(--gray-2);margin-left:auto;padding-right:4px}
+.cl-chevron{color:var(--gray-2);flex-shrink:0;transition:transform .2s}
+.cl-chevron.collapsed{transform:rotate(-90deg)}
+.cl-ver-body{border:1px solid var(--line);border-top:none;border-radius:0 0 10px 10px;overflow:hidden}
+.cl-entry{display:flex;align-items:flex-start;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line-2)}
+.cl-entry:last-child{border-bottom:none}
+.cl-badge{flex-shrink:0;margin-top:1px;display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap}
+.cl-entry-text{font-size:13px;color:var(--ink);line-height:1.55}
+.cl-empty{text-align:center;padding:20px;color:var(--gray-2);font-size:13px}
+.cl-mark{background:rgba(245,158,11,.25);color:var(--ink);border-radius:2px;padding:0 1px}
+/* What's Next */
+.cl-next-panel{background:var(--bg-soft);border:1px solid rgba(139,92,246,.25);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.cl-next-head{display:flex;align-items:center;gap:8px;padding:12px 16px;background:rgba(139,92,246,.04);cursor:pointer;flex-wrap:wrap;user-select:none;transition:background .15s}
+.cl-next-head:hover{background:rgba(139,92,246,.08)}
+.cl-next-title{font-weight:600;font-size:13px;color:#7c3aed}
+.cl-next-count{font-size:12px;color:var(--gray-2)}
+.cl-priority-summary{display:flex;align-items:center;gap:6px;font-size:11.5px;margin-left:4px}
+.cl-next-body{padding:4px 0}
+.cl-next-item{display:flex;align-items:flex-start;gap:10px;padding:9px 16px;border-bottom:1px solid var(--line-2)}
+.cl-next-item:last-child{border-bottom:none}
+@media(max-width:768px){.cl-header{flex-direction:column}.cl-ver-num{font-size:13px}}
+
+/* ── SEO Center ── */
+.seo-section-head{font-size:11.5px;font-weight:700;color:var(--gray-1);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.seo-char-count{font-size:11px;font-weight:400;color:var(--gray-2);margin-left:6px}
+.seo-hint{font-size:11.5px;margin-top:4px;font-weight:500}
+.seo-hint-ok{color:var(--green)}
+.seo-hint-warn{color:var(--yellow)}
+.seo-textarea{height:80px;resize:vertical;font-size:13px}
+.seo-schema-textarea{height:140px;resize:vertical;font-size:12px;font-family:monospace}
+.seo-page-score{display:flex;align-items:center;gap:8px;cursor:pointer;padding:3px 6px;border-radius:6px;transition:background .15s}
+.seo-page-score:hover{background:var(--bg-soft-2)}
+.seo-bar-track{flex:1;height:6px;background:var(--bg-soft-2);border-radius:3px;overflow:hidden}
+.seo-og-preview{max-width:100%;max-height:80px;border-radius:6px;border:1px solid var(--line);display:block}
+
+/* ── Blog Manager ── */
+.blog-card-thumb{width:100%;height:140px;object-fit:cover;display:block;background:var(--bg-soft-2)}
+.blog-card-thumb-empty{width:100%;height:140px;display:flex;align-items:center;justify-content:center;background:var(--bg-soft-2)}
+.blog-card{background:var(--bg-soft);border:1px solid var(--line);border-radius:10px;overflow:hidden;transition:border-color .15s}
+.blog-card:hover{border-color:var(--blue)}
+.blog-card-body{padding:12px}
+.blog-card-title{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.blog-card-excerpt{font-size:12.5px;color:var(--gray-1);margin-bottom:8px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.blog-card-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.blog-card-date{font-size:11.5px;color:var(--gray-2);margin-left:auto}
+.blog-card-actions{display:flex;gap:5px;flex-wrap:wrap}
+.blog-tag{font-size:10px;padding:2px 7px;border-radius:4px;background:var(--bg-soft-2);color:var(--gray-1);display:inline-block}
+.blog-cat{background:rgba(37,99,235,.08);color:var(--blue)}
+.blog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+/* Blog editor */
+.blog-editor-wrap{display:flex;flex-direction:column;height:calc(100vh - 160px);min-height:500px}
+.blog-editor-header{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--line)}
+.blog-editor-body{display:flex;gap:16px;flex:1;overflow:hidden;min-height:0}
+.blog-editor-main{flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;overflow-y:auto}
+.blog-editor-sidebar{width:220px;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column;gap:0}
+.blog-title-input{width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;font-size:18px;font-weight:700;color:var(--ink);background:var(--bg-soft);outline:none;font-family:inherit}
+.blog-title-input:focus{border-color:var(--blue)}
+.blog-slug-row{display:flex;align-items:center;gap:6px;padding:4px 0}
+.blog-slug-input{flex:1;padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--gray-1);background:var(--bg-soft);outline:none;font-family:monospace}
+.blog-content-input{flex:1;padding:12px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;color:var(--ink);background:var(--bg-soft);outline:none;font-family:monospace;resize:none;line-height:1.6;min-height:320px}
+.blog-content-input:focus{border-color:var(--blue)}
+.blog-preview-pane{flex:1;padding:16px;border:1px solid var(--line);border-radius:8px;background:var(--bg-soft);overflow-y:auto;min-height:320px;line-height:1.65}
+.blog-md-hint{font-size:11px;color:var(--gray-2);padding:4px 2px}
+.blog-sidebar-section{padding:12px;border-bottom:1px solid var(--line-2)}
+.blog-sidebar-title{font-size:11.5px;font-weight:700;color:var(--gray-1);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.blog-feat-preview{max-width:100%;max-height:100px;border-radius:6px;border:1px solid var(--line);display:block}
+@media(max-width:768px){.blog-editor-body{flex-direction:column}.blog-editor-sidebar{width:100%}.blog-grid{grid-template-columns:1fr}}
+
+/* ── Website Settings ── */
+
+/* ── BI Dashboard — Phase 13 ── */
+.bi-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:768px){.bi-row{grid-template-columns:1fr}}
+.kpi-growth{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;margin-top:6px;padding-top:6px;border-top:1px solid var(--line-2)}
+.kpi-up{color:var(--green)}.kpi-down{color:var(--red)}.kpi-flat{color:var(--gray-2)}
+.bi-chart-canvas{width:100%;height:160px;display:block}
+.bi-section-header{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gray-2);margin:4px 0 12px}
+.bi-metric-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line-2)}
+.bi-metric-row:last-child{border-bottom:none;padding-bottom:0}
+.bi-metric-label{font-size:12px;color:var(--gray-1)}
+.bi-metric-val{font-size:13px;font-weight:700;color:var(--ink)}
+.bi-metric-val.green{color:var(--green)}.bi-metric-val.blue{color:var(--blue)}.bi-metric-val.red{color:var(--red)}
+.bi-trend-btns{display:flex;gap:4px;margin-bottom:12px}
+.bi-trend-btn{padding:4px 10px;border:1px solid var(--line);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:none;color:var(--gray-1);font-family:inherit;transition:.12s}
+.bi-trend-btn:hover{border-color:var(--blue);color:var(--blue)}
+.bi-trend-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.bi-svc-bar-wrap{margin-bottom:8px}
+.bi-svc-bar-label{display:flex;justify-content:space-between;font-size:11px;color:var(--gray-1);margin-bottom:3px}
+.bi-svc-bar-track{height:7px;background:var(--bg-soft-2);border-radius:4px;overflow:hidden}
+.bi-svc-bar-fill{height:100%;border-radius:4px;background:var(--blue);transition:width .4s}
+.bi-svc-bar-fill.c1{background:#2563eb}.bi-svc-bar-fill.c2{background:#10b981}.bi-svc-bar-fill.c3{background:#f59e0b}.bi-svc-bar-fill.c4{background:#8b5cf6}.bi-svc-bar-fill.c5{background:#ef4444}
+.bi-export-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+.bi-customer-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line-2)}
+.bi-customer-row:last-child{border-bottom:none;padding-bottom:0}
+.bi-customer-avatar{width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.bi-customer-name{font-size:12px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bi-customer-sub{font-size:11px;color:var(--gray-2)}
+.bi-occ-bar{display:flex;height:22px;border-radius:6px;overflow:hidden;margin-bottom:12px;background:var(--bg-soft-2)}
+.bi-occ-seg{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;transition:width .4s;white-space:nowrap;overflow:hidden}
+</style>
+<script src="js/utils/brandSize.js"></script><!-- single-source logo sizing -->
+<!-- V2 dark identity (warm-olive/orange re-palette of admin's built-in dark) -->
+<link rel="stylesheet" href="css/v2-tokens.css?v=1" />
+<link rel="stylesheet" href="css/admin-dark-v2.css?v=1" />
+<link rel="stylesheet" href="css/admin-experience-v2.css?v=4" />
+</head>
+<body>
+<script>(function(){var t=localStorage.getItem('hm_theme');if(t==='dark'||(t===null&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');})()</script>
+
+<!-- ── Public Review Submission Form (accessible via admin.html#review) ── -->
+<div id="reviewPublicForm">
+  <div class="login-card" style="max-width:460px">
+    <div class="login-brand">
+      <div class="login-mark"><img src="/icons/icon.svg" alt="Hello Moving" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;display:block"></div>
+      <div><div class="login-name">Hello Moving</div><div class="login-sub">カスタマーレビュー</div></div>
+    </div>
+
+    <!-- Step 1: Verify booking -->
+    <div id="pubStep1">
+      <div class="login-title">レビューを投稿する</div>
+      <div class="login-title-sub">完了した引越しの予約IDを入力してください</div>
+      <div class="login-field">
+        <label class="login-label"><span>予約ID</span><span style="color:var(--red);font-weight:400">必須</span></label>
+        <input class="login-input" id="pubBookingId" type="text" placeholder="HM-20260604-XXXX" autocomplete="off" />
+        <div class="login-field-hint" id="pubBookingHint" style="display:none"></div>
+      </div>
+      <button class="login-btn" id="pubVerifyBtn" type="button" onclick="verifyPubBooking()">
+        <div class="login-spinner"></div>
+        <span class="login-btn-text">予約を確認する</span>
+      </button>
+    </div>
+
+    <!-- Step 2: Write review -->
+    <div id="pubStep2" style="display:none">
+      <div class="pub-verify-banner">
+        <div class="pub-verify-check">✓</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--ink)" id="pubVerifiedName"></div>
+          <div style="font-size:11px;color:var(--gray-2)" id="pubVerifiedSvc"></div>
+        </div>
+      </div>
+      <div class="login-field">
+        <label class="login-label"><span>お名前</span><span style="color:var(--red);font-weight:400">必須</span></label>
+        <input class="login-input" id="pubName" type="text" placeholder="山田 太郎" />
+      </div>
+      <div class="login-field">
+        <label class="login-label">評価</label>
+        <div style="display:flex;gap:2px;margin-top:4px">
+          <button type="button" class="pub-star-btn on" onclick="setPubStars(1)">★</button>
+          <button type="button" class="pub-star-btn on" onclick="setPubStars(2)">★</button>
+          <button type="button" class="pub-star-btn on" onclick="setPubStars(3)">★</button>
+          <button type="button" class="pub-star-btn on" onclick="setPubStars(4)">★</button>
+          <button type="button" class="pub-star-btn on" onclick="setPubStars(5)">★</button>
+        </div>
+      </div>
+      <div class="login-field">
+        <label class="login-label"><span>レビュー内容</span><span style="color:var(--red);font-weight:400">必須</span></label>
+        <textarea class="login-input" id="pubText" rows="4" placeholder="サービスについてのご感想をお聞かせください..." style="resize:vertical;min-height:90px"></textarea>
+        <div class="login-field-hint" id="pubTextHint" style="display:none">レビュー内容を入力してください</div>
+      </div>
+      <button class="login-btn" id="pubSubmitBtn" type="button" onclick="submitPubReview()">
+        <div class="login-spinner"></div>
+        <span class="login-btn-text">レビューを送信する</span>
+      </button>
+    </div>
+
+    <!-- Success state -->
+    <div id="pubSuccess" style="display:none">
+      <div class="pub-success">
+        <div class="pub-success-icon">✓</div>
+        <div class="pub-success-title">ありがとうございます！</div>
+        <div class="pub-success-sub">レビューを受け付けました。<br>管理者が確認後、サイトに掲載いたします。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Login Screen ── -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-mark"><img src="/icons/icon.svg" alt="Hello Moving" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;display:block"></div>
+      <div>
+        <div class="login-name">Hello Moving</div>
+        <div class="login-sub">ADMIN DASHBOARD</div>
+      </div>
+    </div>
+    <div class="login-title">ログイン</div>
+    <div class="login-title-sub">管理者アカウントでログインしてください</div>
+
+    <div class="login-field">
+      <label class="login-label" for="loginEmail">
+        <span>メールアドレス</span>
+        <span style="color:var(--red);font-weight:400">必須</span>
+      </label>
+      <input class="login-input" id="loginEmail" type="email"
+        placeholder="admin@hello-moving.com" autocomplete="email" />
+      <div class="login-field-hint" id="loginEmailHint">メールアドレスを入力してください</div>
+    </div>
+
+    <div class="login-field">
+      <label class="login-label" for="loginPass">
+        <span>パスワード</span>
+        <button class="login-forgot" type="button" onclick="handleForgot()">パスワードを忘れた方</button>
+      </label>
+      <input class="login-input" id="loginPass" type="password"
+        placeholder="••••••••" autocomplete="current-password" />
+      <div class="login-field-hint" id="loginPassHint">パスワードを入力してください</div>
+    </div>
+
+    <div class="login-remember">
+      <input type="checkbox" id="rememberMe" />
+      <label for="rememberMe">このデバイスでログイン状態を保持する</label>
+    </div>
+
+    <button class="login-btn" id="loginBtn" type="button">
+      <div class="login-spinner"></div>
+      <span class="login-btn-text">ログイン</span>
+    </button>
+    <div class="login-err" id="loginErr">
+      メールアドレスまたはパスワードが正しくありません
+    </div>
+  </div>
+  <div id="hcBanner" class="hc-banner" style="display:none"></div>
+</div>
+
+<!-- ── Force Password Change ── -->
+<div id="forceChangeScreen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div class="login-card" style="max-width:400px">
+    <div class="login-brand">
+      <div class="login-mark"><img src="/icons/icon.svg" alt="Hello Moving" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;display:block"></div>
+      <div>
+        <div class="login-name">Hello Moving</div>
+        <div class="login-sub">ADMIN DASHBOARD</div>
+      </div>
+    </div>
+
+    <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:12px 14px;margin-bottom:22px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+        <svg viewBox="0 0 24 24" width="16" height="16" style="flex-shrink:0"><path fill="var(--red)" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        <span style="font-weight:700;font-size:13px;color:var(--red)">初期パスワードの変更が必要です</span>
+      </div>
+      <div style="font-size:12px;color:var(--ink-2);line-height:1.6">
+        現在、デフォルトのパスワードが使用されています。セキュリティ保護のため、新しいパスワードを設定するまで管理画面にアクセスできません。
+      </div>
+    </div>
+
+    <div class="login-field">
+      <label class="login-label" for="fcNewPass">
+        <span>新しいパスワード</span>
+        <span style="color:var(--gray-2);font-weight:400;font-size:11px">8文字以上</span>
+      </label>
+      <input class="login-input" id="fcNewPass" type="password"
+        placeholder="新しいパスワード（8文字以上）" autocomplete="new-password" />
+    </div>
+
+    <div class="login-field">
+      <label class="login-label" for="fcConfirmPass">確認用パスワード</label>
+      <input class="login-input" id="fcConfirmPass" type="password"
+        placeholder="パスワードを再入力" autocomplete="new-password" />
+    </div>
+
+    <div class="sec-pass-msg" id="fcMsg" style="min-height:18px;margin-bottom:10px"></div>
+
+    <button class="login-btn" id="fcBtn" type="button" onclick="doForceChange()">
+      <div class="login-spinner"></div>
+      <span class="login-btn-text">パスワードを変更して続ける</span>
+    </button>
+
+    <div style="text-align:center;margin-top:14px;font-size:11px;color:var(--gray-2)">
+      このステップはスキップできません
+    </div>
+  </div>
+</div>
+
+<!-- ── Admin App ── -->
+<div id="adminApp">
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sb-brand">
+        <div class="sb-mark"><img src="/icons/icon.svg" alt="Hello Moving" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;display:block"></div>
+        <div><div class="sb-name">Hello Moving</div><div class="sb-sub">Admin Panel</div></div>
+      </div>
+      <nav class="sb-nav">
+        <div class="sb-section">運営</div>
+        <button class="sb-link active" data-view="dashboard" onclick="go('dashboard')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>ダッシュボード
+        </button>
+        <button class="sb-link" data-view="bookings" onclick="go('bookings')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>予約管理
+        </button>
+        <button class="sb-link" data-view="overlay-bookings" onclick="go('overlay-bookings')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM7 17v-2h10v2H7zm0-4v-2h6v2H7z"/></svg>フォーム予約
+        </button>
+        <button class="sb-link" data-view="quotes" onclick="go('quotes')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>見積り管理
+        </button>
+        <button class="sb-link" data-view="inbox" onclick="go('inbox')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5v-3h3.56c.69 1.19 1.97 2 3.45 2s2.75-.81 3.45-2H19v3zm0-5h-4c0 1.1-.9 2-2 2s-2-.9-2-2H5V5h14v9z"/></svg>受信トレイ
+        </button>
+        <button class="sb-link" data-view="calendar" onclick="go('calendar')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M20 3h-1V1h-2v2H7V1H5v2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H4V8h16v13z"/></svg>空き枠管理
+        </button>
+        <div class="sb-section" style="margin-top:6px">顧客・CRM</div>
+        <button class="sb-link" data-view="customers" onclick="go('customers')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>顧客管理
+        </button>
+        <button class="sb-link" data-view="crm" onclick="go('crm')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 2.75c1.24 0 2.25 1.01 2.25 2.25S13.24 11.25 12 11.25 9.75 10.24 9.75 9 10.76 6.75 12 6.75zM17 17H7v-.75c0-1.66 3.33-2.5 5-2.5s5 .84 5 2.5V17z"/></svg>CRM
+        </button>
+        <button class="sb-link" data-view="portal-users" onclick="go('portal-users')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>顧客ポータル管理
+        </button>
+        <div class="sb-section" style="margin-top:6px">分析・自動化</div>
+        <button class="sb-link" data-view="analytics" onclick="go('analytics')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg>分析
+        </button>
+        <button class="sb-link" data-view="analytics-advanced" onclick="go('analytics-advanced')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>高度分析
+        </button>
+        <button class="sb-link" data-view="automation" onclick="go('automation')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>自動化エンジン
+        </button>
+        <button class="sb-link" data-view="audit-log" onclick="go('audit-log')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zm-2 9H7v-2h4v2zm4-4H7v-2h8v2zm0-4H7V8h8v2z"/></svg>監査ログ
+        </button>
+        <div class="sb-section" style="margin-top:6px">設定</div>
+        <button class="sb-link" data-view="staff" onclick="go('staff')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>スタッフ管理
+        </button>
+        <!-- 容量設定 (band max/day) was removed in the timeline final migration;
+             availability is per-window in the Timeline 空き枠管理 (go('calendar')). -->
+        <button class="sb-link" data-view="pricing" onclick="go('pricing')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>料金管理
+        </button>
+        <button class="sb-link" data-view="disposal" onclick="go('disposal')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>不用品管理
+        </button>
+        <button class="sb-link" data-view="actions" onclick="go('actions')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>クイック操作
+        </button>
+        <button class="sb-link" data-view="line" onclick="go('line')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.076 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>LINE通知設定
+        </button>
+        <button class="sb-link" data-view="email" onclick="go('email')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>メール通知設定
+        </button>
+        <button class="sb-link" data-view="camera" onclick="go('camera')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>カメラ・写真
+        </button>
+        <button class="sb-link" data-view="mobile-notifications" onclick="go('mobile-notifications')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>プッシュ通知設定
+        </button>
+        <button class="sb-link" data-view="changelog" onclick="go('changelog')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M13 2.05v2.02c3.95.49 7 3.85 7 7.93 0 3.21-1.81 6-4.72 7.72L13 17v5h5l-1.22-1.22C19.91 19.07 22 15.76 22 12c0-5.18-3.95-9.45-9-9.95zM11 2.05C5.95 2.55 2 6.82 2 12c0 3.76 2.09 7.07 5.22 8.78L6 22h5V2.05zM11 17H9.5L11 15.5V17zm2 0v-1.5L14.5 17H13z"/></svg>変更履歴
+        </button>
+        <button class="sb-link" data-view="security" onclick="go('security')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4c1.4 0 2.8 1.1 2.8 2.5V9c.6 0 1.2.6 1.2 1.2v3.5c0 .7-.6 1.3-1.2 1.3H9.2C8.6 15 8 14.4 8 13.7v-3.5C8 9.6 8.6 9 9.2 9V7.5C9.2 6.1 10.6 5 12 5zm0 1.2c-.8 0-1.5.5-1.5 1.3V9h3V7.5c0-.8-.7-1.3-1.5-1.3z"/></svg>セキュリティ
+        </button>
+        <button class="sb-link" data-view="health" onclick="go('health')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>システム健全性
+        </button>
+        <div class="sb-section" style="margin-top:6px">ウェブサイト</div>
+        <a class="sb-link" href="websiteManagement.html" style="text-decoration:none;display:flex;align-items:center;gap:8px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          ウェブサイト管理
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="9" height="9" style="margin-left:auto;opacity:.45"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+        </a>
+        <a class="sb-link" href="ops/index.html" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:8px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
+          モバイル業務アプリ
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="9" height="9" style="margin-left:auto;opacity:.45"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+        </a>
+        <div class="sb-section" style="margin-top:6px">その他</div>
+        <button class="sb-link" onclick="toggleDark()">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>ダークモード
+        </button>
+        <button class="sb-link" id="langToggle" onclick="I18n.setLang(I18n.getLang()==='ja'?'en':'ja')">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2s.07-1.35.16-2h4.68c.09.65.16 1.32.16 2s-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2s-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg><span id="langToggleBtn">EN</span>
+        </button>
+        <a class="sb-link" href="index.html" target="_blank">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>サイトを表示
+        </a>
+      </nav>
+      <div class="sb-footer">
+        <div class="session-info" id="sessionTimer">セッション残り時間: --分</div>
+        <button class="sb-logout" onclick="logout()">
+          ログアウト
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="mob-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+          </button>
+          <span class="topbar-title" id="topbarTitle">ダッシュボード</span>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost btn-sm" onclick="go('bookings');setTimeout(openAdd,50)">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>予約を追加
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="exportCSV()">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>CSV出力
+          </button>
+        </div>
+      </div>
+
+      <!-- In-App Health Banner — rendered by _applyAppHealthBanner() -->
+      <div id="hmHealthBanner"></div>
+
+      <div class="content">
+        <!-- 1. DASHBOARD -->
+        <div id="view-dashboard" class="view active">
+          <div class="stat-grid" id="statGrid"></div>
+          <div id="qaGrid"></div>
+          <div id="obsPanel"></div>
+
+          <!-- BI Row 1: Revenue + Booking Trend -->
+          <div class="bi-row" id="biRow1">
+            <div id="biRevenuePanel"></div>
+            <div id="biTrendPanel"></div>
+          </div>
+
+          <!-- BI Row 2: Service Popularity + Customer Analytics -->
+          <div class="bi-row" id="biRow2">
+            <div id="biServicePanel"></div>
+            <div id="biCustomerPanel"></div>
+          </div>
+
+          <!-- BI Row 3: Operational Analytics (full width) -->
+          <div id="biOperationalPanel"></div>
+
+          <!-- BI Export Panel -->
+          <div id="biExportPanel"></div>
+
+          <div class="dash-panels">
+            <div class="panel" style="flex:1;min-width:0">
+              <div class="panel-head">
+                <span class="panel-title">最近の予約</span>
+                <button class="btn btn-ghost btn-sm" onclick="go('bookings')">すべて表示 →</button>
+              </div>
+              <div class="table-wrap"><div id="recentWrap"></div></div>
+            </div>
+            <div class="panel activity-panel">
+              <div class="panel-head"><span class="panel-title">最近のアクティビティ</span></div>
+              <div class="panel-body" id="activityWrap"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- OVERLAY BOOKINGS (from save_booking.php) -->
+        <div id="view-overlay-bookings" class="view"></div>
+
+        <!-- 2. BOOKINGS -->
+        <div id="view-bookings" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">予約一覧</span>
+              <div class="search-bar">
+                <select class="sel" id="bkFilter" onchange="_renderBookingsUI()">
+                  <option value="">全ステータス</option>
+                  <option value="新規">新規</option>
+                  <option value="確認中">確認中</option>
+                  <option value="確定">確定</option>
+                  <option value="完了">完了</option>
+                  <option value="キャンセル">キャンセル</option>
+                </select>
+                <input class="search-input" id="bkSearch" placeholder="名前・メール・予約番号..." oninput="_renderBookingsUI()" />
+                <button class="btn btn-primary btn-sm" onclick="openAdd()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>予約を追加
+                </button>
+              </div>
+            </div>
+            <div class="cust-stats-bar" id="bkStatsBar"></div>
+            <div id="bkBulkBar" style="display:none;align-items:center;gap:8px;padding:8px 16px;background:rgba(37,99,235,.06);border-bottom:1px solid rgba(37,99,235,.15);flex-wrap:wrap"></div>
+            <div class="table-wrap" id="bookingsWrap"></div>
+          </div>
+        </div>
+
+        <!-- CUSTOMERS -->
+        <div id="view-customers" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">顧客一覧</span>
+              <div class="search-bar">
+                <select class="sel" id="custFilter" onchange="_renderCustomersUI()">
+                  <option value="">全顧客</option>
+                  <option value="with">予約あり</option>
+                  <option value="none">予約なし</option>
+                </select>
+                <input class="search-input" id="custSearch" placeholder="名前・メール・電話・顧客ID..." oninput="_renderCustomersUI()" style="min-width:220px" />
+              </div>
+            </div>
+            <div class="cust-stats-bar" id="custStatsBar"></div>
+            <div class="table-wrap" id="customersWrap"></div>
+          </div>
+        </div>
+
+        <!-- Customer Portal Management (顧客ポータル管理) — admin-only; reuses bookings/customers/communications/storage -->
+        <div id="view-portal-users" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">顧客ポータル管理 <span style="font-weight:400;color:var(--gray-2);font-size:12px">/ Customer Portal Management</span></span>
+              <div class="search-bar">
+                <input class="search-input" id="puSearch" placeholder="名前・メール・電話・顧客ID..." oninput="PortalUsers.filter()" style="min-width:220px" />
+              </div>
+            </div>
+            <div class="cust-stats-bar" id="puStatsBar"></div>
+            <div class="table-wrap" id="portalUsersWrap"></div>
+          </div>
+        </div>
+
+        <!-- CRM -->
+        <div id="view-crm" class="view"></div>
+
+        <!-- Mobile Notifications Settings (Phase 27C) -->
+        <div id="view-mobile-notifications" class="view"></div>
+
+        <!-- Camera Capture View (Phase 27E) -->
+        <div id="view-camera" class="view"></div>
+
+        <!-- 3. CALENDAR — Timeline (js/modules/calendar/timelineCalendar.js) mounts
+             here on go('calendar'); it is the ONLY admin availability calendar. The
+             legacy ○△× month grid, its bulk tools/print, and the Google-Calendar sync
+             panel were all removed in the timeline final migration. -->
+        <div id="view-calendar" class="view"></div>
+
+        <!-- 4. ANALYTICS -->
+        <div id="view-analytics" class="view">
+          <div class="stat-grid" id="analyticsGrid" style="margin-bottom:20px"></div>
+          <!-- Period filter bar -->
+          <div class="panel" style="margin-bottom:16px">
+            <div class="panel-head" style="flex-wrap:wrap;gap:8px;row-gap:8px">
+              <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color:var(--gray-1);flex-shrink:0"><path fill="currentColor" d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+                <span style="font-size:12px;font-weight:600;color:var(--gray-1);white-space:nowrap">分析期間</span>
+              </div>
+              <div id="analyticsPeriodBtns" style="display:flex;gap:4px;flex-wrap:wrap;align-items:center"></div>
+              <div id="analyticsCustomRange" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
+                <input type="date" id="aFrom" class="input" style="width:130px;padding:5px 8px;font-size:12px" />
+                <span style="color:var(--gray-2);font-size:12px">〜</span>
+                <input type="date" id="aTo" class="input" style="width:130px;padding:5px 8px;font-size:12px" />
+                <button class="btn btn-primary btn-sm" onclick="applyAnalyticsCustom()">適用</button>
+              </div>
+              <div style="display:flex;gap:5px;margin-left:auto;flex-shrink:0">
+                <button class="btn btn-ghost btn-sm" onclick="exportAnalyticsCSV()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>CSV出力
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="downloadPDFAnalytics()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PDF
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="printAnalytics()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="chart-grid" id="analyticsCharts" style="margin-bottom:16px"></div>
+          <div id="analyticsExtra"></div>
+        </div>
+
+        <!-- 4b. ADVANCED ANALYTICS -->
+        <div id="view-analytics-advanced" class="view"></div>
+
+        <!-- 5. CAPACITY — removed in the timeline final migration. The band
+             "max bookings/day → 満了" model no longer exists; availability is per
+             availability_window in the Timeline. go('capacity') aliases to calendar. -->
+
+        <!-- 6. PRICING -->
+        <div id="view-pricing" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">料金管理</span>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:11px;color:var(--gray-2)">保存するとサイトに即時反映されます</span>
+                <button class="btn btn-ghost btn-sm" onclick="downloadPDFPricing()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PDF
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="printPricing()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
+                </button>
+              </div>
+            </div>
+            <div class="panel-body" id="pricingBody"></div>
+          </div>
+        </div>
+
+        <!-- 7. DISPOSAL -->
+        <div id="view-disposal" class="view">
+          <div id="disposalContent"></div>
+        </div>
+
+        <!-- 8. QUICK ACTIONS -->
+        <div id="view-actions" class="view">
+          <div class="panel">
+            <div class="panel-head"><span class="panel-title">クイック操作</span></div>
+            <div class="panel-body">
+              <div class="qa-grid" style="margin-bottom:0">
+                <button class="qa-btn" onclick="go('bookings');filterToday()">
+                  <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+                  本日の予約を表示
+                </button>
+                <button class="qa-btn" onclick="exportCSV()">
+                  <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                  予約データをエクスポート
+                </button>
+                <button class="qa-btn" onclick="document.getElementById('csvImport').click()">
+                  <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+                  予約データをインポート
+                </button>
+                <button class="qa-btn" onclick="generateReport()">
+                  <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                  売上レポート生成
+                </button>
+                <button class="qa-btn" onclick="downloadPDFReport()">
+                  <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                  売上レポートPDF
+                </button>
+                <button class="qa-btn" onclick="printReport()">
+                  <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+                  売上レポートを印刷
+                </button>
+                <button class="qa-btn" onclick="clearAllData()" style="color:var(--red)">
+                  <svg viewBox="0 0 24 24" width="18" height="18" style="color:var(--red)"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                  全データを消去
+                </button>
+              </div>
+              <input type="file" id="csvImport" accept=".csv" style="display:none" onchange="importCSV(event)" />
+            </div>
+          </div>
+        </div>
+        <!-- QUOTES -->
+        <div id="view-quotes" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">見積りリクエスト</span>
+              <div class="search-bar">
+                <select class="sel" id="qtSvcFilter" onchange="_renderQuotesUI()">
+                  <option value="">全サービス</option>
+                  <option>単身引越し</option>
+                  <option>カップル・ご夫婦引越し</option>
+                  <option>学生・新生活引越し</option>
+                  <option>当日・お急ぎ引越し</option>
+                  <option>不用品回収・処分サービス</option>
+                  <option>家具組立・分解</option>
+                </select>
+                <select class="sel" id="qtSort" onchange="_renderQuotesUI()">
+                  <option value="desc">新しい順</option>
+                  <option value="asc">古い順</option>
+                </select>
+                <input class="search-input" id="qtSearch" placeholder="名前・メール・サービスで検索..." oninput="_renderQuotesUI()" style="min-width:200px" />
+                <button class="btn btn-ghost btn-sm" onclick="exportQuotesCSV()">
+                  <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>CSV出力
+                </button>
+              </div>
+            </div>
+            <div class="table-wrap" id="quotesWrap"></div>
+          </div>
+        </div>
+
+        <!-- EMAIL NOTIFY -->
+        <div id="view-email" class="view">
+          <div id="emailContent"></div>
+          <div id="followUpContent"></div>
+          <div id="rrContent"></div>
+          <div id="brContent"></div>
+        </div>
+
+        <!-- INBOX (Phase 31 — Resend Inbound) -->
+        <div id="view-inbox" class="view">
+          <div id="messages-container"></div>
+        </div>
+
+        <!-- LINE NOTIFY -->
+        <div id="view-line" class="view">
+          <div id="lineContent"></div>
+        </div>
+
+        <!-- CHANGELOG -->
+        <div id="view-changelog" class="view">
+          <div id="changelogContent"></div>
+        </div>
+
+        <!-- SECURITY -->
+        <div id="view-security" class="view">
+          <div id="securityContent"></div>
+        </div>
+
+        <!-- SYSTEM HEALTH -->
+        <div id="view-health" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">システム健全性チェック</span>
+              <button class="btn btn-ghost btn-sm" onclick="_refreshHealth()">
+                <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>再チェック
+              </button>
+            </div>
+            <div class="panel-body" id="healthViewBody">
+              <div style="text-align:center;padding:30px 0;color:var(--gray-2)">読み込み中...</div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">ヘルスチェックログ</span>
+              <button class="btn btn-ghost btn-sm" onclick="_clearHealthLog()">ログをクリア</button>
+            </div>
+            <div class="panel-body" id="healthLogBody">
+              <div style="text-align:center;padding:20px 0;color:var(--gray-2)">ログなし</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STAFF MANAGEMENT -->
+        <div id="view-staff" class="view">
+          <div id="staffContent"></div>
+        </div>
+
+        <!-- AUDIT LOG -->
+        <div id="view-audit-log" class="view"></div>
+
+        <!-- AUTOMATION ENGINE -->
+        <div id="view-automation" class="view"></div>
+
+<!-- Booking Edit Modal -->
+<div class="overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-title" id="editModalTitle">予約を追加</div>
+    <div class="m-row">
+      <div class="m-field"><label class="m-label">お客様名 *</label><input class="m-input" id="mName" placeholder="山田 太郎" /></div>
+      <div class="m-field"><label class="m-label">メールアドレス</label><input class="m-input" id="mEmail" type="email" placeholder="example@email.com" /></div>
+    </div>
+    <div class="m-row">
+      <div class="m-field"><label class="m-label">サービス</label>
+        <select class="m-sel" id="mSvc">
+          <option>単身引越し</option><option>カップル・ご夫婦引越し</option><option>学生・新生活引越し</option><option>当日・お急ぎ引越し</option><option>不用品回収・処分サービス</option>
+        </select>
+      </div>
+      <div class="m-field"><label class="m-label">ステータス</label>
+        <select class="m-sel" id="mStatus">
+          <option value="新規">新規</option><option value="確認中">確認中</option><option value="確定">確定</option><option value="完了">完了</option><option value="キャンセル">キャンセル</option>
+        </select>
+      </div>
+    </div>
+    <div class="m-row">
+      <div class="m-field"><label class="m-label">引越し日</label><input class="m-input" id="mDate" type="date" /></div>
+      <div class="m-field"><label class="m-label">希望時間帯</label>
+        <select class="m-sel" id="mTime">
+          <option>午前 8:00〜12:00</option><option>午後 12:00〜17:00</option><option>夕方 17:00〜20:00</option><option value="">未定</option>
+        </select>
+      </div>
+    </div>
+    <div class="m-field"><label class="m-label">引越し元住所</label><input class="m-input" id="mFrom" placeholder="東京都千代田区..." /></div>
+    <div class="m-field"><label class="m-label">引越し先住所</label><input class="m-input" id="mTo" placeholder="東京都新宿区..." /></div>
+    <div class="m-field"><label class="m-label">備考</label><textarea class="m-ta" id="mNotes" placeholder="ご要望・社内メモ..."></textarea></div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closeEdit()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveBooking()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<!-- Camera Capture Modal (Phase 27E) -->
+<div id="cameraModal">
+  <div id="cameraSheet">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:700;color:var(--ink)">📷 写真を撮影・アップロード</div>
+      <button class="btn btn-ghost btn-sm" onclick="CameraCapture.close()">閉じる</button>
+    </div>
+    <img id="cameraPreview" alt="プレビュー" />
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
+      <label class="btn btn-primary" style="justify-content:center;cursor:pointer;display:flex;align-items:center;gap:8px;min-height:44px">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+        カメラで撮影
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="CameraCapture.onCapture(this)" />
+      </label>
+      <label class="btn btn-ghost" style="justify-content:center;cursor:pointer;display:flex;align-items:center;gap:8px;min-height:44px">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+        ギャラリーから選択
+        <input type="file" id="galleryInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="CameraCapture.onCapture(this)" />
+      </label>
+      <div id="cameraUploadArea" style="display:none">
+        <div id="cameraMeta" style="font-size:11px;color:var(--gray-2);margin-bottom:10px"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" style="flex:1;min-height:44px" onclick="CameraCapture.upload()">アップロード</button>
+          <button class="btn btn-ghost" style="min-height:44px" onclick="CameraCapture.reset()">やり直す</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Offline Banner (Phase 27D) -->
+<div id="offlineBanner">
+  <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+  オフラインモード — 操作はオンライン復帰後に同期されます
+  <span id="offlineQueueBadge"></span>
+</div>
+
+<div class="overlay" id="detailModal">
+  <div class="modal" style="max-width:520px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="modal-title" style="margin-bottom:0" id="detailRef"></div>
+      <button class="btn btn-ghost btn-sm" onclick="closeDetail()">閉じる</button>
+    </div>
+    <div id="detailBody"></div>
+    <div id="detailCommHistory"></div>
+    <div class="m-actions" style="margin-top:14px">
+      <button class="btn btn-ghost btn-sm" id="detailPdfBtn">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PDF
+      </button>
+      <button class="btn btn-ghost btn-sm" id="detailPrintBtn">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
+      </button>
+      <button class="btn btn-ghost btn-sm" id="detailInvBtn">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>請求書
+      </button>
+      <button class="btn btn-ghost btn-sm" id="detailCrmBtn">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>顧客プロフィール
+      </button>
+      <button class="btn btn-primary btn-sm" id="detailReplyBtn">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>返信
+      </button>
+      <button class="btn btn-ghost btn-sm" id="detailEditBtn">編集</button>
+      <button class="btn btn-danger btn-sm" id="detailDelBtn">削除</button>
+    </div>
+  </div>
+</div>
+
+<!-- Communications Reply Modal (Phase 29) -->
+<div class="overlay" id="replyModal">
+  <div class="modal" style="max-width:500px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="modal-title" style="margin-bottom:0" id="replyModalTitle">メッセージを送信</div>
+      <button class="btn btn-ghost btn-sm" onclick="CommModule.closeReply()">閉じる</button>
+    </div>
+    <div class="m-field">
+      <label class="m-label">宛先</label>
+      <input class="m-input" id="replyTo" type="email" readonly style="background:var(--bg-2,#f8f9fa);color:var(--gray-1)" />
+    </div>
+    <div class="m-field">
+      <label class="m-label">送信元アカウント</label>
+      <select class="m-input sel" id="replyFrom" style="color:var(--gray-1)">
+        <option value="booking@hello-moving.com">booking@hello-moving.com（予約担当）</option>
+        <option value="support@hello-moving.com">support@hello-moving.com（サポート）</option>
+        <option value="contact@hello-moving.com">contact@hello-moving.com（お問い合わせ）</option>
+      </select>
+    </div>
+    <div class="m-field">
+      <label class="m-label">件名</label>
+      <input class="m-input" id="replySubject" type="text" placeholder="[Hello Moving] ご予約について" />
+    </div>
+    <div class="m-field">
+      <label class="m-label">メッセージ *</label>
+      <textarea class="m-ta" id="replyMessage" rows="7" placeholder="メッセージを入力してください..."></textarea>
+    </div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="CommModule.closeReply()">キャンセル</button>
+      <button class="btn btn-primary" id="replySendBtn" onclick="CommModule.send()">
+        <svg viewBox="0 0 24 24" width="13" height="13" style="vertical-align:middle;margin-right:4px"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>送信
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Report Modal -->
+<div class="overlay" id="reportModal">
+  <div class="modal" style="max-width:560px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="modal-title" style="margin-bottom:0">売上レポート</div>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('reportModal').classList.remove('open')">閉じる</button>
+    </div>
+    <div id="reportBody"></div>
+  </div>
+</div>
+
+<!-- Customer Profile Modal -->
+<div class="overlay" id="custModal">
+  <div class="modal" style="max-width:540px">
+    <div class="cust-profile-hdr">
+      <div class="cust-avatar cust-avatar-lg" id="custAvatarLg"></div>
+      <div>
+        <div style="font-size:17px;font-weight:700;color:var(--ink);line-height:1.3" id="custModalName"></div>
+        <div style="font-size:11px;color:var(--gray-2);margin-top:3px;font-variant-numeric:tabular-nums" id="custModalId"></div>
+      </div>
+    </div>
+    <div class="cust-detail-grid" id="custModalBody"></div>
+    <div id="custModalHistory"></div>
+    <div id="custCommHistory"></div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closeCustModal()">閉じる</button>
+      <button class="btn btn-primary" id="custModalReplyBtn">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>返信
+      </button>
+      <button class="btn btn-ghost" id="custModalPdfBtn">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PDF
+      </button>
+      <button class="btn btn-ghost" id="custModalPrintBtn">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>印刷
+      </button>
+      <button class="btn btn-danger" id="custModalDelBtn">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>顧客を削除
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Customer Portal Management — detail panel (profile · bookings · files · messages · read-only account notices) -->
+<div class="overlay" id="puModal" onclick="if(event.target===this)PortalUsers.close()">
+  <div class="modal" style="max-width:640px">
+    <div class="cust-profile-hdr">
+      <div class="cust-avatar cust-avatar-lg" id="puAvatar"></div>
+      <div>
+        <div style="font-size:17px;font-weight:700;color:var(--ink);line-height:1.3" id="puName"></div>
+        <div style="font-size:11px;color:var(--gray-2);margin-top:3px;font-variant-numeric:tabular-nums" id="puId"></div>
+      </div>
+    </div>
+    <div class="cust-detail-grid" id="puProfile"></div>
+    <div id="puBookings"></div>
+    <div id="puFiles"></div>
+    <div id="puCommHistory"></div>
+    <div id="puAccess"></div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="PortalUsers.close()">閉じる</button>
+      <button class="btn btn-primary" id="puSendBtn">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>メッセージ送信
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Disposal Category Modal -->
+<div class="overlay" id="disposalCatModal" onclick="if(event.target===this)closeDisposalCatModal()">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title" id="disposalCatModalTitle">カテゴリを追加</div>
+    <div class="m-field">
+      <label class="m-label">カテゴリ名 *</label>
+      <input class="m-input" id="disposalCatName" placeholder="例: 家具" onkeydown="if(event.key==='Enter')saveDisposalCat()" />
+    </div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closeDisposalCatModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveDisposalCat()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Disposal Item Modal -->
+<div class="overlay" id="disposalItemModal" onclick="if(event.target===this)closeDisposalItemModal()">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-title" id="disposalItemModalTitle">アイテムを追加</div>
+    <div class="m-field">
+      <label class="m-label">アイテム名 *</label>
+      <input class="m-input" id="disposalItemName" placeholder="例: ベッド・マットレス" />
+    </div>
+    <div class="m-field">
+      <label class="m-label">処分料金 (¥)</label>
+      <input class="m-input" id="disposalItemFee" type="number" min="0" step="500" placeholder="5000" onkeydown="if(event.key==='Enter')saveDisposalItem()" />
+    </div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closeDisposalItemModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveDisposalItem()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Staff Add/Edit Modal -->
+<div class="overlay" id="staffModal" onclick="if(event.target===this)closeStaffModal()">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title" id="staffModalTitle">スタッフを追加</div>
+    <div class="m-field">
+      <label class="m-label">名前 *</label>
+      <input class="m-input" id="staffName" type="text" placeholder="山田 花子" maxlength="40" onkeydown="if(event.key==='Enter')saveStaffModal()" />
+    </div>
+    <div class="m-field" id="staffEmailField">
+      <label class="m-label">メールアドレス *</label>
+      <input class="m-input" id="staffEmail" type="email" placeholder="hanako@example.com" />
+    </div>
+    <div class="m-field">
+      <label class="m-label">権限</label>
+      <select class="m-input" id="staffRole">
+        <option value="admin">管理者（全機能）</option>
+        <option value="staff" selected>スタッフ（予約・見積り管理）</option>
+        <option value="read-only">閲覧専用</option>
+      </select>
+    </div>
+    <div class="m-field" id="staffPassWrap">
+      <label class="m-label">パスワード * <span style="color:var(--gray-2);font-weight:400">（8文字以上）</span></label>
+      <input class="m-input" id="staffPassword" type="password" placeholder="8文字以上" autocomplete="new-password" />
+    </div>
+    <div id="staffMsg" class="sec-pass-msg"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
+      <button class="btn btn-ghost btn-sm" onclick="closeStaffModal()">キャンセル</button>
+      <button class="btn btn-primary btn-sm" onclick="saveStaffModal()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Staff Reset Password Modal -->
+<div class="overlay" id="staffResetModal" onclick="if(event.target===this)closeResetPassModal()">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-title">パスワードをリセット</div>
+    <div style="font-size:12.5px;color:var(--gray-1);margin-bottom:14px">対象：<strong id="resetStaffName"></strong></div>
+    <div class="m-field">
+      <label class="m-label">新しいパスワード * <span style="color:var(--gray-2);font-weight:400">（8文字以上）</span></label>
+      <input class="m-input" id="resetStaffPass" type="password" placeholder="8文字以上" autocomplete="new-password" />
+    </div>
+    <div class="m-field">
+      <label class="m-label">確認</label>
+      <input class="m-input" id="resetStaffConf" type="password" placeholder="確認のため再入力" autocomplete="new-password" onkeydown="if(event.key==='Enter')saveResetPassModal()" />
+    </div>
+    <div id="resetStaffMsg" class="sec-pass-msg"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
+      <button class="btn btn-ghost btn-sm" onclick="closeResetPassModal()">キャンセル</button>
+      <button class="btn btn-primary btn-sm" onclick="saveResetPassModal()">リセット</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Infrastructure ── -->
+<script src="js/services/diagnostics.js"></script>
+<script src="js/lib/apiClient.js"></script>
+<script src="js/config/appConfig.js"></script>
+<script src="js/config/env.public.js"></script><!-- committed same-origin fallback -->
+<script src="js/config/env.js" onerror="console.warn('[Admin] js/config/env.js missing — using env.public.js fallback')"></script>
+<script src="js/services/dataClient.js"></script>
+<script src="js/services/apiAdapter.js"></script>
+<script src="js/services/statisticsService.js"></script>
+<script src="js/services/fallbackLogger.js"></script>
+<script src="js/services/dataProvider.js"></script>
+<script src="js/services/healthCheck.js"></script>
+<script src="js/services/adminReauth.js"></script>
+
+<!-- ── Core Layer ── -->
+<script src="js/core/auth.js"></script>
+<script src="js/core/eventBus.js"></script>
+<script src="js/core/stateManager.js"></script>
+
+<!-- ── Utilities ── -->
+<script src="js/utils/formatters.js"></script>
+<script src="js/utils/dom.js"></script>
+<script src="js/utils/storage.js"></script>
+<script src="js/utils/validators.js"></script>
+<script src="js/utils/i18n.js"></script>
+<script src="js/utils/pdf.js"></script>
+
+<!-- ── PDF generation: html2canvas + jsPDF are loaded ON DEMAND by pdf.js
+     (_ensurePdfLibs) on the first PDF export, so they no longer weigh down
+     every admin page load. ── -->
+<!-- ── Data modules ── -->
+<script src="js/lib/addressPrivacy.js"></script><!-- address masking (full addr only after 確定) -->
+<script src="js/lib/chatFormat.js"></script><!-- shared chat/booking display helpers (HMFmt) -->
+<script src="js/lib/imageCompress.js"></script><!-- client-side image downscale before upload -->
+<script src="js/lib/mapsLinks.js"></script><!-- keyless Google Maps navigation buttons (HMMaps) -->
+<script src="admin-bookings.js?v=23"></script>
+<script src="admin-analytics.js"></script>
+
+<!-- ── Core navigation (lazy — all render fns must be defined before first user action) ── -->
+<script src="js/core/navigation.js"></script>
+
+<!-- ── Feature modules ── -->
+<script src="js/modules/dashboard/dashboardLayout.js"></script>
+<script src="js/modules/dashboard/dashboard.js"></script>
+<script src="js/modules/dashboard/dashboardCustomizer.js"></script>
+<script src="js/modules/dashboard/dashboardReorder.js"></script>
+<script src="js/modules/dashboard/kpiManager.js"></script>
+<script src="js/modules/dashboard/dashboardProfiles.js"></script>
+
+<!-- ── Analytics intelligence modules (Phase 23) ── -->
+<script src="js/modules/analytics/analyticsEngine.js"></script>
+<script src="js/modules/analytics/revenueForecast.js"></script>
+<script src="js/modules/analytics/servicePerformance.js"></script>
+<script src="js/modules/analytics/customerInsights.js"></script>
+<script src="js/modules/analytics/conversionAnalytics.js"></script>
+<script src="js/modules/analytics/analyticsWidgets.js"></script>
+<script src="js/modules/analytics/analyticsUI.js"></script>
+<script src="js/modules/analytics/analyticsCache.js"></script>
+<script src="js/modules/analytics/bookingTrends.js"></script>
+<script src="js/modules/analytics/analyticsExport.js"></script>
+<script src="js/modules/analytics/analyticsDashboard.js"></script>
+
+<script src="js/modules/bookings/pendingRequests.js"></script>
+<script src="js/modules/calendar/timelineGestures.js"></script><!-- pointer/touch gesture engine for the hourly timeline -->
+<script src="js/modules/calendar/timelineCalendar.js"></script><!-- hourly TIMELINE (Google-Calendar style; preview flag hm_timeline_ui, default OFF) -->
+<script src="js/modules/pricing/pricing.js"></script>
+<script src="js/modules/disposal/disposal.js"></script>
+<script src="js/modules/quotes/quotes.js"></script>
+<script src="js/modules/backup/backup.js"></script>
+<script src="js/modules/backup/csvReport.js"></script>
+<script src="js/modules/notifications/email.js"></script>
+<script src="js/modules/notifications/line.js"></script>
+<script src="js/modules/notifications/followUp.js"></script>
+<script src="js/modules/changelog/changelog.js"></script>
+<script src="js/modules/customers/customers.js"></script>
+<script src="js/modules/security/security.js"></script>
+<script src="js/modules/security/staff.js"></script>
+<script src="js/modules/invoices/invoices.js"></script>
+<script src="js/modules/search/globalSearch.js"></script>
+<script src="js/services/auditService.js"></script>
+<script src="js/modules/audit/auditLog.js"></script>
+
+<!-- ── Automation Engine (Phase 24) — order: audit → rules → actions → triggers → scheduler → engine → ui ── -->
+<script src="js/modules/automation/automationAudit.js"></script>
+<script src="js/modules/automation/automationRules.js"></script>
+<script src="js/modules/automation/automationActions.js"></script>
+<script src="js/modules/automation/automationTriggers.js"></script>
+<script src="js/modules/automation/automationScheduler.js"></script>
+<script src="js/modules/automation/automationEngine.js"></script>
+<script src="js/modules/automation/automationUI.js"></script>
+<script src="js/modules/automation/reviewRequestAction.js"></script>
+<script src="js/modules/automation/bookingReminderAction.js"></script>
+<script src="js/modules/automation/quoteFollowUpAction.js"></script>
+<script src="js/modules/automation/occupancyMonitor.js"></script>
+<script src="js/modules/automation/autoStatusRules.js"></script>
+
+<!-- ── CRM system (Phase 25) — load order: Core → Tags → Notes → Profiles → Timeline → Insights → UI → Analytics → Export → Automation ── -->
+<script src="js/modules/crm/crmCore.js"></script>
+<script src="js/modules/crm/crmTags.js"></script>
+<script src="js/modules/crm/crmNotes.js"></script>
+<script src="js/modules/crm/crmProfiles.js"></script>
+<script src="js/modules/crm/crmTimeline.js"></script>
+<script src="js/modules/crm/crmInsights.js"></script>
+<script src="js/modules/crm/crmUI.js"></script>
+<script src="js/modules/crm/crmAnalytics.js"></script>
+<script src="js/modules/crm/crmExport.js"></script>
+<script src="js/modules/crm/crmAutomation.js"></script>
+
+<!-- ── Mobile Experience (Phase 27) ── -->
+<script src="js/modules/mobile/mobileNav.js?v=23"></script>
+<script src="js/modules/mobile/mobileDash.js?v=23"></script>
+<script src="js/modules/mobile/mobileCalendar.js?v=23"></script>
+<script src="js/modules/notifications/pushNotifications.js"></script>
+<script src="js/modules/offline/offlineDB.js"></script>
+<script src="js/modules/offline/offlineQueue.js"></script>
+<script src="js/modules/camera/cameraCapture.js"></script>
+
+<!-- ── Content modules (SEO · Blog · Settings) ── -->
+
+<!-- ── Overlay bookings view ── -->
+<script src="js/modules/overlay-bookings/overlayBookings.js"></script>
+
+<!-- ── Communications (Phase 29 — internal messaging, replaces mailto) ── -->
+<script src="js/modules/communications/communications.js"></script>
+
+<!-- ── Customer Portal Management (顧客ポータル管理) — portal storage modules + admin view ── -->
+<script src="js/portal/portalDocs.js"></script>
+<script src="js/portal/portalPhotos.js"></script>
+<script src="js/modules/portal/portalUsers.js"></script>
+
+<!-- ── Inbox (Phase 31 — Resend Inbound received messages) ── -->
+<script src="js/modules/inbox/inbox.js"></script>
+
+<!-- ── Service registry (populated after all services/core/utils are loaded) ── -->
+<script src="js/services/serviceRegistry.js"></script>
+
+<!-- ── App bootstrap (startup IIFE — must load last) ── -->
+<script src="js/core/appBootstrap.js"></script>
+<!-- V2 experience enhancer (skeleton-on-load; gated to html.v2-dark, additive) -->
+<script src="js/admin-experience-v2.js"></script>
+<!-- V2 preview harness: ?preview=1 reveals the shell without a live admin session
+     (visual dark-theme QA only; gated + session-only, never affects production admin.html) -->
+<script>
+(function(){
+  try{
+    if(!/[?&]preview=1/.test(location.search)) return;
+    var reveal=function(){
+      var ls=document.getElementById('loginScreen');        if(ls) ls.style.display='none';
+      var fc=document.getElementById('forceChangeScreen');  if(fc) fc.style.display='none';
+      var app=document.getElementById('adminApp');          if(app) app.style.display='block';
+      try{ if(typeof go==='function') go('dashboard'); }catch(e){}
+    };
+    reveal();
+    document.addEventListener('DOMContentLoaded',reveal);
+    window.addEventListener('load',reveal);
+    [200,600,1200,2200].forEach(function(t){ setTimeout(reveal,t); });
+  }catch(e){}
+})();
+</script>
+
+<!-- ── PWA: service worker registration ── -->
+<script src="js/utils/swRegister.js"></script>
+
+<!-- ── Inbox ────────────────────────────────────────────────────────────────
+     The Inbox view (#view-inbox / #messages-container) is owned ENTIRELY by
+     js/modules/inbox/inbox.js (loaded above): rendering, filters, read/unread,
+     delete, mailto reply, and the quote modal. go('inbox') in navigation.js
+     calls window.renderInbox(). The legacy inline Phase 31 renderer that used
+     to live here (and OVERWROTE window.renderInbox with a static card list)
+     was removed — do not reintroduce inline JS into admin.html.
+──────────────────────────────────────────────────────────────────────────── -->
+</body>
+</html>
