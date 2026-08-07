@@ -201,6 +201,16 @@
 .v2 .company-table { font-size: 13.5px !important; }
 .v2 .company-table dt, .v2 .company-table dd { padding-top: 7px !important; padding-bottom: 7px !important; line-height: 1.45 !important; }
 
+/* ── A11y: WCAG AA contrast — lift dim footer/sticky text on dark ──────────── */
+.v2 .hm-ft__heading, .v2 .hm-ft__email-heading { color: #D2D6CA !important; }
+.v2 .hm-ft__legal a, .v2 .hm-ft small, .v2 #footerCopyrightEl, .v2 #footerLicenseEl,
+.v2 .hm-ft__bottom, .v2 .hm-ft__bottom * { color: #AEB4A6 !important; }
+.v2 .hm-ft__cta-line, .v2 .hm-ft__cta-line * { color: #EDEFE9 !important; }
+.v2 .sticky-cta .sticky-btn { color: #EDEFE9 !important; }
+.v2 .sticky-cta .sticky-quote, .v2 .sticky-cta .sticky-quote * { color: #0C0E0B !important; }
+/* aria-hidden mobile nav must not hold focusable descendants */
+.v2 #mobileNav[aria-hidden="true"] { visibility: hidden !important; }
+
 /* ── MOTION — reveal keyframe used by js/v2.1.js (GPU only) ────────────────── */
 @keyframes v21rise { from { opacity: 0; transform: translate3d(0, 18px, 0); } to { opacity: 1; transform: none; } }
 .v2 [data-v21="rise"] { opacity: 0; }
