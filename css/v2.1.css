@@ -1,0 +1,167 @@
+/* ============================================================================
+   HELLO MOVING V2.1 — premium refinement layer (loads AFTER v2.css)
+   Younger · faster · more premium · orange-forward · ~30% shorter.
+   Identity: Geist / Geist Mono / Noto Sans JP · 75-20-5 gold-orange.
+   Scoped under .v2 (homepage). No markup changes; pure enhancement.
+   GPU-only motion (transform/opacity), prefers-reduced-motion respected.
+   ========================================================================== */
+
+/* ── TYPE — Geist for UI/display, Geist Mono for data, Noto Sans JP for JP ── */
+.v2, .v2 body,
+.v2 h1, .v2 h2, .v2 h3, .v2 h4, .v2 p, .v2 a, .v2 button, .v2 input, .v2 li, .v2 span {
+  font-family: "Geist", "Inter", system-ui, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+}
+.v2 { --font-mono: "Geist Mono", ui-monospace, "SF Mono", monospace; }
+.v2 .section-title { letter-spacing: -0.025em; font-weight: 700; }
+.v2 h1, .v2 h2 { letter-spacing: -0.03em; }
+/* Eyebrows / labels / stats → mono, mechanical, premium */
+.v2 .trust-sub, .v2 .commit-num, .v2 .wg-live, .v2 .review-meta-line { font-family: var(--font-mono); letter-spacing: 0.02em; }
+.v2 .stat-num, .v2 .trust-key { font-variant-numeric: tabular-nums; }
+
+/* ── COLOUR — gold-orange discipline (5%). One primary orange var ──────────── */
+.v2 { --gold: #F5A623; --gold-d: #db8c10; }
+
+/* ── SPACING — compress vertical rhythm ~30% (younger, faster) ─────────────── */
+.v2 .section { padding: clamp(44px, 5.4vw, 74px) 0 !important; }
+.v2 #works { padding: clamp(40px, 5vw, 68px) 0 !important; }
+.v2 .section-head { margin-bottom: clamp(22px, 3vw, 36px) !important; }
+.v2 .section-lead { margin-top: 8px; font-size: 15px; color: var(--text-2); max-width: 54ch; }
+.v2 .commit-grid, .v2 .review-grid, .v2 .hero-reasons-grid { gap: 14px !important; }
+.v2 .process-timeline { gap: 12px !important; }
+
+/* section eyebrow accent — a tiny gold tick before titles (structure, not decoration) */
+.v2 .section-head .section-title { position: relative; }
+
+/* ── HEADER — premium, sticky, orange interactions ─────────────────────────── */
+.v2 .site-header {
+  background: rgba(12,14,11,0.72);
+  -webkit-backdrop-filter: saturate(140%) blur(14px); backdrop-filter: saturate(140%) blur(14px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  transition: background .3s ease, border-color .3s ease, box-shadow .3s ease;
+}
+.v2 .site-header.scrolled {
+  background: rgba(12,14,11,0.9);
+  border-bottom-color: rgba(255,255,255,0.10);
+  box-shadow: 0 10px 40px -20px rgba(0,0,0,0.9);
+}
+.v2 #headerNavEl a { position: relative; color: var(--text-2); font-weight: 500; transition: color .18s ease; }
+.v2 #headerNavEl a::after {
+  content:""; position:absolute; left:0; right:100%; bottom:-6px; height:2px; border-radius:2px;
+  background: var(--gold); box-shadow: 0 0 10px rgba(245,166,35,.7);
+  transition: right .22s cubic-bezier(.22,.61,.36,1);
+}
+.v2 #headerNavEl a:hover { color: var(--text-1); }
+.v2 #headerNavEl a:hover::after, .v2 #headerNavEl a.active::after { right: 0; }
+.v2 #headerNavEl a.active { color: var(--gold); }
+/* flat Momentum mark — no box, crisp */
+.v2 .site-header .brand-mark { background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important; width: 38px; height: 38px; border-radius: 0; }
+.v2 .site-header .brand-name { font-weight: 800; letter-spacing: -0.02em; }
+.v2 .site-header .brand-sub { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-2); }
+
+/* ── HERO — stronger first impression ──────────────────────────────────────── */
+.v2 #home-hero h1 { letter-spacing: -0.045em; line-height: 1.0; }
+.v2 .trust-strip { gap: 10px !important; }
+.v2 .trust-key { color: var(--text-1); }
+.v2 .trust-sub { color: var(--text-2); font-size: 10.5px; text-transform: uppercase; }
+
+/* ── SERVICE CARDS — smaller, glass, depth, interactive ────────────────────── */
+.v2 #serviceCardsGrid { gap: 14px !important; }
+.v2 #serviceCardsGrid > [data-service],
+.v2 #serviceCardsGrid > * {
+  border: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(180deg, rgba(30,34,27,0.6), rgba(21,24,18,0.6));
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  border-radius: 16px; overflow: hidden;
+  transition: transform .28s cubic-bezier(.22,.61,.36,1), box-shadow .28s ease, border-color .28s ease;
+  will-change: transform;
+}
+.v2 #serviceCardsGrid > *:hover {
+  transform: translateY(-6px);
+  border-color: rgba(245,166,35,0.45);
+  box-shadow: 0 26px 60px -28px rgba(0,0,0,0.9), 0 0 0 1px rgba(245,166,35,0.12);
+}
+/* tighter card media */
+.v2 .svc-img-grid img, .v2 [data-service] img { transition: transform .5s cubic-bezier(.22,.61,.36,1); }
+.v2 #serviceCardsGrid > *:hover img { transform: scale(1.06); }
+
+/* ── COVER FLOW — center dominates, smooth, premium ───────────────────────── */
+.v2 .wg-track { transition: transform .5s cubic-bezier(.22,.61,.36,1) !important; }
+.v2 .wg-viewport figure, .v2 .wg-track > * { transition: transform .5s cubic-bezier(.22,.61,.36,1), opacity .5s ease, filter .5s ease; }
+.v2 .wg-track > *:not(.is-center) { opacity: .5; filter: saturate(.7); transform: scale(.86); }
+.v2 .wg-track > .is-center { opacity: 1; filter: none; transform: scale(1.04); box-shadow: 0 40px 90px -40px rgba(0,0,0,0.95); }
+.v2 .wg-dots button.is-active, .v2 .wg-dots [aria-current="true"] { background: var(--gold) !important; }
+
+/* ── REVIEWS — premium cards, gold stars ──────────────────────────────────── */
+.v2 .review-card {
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 16px;
+  background: linear-gradient(180deg, rgba(30,34,27,0.5), rgba(21,24,18,0.5));
+  transition: transform .28s cubic-bezier(.22,.61,.36,1), border-color .28s ease;
+}
+.v2 .review-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.14); }
+.v2 .review-stars { color: var(--gold) !important; }
+
+/* ── FAQ — premium accordion ──────────────────────────────────────────────── */
+.v2 .faq-item { border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; background: rgba(21,24,18,0.5); transition: border-color .2s ease, background .2s ease; }
+.v2 .faq-item:hover, .v2 .faq-item[open] { border-color: rgba(245,166,35,0.3); background: rgba(30,34,27,0.6); }
+
+/* ── PROCESS / COMMITMENTS — tighter, quiet cards ─────────────────────────── */
+.v2 .commit-card, .v2 .process-step { border-radius: 14px; transition: transform .24s ease, border-color .24s ease; }
+.v2 .commit-card:hover, .v2 .process-step:hover { transform: translateY(-3px); }
+.v2 .commit-num { color: var(--gold); }
+
+/* ── BUTTONS / CTA — gold gradient, tactile ───────────────────────────────── */
+.v2 .btn-primary, .v2 .cta-primary, .v2 [data-cta="primary"], .v2 .hero-cta-primary {
+  background: linear-gradient(180deg, #FFB23E, var(--gold)) !important;
+  color: #0C0E0B !important; font-weight: 700; border: none;
+  box-shadow: 0 8px 22px -8px rgba(245,166,35,0.6);
+  transition: transform .16s ease, box-shadow .24s ease, filter .2s ease;
+}
+.v2 .btn-primary:hover, .v2 .cta-primary:hover, .v2 [data-cta="primary"]:hover, .v2 .hero-cta-primary:hover {
+  transform: translateY(-2px); box-shadow: 0 14px 32px -10px rgba(245,166,35,0.7); filter: saturate(1.05);
+}
+
+/* ── ACCESSIBILITY — visible focus ring everywhere ────────────────────────── */
+.v2 a:focus-visible, .v2 button:focus-visible, .v2 [tabindex]:focus-visible,
+.v2 input:focus-visible, .v2 summary:focus-visible {
+  outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 8px;
+}
+
+/* ── MOBILE — thumb-first, service cards swipe ────────────────────────────── */
+@media (max-width: 700px) {
+  .v2 .section { padding: 40px 0 !important; }
+  .v2 .section-head { margin-bottom: 20px !important; }
+  .v2 #serviceCardsGrid {
+    grid-auto-flow: column; grid-auto-columns: 78%;
+    overflow-x: auto; scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    padding-bottom: 6px;
+  }
+  .v2 #serviceCardsGrid::-webkit-scrollbar { display: none; }
+  .v2 #serviceCardsGrid > * { scroll-snap-align: center; }
+  .v2 #home-hero h1 { letter-spacing: -0.035em; }
+}
+
+/* ── AGGRESSIVE HEIGHT — toward the −30% target (kills dead space) ─────────── */
+.v2 #home-hero { min-height: 74vh !important; }
+.v2 #home-hero.hero, .v2 #home-hero.section { padding-top: clamp(72px, 9vh, 120px) !important; padding-bottom: clamp(40px, 6vh, 72px) !important; }
+.v2 .section { padding: clamp(36px, 4.2vw, 60px) 0 !important; }
+.v2 #works { padding: clamp(30px, 3.6vw, 52px) 0 !important; }
+.v2 .section-head { margin-bottom: clamp(18px, 2.4vw, 30px) !important; }
+.v2 .hero-reasons { padding-top: clamp(24px, 3.4vw, 44px) !important; }
+.v2 .trust-strip { margin-top: clamp(18px, 3vw, 34px) !important; }
+.v2 .process-timeline, .v2 .commit-grid, .v2 .review-grid, .v2 .hero-reasons-grid { gap: 12px !important; }
+.v2 .commit-card, .v2 .process-step { padding: clamp(14px,1.6vw,20px) clamp(16px,1.8vw,22px) !important; }
+.v2 .faq-item { padding: 2px 4px !important; }
+.v2 .wg-stage { min-height: 0 !important; }
+/* footer tightened */
+.v2 .hm-ft, .v2 .site-footer { padding-top: clamp(36px, 5vw, 64px) !important; }
+
+/* ── MOTION — reveal keyframe used by js/v2.1.js (GPU only) ────────────────── */
+@keyframes v21rise { from { opacity: 0; transform: translate3d(0, 18px, 0); } to { opacity: 1; transform: none; } }
+.v2 [data-v21="rise"] { opacity: 0; }
+.v2 [data-v21="rise"].in { animation: v21rise .6s cubic-bezier(.22,.61,.36,1) forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .v2 *, .v2 *::before, .v2 *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+  .v2 [data-v21="rise"] { opacity: 1 !important; }
+}

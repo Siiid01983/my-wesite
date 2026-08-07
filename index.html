@@ -20,12 +20,12 @@
 <meta property="og:locale" content="ja_JP" />
 <meta property="og:locale:alternate" content="en_US" />
 
-<link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-<link rel="apple-touch-icon" href="/icons/icon.svg" />
+<link rel="icon" href="/assets/brand/hm-favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/assets/brand/hm-app-icon.svg" />
 <link rel="manifest" href="/manifest.json" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Noto+Serif+JP:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500&family=Noto+Sans+JP:wght@300;400;500;600;700&family=Noto+Serif+JP:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css" />
 <link rel="stylesheet" href="css/action-center.css" />
 <link rel="stylesheet" href="css/ui-enhancements.css" />
@@ -1165,6 +1165,7 @@ body { padding-bottom: 76px; }
 <link rel="stylesheet" href="css/service-images.css" /><!-- polish for service-card photos -->
 <link rel="stylesheet" href="css/v2-tokens.css" /><!-- V2 shared design tokens — single source of truth -->
 <link rel="stylesheet" href="css/v2.css" /><!-- HELLO MOVING V2 dark design system -->
+<link rel="stylesheet" href="css/v2.1.css" /><!-- V2.1 premium refinement — Geist · gold-orange · tighter · motion -->
 </head>
 <body class="v2">
 
@@ -1174,7 +1175,7 @@ body { padding-bottom: 76px; }
 <header class="site-header" id="siteHeader">
   <div class="container header-inner">
     <a href="/" class="brand" aria-label="Hello Moving ホーム">
-      <img class="brand-mark" src="/icons/icon.svg" alt="Hello Moving" width="42" height="42" />
+      <img class="brand-mark" src="/assets/brand/hm-icon.svg" alt="Hello Moving" width="42" height="42" />
       <span class="brand-text">
         <span class="brand-name" id="headerBrandNameEl">Hello Moving</span>
         <span class="brand-sub">14+ Years — Tokyo</span>
@@ -1895,7 +1896,7 @@ setTimeout(window.HM_revealServiceCards, 2500);
     <!-- Brand + contact info -->
     <div class="hm-ft__brand">
       <a href="/" class="brand" aria-label="Hello Moving ホーム">
-        <img class="brand-mark" src="/icons/icon.svg" alt="Hello Moving" width="42" height="42" />
+        <img class="brand-mark" src="/assets/brand/hm-icon.svg" alt="Hello Moving" width="42" height="42" />
         <span class="brand-text">
           <span class="brand-name">Hello Moving</span>
           <span class="brand-sub">14+ Years — Tokyo</span>
@@ -3902,6 +3903,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 <script src="js/back-to-top.js" defer></script>
 <script src="js/motion.js" defer></script><!-- scroll-reveal / stagger / counter motion system -->
 <script src="js/v2.js" defer></script><!-- HELLO MOVING V2: header scroll-state + hero parallax -->
+<script src="js/v2.1.js" defer></script><!-- V2.1 motion enhancer: cursor-depth tilt (motion-safe) -->
 
 <!-- Runtime protection layer: enforces BA overlay as the only booking execution path -->
 <script src="js/security/bookingRuntimeGuard.js"></script>
