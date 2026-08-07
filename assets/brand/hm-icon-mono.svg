@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Hello Moving">
+  <rect x="20" y="18" width="15" height="64" rx="3" fill="currentColor"/>
+  <rect x="65" y="18" width="15" height="64" rx="3" fill="currentColor"/>
+  <path d="M32 58 L64 46 L64 39 L94 53 L64 67 L64 60 L32 70 Z" fill="currentColor"/>
+</svg>
