@@ -156,6 +156,51 @@
 /* footer tightened */
 .v2 .hm-ft, .v2 .site-footer { padding-top: clamp(36px, 5vw, 64px) !important; }
 
+/* ── STRUCTURAL LENGTH CUTS (toward −30%, keep only high-value content) ────── */
+/* The homepage calendar embed duplicates the booking overlay — remove the clutter. */
+.v2 #bookingCalendar, .v2 .booking-calendar-section { display: none !important; }
+/* Final CTA was ~1248px — a CTA should be tight & punchy. */
+.v2 #contact.cta-final { padding: clamp(40px, 5vw, 66px) 0 !important; }
+.v2 #contact .container > * + * { margin-top: clamp(14px, 2vw, 22px) !important; }
+.v2 #contact [class*="channel"], .v2 #contact .cta-channels { gap: 12px !important; }
+/* Reviews / FAQ / Company / Commitments / Reasons — content-tall → compress padding + inner rhythm. */
+.v2 #reviews, .v2 #faq, .v2 #company, .v2 #commitments, .v2 #reasons { padding: clamp(34px, 4vw, 54px) 0 !important; }
+.v2 #reviews .review-card { padding: 18px 20px !important; }
+.v2 #company .company-row, .v2 #company tr, .v2 #company li { padding-top: 8px !important; padding-bottom: 8px !important; }
+.v2 .faq-item > summary, .v2 .faq-item > [class*="q"] { padding: 13px 16px !important; }
+/* Footer was ~1056px — tighten. */
+.v2 .site-footer { padding-top: clamp(30px, 3.6vw, 48px) !important; padding-bottom: clamp(18px, 2.4vw, 28px) !important; }
+.v2 .hm-ft { gap: clamp(20px, 3vw, 36px) !important; }
+/* Trust strip + reasons grid tighter */
+.v2 .trust-strip { padding-top: clamp(14px,2vw,24px) !important; padding-bottom: clamp(14px,2vw,24px) !important; }
+/* Service cards — the photos were ~440px each (huge). Cap to a tight landscape. */
+.v2 .svc-img-card__photo { height: clamp(150px, 15vw, 196px) !important; aspect-ratio: auto !important; }
+.v2 .svc-img-card__photo img { height: 100% !important; width: 100% !important; object-fit: cover !important; }
+.v2 .svc-img-card { min-height: 0 !important; }
+.v2 .svc-img-card__body, .v2 .svc-img-card [class*="body"] { padding: 14px 16px !important; }
+/* Final CTA — it embeds a full contact form (redundant with LINE/booking); tighten it hard. */
+.v2 #contact #cfMessage, .v2 #contact textarea { min-height: 76px !important; }
+.v2 #contact .cta-form { gap: 10px !important; }
+.v2 #contact .cta-content > * + * { margin-top: 12px !important; }
+.v2 #contact .cta-channels-inner { gap: clamp(20px, 3vw, 40px) !important; }
+.v2 #contact .cta-content { max-width: 640px; }
+.v2 #contact .cta-form label.full { margin-bottom: 0 !important; }
+.v2 #contact .cta-form input, .v2 #contact .cta-form textarea { padding: 10px 12px !important; }
+.v2 #contact { padding-bottom: clamp(28px, 3vw, 44px) !important; }
+/* Reviews — tighter cards + clamp long testimonials */
+.v2 #reviews .review-card { padding: 16px 18px !important; }
+.v2 #reviews .review-grid { gap: 12px !important; }
+.v2 #reviews .review-card p, .v2 #reviews .review-card [class*="text"], .v2 #reviews .review-card [class*="body"] {
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+}
+/* Section heads were ~289px each — tighten title/lead/margins across ALL sections (big cumulative cut) */
+.v2 .section-head { margin-bottom: clamp(14px, 1.8vw, 24px) !important; }
+.v2 .section-title { font-size: clamp(23px, 3.1vw, 37px) !important; line-height: 1.1 !important; }
+.v2 .section-lead { font-size: 14.5px !important; margin-top: 6px !important; line-height: 1.5 !important; max-width: 52ch; }
+/* Company definition table — dense, premium rows */
+.v2 .company-table { font-size: 13.5px !important; }
+.v2 .company-table dt, .v2 .company-table dd { padding-top: 7px !important; padding-bottom: 7px !important; line-height: 1.45 !important; }
+
 /* ── MOTION — reveal keyframe used by js/v2.1.js (GPU only) ────────────────── */
 @keyframes v21rise { from { opacity: 0; transform: translate3d(0, 18px, 0); } to { opacity: 1; transform: none; } }
 .v2 [data-v21="rise"] { opacity: 0; }
