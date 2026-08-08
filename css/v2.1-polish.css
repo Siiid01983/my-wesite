@@ -1,0 +1,103 @@
+/* ============================================================================
+   HELLO MOVING V2.1 — FINAL ART-DIRECTION LAYER (loads last)
+   Visual emotion only: depth · atmosphere · rhythm · premium feel.
+   No functionality / structure changes. Scoped .v2. GPU/paint-only.
+   The goal: it should feel expensive before a word is read.
+   ========================================================================== */
+
+/* ── 1 · Film grain — tactile luxury texture over the whole product ────────── */
+.v2 body::after {
+  content: ""; position: fixed; inset: 0; z-index: 9998; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: .05; mix-blend-mode: overlay;
+}
+
+/* ── 2 · Atmosphere — the flat dark becomes a lit room ─────────────────────── */
+.v2 {
+  background:
+    radial-gradient(1200px 700px at 78% -8%, rgba(245,166,35,.07), transparent 55%),
+    radial-gradient(1000px 800px at -8% 22%, rgba(245,166,35,.035), transparent 55%),
+    radial-gradient(1100px 900px at 110% 78%, rgba(53,180,92,.02), transparent 55%),
+    linear-gradient(180deg, #0d0f0b 0%, #0b0d09 50%, #0c0e0a 100%) !important;
+  background-attachment: fixed !important;
+}
+/* a whisper-thin gold rule at the very top edge — the first premium signal */
+.v2 body::before {
+  content: ""; position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 9999; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(245,166,35,.9) 22%, rgba(245,166,35,.9) 78%, transparent);
+  opacity: .55;
+}
+
+/* ── 3 · Section rhythm — a soft spotlight behind each title, alternating lift ── */
+.v2 main > section { position: relative; }
+.v2 main > section > .container { position: relative; z-index: 1; }
+.v2 main > section:nth-of-type(even)::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(80% 60% at 50% 0%, rgba(255,255,255,.022), transparent 70%);
+}
+.v2 main > section:nth-of-type(odd)::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(70% 50% at 50% 8%, rgba(245,166,35,.03), transparent 68%);
+}
+/* hairline dividers between sections — a single lit thread, not a hard line */
+.v2 main > section + section { border-top: 1px solid transparent; }
+.v2 main > section + section::after {
+  content: ""; position: absolute; top: 0; left: 12%; right: 12%; height: 1px; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.09), transparent);
+}
+
+/* ── 4 · Depth on surfaces — layered shadow + inner light + refined edge ───── */
+.v2 .svc-img-card, .v2 .review-card, .v2 .commit-card, .v2 .stat-card,
+.v2 .faq-item, .v2 .company-table, .v2 .hero-reasons-grid > * {
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.05) inset,
+    0 2px 6px rgba(0,0,0,.4),
+    0 24px 60px -34px rgba(0,0,0,.85) !important;
+}
+.v2 .svc-img-card:hover, .v2 .review-card:hover {
+  box-shadow:
+    0 1px 0 rgba(245,166,35,.22) inset,
+    0 30px 70px -30px rgba(0,0,0,.92),
+    0 0 0 1px rgba(245,166,35,.14) !important;
+}
+/* photos gain a subtle top-down wash so text sits richer, cards feel deeper */
+.v2 .svc-img-card__photo::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, transparent 40%, rgba(12,14,11,.55) 100%);
+}
+.v2 .svc-img-card__photo { position: relative; }
+
+/* ── 5 · Hero — cinematic vignette + a slow ambient breathe ────────────────── */
+.v2 #home-hero { position: relative; overflow: hidden; }
+.v2 #home-hero::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(120% 90% at 50% 120%, rgba(0,0,0,.55), transparent 60%),
+    radial-gradient(60% 50% at 50% 30%, rgba(245,166,35,.05), transparent 70%);
+}
+.v2 #home-hero > * { position: relative; z-index: 1; }
+
+/* ── 6 · Kill the off-brand green — footer + final CTA → charcoal & gold ───── */
+.v2 #contact, .v2 #contact.cta-final,
+.v2 .site-footer, .v2 .hm-ft, .v2 .hm-ft__cta-strip {
+  background:
+    radial-gradient(90% 120% at 50% 0%, rgba(245,166,35,.05), transparent 60%),
+    linear-gradient(180deg, #12140f, #0a0c08) !important;
+}
+.v2 .hm-ft__cta-strip { border-top: 1px solid rgba(245,166,35,.16) !important; }
+
+/* ── 7 · Trust bar + stats — quiet glass, more presence ───────────────────── */
+.v2 .trust-strip {
+  background: linear-gradient(180deg, rgba(30,34,27,.4), rgba(21,24,18,.4)) !important;
+  border-top: 1px solid rgba(255,255,255,.06); border-bottom: 1px solid rgba(255,255,255,.06);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+
+/* ── 8 · Type presence — titles breathe, leads recede ─────────────────────── */
+.v2 .section-title { text-shadow: 0 1px 30px rgba(0,0,0,.5); }
+.v2 #home-hero h1 { text-shadow: 0 2px 60px rgba(0,0,0,.6); }
+
+/* ── 9 · Last green → gold: the "人気" service badge (LINE stays green) ─────── */
+.v2 .svc-img-card__badge--popular { background: #F5A623 !important; color: #0C0E0B !important; }
+
+@media (prefers-reduced-motion: reduce) { .v2 body::after { opacity: .04; } }

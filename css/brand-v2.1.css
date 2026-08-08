@@ -1,0 +1,26 @@
+/* ============================================================================
+   HELLO MOVING V2.1 — shared brand identity layer for staff surfaces
+   Applies the locked identity (Geist type · gold-orange · focus) to
+   admin-v2 / ops / portal / login so the whole platform is one system.
+   Additive; loads last. Surfaces already dark-V2 — this unifies type + accent.
+   ========================================================================== */
+:root, body {
+  --hm-gold: #F5A623; --hm-gold-d: #db8c10;
+}
+body, h1, h2, h3, h4, h5, p, a, button, input, textarea, select, span, label, td, th, li {
+  font-family: "Geist", "Inter", system-ui, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif !important;
+}
+h1, h2, h3, .topbar-title, .p-brand-name, .ba-sec-title { letter-spacing: -0.02em; }
+/* tabular numerals for data */
+[class*="stat"], [class*="num"], td, .badge { font-variant-numeric: tabular-nums; }
+/* mono for eyebrows / labels / codes */
+.sb-section, .p-nav-section, [class*="eyebrow"], [class*="label"], code, .td-mono {
+  font-family: "Geist Mono", ui-monospace, monospace !important;
+}
+/* Gold focus ring everywhere (a11y + identity) */
+a:focus-visible, button:focus-visible, [role="button"]:focus-visible,
+input:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--hm-gold) !important; outline-offset: 2px; border-radius: 8px;
+}
+/* Let the self-contained app-icon (dark tile + glyph) show — neutralise old tile bg */
+.sb-mark, .login-mark, .p-brand-logo, .ops-login-logo, .brand-mark { background: transparent !important; border: none !important; box-shadow: none !important; }
