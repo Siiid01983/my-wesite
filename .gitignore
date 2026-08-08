@@ -38,3 +38,6 @@ verify_deploy.mjs
 
 # Runtime logs — ignore the log files, keep hm-api/logs/.htaccess (dir protection)
 hm-api/logs/*.log
+
+# 3D booking inventory icons — release assets (explicit exception to the global *.png ignore above)
+!assets/icons/3d/*.png

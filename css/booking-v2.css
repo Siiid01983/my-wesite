@@ -134,7 +134,36 @@
 .ba-item-img svg { opacity:1 !important; transition:transform .28s cubic-bezier(.22,.61,.36,1), filter .28s; }
 .ba-item-card:hover .ba-item-img svg { transform:scale(1.06); }
 .ba-item-card.has-count .ba-item-img svg { transform:scale(1.08); filter:drop-shadow(0 6px 14px rgba(245,166,35,.45)); animation:baItemPop .32s cubic-bezier(.22,.61,.36,1); }
+/* CC0 3D product renders (assets/icons/3d/*.png) — same interaction as svg */
+.ba-item-img img { opacity:1 !important; transition:transform .28s cubic-bezier(.22,.61,.36,1), filter .28s; }
+.ba-item-card:hover .ba-item-img img { transform:scale(1.06); }
+.ba-item-card.has-count .ba-item-img img { transform:scale(1.09); filter:drop-shadow(0 8px 16px rgba(245,166,35,.5)); animation:baItemPop .32s cubic-bezier(.22,.61,.36,1); }
 @keyframes baItemPop { 0%{transform:scale(1)} 45%{transform:scale(1.18)} 100%{transform:scale(1.08)} }
+
+/* ═══ J1 — premium selector: desktop tilt/lift + mobile swipe carousel ═══ */
+.ba-items-grid { perspective: 900px; }
+/* Desktop: subtle 3D lift toward the cursor + warm glow (transform/opacity only) */
+@media (hover:hover) and (min-width:641px) {
+  .ba-item-card { transform-style:preserve-3d; }
+  .ba-item-card:hover {
+    transform:translateY(-5px) scale(1.025) rotateX(3deg) !important;
+    box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 26px 46px -22px rgba(0,0,0,.72), 0 0 24px -8px rgba(245,166,35,.28) !important;
+  }
+  .ba-item-card.has-count:hover { transform:translateY(-5px) scale(1.045) rotateX(3deg) !important; }
+}
+/* Mobile: true horizontal swipe carousel — one dominant card + partial neighbours */
+@media (max-width:640px) {
+  .ba-items-grid {
+    display:flex !important; grid-template-columns:none !important;
+    overflow-x:auto; overflow-y:visible; scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch; gap:10px !important;
+    padding:6px 2px 12px; margin:0 -2px 2px; scroll-padding-left:12px;
+    scrollbar-width:none; -ms-overflow-style:none;
+  }
+  .ba-items-grid::-webkit-scrollbar { display:none; }
+  .ba-item-card { flex:0 0 58%; max-width:58%; scroll-snap-align:center; }
+  .ba-item-card.has-count { transform:scale(1.03); }
+}
 
 /* ── Quantity counter — premium stepper ───────────────────────────────────── */
 .ba-counter { background:#0C0E0B !important; border:1px solid rgba(255,255,255,.12) !important; border-radius:999px !important; overflow:hidden; }
@@ -152,5 +181,8 @@
 .ba-review-table td:first-child { color:#A9B0A3 !important; }
 
 @media (prefers-reduced-motion: reduce) {
-  .hm-cal-grid, .ba-item-card.has-count .ba-item-img svg { animation:none !important; }
+  .hm-cal-grid, .ba-item-card.has-count .ba-item-img svg, .ba-item-card.has-count .ba-item-img img { animation:none !important; }
+  .ba-item-card, .ba-item-img img, .ba-item-img svg { transition:none !important; }
+  .ba-item-card:hover .ba-item-img img, .ba-item-card:hover .ba-item-img svg { transform:none !important; }
+  .ba-item-card:hover, .ba-item-card.has-count { transform:none !important; } /* no tilt/scale motion under reduced-motion (border+glow still indicate state) */
 }

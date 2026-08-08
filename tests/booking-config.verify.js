@@ -83,15 +83,17 @@ check('_baItemIcon resolver defined + used by item cards',
 check('icon_svg never injected as raw markup (name → code-owned SVG, file → <img>)',
   indexHtml.includes("'<img src=\"' + _baEsc(v)"));
 check('.ba-item-img img sized like inline SVG icons', indexHtml.includes('.ba-item-img img{'));
+// a built-in icon entry is a code-owned inline SVG OR a rendered asset <img> (assets/icons/3d/*)
+const hasBuiltinIcon = (id) => indexHtml.includes('"' + id + '": \'<svg') || indexHtml.includes('"' + id + '": \'<img');
 check('every default item id has a built-in icon',
-  (idxItemIds || []).every((id) => indexHtml.includes('"' + id + '": \'<svg')),
-  (idxItemIds || []).filter((id) => !indexHtml.includes('"' + id + '": \'<svg')).join(','));
+  (idxItemIds || []).every(hasBuiltinIcon),
+  (idxItemIds || []).filter((id) => !hasBuiltinIcon(id)).join(','));
 check('editor has icon_svg column + media picker + clear',
   moduleJs.includes(".icon_svg\"") && moduleJs.includes('_bcOpenIconPicker')
   && moduleJs.includes("act === 'item-icon-clear'"));
 check('editor drops blank icon_svg on save', moduleJs.includes('delete it.icon_svg'));
 // BC_ICON_NAMES (editor datalist) must only offer names BA_ITEM_SVG can render
-const svgKeys = idsFrom(indexHtml, 'var BA_ITEM_SVG = {', '_default:', /"([\w-]+)": '<svg/g) || [];
+const svgKeys = idsFrom(indexHtml, 'var BA_ITEM_SVG = {', '_default:', /"([\w-]+)": '<(?:svg|img)/g) || [];
 const nameList = idsFrom(moduleJs, 'var BC_ICON_NAMES = [', '];', /'([\w-]+)'/g) || [];
 check('BC_ICON_NAMES ⊆ BA_ITEM_SVG keys', nameList.length > 0 && nameList.every((n) => svgKeys.includes(n)),
   nameList.filter((n) => !svgKeys.includes(n)).join(','));
