@@ -97,9 +97,9 @@
 .hm-day-selected .hm-day-num, .hm-day-selected .hm-day-sym { color:#0C0E0B !important; font-weight:800; }
 .hm-day-avail { border-color:rgba(71,196,106,.4) !important; }
 .hm-day-limited { border-color:rgba(245,158,11,.5) !important; background:rgba(245,158,11,.08) !important; }
-.hm-day-booked { background:rgba(255,255,255,.02) !important; opacity:.4; }
-.hm-day-booked .hm-day-num { color:#5c6257 !important; text-decoration:line-through; }
-.hm-day-past { opacity:.26 !important; }
+.hm-day-booked { background:rgba(255,255,255,.02) !important; opacity:.55; }
+.hm-day-booked .hm-day-num { color:#9aa08c !important; text-decoration:line-through; }
+.hm-day-past { opacity:.42 !important; }
 .hm-day-sun .hm-day-num { color:#f87171 !important; }
 .hm-day-sat .hm-day-num { color:#F5A623 !important; }
 .hm-sym-avail { color:#47C46A !important; }
