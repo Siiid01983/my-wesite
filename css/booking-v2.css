@@ -102,6 +102,9 @@
 .hm-day-past { opacity:.42 !important; }
 .hm-day-sun .hm-day-num { color:#f87171 !important; }
 .hm-day-sat .hm-day-num { color:#F5A623 !important; }
+/* Selected day: number/sym stay dark on the gold fill — MUST win over the sun/sat/today
+   colour rules above (equal specificity, so this must come last to keep the number visible). */
+.hm-day-selected .hm-day-num, .hm-day-selected .hm-day-sym { color:#0C0E0B !important; font-weight:800; }
 .hm-sym-avail { color:#47C46A !important; }
 .hm-sym-limited { color:#f59e0b !important; }
 .hm-sym-booked { color:#f87171 !important; }
