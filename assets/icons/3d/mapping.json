@@ -1,0 +1,224 @@
+[
+ {
+  "slug": "tv-s",
+  "item": "テレビ 小",
+  "model": "televisionModern",
+  "tier": "exact"
+ },
+ {
+  "slug": "tv-l",
+  "item": "テレビ 大",
+  "model": "televisionModern",
+  "tier": "exact"
+ },
+ {
+  "slug": "bed-s",
+  "item": "ベッド S",
+  "model": "bedSingle",
+  "tier": "exact"
+ },
+ {
+  "slug": "bed-sd",
+  "item": "ベッド SD",
+  "model": "bedDouble",
+  "tier": "proxy"
+ },
+ {
+  "slug": "bed-d",
+  "item": "ベッド D",
+  "model": "bedDouble",
+  "tier": "exact"
+ },
+ {
+  "slug": "futon",
+  "item": "布団",
+  "model": "bedSingle",
+  "tier": "proxy"
+ },
+ {
+  "slug": "sofa1",
+  "item": "ソファ 1人",
+  "model": "loungeChair",
+  "tier": "exact"
+ },
+ {
+  "slug": "sofa2",
+  "item": "ソファ 2人",
+  "model": "loungeSofa",
+  "tier": "exact"
+ },
+ {
+  "slug": "sofa3",
+  "item": "ソファ 3人",
+  "model": "loungeSofaLong",
+  "tier": "exact"
+ },
+ {
+  "slug": "lowtable",
+  "item": "ローテーブル",
+  "model": "tableCoffee",
+  "tier": "exact"
+ },
+ {
+  "slug": "kotatsu",
+  "item": "こたつ",
+  "model": "tableCoffeeSquare",
+  "tier": "proxy"
+ },
+ {
+  "slug": "colorbox",
+  "item": "カラーボックス",
+  "model": "bookcaseOpenLow",
+  "tier": "proxy"
+ },
+ {
+  "slug": "case3",
+  "item": "3段ケース",
+  "model": "sideTableDrawers",
+  "tier": "proxy"
+ },
+ {
+  "slug": "shelf-s",
+  "item": "棚 小",
+  "model": "bookcaseOpenLow",
+  "tier": "exact"
+ },
+ {
+  "slug": "shelf-l",
+  "item": "棚 大",
+  "model": "bookcaseOpen",
+  "tier": "exact"
+ },
+ {
+  "slug": "bookshelf",
+  "item": "本棚",
+  "model": "bookcaseClosed",
+  "tier": "exact"
+ },
+ {
+  "slug": "chest",
+  "item": "チェスト",
+  "model": "cabinetBedDrawer",
+  "tier": "exact"
+ },
+ {
+  "slug": "dresser-s",
+  "item": "ドレッサー 小",
+  "model": "sideTableDrawers",
+  "tier": "proxy"
+ },
+ {
+  "slug": "dresser-l",
+  "item": "ドレッサー 大",
+  "model": "bookcaseClosedDoors",
+  "tier": "proxy"
+ },
+ {
+  "slug": "pc",
+  "item": "PC",
+  "model": "computerScreen",
+  "tier": "exact"
+ },
+ {
+  "slug": "pcdesk",
+  "item": "PCデスク",
+  "model": "desk",
+  "tier": "exact"
+ },
+ {
+  "slug": "printer",
+  "item": "プリンター",
+  "model": "printer",
+  "tier": "exact"
+ },
+ {
+  "slug": "fridge-s",
+  "item": "冷蔵庫 2ドア",
+  "model": "kitchenFridgeSmall",
+  "tier": "exact"
+ },
+ {
+  "slug": "fridge-l",
+  "item": "冷蔵庫 3ドア",
+  "model": "kitchenFridgeLarge",
+  "tier": "exact"
+ },
+ {
+  "slug": "wash-v",
+  "item": "洗濯機 縦型",
+  "model": "washer",
+  "tier": "proxy"
+ },
+ {
+  "slug": "wash-d",
+  "item": "洗濯機 ドラム",
+  "model": "washer",
+  "tier": "exact"
+ },
+ {
+  "slug": "table",
+  "item": "テーブル",
+  "model": "table",
+  "tier": "exact"
+ },
+ {
+  "slug": "chair",
+  "item": "椅子",
+  "model": "chair",
+  "tier": "exact"
+ },
+ {
+  "slug": "vacuum",
+  "item": "掃除機",
+  "model": "vacuum",
+  "tier": "exact"
+ },
+ {
+  "slug": "fan",
+  "item": "扇風機",
+  "model": "fan",
+  "tier": "exact"
+ },
+ {
+  "slug": "bike",
+  "item": "自転車",
+  "model": "bike",
+  "tier": "exact"
+ },
+ {
+  "slug": "airpurifier",
+  "item": "空気清浄機",
+  "model": "speaker",
+  "tier": "proxy"
+ },
+ {
+  "slug": "mirror",
+  "item": "ミラー",
+  "model": "bathroomMirror",
+  "tier": "exact"
+ },
+ {
+  "slug": "kitchenboard",
+  "item": "食器棚",
+  "model": "kitchenCabinet",
+  "tier": "exact"
+ },
+ {
+  "slug": "microwave",
+  "item": "レンジ",
+  "model": "kitchenMicrowave",
+  "tier": "exact"
+ },
+ {
+  "slug": "ac",
+  "item": "エアコン",
+  "model": "ac",
+  "tier": "exact"
+ },
+ {
+  "slug": "heater",
+  "item": "ヒーター",
+  "model": "heater",
+  "tier": "exact"
+ }
+]

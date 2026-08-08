@@ -1,0 +1,188 @@
+/* ============================================================================
+   HELLO MOVING — BOOKING OVERLAY, V2 DARK (booking-v2.css, loads last)
+   Re-themes the entire BA booking flow (#booking-app / .ba-* / drawers /
+   calendar / items) to the V2 dark-glass + gold system. CSS only — no markup
+   or logic changes. The date picker is redesigned to feel like Apple/Linear.
+   Palette: surface #0C0E0B/#151812/#1E221B · text #EDEFE9/#A9B0A3 · gold #F5A623
+   ========================================================================== */
+
+/* ── Tokens: keep --ba-forest (dual-role text/btn) but shift the accent ────── */
+#booking-app, .ba-drawer, .ba-drawer-overlay {
+  --bg:#0C0E0B; --ink:#EDEFE9; --line:rgba(255,255,255,.10);
+  --ba-border:rgba(255,255,255,.10); --ba-muted:#808779;
+  --ba-olive:#F5A623; --ba-active:rgba(245,166,35,.12); --ba-canvas:#0C0E0B;
+}
+
+/* ── Shell surfaces ────────────────────────────────────────────────────────── */
+#booking-app { background: #0C0E0B; }
+.ba-panel { background:
+  radial-gradient(900px 500px at 82% -6%, rgba(245,166,35,.06), transparent 60%),
+  #0C0E0B !important; }
+.ba-hdr { background: rgba(12,14,11,.9) !important; -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); border-bottom:1px solid rgba(255,255,255,.08) !important; }
+.ba-hdr-title, .ba-hdr-logo, .ba-hdr-dot ~ span { color:#EDEFE9 !important; }
+.ba-hdr-dot { background:#F5A623 !important; }
+.ba-back-btn { color:#EDEFE9 !important; }
+.ba-sec-title { background:#0C0E0B !important; color:#EDEFE9 !important; letter-spacing:-.01em; }
+.ba-card, .ba-card--pad { background:#151812 !important; border:1px solid rgba(255,255,255,.08) !important; box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 18px 40px -26px #000 !important; }
+.ba-cta-wrap { background:linear-gradient(180deg, transparent, #0C0E0B 40%) !important; }
+
+/* ── Rows (booking-form summary) ──────────────────────────────────────────── */
+.ba-row { border-bottom:1px solid rgba(255,255,255,.07) !important; }
+.ba-label { color:#A9B0A3 !important; }
+.ba-val { color:#EDEFE9 !important; }
+.ba-sep { background:rgba(255,255,255,.08) !important; }
+.ba-chev { color:#808779 !important; }
+.ba-row:active { background:rgba(255,255,255,.03) !important; }
+.ba-row--focused { box-shadow: inset 0 0 0 2px rgba(245,166,35,.55) !important; background:rgba(245,166,35,.05) !important; }
+.ba-wbtn { background:#1E221B !important; color:#A9B0A3 !important; border:1px solid rgba(255,255,255,.1) !important; }
+.ba-wbtn.on { background:#F5A623 !important; color:#0C0E0B !important; border-color:#F5A623 !important; font-weight:700; }
+
+/* ── Primary CTAs → gold ──────────────────────────────────────────────────── */
+.ba-cta, .ba-drawer-cta {
+  background:linear-gradient(180deg,#FFB23E,#F5A623) !important; color:#0C0E0B !important; font-weight:800 !important;
+  box-shadow:0 10px 26px -10px rgba(245,166,35,.6) !important; transition:transform .16s ease, box-shadow .24s ease;
+}
+.ba-cta:active, .ba-drawer-cta:active { transform:translateY(1px); }
+.ba-cta[disabled], .ba-drawer-cta[disabled] { background:#1E221B !important; color:#5c6257 !important; box-shadow:none !important; }
+
+/* ── Service selection cards ──────────────────────────────────────────────── */
+.ba-svc-card { background:#151812 !important; border:1px solid rgba(255,255,255,.08) !important; box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 16px 40px -26px #000 !important; transition:transform .22s cubic-bezier(.22,.61,.36,1), border-color .22s, box-shadow .22s; }
+.ba-svc-card:hover { transform:translateY(-4px); border-color:rgba(245,166,35,.4) !important; }
+.ba-svc-card__illus { background:#0e100b !important; }
+.ba-svc-card__illus svg { opacity:.9 !important; }
+.ba-svc-card__name { color:#EDEFE9 !important; }
+
+/* ── Inputs / textarea ────────────────────────────────────────────────────── */
+.ba-addr-input, .ba-field input, .ba-field textarea {
+  background:#1E221B !important; border:1px solid rgba(255,255,255,.12) !important; color:#EDEFE9 !important;
+}
+.ba-addr-input::placeholder, .ba-field textarea::placeholder { color:rgba(169,176,163,.5) !important; }
+.ba-addr-input:focus, .ba-field input:focus, .ba-field textarea:focus {
+  border-color:#F5A623 !important; box-shadow:0 0 0 3px rgba(245,166,35,.18) !important; outline:none;
+}
+.ba-field-label, .ba-field-lbl { color:#A9B0A3 !important; }
+.ba-req { color:#f87171 !important; }
+.ba-err { color:#f87171 !important; }
+
+/* ── Drawers (bottom sheets) — dark glass ─────────────────────────────────── */
+.ba-drawer-overlay { background:rgba(0,0,0,.6) !important; }
+.ba-drawer { background:#151812 !important; border:1px solid rgba(255,255,255,.08); border-bottom:none; box-shadow:0 -30px 80px -30px #000 !important; }
+.ba-drawer-handle { background:rgba(255,255,255,.22) !important; }
+.ba-drawer-title { color:#EDEFE9 !important; font-weight:800; letter-spacing:-.01em; }
+.ba-drawer-footer { background:#151812 !important; border-top:1px solid rgba(255,255,255,.08) !important; }
+
+/* ═══════════════ CALENDAR — Apple/Linear-style dark date picker ════════════ */
+.hm-cal-month { color:#EDEFE9 !important; font-weight:800; letter-spacing:-.01em; }
+.hm-nav-btn { background:rgba(255,255,255,.04) !important; border:1px solid rgba(255,255,255,.12) !important; color:#EDEFE9 !important; transition:.16s; }
+.hm-nav-btn:hover:not([disabled]) { border-color:#F5A623 !important; color:#F5A623 !important; background:rgba(245,166,35,.1) !important; }
+.hm-dow { color:#808779 !important; text-transform:uppercase; letter-spacing:.05em; font-size:10px !important; }
+.hm-dow-sun { color:#f87171 !important; }
+.hm-dow-sat { color:#F5A623 !important; }
+.hm-cal-grid { gap:4px !important; }
+.hm-day {
+  background:rgba(30,34,27,.5) !important; border:1px solid rgba(255,255,255,.07) !important; color:#EDEFE9 !important;
+  transition:transform .14s ease, border-color .16s, background .16s, box-shadow .16s;
+}
+.hm-day-num { color:#EDEFE9 !important; font-weight:600; }
+.hm-day:not([disabled]):not(.hm-day-empty):hover {
+  border-color:#F5A623 !important; background:rgba(245,166,35,.08) !important; box-shadow:0 0 0 2px rgba(245,166,35,.18) !important; transform:translateY(-1px);
+}
+.hm-day:focus-visible { outline:2px solid #F5A623 !important; outline-offset:2px; }
+.hm-day-today { border-color:rgba(245,166,35,.55) !important; }
+.hm-day-today .hm-day-num { color:#F5A623 !important; font-weight:800; }
+.hm-day-selected {
+  background:linear-gradient(180deg,#FFB23E,#F5A623) !important; border-color:#F5A623 !important;
+  box-shadow:0 0 0 3px rgba(245,166,35,.28), 0 10px 24px -8px rgba(245,166,35,.55) !important; transform:translateY(-1px);
+}
+.hm-day-selected .hm-day-num, .hm-day-selected .hm-day-sym { color:#0C0E0B !important; font-weight:800; }
+.hm-day-avail { border-color:rgba(71,196,106,.4) !important; }
+.hm-day-limited { border-color:rgba(245,158,11,.5) !important; background:rgba(245,158,11,.08) !important; }
+.hm-day-booked { background:rgba(255,255,255,.02) !important; opacity:.4; }
+.hm-day-booked .hm-day-num { color:#5c6257 !important; text-decoration:line-through; }
+.hm-day-past { opacity:.26 !important; }
+.hm-day-sun .hm-day-num { color:#f87171 !important; }
+.hm-day-sat .hm-day-num { color:#F5A623 !important; }
+.hm-sym-avail { color:#47C46A !important; }
+.hm-sym-limited { color:#f59e0b !important; }
+.hm-sym-booked { color:#f87171 !important; }
+.hm-cal-legend { color:#A9B0A3 !important; border-top-color:rgba(255,255,255,.1) !important; }
+/* soft month transition */
+.hm-cal-grid { animation: hmCalIn .28s cubic-bezier(.22,.61,.36,1); }
+@keyframes hmCalIn { from { opacity:0; transform:translateX(6px) } to { opacity:1; transform:none } }
+
+/* ── Time slots ───────────────────────────────────────────────────────────── */
+.bk-time-pill { background:rgba(30,34,27,.5) !important; border:1px solid rgba(255,255,255,.1) !important; color:#EDEFE9 !important; transition:.16s; }
+.bk-time-pill:hover { border-color:#F5A623 !important; background:rgba(245,166,35,.06) !important; }
+.bk-time-pill:has(input:checked) { border-color:#F5A623 !important; background:rgba(245,166,35,.12) !important; color:#F5A623 !important; font-weight:600 !important; }
+.bk-time-radio { border-color:rgba(255,255,255,.25) !important; }
+.bk-time-pill:has(input:checked) .bk-time-radio { border-color:#F5A623 !important; }
+.bk-time-section { border-top-color:rgba(255,255,255,.1) !important; }
+
+/* ═══════════════ ITEMS — premium dark cards + selection feel ═══════════════ */
+.ba-items-grid { gap:12px !important; }
+.ba-item-card {
+  background:#151812 !important; border:1.5px solid rgba(255,255,255,.08) !important; border-radius:14px !important;
+  box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 14px 34px -24px #000 !important;
+  transition:transform .2s cubic-bezier(.22,.61,.36,1), background .2s, border-color .2s, box-shadow .2s;
+}
+.ba-item-card:hover { transform:translateY(-3px); border-color:rgba(245,166,35,.35) !important; }
+.ba-item-card.has-count {
+  background:rgba(245,166,35,.1) !important; border-color:#F5A623 !important;
+  box-shadow:0 0 0 1px rgba(245,166,35,.3), 0 16px 36px -18px rgba(245,166,35,.4) !important;
+}
+.ba-item-name { color:#EDEFE9 !important; font-weight:600 !important; }
+.ba-item-img svg { opacity:1 !important; transition:transform .28s cubic-bezier(.22,.61,.36,1), filter .28s; }
+.ba-item-card:hover .ba-item-img svg { transform:scale(1.06); }
+.ba-item-card.has-count .ba-item-img svg { transform:scale(1.08); filter:drop-shadow(0 6px 14px rgba(245,166,35,.45)); animation:baItemPop .32s cubic-bezier(.22,.61,.36,1); }
+/* CC0 3D product renders (assets/icons/3d/*.png) — same interaction as svg */
+.ba-item-img img { opacity:1 !important; transition:transform .28s cubic-bezier(.22,.61,.36,1), filter .28s; }
+.ba-item-card:hover .ba-item-img img { transform:scale(1.06); }
+.ba-item-card.has-count .ba-item-img img { transform:scale(1.09); filter:drop-shadow(0 8px 16px rgba(245,166,35,.5)); animation:baItemPop .32s cubic-bezier(.22,.61,.36,1); }
+@keyframes baItemPop { 0%{transform:scale(1)} 45%{transform:scale(1.18)} 100%{transform:scale(1.08)} }
+
+/* ═══ J1 — premium selector: desktop tilt/lift + mobile swipe carousel ═══ */
+.ba-items-grid { perspective: 900px; }
+/* Desktop: subtle 3D lift toward the cursor + warm glow (transform/opacity only) */
+@media (hover:hover) and (min-width:641px) {
+  .ba-item-card { transform-style:preserve-3d; }
+  .ba-item-card:hover {
+    transform:translateY(-5px) scale(1.025) rotateX(3deg) !important;
+    box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 26px 46px -22px rgba(0,0,0,.72), 0 0 24px -8px rgba(245,166,35,.28) !important;
+  }
+  .ba-item-card.has-count:hover { transform:translateY(-5px) scale(1.045) rotateX(3deg) !important; }
+}
+/* Mobile: true horizontal swipe carousel — one dominant card + partial neighbours */
+@media (max-width:640px) {
+  .ba-items-grid {
+    display:flex !important; grid-template-columns:none !important;
+    overflow-x:auto; overflow-y:visible; scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch; gap:10px !important;
+    padding:6px 2px 12px; margin:0 -2px 2px; scroll-padding-left:12px;
+    scrollbar-width:none; -ms-overflow-style:none;
+  }
+  .ba-items-grid::-webkit-scrollbar { display:none; }
+  .ba-item-card { flex:0 0 58%; max-width:58%; scroll-snap-align:center; }
+  .ba-item-card.has-count { transform:scale(1.03); }
+}
+
+/* ── Quantity counter — premium stepper ───────────────────────────────────── */
+.ba-counter { background:#0C0E0B !important; border:1px solid rgba(255,255,255,.12) !important; border-radius:999px !important; overflow:hidden; }
+.ba-counter button { background:transparent !important; color:#EDEFE9 !important; border:none !important; transition:.14s; }
+.ba-counter button:hover { color:#F5A623 !important; background:rgba(245,166,35,.12) !important; }
+.ba-item-card.has-count .ba-counter { border-color:rgba(245,166,35,.45) !important; }
+.ba-counter [class*="num"], .ba-counter span { color:#EDEFE9 !important; font-weight:700; font-variant-numeric:tabular-nums; }
+
+/* ── Filters ──────────────────────────────────────────────────────────────── */
+.ba-filter-label { color:#EDEFE9 !important; }
+.ba-filter-label input { accent-color:#F5A623 !important; }
+
+/* ── Review table ─────────────────────────────────────────────────────────── */
+.ba-review-table td { color:#EDEFE9 !important; border-bottom:1px solid rgba(255,255,255,.07) !important; }
+.ba-review-table td:first-child { color:#A9B0A3 !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hm-cal-grid, .ba-item-card.has-count .ba-item-img svg, .ba-item-card.has-count .ba-item-img img { animation:none !important; }
+  .ba-item-card, .ba-item-img img, .ba-item-img svg { transition:none !important; }
+  .ba-item-card:hover .ba-item-img img, .ba-item-card:hover .ba-item-img svg { transform:none !important; }
+  .ba-item-card:hover, .ba-item-card.has-count { transform:none !important; } /* no tilt/scale motion under reduced-motion (border+glow still indicate state) */
+}
