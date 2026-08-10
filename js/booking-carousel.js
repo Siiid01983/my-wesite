@@ -1,32 +1,37 @@
 /* ============================================================================
- * booking-carousel.js — premium horizontal inventory shelf enhancer.
+ * booking-carousel.js — premium horizontal inventory shelf enhancer (DESKTOP/
+ * TABLET only, viewport ≥ 768px).
  *
  * Progressive enhancement over the CSS carousel (.ba-items-grid inside
  * #ba-items-host). Presentation only — no booking logic, slugs, names,
- * quantities, or state are touched. Fail-open: any error leaves the plain
- * CSS snap-carousel fully usable.
+ * quantities, or state are touched. Fail-open.
  *
- * Adds, on every browser (not just ones with CSS scroll-driven animation):
- *   • center-focus  — the card nearest the track centre gets `.is-center`
- *                     (scale/gold/opacity) based on ACTUAL scroll position.
- *   • edge padding  — leading/trailing space so the FIRST and LAST card can
- *                     reach the centre position.
- *   • keyboard      — ArrowLeft / ArrowRight move between cards (snap-scroll).
+ * ≥ 768px  — adds, on every browser (not just ones with CSS scroll-driven anim):
+ *   • center-focus  — the card nearest the track centre gets `.is-center`.
+ *   • edge margins  — first & last card can reach the centre position.
+ *   • keyboard      — ArrowLeft / ArrowRight move between cards.
  *   • desktop       — vertical-wheel → horizontal scroll, and mouse click-drag.
+ *
+ * ≤ 767px  — INACTIVE. The inventory is a plain 2-column CSS grid; this script
+ *   demotes each track (removes tabindex/role, `.is-center`, and any inline
+ *   end-margins) so nothing scrolls horizontally and no carousel-only focusable
+ *   element remains. It re-activates automatically if the viewport grows.
+ *
  * Respects prefers-reduced-motion (smooth→instant; CSS drops the scale motion).
  * ==========================================================================*/
 (function () {
   'use strict';
   var mq = window.matchMedia || function () { return { matches: false }; };
   var reduce = mq('(prefers-reduced-motion: reduce)').matches;
-  var coarse = function () { return mq('(pointer:coarse)').matches; };
+  var isDesktop = function () { return mq('(min-width:768px)').matches; };
 
   function cards(track) { return track.querySelectorAll('.ba-item-card'); }
 
-  // Mark the card whose centre is nearest the track's viewport centre.
+  // Mark the card whose centre is nearest the track's viewport centre (desktop only).
   function markCenter(track) {
     var cs = cards(track);
     if (!cs.length) return;
+    if (!isDesktop()) { for (var k = 0; k < cs.length; k++) cs[k].classList.remove('is-center'); return; }
     var mid = track.scrollLeft + track.clientWidth / 2, best = null, bd = Infinity;
     for (var i = 0; i < cs.length; i++) {
       var c = cs[i], cc = c.offsetLeft + c.offsetWidth / 2, d = Math.abs(cc - mid);
@@ -35,16 +40,15 @@
     for (var j = 0; j < cs.length; j++) cs[j].classList.toggle('is-center', cs[j] === best);
   }
 
-  // Leading/trailing space so first & last can reach centre. Uses margins on the
-  // first & last card (NOT track padding) so the flex `%` card width is unaffected.
+  // Leading/trailing space (first & last card margins) so they can reach centre.
   function padEnds(track) {
     var cs = cards(track);
     if (!cs.length) return;
+    for (var k = 0; k < cs.length; k++) { cs[k].style.marginLeft = ''; cs[k].style.marginRight = ''; }
+    if (!isDesktop()) return;                        // grid mode: no end-margins
     var p = Math.max(4, (track.clientWidth - cs[0].offsetWidth) / 2);
-    for (var i = 0; i < cs.length; i++) { cs[i].style.marginLeft = ''; cs[i].style.marginRight = ''; }
     cs[0].style.marginLeft = p + 'px';
     cs[cs.length - 1].style.marginRight = p + 'px';
-    track.style.scrollPaddingInline = '0px';
   }
 
   function centerCard(track, card) {
@@ -56,9 +60,6 @@
   function wire(track) {
     if (track.__hmCar) return;
     track.__hmCar = 1;
-    track.setAttribute('tabindex', '0');
-    track.setAttribute('role', 'group');
-    track.setAttribute('aria-label', '荷物を左右にスワイプして選択');
 
     var raf = 0;
     track.addEventListener('scroll', function () {
@@ -66,8 +67,8 @@
       raf = requestAnimationFrame(function () { raf = 0; markCenter(track); });
     }, { passive: true });
 
-    // Keyboard: arrow keys step to prev/next card and centre it.
     track.addEventListener('keydown', function (e) {
+      if (!isDesktop()) return;
       if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
       e.preventDefault();
       var cs = [].slice.call(cards(track));
@@ -77,19 +78,17 @@
       centerCard(track, cs[idx]);
     });
 
-    // Desktop: translate vertical wheel to horizontal scroll (touch keeps native).
     track.addEventListener('wheel', function (e) {
-      if (coarse()) return;
+      if (!isDesktop()) return;
       if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
       if (track.scrollWidth <= track.clientWidth) return;
       track.scrollLeft += e.deltaY;
       e.preventDefault();
     }, { passive: false });
 
-    // Desktop: mouse click-drag to pan (guard the click so a drag never fires a stepper).
     var down = false, sx = 0, sl = 0, moved = false;
     track.addEventListener('pointerdown', function (e) {
-      if (e.pointerType !== 'mouse') return;
+      if (!isDesktop() || e.pointerType !== 'mouse') return;
       down = true; moved = false; sx = e.clientX; sl = track.scrollLeft;
     });
     window.addEventListener('pointermove', function (e) {
@@ -101,29 +100,46 @@
     track.addEventListener('click', function (e) {
       if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; }
     }, true);
+  }
 
+  function promote(track) {
+    wire(track);
+    track.setAttribute('tabindex', '0');
+    track.setAttribute('role', 'group');
+    track.setAttribute('aria-label', '荷物を左右にスワイプして選択');
     padEnds(track);
     markCenter(track);
   }
 
-  function wireAll() {
+  // Mobile: strip every carousel-only affordance so it's a plain, non-scrolling grid.
+  function demote(track) {
+    track.removeAttribute('tabindex');
+    track.removeAttribute('role');
+    track.removeAttribute('aria-label');
+    var cs = cards(track);
+    for (var i = 0; i < cs.length; i++) {
+      cs[i].classList.remove('is-center');
+      cs[i].style.marginLeft = '';
+      cs[i].style.marginRight = '';
+    }
+  }
+
+  function applyAll() {
     var tracks = document.querySelectorAll('#ba-items-host .ba-items-grid');
-    for (var i = 0; i < tracks.length; i++) { wire(tracks[i]); padEnds(tracks[i]); markCenter(tracks[i]); }
+    for (var i = 0; i < tracks.length; i++) {
+      if (isDesktop()) promote(tracks[i]); else demote(tracks[i]);
+    }
   }
 
   function boot() {
     var host = document.getElementById('ba-items-host');
     if (!host) return;
-    // Re-wire whenever the item list re-renders (baRenderItems replaces innerHTML).
-    try { new MutationObserver(wireAll).observe(host, { childList: true }); } catch (e) {}
-    wireAll();
+    try { new MutationObserver(applyAll).observe(host, { childList: true }); } catch (e) {}
+    applyAll();
     var rt;
     window.addEventListener('resize', function () {
       clearTimeout(rt);
-      rt = setTimeout(function () {
-        var t = document.querySelectorAll('#ba-items-host .ba-items-grid');
-        for (var i = 0; i < t.length; i++) { padEnds(t[i]); markCenter(t[i]); }
-      }, 120);
+      rt = setTimeout(applyAll, 120);
     });
   }
 

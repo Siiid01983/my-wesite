@@ -253,3 +253,28 @@
   .ba-item-card .ba-item-img img, .ba-item-card .ba-item-img svg,
   .ba-item-card:hover .ba-item-img img, .ba-item-card:hover .ba-item-img svg { transform:none !important; }
 }
+
+/* ═══════════════ MOBILE (≤767px) — plain 2-column grid, NO carousel ═══════════
+   The horizontal shelf/center-focus is a tablet+desktop treatment only. On phones
+   the inventory returns to a clean 2-up grid; the PAGE scrolls vertically, the
+   selector never scrolls horizontally. booking-carousel.js is viewport-aware and
+   stays inactive here (no track scroll, no is-center, no first/last margins).
+   The 3D objects, pedestal/shadow, gold selected border+glow, object scale-up on
+   select, steppers and labels are all preserved unchanged. */
+@media (max-width:767px) {
+  .ba-items-grid {
+    display:grid !important; grid-template-columns:repeat(2, minmax(0,1fr)) !important;
+    overflow:visible !important; scroll-snap-type:none !important; perspective:none !important;
+    gap:10px !important; padding:8px 0 4px !important; margin:0 0 4px !important;
+  }
+  .ba-item-card {
+    flex:none !important; width:auto !important; min-width:0 !important; max-width:none !important;
+    scroll-snap-align:none !important; margin:0 !important;
+    transform:none !important; opacity:1 !important;   /* no edge-recede / center scale on mobile */
+  }
+  .ba-item-card.is-center { transform:none !important; border-color:rgba(255,255,255,.08) !important;
+    box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 16px 36px -24px #000 !important; }
+  /* Selected state stays fully intact: gold border + warm glow + object scale-up (below) */
+  .ba-item-card.has-count { border-color:#F5A623 !important;
+    box-shadow:0 0 0 1px rgba(245,166,35,.3), 0 18px 40px -18px rgba(245,166,35,.4) !important; }
+}
