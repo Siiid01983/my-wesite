@@ -2,223 +2,223 @@
  {
   "slug": "tv-s",
   "item": "テレビ 小",
-  "model": "hmFlatTV (authored)",
+  "model": "hm_tv_s (authored)",
   "tier": "exact"
  },
  {
   "slug": "tv-l",
   "item": "テレビ 大",
-  "model": "hmFlatTV (authored)",
+  "model": "hm_tv_l (authored)",
   "tier": "exact"
  },
  {
   "slug": "bed-s",
   "item": "ベッド S",
-  "model": "bedSingle",
+  "model": "hm_bed_s (authored)",
   "tier": "exact"
  },
  {
   "slug": "bed-sd",
   "item": "ベッド SD",
-  "model": "bedDouble",
-  "tier": "proxy"
+  "model": "hm_bed_sd (authored)",
+  "tier": "exact"
  },
  {
   "slug": "bed-d",
   "item": "ベッド D",
-  "model": "bedDouble",
+  "model": "hm_bed_d (authored)",
   "tier": "exact"
  },
  {
   "slug": "futon",
   "item": "布団",
-  "model": "bedSingle",
-  "tier": "proxy"
+  "model": "hm_futon (authored)",
+  "tier": "exact"
  },
  {
   "slug": "sofa1",
   "item": "ソファ 1人",
-  "model": "hmSofa1 (authored)",
+  "model": "hm_sofa1 (authored)",
   "tier": "exact"
  },
  {
   "slug": "sofa2",
   "item": "ソファ 2人",
-  "model": "hmSofa2 (authored)",
+  "model": "hm_sofa2 (authored)",
   "tier": "exact"
  },
  {
   "slug": "sofa3",
   "item": "ソファ 3人",
-  "model": "hmSofa3 (authored)",
+  "model": "hm_sofa3 (authored)",
   "tier": "exact"
  },
  {
   "slug": "lowtable",
   "item": "ローテーブル",
-  "model": "tableCoffee",
+  "model": "hm_lowtable (authored)",
   "tier": "exact"
  },
  {
   "slug": "kotatsu",
   "item": "こたつ",
-  "model": "tableCoffeeSquare",
-  "tier": "proxy"
+  "model": "hm_kotatsu (authored)",
+  "tier": "exact"
  },
  {
   "slug": "colorbox",
   "item": "カラーボックス",
-  "model": "bookcaseOpenLow",
-  "tier": "proxy"
+  "model": "hm_colorbox (authored)",
+  "tier": "exact"
  },
  {
   "slug": "case3",
   "item": "3段ケース",
-  "model": "sideTableDrawers",
-  "tier": "proxy"
+  "model": "hm_case3 (authored)",
+  "tier": "exact"
  },
  {
   "slug": "shelf-s",
   "item": "棚 小",
-  "model": "bookcaseOpenLow",
+  "model": "hm_shelf_s (authored)",
   "tier": "exact"
  },
  {
   "slug": "shelf-l",
   "item": "棚 大",
-  "model": "bookcaseOpen",
+  "model": "hm_shelf_l (authored)",
   "tier": "exact"
  },
  {
   "slug": "bookshelf",
   "item": "本棚",
-  "model": "bookcaseClosed",
+  "model": "hm_bookshelf (authored)",
   "tier": "exact"
  },
  {
   "slug": "chest",
   "item": "チェスト",
-  "model": "cabinetBedDrawer",
+  "model": "hm_chest (authored)",
   "tier": "exact"
  },
  {
   "slug": "dresser-s",
   "item": "ドレッサー 小",
-  "model": "sideTableDrawers",
-  "tier": "proxy"
+  "model": "hm_dresser_s (authored)",
+  "tier": "exact"
  },
  {
   "slug": "dresser-l",
   "item": "ドレッサー 大",
-  "model": "bookcaseClosedDoors",
-  "tier": "proxy"
+  "model": "hm_dresser_l (authored)",
+  "tier": "exact"
  },
  {
   "slug": "pc",
   "item": "PC",
-  "model": "computerScreen",
+  "model": "hm_pc (authored)",
   "tier": "exact"
  },
  {
   "slug": "pcdesk",
   "item": "PCデスク",
-  "model": "desk",
+  "model": "hm_pcdesk (authored)",
   "tier": "exact"
  },
  {
   "slug": "printer",
   "item": "プリンター",
-  "model": "printer",
+  "model": "hm_printer (authored)",
   "tier": "exact"
  },
  {
   "slug": "fridge-s",
   "item": "冷蔵庫 2ドア",
-  "model": "hmFridge2Door (authored)",
+  "model": "hm_fridge_s (authored)",
   "tier": "exact"
  },
  {
   "slug": "fridge-l",
   "item": "冷蔵庫 3ドア",
-  "model": "hmFridge3Door (authored)",
+  "model": "hm_fridge_l (authored)",
   "tier": "exact"
  },
  {
   "slug": "wash-v",
   "item": "洗濯機 縦型",
-  "model": "hmWasherTopLoad (authored)",
+  "model": "hm_wash_v (authored)",
   "tier": "exact"
  },
  {
   "slug": "wash-d",
   "item": "洗濯機 ドラム",
-  "model": "hmWasherFrontLoad (authored)",
+  "model": "hm_wash_d (authored)",
   "tier": "exact"
  },
  {
   "slug": "table",
   "item": "テーブル",
-  "model": "table",
+  "model": "hm_table (authored)",
   "tier": "exact"
  },
  {
   "slug": "chair",
   "item": "椅子",
-  "model": "chair",
+  "model": "hm_chair (authored)",
   "tier": "exact"
  },
  {
   "slug": "vacuum",
   "item": "掃除機",
-  "model": "vacuum",
+  "model": "hm_vacuum (authored)",
   "tier": "exact"
  },
  {
   "slug": "fan",
   "item": "扇風機",
-  "model": "fan",
+  "model": "hm_fan (authored)",
   "tier": "exact"
  },
  {
   "slug": "bike",
   "item": "自転車",
-  "model": "bike",
+  "model": "hm_bike (authored)",
   "tier": "exact"
  },
  {
   "slug": "airpurifier",
   "item": "空気清浄機",
-  "model": "hmAirPurifier (authored)",
+  "model": "hm_airpurifier (authored)",
   "tier": "exact"
  },
  {
   "slug": "mirror",
   "item": "ミラー",
-  "model": "bathroomMirror",
+  "model": "hm_mirror (authored)",
   "tier": "exact"
  },
  {
   "slug": "kitchenboard",
   "item": "食器棚",
-  "model": "kitchenCabinet",
+  "model": "hm_kitchenboard (authored)",
   "tier": "exact"
  },
  {
   "slug": "microwave",
   "item": "レンジ",
-  "model": "hmMicrowave (authored)",
+  "model": "hm_microwave (authored)",
   "tier": "exact"
  },
  {
   "slug": "ac",
   "item": "エアコン",
-  "model": "ac",
+  "model": "hm_ac (authored)",
   "tier": "exact"
  },
  {
   "slug": "heater",
   "item": "ヒーター",
-  "model": "heater",
+  "model": "hm_heater (authored)",
   "tier": "exact"
  }
 ]

@@ -48,6 +48,7 @@ const PRECACHE = [
   '/js/back-to-top.js',
   '/js/motion.js',
   '/js/v2.js',
+  '/js/booking-carousel.js',
   '/script.js',
   '/bookingService.js',
 

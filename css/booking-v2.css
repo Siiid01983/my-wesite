@@ -140,15 +140,24 @@
   scrollbar-width:none; -ms-overflow-style:none; overscroll-behavior-x:contain;
 }
 .ba-items-grid::-webkit-scrollbar { display:none; height:0; width:0; }
+/* Only the inventory TRACK scrolls horizontally — the sheet/page never does.
+   Scoped containment (not a global body hack); the track keeps its real x-scroll. */
+#booking-app, .ba-panel, .ba-drawer, .ba-drawer-scroll { overflow-x:clip; }
+@supports not (overflow-x:clip) { #booking-app, .ba-panel, .ba-drawer, .ba-drawer-scroll { overflow-x:hidden; } }
+/* leading/trailing space so the first & last card can reach the centre (booking-carousel.js
+   sets the exact px; this is the pre-JS fallback so first/last aren't stuck at the edge) */
+.ba-items-grid { scroll-padding-inline:44%; }
 
 /* ── Card: fixed shelf width, one dominant card + partial neighbour peek ────── */
 .ba-item-card {
   flex:0 0 clamp(156px, 45%, 196px); max-width:196px; scroll-snap-align:center;
   align-items:center !important; text-align:center; gap:6px !important;
-  padding:14px 12px 12px !important;
+  padding:14px 12px 12px !important; position:relative;
   background:#151812 !important; border:1.5px solid rgba(255,255,255,.08) !important; border-radius:16px !important;
   box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 16px 36px -24px #000 !important;
-  transition:transform .2s cubic-bezier(.22,.61,.36,1), background .2s, border-color .2s, box-shadow .2s;
+  /* default = edge/recessed state; the centred card is promoted via .is-center */
+  transform:scale(.94); opacity:.9;
+  transition:transform .24s cubic-bezier(.22,.61,.36,1), opacity .24s, background .2s, border-color .2s, box-shadow .2s;
 }
 .ba-item-card.has-count {
   background:rgba(245,166,35,.09) !important; border-color:#F5A623 !important;
@@ -204,23 +213,20 @@
   .ba-item-card.has-count:hover .ba-item-img img, .ba-item-card.has-count:hover .ba-item-img svg { transform:scale(1.13); }
 }
 
-/* ── Slide + zoom: centred card dominates, neighbours recede (CSS scroll-driven,
-      progressive enhancement — plain snap carousel where unsupported) ───────── */
-@supports (animation-timeline: view(inline)) {
-  @media (prefers-reduced-motion: no-preference) {
-    .ba-item-card {
-      animation:baShelfZoom linear both;
-      animation-timeline:view(inline);
-      animation-range:entry 8% exit 92%;
-      will-change:transform, opacity;
-    }
-    @keyframes baShelfZoom {
-      0%   { transform:scale(.88); opacity:.6; }
-      50%  { transform:scale(1);   opacity:1;  }
-      100% { transform:scale(.88); opacity:.6; }
-    }
-  }
+/* ── Center-focus: the card nearest the track centre dominates. Driven by
+      booking-carousel.js adding .is-center from ACTUAL scroll position (works on
+      every engine, not just :hover). Edge cards recede (see .ba-item-card default). */
+.ba-item-card.is-center {
+  transform:scale(1.06); opacity:1; z-index:3;
+  border-color:rgba(245,166,35,.5) !important;
+  box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 26px 50px -22px rgba(0,0,0,.75), 0 0 26px -9px rgba(245,166,35,.32) !important;
 }
+.ba-item-card.is-center .ba-item-img img, .ba-item-card.is-center .ba-item-img svg { transform:scale(1.04); }
+/* selected + centred keeps the filled-gold selected treatment on top */
+.ba-item-card.has-count.is-center { border-color:#F5A623 !important; }
+.ba-item-card.has-count.is-center .ba-item-img img, .ba-item-card.has-count.is-center .ba-item-img svg { transform:scale(1.12); }
+/* keyboard focus on the track itself */
+.ba-items-grid:focus-visible { outline:2px solid rgba(245,166,35,.6); outline-offset:3px; border-radius:12px; }
 
 /* ── Quantity counter — premium stepper ───────────────────────────────────── */
 .ba-counter { background:#0C0E0B !important; border:1px solid rgba(255,255,255,.12) !important; border-radius:999px !important; overflow:hidden; }
@@ -240,10 +246,10 @@
 @media (prefers-reduced-motion: reduce) {
   .hm-cal-grid, .ba-item-card.has-count .ba-item-img svg, .ba-item-card.has-count .ba-item-img img { animation:none !important; }
   .ba-item-card, .ba-item-img img, .ba-item-img svg { transition:none !important; animation:none !important; }
-  /* No scale/pop/coverflow motion under reduced-motion. State is still fully legible:
-     selected keeps its gold border + warm stage; the stepper stays active. */
-  .ba-item-card:hover .ba-item-img img, .ba-item-card:hover .ba-item-img svg,
-  .ba-item-card.has-count:hover .ba-item-img img, .ba-item-card.has-count:hover .ba-item-img svg { transform:none !important; }
-  .ba-item-card:hover, .ba-item-card.has-count { transform:none !important; }
-  .ba-item-card.has-count .ba-item-img img, .ba-item-card.has-count .ba-item-img svg { transform:none !important; }
+  /* No scale/pop/coverflow motion under reduced-motion: all cards & objects stay at
+     rest size + full opacity. State is still fully legible — the centred card and the
+     selected card keep their GOLD border (a static state, not motion); stepper stays active. */
+  .ba-item-card, .ba-item-card.is-center, .ba-item-card.has-count { transform:none !important; opacity:1 !important; }
+  .ba-item-card .ba-item-img img, .ba-item-card .ba-item-img svg,
+  .ba-item-card:hover .ba-item-img img, .ba-item-card:hover .ba-item-img svg { transform:none !important; }
 }
