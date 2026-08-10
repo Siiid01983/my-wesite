@@ -2,13 +2,13 @@
  {
   "slug": "tv-s",
   "item": "テレビ 小",
-  "model": "televisionModern",
+  "model": "hmFlatTV (authored)",
   "tier": "exact"
  },
  {
   "slug": "tv-l",
   "item": "テレビ 大",
-  "model": "televisionModern",
+  "model": "hmFlatTV (authored)",
   "tier": "exact"
  },
  {
@@ -38,19 +38,19 @@
  {
   "slug": "sofa1",
   "item": "ソファ 1人",
-  "model": "loungeChair",
+  "model": "hmSofa1 (authored)",
   "tier": "exact"
  },
  {
   "slug": "sofa2",
   "item": "ソファ 2人",
-  "model": "loungeSofa",
+  "model": "hmSofa2 (authored)",
   "tier": "exact"
  },
  {
   "slug": "sofa3",
   "item": "ソファ 3人",
-  "model": "loungeSofaLong",
+  "model": "hmSofa3 (authored)",
   "tier": "exact"
  },
  {
@@ -134,25 +134,25 @@
  {
   "slug": "fridge-s",
   "item": "冷蔵庫 2ドア",
-  "model": "kitchenFridgeSmall",
+  "model": "hmFridge2Door (authored)",
   "tier": "exact"
  },
  {
   "slug": "fridge-l",
   "item": "冷蔵庫 3ドア",
-  "model": "kitchenFridgeLarge",
+  "model": "hmFridge3Door (authored)",
   "tier": "exact"
  },
  {
   "slug": "wash-v",
   "item": "洗濯機 縦型",
-  "model": "washer",
-  "tier": "proxy"
+  "model": "hmWasherTopLoad (authored)",
+  "tier": "exact"
  },
  {
   "slug": "wash-d",
   "item": "洗濯機 ドラム",
-  "model": "washer",
+  "model": "hmWasherFrontLoad (authored)",
   "tier": "exact"
  },
  {
@@ -188,8 +188,8 @@
  {
   "slug": "airpurifier",
   "item": "空気清浄機",
-  "model": "speaker",
-  "tier": "proxy"
+  "model": "hmAirPurifier (authored)",
+  "tier": "exact"
  },
  {
   "slug": "mirror",
@@ -206,7 +206,7 @@
  {
   "slug": "microwave",
   "item": "レンジ",
-  "model": "kitchenMicrowave",
+  "model": "hmMicrowave (authored)",
   "tier": "exact"
  },
  {
