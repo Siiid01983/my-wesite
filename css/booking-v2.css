@@ -121,51 +121,105 @@
 .bk-time-pill:has(input:checked) .bk-time-radio { border-color:#F5A623 !important; }
 .bk-time-section { border-top-color:rgba(255,255,255,.1) !important; }
 
-/* ═══════════════ ITEMS — premium dark cards + selection feel ═══════════════ */
-.ba-items-grid { gap:12px !important; }
+/* ═══════════════ ITEMS — V2.2 premium horizontal product shelf ═══════════════
+   Each category renders as its own horizontal, snap-scrolling shelf (Apple/Linear
+   product-browser feel). Objects are the primary visual: large, lit on a soft
+   product stage so the pale CC0 renders separate from the charcoal surface.
+   Hierarchy: object (primary) › name (secondary) › quantity stepper (tertiary).
+   ============================================================================ */
+
+/* ── Shelf: single horizontal row, swipe/drag → snap ───────────────────────── */
+.ba-items-grid {
+  display:flex !important; grid-template-columns:none !important; perspective:1000px;
+  overflow-x:auto; overflow-y:visible; scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
+  gap:12px !important; padding:8px 2px 14px; margin:0 -2px 2px; scroll-padding:0 8px;
+  /* Scrollbar hidden everywhere for a clean product-shelf look. Discoverability
+     comes from the partial next-card peek + scroll-snap; interaction is touch/
+     trackpad swipe, or vertical-wheel → horizontal translation on pointer devices. */
+  scrollbar-width:none; -ms-overflow-style:none; overscroll-behavior-x:contain;
+}
+.ba-items-grid::-webkit-scrollbar { display:none; height:0; width:0; }
+
+/* ── Card: fixed shelf width, one dominant card + partial neighbour peek ────── */
 .ba-item-card {
-  background:#151812 !important; border:1.5px solid rgba(255,255,255,.08) !important; border-radius:14px !important;
-  box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 14px 34px -24px #000 !important;
+  flex:0 0 clamp(156px, 45%, 196px); max-width:196px; scroll-snap-align:center;
+  align-items:center !important; text-align:center; gap:6px !important;
+  padding:14px 12px 12px !important;
+  background:#151812 !important; border:1.5px solid rgba(255,255,255,.08) !important; border-radius:16px !important;
+  box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 16px 36px -24px #000 !important;
   transition:transform .2s cubic-bezier(.22,.61,.36,1), background .2s, border-color .2s, box-shadow .2s;
 }
-.ba-item-card:hover { transform:translateY(-3px); border-color:rgba(245,166,35,.35) !important; }
 .ba-item-card.has-count {
-  background:rgba(245,166,35,.1) !important; border-color:#F5A623 !important;
-  box-shadow:0 0 0 1px rgba(245,166,35,.3), 0 16px 36px -18px rgba(245,166,35,.4) !important;
+  background:rgba(245,166,35,.09) !important; border-color:#F5A623 !important;
+  box-shadow:0 0 0 1px rgba(245,166,35,.3), 0 18px 40px -18px rgba(245,166,35,.4) !important;
 }
-.ba-item-name { color:#EDEFE9 !important; font-weight:600 !important; }
-.ba-item-img svg { opacity:1 !important; transition:transform .28s cubic-bezier(.22,.61,.36,1), filter .28s; }
-.ba-item-card:hover .ba-item-img svg { transform:scale(1.06); }
-.ba-item-card.has-count .ba-item-img svg { transform:scale(1.08); filter:drop-shadow(0 6px 14px rgba(245,166,35,.45)); animation:baItemPop .32s cubic-bezier(.22,.61,.36,1); }
-/* CC0 3D product renders (assets/icons/3d/*.png) — same interaction as svg */
-.ba-item-img img { opacity:1 !important; transition:transform .28s cubic-bezier(.22,.61,.36,1), filter .28s; }
-.ba-item-card:hover .ba-item-img img { transform:scale(1.06); }
-.ba-item-card.has-count .ba-item-img img { transform:scale(1.09); filter:drop-shadow(0 8px 16px rgba(245,166,35,.5)); animation:baItemPop .32s cubic-bezier(.22,.61,.36,1); }
-@keyframes baItemPop { 0%{transform:scale(1)} 45%{transform:scale(1.18)} 100%{transform:scale(1.08)} }
 
-/* ═══ J1 — premium selector: desktop tilt/lift + mobile swipe carousel ═══ */
-.ba-items-grid { perspective: 900px; }
-/* Desktop: subtle 3D lift toward the cursor + warm glow (transform/opacity only) */
-@media (hover:hover) and (min-width:641px) {
-  .ba-item-card { transform-style:preserve-3d; }
-  .ba-item-card:hover {
-    transform:translateY(-5px) scale(1.025) rotateX(3deg) !important;
-    box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 26px 46px -22px rgba(0,0,0,.72), 0 0 24px -8px rgba(245,166,35,.28) !important;
-  }
-  .ba-item-card.has-count:hover { transform:translateY(-5px) scale(1.045) rotateX(3deg) !important; }
+/* ── Object = primary visual: large, lit product stage, grounded ───────────── */
+.ba-item-img {
+  order:-1; position:relative; width:100% !important;
+  height:auto !important; min-height:clamp(116px, 32vw, 150px) !important;
+  display:flex; align-items:center; justify-content:center; margin-bottom:2px;
+  border-radius:14px;
+  /* soft light pedestal so pale/white objects read against charcoal (behind object, not on it) */
+  background:radial-gradient(120% 86% at 50% 34%, rgba(236,240,233,.14), rgba(236,240,233,.045) 46%, transparent 72%);
+  transition:background .22s;
 }
-/* Mobile: true horizontal swipe carousel — one dominant card + partial neighbours */
-@media (max-width:640px) {
-  .ba-items-grid {
-    display:flex !important; grid-template-columns:none !important;
-    overflow-x:auto; overflow-y:visible; scroll-snap-type:x mandatory;
-    -webkit-overflow-scrolling:touch; gap:10px !important;
-    padding:6px 2px 12px; margin:0 -2px 2px; scroll-padding-left:12px;
-    scrollbar-width:none; -ms-overflow-style:none;
+/* contact shadow — grounds the object on the stage, adds realism */
+.ba-item-img::after {
+  content:""; position:absolute; left:50%; bottom:14%; width:56%; height:12px;
+  transform:translateX(-50%); border-radius:50%; z-index:0; pointer-events:none;
+  background:radial-gradient(closest-side, rgba(0,0,0,.55), transparent 78%); filter:blur(2px);
+}
+.ba-item-img img, .ba-item-img svg {
+  position:relative; z-index:1; opacity:1 !important;
+  width:auto !important; height:clamp(102px, 29vw, 134px) !important; max-width:94% !important;
+  object-fit:contain;
+  /* dark edge + soft cast → separates the light silhouette from the pedestal/charcoal */
+  filter:drop-shadow(0 8px 12px rgba(0,0,0,.5)) drop-shadow(0 1px 1px rgba(0,0,0,.35));
+  transition:transform .28s cubic-bezier(.22,.61,.36,1), filter .28s;
+}
+
+/* ── Selected: object grows, warms, brightens; stage + counter go active ───── */
+.ba-item-card.has-count .ba-item-img {
+  background:radial-gradient(120% 86% at 50% 32%, rgba(245,166,35,.18), rgba(245,166,35,.05) 46%, transparent 72%);
+}
+.ba-item-card.has-count .ba-item-img img, .ba-item-card.has-count .ba-item-img svg {
+  transform:scale(1.1);
+  filter:drop-shadow(0 12px 18px rgba(245,166,35,.38)) drop-shadow(0 2px 3px rgba(0,0,0,.45)) brightness(1.04);
+  animation:baItemPop .34s cubic-bezier(.22,.61,.36,1);
+}
+@keyframes baItemPop { 0%{transform:scale(1)} 45%{transform:scale(1.2)} 100%{transform:scale(1.1)} }
+
+/* ── Name (secondary) ──────────────────────────────────────────────────────── */
+.ba-item-name { order:0; width:100%; color:#EDEFE9 !important; font-weight:600 !important; line-height:1.3; }
+
+/* ── Hover (pointer devices only): restrained gold edge + object lift, no shift ─ */
+@media (hover:hover) {
+  .ba-item-card:hover {
+    border-color:rgba(245,166,35,.4) !important;
+    box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 22px 42px -22px rgba(0,0,0,.72), 0 0 22px -10px rgba(245,166,35,.3) !important;
   }
-  .ba-items-grid::-webkit-scrollbar { display:none; }
-  .ba-item-card { flex:0 0 58%; max-width:58%; scroll-snap-align:center; }
-  .ba-item-card.has-count { transform:scale(1.03); }
+  .ba-item-card:hover .ba-item-img img, .ba-item-card:hover .ba-item-img svg { transform:scale(1.05); }
+  .ba-item-card.has-count:hover .ba-item-img img, .ba-item-card.has-count:hover .ba-item-img svg { transform:scale(1.13); }
+}
+
+/* ── Slide + zoom: centred card dominates, neighbours recede (CSS scroll-driven,
+      progressive enhancement — plain snap carousel where unsupported) ───────── */
+@supports (animation-timeline: view(inline)) {
+  @media (prefers-reduced-motion: no-preference) {
+    .ba-item-card {
+      animation:baShelfZoom linear both;
+      animation-timeline:view(inline);
+      animation-range:entry 8% exit 92%;
+      will-change:transform, opacity;
+    }
+    @keyframes baShelfZoom {
+      0%   { transform:scale(.88); opacity:.6; }
+      50%  { transform:scale(1);   opacity:1;  }
+      100% { transform:scale(.88); opacity:.6; }
+    }
+  }
 }
 
 /* ── Quantity counter — premium stepper ───────────────────────────────────── */
@@ -185,7 +239,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .hm-cal-grid, .ba-item-card.has-count .ba-item-img svg, .ba-item-card.has-count .ba-item-img img { animation:none !important; }
-  .ba-item-card, .ba-item-img img, .ba-item-img svg { transition:none !important; }
-  .ba-item-card:hover .ba-item-img img, .ba-item-card:hover .ba-item-img svg { transform:none !important; }
-  .ba-item-card:hover, .ba-item-card.has-count { transform:none !important; } /* no tilt/scale motion under reduced-motion (border+glow still indicate state) */
+  .ba-item-card, .ba-item-img img, .ba-item-img svg { transition:none !important; animation:none !important; }
+  /* No scale/pop/coverflow motion under reduced-motion. State is still fully legible:
+     selected keeps its gold border + warm stage; the stepper stays active. */
+  .ba-item-card:hover .ba-item-img img, .ba-item-card:hover .ba-item-img svg,
+  .ba-item-card.has-count:hover .ba-item-img img, .ba-item-card.has-count:hover .ba-item-img svg { transform:none !important; }
+  .ba-item-card:hover, .ba-item-card.has-count { transform:none !important; }
+  .ba-item-card.has-count .ba-item-img img, .ba-item-card.has-count .ba-item-img svg { transform:none !important; }
 }
