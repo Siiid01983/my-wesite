@@ -25,6 +25,42 @@ Rendered locally to 512 × 512 transparent PNG.
   chair, table/lowtable/kotatsu/pcdesk, chest, dresser-s/dresser-l, shelf-s/shelf-l, bookshelf,
   colorbox, case3, kitchenboard, box, and the `_default` fallback.
 
+## V2.3 — premium 2D illustration set (current)
+- All 39 icons are now **premium flat 2D product illustrations** (each object in its most
+  recognisable elevation; no 3D perspective, no fake extrusion). One shared rendering style:
+  per-material vertical gradients, soft internal shading, restrained highlights, realistic
+  colours (dark screens, off-white appliances, warm wood, cream/warm-gray fabric, dark
+  metal/tyres), clean rounded edges, no heavy outlines, transparent background.
+- **Original CC0 / public-domain** hand-authored SVG (deterministic, **not AI-generated**, no
+  third-party/paid assets). Rasterised to 512×512 transparent PNG via headless Chromium at
+  build time; auto-framed so the object fills ~70% of the canvas. Card CSS supplies the
+  pedestal + contact/drop shadow (unchanged). `mapping.json` all `tier: exact`.
+- Supersedes the three.js 3D pass (a design-direction change, not a licensing change — both
+  were original CC0). No three.js in the repo; no runtime dependency.
+
+## V2.2 — genuine 3D render pass (previous)
+- All 39 icons are now **real 3D renders**, not 2.5D vector art. The geometry is **original
+  work authored for Hello Moving** (procedural three.js primitives — boxes, cylinders, tori,
+  tube curves — composed into each object), released **CC0 / public domain**. No third-party
+  models, no scanned/downloaded meshes, **no AI-generated assets**.
+- Renderer: **three.js r128 (MIT)** used **at BUILD TIME ONLY** in headless Chromium (real
+  WebGL). three.js is a *tool*, not a shipped asset — it is **not** referenced by index.html,
+  sw.js, or any production file, and is **not** a runtime/production dependency. The site ships
+  only the exported static PNGs.
+- One shared studio rig for the whole family: fixed perspective camera + 3/4 angle, hemisphere
+  + key/fill/rim lights, PCF-soft contact shadow, ACES tone mapping, sRGB, transparent
+  background; identical scale/framing via an alpha-bbox auto-frame pass. Only the object +
+  its PBR materials change per icon. Believable material colours (dark screens/glass/drum
+  doors, silver appliances, warm wood, fabric) — the UI gold accent never colours the objects.
+
+## V2.2 quality pass (superseded by the 3D render pass above)
+- All 39 re-rendered with richer studio materials (per-face sheen + ambient-occlusion +
+  edge highlights) for a "product-render" feel, and the weaker objects were rebuilt with
+  corrected geometry (chair now a real chair, vacuum a canister vacuum, sofas with a
+  shallow back + arms + cushions, beds with a moderate headboard + duvet + pillows, plus
+  kotatsu / low-table / pc-desk / dining-table / futon / bicycle / heater). TV, refrigerator
+  and bed remain the quality benchmark. Still original CC0 authored vector→PNG; no source change.
+
 ## History
 - Earlier releases used CC0 assets from **Kenney "Furniture Kit"** (kenney.nl, CC0) and a CC0
   **Poly Pizza** printer, rendered via three.js. Those were **fully replaced** in this pass: the
