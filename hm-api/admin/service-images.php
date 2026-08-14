@@ -4,33 +4,96 @@
 //
 //  Reached at:  <API_BASE>/admin/service-images.php
 //
+//  ⚠ SCHEMA NOTE (2026): this endpoint speaks the EXISTING production
+//  `hm_service_images` table, whose real columns are:
+//     id, title, category, image_path, alt_text, description,
+//     display_order, is_active, created_at, updated_at
+//  It does NOT own a `service_slug` / `image_url` / `image_webp` / `thumb_url`
+//  / `width` / `height` / `active` schema (an abandoned migration draft). The
+//  service identifier lives in `category`; the image lives in `image_path`;
+//  the on/off flag is `is_active`. The JSON contract below is UNCHANGED so the
+//  admin panel (js/modules/website/wmcServices.js) and the public feed reader
+//  (js/services/contentLoader.js) need no edits — the mapping is internal.
+//
 //  Actions (verb → action):
-//    GET                         list      → { data:[rows], count }   (all slugs, inc inactive)
+//    GET [?category=<slug>]      list      → { data:[rows], count }   (all cats, inc inactive)
 //    POST  (multipart)           upload    → { data:{row} }           image + service_slug required
-//                                            (UPSERT by slug — re-uploading REPLACES the image
-//                                             and deletes the old files)
+//                                            (UPSERT by category — re-uploading REPLACES the
+//                                             image and deletes the old file)
 //    PUT   (application/json)    update     → { data:{row} }           active/alt_text/display_order
 //                                            + optional base64 image replacement
-//    DELETE                      delete     → { data:{deleted:id} }    removes row + files
+//    DELETE                      delete     → { data:{deleted:id} }    removes row + file
 //    POST  ?action=reorder       reorder    → { data:{updated:n} }     one transaction
 //
 //  Auth (EVERY request): API-key gate + staff gate (admin/manager X-ADMIN-TOKEN,
 //  which is also the CSRF defense) — identical to admin/gallery.php.
 //
 //  Uploads: extension/MIME whitelist (jpg/png/webp) + 5 MB cap + server-side
-//  RE-ENCODE via GD (strips embedded payloads) + full-size WebP + 400px thumb +
-//  real width/height. Files land in the storage.php `media` bucket under
-//  service-images/. Degrades gracefully to the validated raw upload when GD is
-//  absent (image_webp/thumb_url NULL, dims via getimagesize()).
+//  RE-ENCODE via GD (strips embedded payloads). The re-encoded original is stored
+//  in the storage.php `media` bucket under service-images/ and its URL saved in
+//  `image_path` (served directly). Degrades to the validated raw copy when GD is
+//  absent. No WebP/thumbnail/dimension variants are generated (the production
+//  schema has no columns to store them).
 //
-//  One row per service_slug (UNIQUE) — the 6 homepage cards. An inactive or
-//  missing row makes the card fall back to its built-in placeholder image.
+//  One row per service category (app-enforced UPSERT; the DB does not require a
+//  unique key). An inactive or missing row makes the card fall back to its
+//  built-in placeholder image.
 //
 //  Error shape (handler errors): { "error": "message", "code": <httpStatus> }.
 // ════════════════════════════════════════════════════════════════════════════
 declare(strict_types=1);
+
+// ── Safe fatal diagnostics ───────────────────────────────────────────────────
+// Convert an otherwise-EMPTY "HTTP 500 ()" (an uncatchable fatal such as a
+// missing include or an undefined function — the class of error the try/catch
+// below cannot reach) into (a) a precise server-log line and (b) a safe JSON
+// body. NEVER leaks credentials/keys — only error message/file/line. Registered
+// before the requires so it also covers a failed require.
+register_shutdown_function(static function (): void {
+  $e = error_get_last();
+  if (!$e || !in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true)) return;
+  $msg = 'admin/service-images FATAL: ' . $e['message'] . ' @ ' . $e['file'] . ':' . $e['line'];
+  if (function_exists('hm_log_error')) hm_log_error('admin/service-images fatal (shutdown)', ['msg' => $e['message'], 'file' => $e['file'], 'line' => $e['line']]);
+  else error_log($msg);
+  if (!headers_sent()) {
+    http_response_code(500);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['error' => 'Server error — see server log', 'code' => 500]);
+  }
+});
+
 require_once __DIR__ . '/../_db.php';
 require_once __DIR__ . '/../_ratelimit.php';
+
+// Canonical slug mapping. Prefer the shared file; if it was not deployed, define
+// the identical helpers inline so this endpoint is self-healing (never 500s on a
+// missing include). Kept byte-for-byte in sync with hm-api/_svcimg_slug.php.
+$__svcimgSlug = __DIR__ . '/../_svcimg_slug.php';
+if (is_file($__svcimgSlug)) require_once $__svcimgSlug;
+if (!defined('SVCIMG_SLUGS')) {
+  define('SVCIMG_SLUGS', ['sameday', 'single', 'couple', 'student', 'disposal', 'furniture']);
+}
+if (!function_exists('svcimg_norm_slug')) {
+  function svcimg_norm_slug(string $s): string {
+    $s = strtolower(trim($s));
+    if ($s === 'emergency') $s = 'sameday';
+    return in_array($s, SVCIMG_SLUGS, true) ? $s : '';
+  }
+}
+if (!function_exists('svcimg_canon_slug')) {
+  function svcimg_canon_slug(array $r): string {
+    $byCat = svcimg_norm_slug((string)($r['category'] ?? ''));
+    if ($byCat !== '') return $byCat;
+    return svcimg_norm_slug((string)($r['title'] ?? ''));
+  }
+}
+if (!function_exists('svcimg_resolve_slug')) {
+  function svcimg_resolve_slug(array $r): string {
+    $canon = svcimg_canon_slug($r);
+    if ($canon !== '') return $canon;
+    return strtolower(trim((string)($r['category'] ?? '')));
+  }
+}
 
 hm_cors();                                  // CORS + OPTIONS + access log
 hm_require_api_key();                       // public key gate
@@ -42,10 +105,19 @@ $cfg   = hm_config();
 $ROOT  = rtrim((string)($cfg['storage_dir'] ?? (__DIR__ . '/../_uploads')), '/\\');
 $SDIR  = $ROOT . '/media/service-images';   // media bucket, service-images/ prefix
 const SVCIMG_MAX_BYTES = 5 * 1024 * 1024;   // 5 MB
-const SVCIMG_THUMB_W   = 400;
-// canonical service slugs (index.html SERVICE_CONFIG ids). 'emergency' is a legacy
-// alias for 'sameday' accepted on write and normalized.
-const SVCIMG_SLUGS = ['sameday', 'single', 'couple', 'student', 'disposal', 'furniture'];
+// SVCIMG_SLUGS + svcimg_norm_slug/svcimg_resolve_slug/svcimg_canon_slug come from
+// _svcimg_slug.php (shared with the public feed). The service identity lives in
+// `category`; 'emergency' is a legacy alias for 'sameday', normalized on read/write.
+// slug → default `title` used only when INSERTing a brand-new row (kept human-readable
+// for anyone browsing the table directly; never overwrites an existing title).
+const SVCIMG_SLUG_TITLES = [
+  'sameday'   => '当日・お急ぎ引越しプラン',
+  'single'    => '単身引越し',
+  'couple'    => 'カップル・ご夫婦引越し',
+  'student'   => '学生・新生活引越し',
+  'disposal'  => '不用品回収・処分',
+  'furniture' => '家具組立・分解',
+];
 $SVCIMG_MIME_EXT = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
 
 // ── Routing ─────────────────────────────────────────────────────────────────
@@ -64,6 +136,7 @@ try {
   }
 } catch (Throwable $e) {
   hm_log_error('admin/service-images fatal', ['err' => $e->getMessage()]);
+  if (svcimg_missing_table($e)) s_err(svcimg_missing_table_msg(), 503);   // actionable: table absent
   s_err(hm_debug() ? $e->getMessage() : 'Request failed', 500);
 }
 
@@ -71,16 +144,23 @@ try {
 //  Handlers
 // ════════════════════════════════════════════════════════════════════════════
 
-// GET → all rows (incl. inactive) for the admin panel.
+// GET → all rows (incl. inactive) for the admin panel; optional ?category=<slug>
+// (alias ?service=) filter.
 function svcimg_list(): void {
-  $st = hm_db()->query('SELECT * FROM hm_service_images ORDER BY display_order ASC, id ASC');
+  $cat  = svcimg_norm_slug((string)($_GET['category'] ?? ($_GET['service'] ?? '')));
+  $sql  = 'SELECT * FROM hm_service_images';
+  $args = [];
+  if ($cat !== '') { $sql .= ' WHERE category = ?'; $args[] = $cat; }
+  $sql .= ' ORDER BY display_order ASC, id ASC';
+  $st = hm_db()->prepare($sql);
+  $st->execute($args);
   $rows = array_map('svcimg_shape_row', $st->fetchAll());
   s_json(['data' => $rows, 'count' => count($rows)], 200);
 }
 
-// POST multipart → upload an image for a slug (UPSERT: replaces an existing one).
+// POST multipart → upload an image for a slug (UPSERT by category: replaces existing).
 function svcimg_upload(): void {
-  $slug = svcimg_norm_slug((string)($_POST['service_slug'] ?? ''));
+  $slug = svcimg_norm_slug((string)($_POST['service_slug'] ?? ($_POST['category'] ?? '')));
   if ($slug === '') s_err('service_slug が不正です（' . implode('/', SVCIMG_SLUGS) . '）', 422);
 
   if (!isset($_FILES['image']) || ($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
@@ -94,17 +174,17 @@ function svcimg_upload(): void {
   if ($tmp === '' || !is_uploaded_file($tmp)) s_err('Invalid upload', 400);
   if ((int)($f['size'] ?? 0) > SVCIMG_MAX_BYTES) s_err('ファイルが大きすぎます（最大 5MB）', 413);
 
-  $img = svcimg_process_image($tmp, $slug);   // validates + re-encodes + variants (or throws)
+  $img = svcimg_process_image($tmp, $slug);   // validates + re-encodes → { image_path, files }
 
-  $alt   = svcimg_str($_POST['alt_text'] ?? '', 200);
+  $alt    = svcimg_str($_POST['alt_text'] ?? '', 200);
   $active = svcimg_bool($_POST['active'] ?? '1');
 
   $existing = svcimg_fetch_by_slug($slug);
   try {
     if ($existing) {
-      // Replace: keep alt/order unless explicitly provided; swap image fields.
-      $sets = ['image_url = ?', 'image_webp = ?', 'thumb_url = ?', 'width = ?', 'height = ?', 'active = ?'];
-      $args = [$img['image_url'], $img['image_webp'], $img['thumb_url'], $img['width'], $img['height'], $active];
+      // Replace: swap image_path + is_active; keep alt/order unless explicitly provided.
+      $sets = ['image_path = ?', 'is_active = ?'];
+      $args = [$img['image_path'], $active];
       if ($alt !== '') { $sets[] = 'alt_text = ?'; $args[] = $alt; }
       if (array_key_exists('display_order', $_POST) && $_POST['display_order'] !== '') {
         $sets[] = 'display_order = ?'; $args[] = (int)$_POST['display_order'];
@@ -116,28 +196,25 @@ function svcimg_upload(): void {
     } else {
       $order = array_key_exists('display_order', $_POST) && $_POST['display_order'] !== ''
              ? (int)$_POST['display_order'] : svcimg_next_order();
+      $title = SVCIMG_SLUG_TITLES[$slug] ?? $slug;
       $st = hm_db()->prepare(
         'INSERT INTO hm_service_images
-           (service_slug, image_url, image_webp, thumb_url, width, height, alt_text, active, display_order)
-         VALUES (?,?,?,?,?,?,?,?,?)'
+           (category, title, image_path, alt_text, is_active, display_order)
+         VALUES (?,?,?,?,?,?)'
       );
-      $st->execute([$slug, $img['image_url'], $img['image_webp'], $img['thumb_url'],
-                    $img['width'], $img['height'], $alt, $active, $order]);
+      $st->execute([$slug, $title, $img['image_path'], $alt, $active, $order]);
       $id = (int)hm_db()->lastInsertId();
     }
   } catch (Throwable $e) {
-    svcimg_unlink($img['files']);                        // don't orphan files on a failed write
+    svcimg_unlink($img['files']);                        // don't orphan the file on a failed write
     hm_log_error('service-images upsert failed', ['err' => $e->getMessage(), 'slug' => $slug]);
+    if (svcimg_missing_table($e)) s_err(svcimg_missing_table_msg(), 503);
     s_err('保存に失敗しました', 500);
   }
 
-  // Replacement succeeded → delete the OLD image files from disk (best-effort).
+  // Replacement succeeded → delete the OLD image file from disk (best-effort).
   if ($existing) {
-    svcimg_unlink(array_filter([
-      svcimg_disk_from_url($existing['image_url']  ?? ''),
-      svcimg_disk_from_url($existing['image_webp'] ?? ''),
-      svcimg_disk_from_url($existing['thumb_url']  ?? ''),
-    ]));
+    svcimg_unlink(array_filter([svcimg_disk_from_url((string)($existing['image_path'] ?? ''))]));
   }
   s_json(['data' => svcimg_fetch_row($id)], $existing ? 200 : 201);
 }
@@ -146,32 +223,28 @@ function svcimg_upload(): void {
 function svcimg_update(): void {
   $body = svcimg_json_body();
   $id   = (int)($body['id'] ?? ($_GET['id'] ?? 0));
-  if ($id <= 0 && !empty($body['service_slug'])) {
-    $row = svcimg_fetch_by_slug(svcimg_norm_slug((string)$body['service_slug']));
+  if ($id <= 0 && (!empty($body['service_slug']) || !empty($body['category']))) {
+    $row = svcimg_fetch_by_slug(svcimg_norm_slug((string)($body['service_slug'] ?? $body['category'])));
     $id  = $row ? (int)$row['id'] : 0;
   }
   if ($id <= 0) s_err('id が必要です', 422);
 
-  $existing = svcimg_fetch_by_slug_or_id($id);
+  $existing = svcimg_fetch_by_id($id);
   if (!$existing) s_err('対象が見つかりません', 404);
 
   $sets = []; $args = [];
   if (array_key_exists('alt_text', $body))      { $sets[] = 'alt_text = ?';      $args[] = svcimg_str((string)$body['alt_text'], 200); }
-  if (array_key_exists('active', $body))        { $sets[] = 'active = ?';        $args[] = svcimg_bool($body['active']); }
+  if (array_key_exists('active', $body))        { $sets[] = 'is_active = ?';     $args[] = svcimg_bool($body['active']); }
   if (array_key_exists('display_order', $body)) { $sets[] = 'display_order = ?'; $args[] = (int)$body['display_order']; }
 
   // Optional image replacement — base64 payload (data URI or bare base64).
   $newFiles = null;
   if (!empty($body['image_base64'])) {
     $tmp = svcimg_base64_to_tmp((string)$body['image_base64']);   // validates size, or throws
-    $img = svcimg_process_image($tmp, (string)$existing['service_slug']);
+    $img = svcimg_process_image($tmp, svcimg_resolve_slug($existing));
     @unlink($tmp);
     $newFiles = $img['files'];
-    $sets[] = 'image_url = ?';  $args[] = $img['image_url'];
-    $sets[] = 'image_webp = ?'; $args[] = $img['image_webp'];
-    $sets[] = 'thumb_url = ?';  $args[] = $img['thumb_url'];
-    $sets[] = 'width = ?';      $args[] = $img['width'];
-    $sets[] = 'height = ?';     $args[] = $img['height'];
+    $sets[] = 'image_path = ?'; $args[] = $img['image_path'];
   }
 
   if (!$sets) s_err('更新する項目がありません', 422);
@@ -187,27 +260,23 @@ function svcimg_update(): void {
   }
 
   if ($newFiles) {
-    svcimg_unlink(array_filter([
-      svcimg_disk_from_url($existing['image_url']  ?? ''),
-      svcimg_disk_from_url($existing['image_webp'] ?? ''),
-      svcimg_disk_from_url($existing['thumb_url']  ?? ''),
-    ]));
+    svcimg_unlink(array_filter([svcimg_disk_from_url((string)($existing['image_path'] ?? ''))]));
   }
   s_json(['data' => svcimg_fetch_row($id)], 200);
 }
 
-// DELETE → remove the row AND its image files from disk.
+// DELETE → remove the row AND its image file from disk.
 function svcimg_delete(): void {
   $id = (int)($_GET['id'] ?? 0);
   if ($id <= 0) { $b = svcimg_json_body(); $id = (int)($b['id'] ?? 0);
-    if ($id <= 0 && !empty($b['service_slug'])) {
-      $r = svcimg_fetch_by_slug(svcimg_norm_slug((string)$b['service_slug']));
+    if ($id <= 0 && (!empty($b['service_slug']) || !empty($b['category']))) {
+      $r = svcimg_fetch_by_slug(svcimg_norm_slug((string)($b['service_slug'] ?? $b['category'])));
       $id = $r ? (int)$r['id'] : 0;
     }
   }
   if ($id <= 0) s_err('id が必要です', 422);
 
-  $row = svcimg_fetch_by_slug_or_id($id);
+  $row = svcimg_fetch_by_id($id);
   if (!$row) s_err('対象が見つかりません', 404);
 
   try {
@@ -217,11 +286,7 @@ function svcimg_delete(): void {
     hm_log_error('service-images delete failed', ['err' => $e->getMessage(), 'id' => $id]);
     s_err('削除に失敗しました', 500);
   }
-  svcimg_unlink(array_filter([
-    svcimg_disk_from_url($row['image_url']  ?? ''),
-    svcimg_disk_from_url($row['image_webp'] ?? ''),
-    svcimg_disk_from_url($row['thumb_url']  ?? ''),
-  ]));
+  svcimg_unlink(array_filter([svcimg_disk_from_url((string)($row['image_path'] ?? ''))]));
   s_json(['data' => ['deleted' => $id]], 200);
 }
 
@@ -252,11 +317,11 @@ function svcimg_reorder(): void {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-//  Image processing  (self-contained; mirrors admin/gallery.php)
+//  Image processing  (self-contained; re-encode-only, no variants)
 // ════════════════════════════════════════════════════════════════════════════
 
 // Validate + store an image from a local temp file. Returns:
-//   [ image_url, image_webp|null, thumb_url|null, width|null, height|null, files:[disk paths] ]
+//   [ image_path => <served URL>, files => [disk paths] ]
 // Emits s_err (and exits) on any validation failure.
 function svcimg_process_image(string $srcTmp, string $slug): array {
   global $SDIR, $SVCIMG_MIME_EXT;
@@ -279,55 +344,26 @@ function svcimg_process_image(string $srcTmp, string $slug): array {
   }
 
   $safeSlug = preg_replace('/[^a-z0-9_-]/', '', $slug) ?: 'svc';
-  $rand = $safeSlug . '_' . bin2hex(random_bytes(8));
-  $origDisk  = "$SDIR/$rand.$ext";
-  $webpDisk  = "$SDIR/$rand.webp";
-  $thumbDisk = "$SDIR/{$rand}_400.webp";
+  $rand     = $safeSlug . '_' . bin2hex(random_bytes(8));
+  $origDisk = "$SDIR/$rand.$ext";
 
   $files = [];
-  $width = null; $height = null;
-  $webpUrl = null; $thumbUrl = null;
-
   $gd = extension_loaded('gd') && function_exists('imagecreatetruecolor');
   if ($gd) {
     $src = svcimg_gd_load($srcTmp, $mime);
     if ($src === null) s_err('画像を読み込めませんでした', 422);
-    $width  = imagesx($src);
-    $height = imagesy($src);
-
     if (!svcimg_gd_save($src, $mime, $origDisk)) { imagedestroy($src); s_err('画像の保存に失敗しました', 500); }
-    $files[] = $origDisk;
-
-    if (function_exists('imagewebp')) {
-      if (@imagewebp($src, $webpDisk, 82)) { $files[] = $webpDisk; $webpUrl = svcimg_media_url("$rand.webp"); }
-    }
-
-    $thumb = svcimg_gd_thumb($src, SVCIMG_THUMB_W);
-    if ($thumb !== null) {
-      if (function_exists('imagewebp') && @imagewebp($thumb, $thumbDisk, 80)) {
-        $files[] = $thumbDisk; $thumbUrl = svcimg_media_url("{$rand}_400.webp");
-      } else {
-        $thumbJpg = "$SDIR/{$rand}_400.jpg";
-        if (@imagejpeg($thumb, $thumbJpg, 82)) { $files[] = $thumbJpg; $thumbUrl = svcimg_media_url("{$rand}_400.jpg"); }
-      }
-      imagedestroy($thumb);
-    }
     imagedestroy($src);
+    $files[] = $origDisk;
   } else {
-    hm_log_error('service-images GD missing — storing raw upload (no re-encode/webp/thumb)', ['mime' => $mime]);
+    hm_log_error('service-images GD missing — storing raw upload (no re-encode)', ['mime' => $mime]);
     if (!@copy($srcTmp, $origDisk)) s_err('画像の保存に失敗しました', 500);
     $files[] = $origDisk;
-    $dim = @getimagesize($origDisk);
-    if (is_array($dim)) { $width = (int)$dim[0]; $height = (int)$dim[1]; }
   }
   @chmod($origDisk, 0644);
 
   return [
-    'image_url'  => svcimg_media_url("$rand.$ext"),
-    'image_webp' => $webpUrl,
-    'thumb_url'  => $thumbUrl,
-    'width'      => $width,
-    'height'     => $height,
+    'image_path' => svcimg_media_url("$rand.$ext"),
     'files'      => $files,
   ];
 }
@@ -353,20 +389,6 @@ function svcimg_gd_save($img, string $mime, string $dest): bool {
     case 'image/webp': return function_exists('imagewebp') ? @imagewebp($img, $dest, 82) : false;
   }
   return false;
-}
-
-function svcimg_gd_thumb($src, int $targetW) {
-  $w = imagesx($src); $h = imagesy($src);
-  if ($w <= 0 || $h <= 0) return null;
-  if ($w <= $targetW) { $targetW = $w; }
-  $targetH = max(1, (int)round($h * ($targetW / $w)));
-  $dst = imagecreatetruecolor($targetW, $targetH);
-  if (!$dst) return null;
-  imagealphablending($dst, false); imagesavealpha($dst, true);
-  $transparent = imagecolorallocatealpha($dst, 0, 0, 0, 127);
-  imagefilledrectangle($dst, 0, 0, $targetW, $targetH, $transparent);
-  imagecopyresampled($dst, $src, 0, 0, 0, 0, $targetW, $targetH, $w, $h);
-  return $dst;
 }
 
 function svcimg_base64_to_tmp(string $b64): string {
@@ -397,6 +419,9 @@ function svcimg_api_origin(): string {
   return $scheme . '://' . $host . $base;
 }
 
+// Map a stored image_path (a storage.php get URL) back to its disk file for cleanup.
+// Only resolves media-bucket URLs under our storage root; returns null otherwise
+// (so a manually-set external image_path is never treated as a deletable local file).
 function svcimg_disk_from_url(string $url): ?string {
   global $ROOT;
   if ($url === '') return null;
@@ -414,27 +439,24 @@ function svcimg_disk_from_url(string $url): ?string {
 //  Small DB / value helpers
 // ════════════════════════════════════════════════════════════════════════════
 
-// Normalize + validate a service slug against the canonical set ('' when invalid).
-function svcimg_norm_slug(string $s): string {
-  $s = strtolower(trim($s));
-  if ($s === 'emergency') $s = 'sameday';   // legacy alias
-  return in_array($s, SVCIMG_SLUGS, true) ? $s : '';
-}
+// svcimg_norm_slug() + svcimg_resolve_slug() live in _svcimg_slug.php (shared).
 
 function svcimg_next_order(): int {
   $v = hm_db()->query('SELECT COALESCE(MAX(display_order), -1) + 1 AS n FROM hm_service_images')->fetch();
   return (int)($v['n'] ?? 0);
 }
 
+// First row whose `category` matches the slug (app-level "one per card"; the DB
+// has no unique key, so pick the lowest id deterministically).
 function svcimg_fetch_by_slug(string $slug): ?array {
   if ($slug === '') return null;
-  $st = hm_db()->prepare('SELECT * FROM hm_service_images WHERE service_slug = ? LIMIT 1');
+  $st = hm_db()->prepare('SELECT * FROM hm_service_images WHERE category = ? ORDER BY id ASC LIMIT 1');
   $st->execute([$slug]);
   $r = $st->fetch();
   return $r ?: null;
 }
 
-function svcimg_fetch_by_slug_or_id(int $id): ?array {
+function svcimg_fetch_by_id(int $id): ?array {
   $st = hm_db()->prepare('SELECT * FROM hm_service_images WHERE id = ? LIMIT 1');
   $st->execute([$id]);
   $r = $st->fetch();
@@ -442,23 +464,28 @@ function svcimg_fetch_by_slug_or_id(int $id): ?array {
 }
 
 function svcimg_fetch_row(int $id): array {
-  $r = svcimg_fetch_by_slug_or_id($id);
+  $r = svcimg_fetch_by_id($id);
   return $r ? svcimg_shape_row($r) : ['id' => $id];
 }
 
-// Normalize a DB row into the admin JSON shape (typed).
+// Normalize a DB row into the admin JSON shape (typed). The image variant fields
+// (image_webp/thumb_url/width/height) are retained in the contract for the
+// unchanged frontend but are always null — the production schema has no columns
+// for them.
 function svcimg_shape_row(array $r): array {
   return [
     'id'            => (int)$r['id'],
-    'service_slug'  => (string)$r['service_slug'],
-    'image_url'     => (string)$r['image_url'],
-    'image_webp'    => $r['image_webp'] !== null ? (string)$r['image_webp'] : null,
-    'thumb_url'     => $r['thumb_url']  !== null ? (string)$r['thumb_url']  : null,
-    'width'         => $r['width']  !== null ? (int)$r['width']  : null,
-    'height'        => $r['height'] !== null ? (int)$r['height'] : null,
-    'alt_text'      => (string)$r['alt_text'],
-    'active'        => (int)$r['active'] === 1,
-    'display_order' => (int)$r['display_order'],
+    'service_slug'  => svcimg_resolve_slug($r),
+    'image_url'     => (string)($r['image_path'] ?? ''),
+    'image_webp'    => null,
+    'thumb_url'     => null,
+    'width'         => null,
+    'height'        => null,
+    'alt_text'      => (string)($r['alt_text'] ?? ''),
+    'active'        => (int)($r['is_active'] ?? 0) === 1,
+    'display_order' => (int)($r['display_order'] ?? 0),
+    'title'         => (string)($r['title'] ?? ''),
+    'category'      => (string)($r['category'] ?? ''),
     'created_at'    => $r['created_at'] ?? null,
     'updated_at'    => $r['updated_at'] ?? null,
   ];
@@ -486,6 +513,24 @@ function svcimg_json_body(): array {
 
 function svcimg_unlink(array $paths): void {
   foreach ($paths as $p) { if (is_string($p) && $p !== '' && is_file($p)) @unlink($p); }
+}
+
+// True when a DB error means the hm_service_images table doesn't exist at all.
+// MySQL: SQLSTATE 42S02 / errno 1146. (The production table DOES exist, so this
+// should never fire — it is kept as a defensive, actionable fallback.)
+function svcimg_missing_table(Throwable $e): bool {
+  if ($e instanceof PDOException) {
+    if (($e->errorInfo[0] ?? '') === '42S02') return true;
+    if ((int)($e->errorInfo[1] ?? 0) === 1146) return true;
+  }
+  $m = $e->getMessage();
+  return stripos($m, 'Base table or view not found') !== false     // MySQL
+      || stripos($m, 'no such table') !== false                    // SQLite (CI/tests)
+      || (stripos($m, 'hm_service_images') !== false && stripos($m, "doesn't exist") !== false);
+}
+function svcimg_missing_table_msg(): string {
+  return 'サービス画像テーブル（hm_service_images）が見つかりません。DB 設定を確認してください。'
+       . ' / Service images table not found — check the database connection/name.';
 }
 
 // ── Response emitters (spec shape: {data|error, code}) ──────────────────────

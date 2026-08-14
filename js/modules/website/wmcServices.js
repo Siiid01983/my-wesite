@@ -143,7 +143,7 @@ async function _svcimgLoad() {
     if (grid) {
       grid.innerHTML = '<p style="grid-column:1/-1;color:var(--danger,#c0392b);font-size:13px;padding:14px 0">' +
         '読み込みに失敗しました: ' + esc(e.message || String(e)) +
-        '<br><span style="color:var(--gray-2)">（マイグレーション 001_create_hm_service_images.sql が未適用の可能性があります）</span></p>';
+        '<br><span style="color:var(--gray-2)">通信環境と管理者ログイン（権限）をご確認のうえ、再読み込みしてください。</span></p>';
     }
   }
 }
