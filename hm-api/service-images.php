@@ -66,7 +66,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
 try {
   $db = hm_db();
   $st = $db->query(
-    'SELECT category, title, image_path, alt_text, display_order
+    'SELECT category, title, image_path, alt_text, display_order, updated_at
        FROM hm_service_images
       WHERE is_active = 1
       ORDER BY display_order ASC, id ASC'
@@ -86,10 +86,17 @@ try {
       'width'        => null,
       'height'       => null,
       'display_order'=> (int)($r['display_order'] ?? 0),
+      // Stable per-image version → the homepage appends it as ?v=<digits> so a
+      // REPLACED image is fetched fresh while an unchanged one keeps a cacheable
+      // URL. Never a random value (that would defeat browser/CDN caching).
+      'updated_at'   => $r['updated_at'] ?? null,
     ];
   }
 
-  svcimg_public_json(['data' => $out, 'count' => count($out)], 200, true);
+  // no-store: this feed carries the freshest image_path + updated_at version so a
+  // replaced image is reflected on the very next reload. The image BYTES stay
+  // cacheable (immutable per ?v= token) — only this tiny JSON is always revalidated.
+  svcimg_public_json(['data' => $out, 'count' => count($out)], 200, false);
 } catch (Throwable $e) {
   hm_log_error('service-images public feed failed', ['err' => $e->getMessage()]);
   // Fail soft: empty feed → homepage keeps its default placeholder images.

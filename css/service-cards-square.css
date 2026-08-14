@@ -1,0 +1,119 @@
+/* ============================================================================
+   SERVICE CARDS — canonical square grid   (css/service-cards-square.css)
+
+   Additive normalizer, loaded LAST (after v2 / v2.1 / v2.1-polish) so it wins
+   the cascade deterministically. Scope is #serviceCardsGrid ONLY — nothing
+   else on the page is touched.
+
+   Fixes (public homepage service picker):
+     • Mobile dropped a card: the v2.1 mobile carousel (grid-auto-flow:column)
+       collided with the base repeat(6,1fr) template + the featured :first-child
+       grid-column:1/-1 span → one tile fell out of view. Forced back to a plain
+       grid so ALL SIX cards render on desktop AND mobile.
+     • Wide rectangles / uneven heights: v2.1 pinned photos to a landscape
+       height and the featured card to 24/9. Every photo is now the SAME
+       near-square 1 / .92 box.
+     • Badges / overlays over the photo: removed. Title sits BELOW the image.
+   The six cards, their order and their booking deep-links are unchanged — this
+   file is presentation-only.
+   ========================================================================== */
+
+/* 1 · GRID — always all six, uniform tiles, never a carousel ---------------- */
+html.v2-dark #serviceCardsGrid,
+.v2 #serviceCardsGrid {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  grid-auto-flow: row !important;
+  grid-auto-columns: auto !important;
+  overflow: visible !important;
+  gap: 16px !important;
+}
+
+/* Kill the featured full-width banner — every card is an equal tile. */
+html.v2-dark #serviceCardsGrid .svc-img-card,
+.v2 #serviceCardsGrid .svc-img-card {
+  grid-column: auto !important;
+  min-height: 0 !important;
+}
+
+/* 2 · PHOTO — near-square, identical height on every card (incl. first) ----- */
+html.v2-dark #serviceCardsGrid .svc-img-card .svc-img-card__photo,
+html.v2-dark #serviceCardsGrid .svc-img-card:first-child .svc-img-card__photo,
+.v2 #serviceCardsGrid .svc-img-card .svc-img-card__photo,
+.v2 #serviceCardsGrid .svc-img-card:first-child .svc-img-card__photo {
+  aspect-ratio: 1 / .92 !important;
+  height: auto !important;
+  width: 100% !important;
+  position: relative;
+  overflow: hidden;
+}
+html.v2-dark #serviceCardsGrid .svc-img-card__photo img,
+.v2 #serviceCardsGrid .svc-img-card__photo img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+/* 3 · NO badges and NO overlays inside the photo --------------------------- */
+#serviceCardsGrid .svc-img-card__badge { display: none !important; }
+html.v2-dark #serviceCardsGrid .svc-img-card__photo::after,
+html.v2-dark #serviceCardsGrid .svc-img-card__photo::before,
+.v2 #serviceCardsGrid .svc-img-card__photo::after,
+.v2 #serviceCardsGrid .svc-img-card__photo::before {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+}
+
+/* 4 · CAPTION BELOW the image (never overlaid on the photo) ----------------- */
+html.v2-dark #serviceCardsGrid .svc-img-card .svc-img-card__body,
+html.v2-dark #serviceCardsGrid .svc-img-card:first-child .svc-img-card__body,
+.v2 #serviceCardsGrid .svc-img-card .svc-img-card__body,
+.v2 #serviceCardsGrid .svc-img-card:first-child .svc-img-card__body {
+  position: static !important;
+  inset: auto !important;
+  background: none !important;
+  margin: 0 !important;
+  padding: 12px 14px 14px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+/* Featured card's title was overlay-white/oversized — normalize to a tile title.
+   (Non-featured v2-dark titles already read white on the dark card body.) */
+.v2 #serviceCardsGrid .svc-img-card:first-child .svc-img-card__title {
+  font-size: 16px !important;
+  color: var(--v2-ink) !important;
+}
+html.v2-dark #serviceCardsGrid .svc-img-card:first-child .svc-img-card__title {
+  font-size: 16px !important;
+  color: #fff !important;
+}
+/* Featured card's "予約する →" affix → the plain arrow used by the other tiles. */
+html.v2-dark #serviceCardsGrid .svc-img-card:first-child .svc-img-card__body::after,
+.v2 #serviceCardsGrid .svc-img-card:first-child .svc-img-card__body::after {
+  content: "\2192" !important;
+  font-size: 20px !important;
+  letter-spacing: normal !important;
+  margin-left: 0 !important;
+}
+
+/* 5 · MOBILE — 2 per row, all six visible, NO carousel --------------------- */
+@media (max-width: 700px) {
+  html.v2-dark #serviceCardsGrid,
+  .v2 #serviceCardsGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    grid-auto-flow: row !important;
+    grid-auto-columns: auto !important;
+    overflow: visible !important;
+    scroll-snap-type: none !important;
+    gap: 12px !important;
+  }
+  html.v2-dark #serviceCardsGrid > *,
+  .v2 #serviceCardsGrid > * {
+    scroll-snap-align: none !important;
+    width: auto !important;
+  }
+}

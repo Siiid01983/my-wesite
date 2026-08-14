@@ -496,11 +496,22 @@ window.ContentLoader = (function () {
         j.data.forEach(function (row) {
           if (!row || !row.service_slug) return;
           var url = row.image_webp || row.image_url;   // WebP preferred
-          if (url) map[_canonSlug(row.service_slug)] = url;
+          if (url) map[_canonSlug(row.service_slug)] = _svcimgBustUrl(url, row.updated_at);
         });
         return map;
       })
       .catch(function () { return null; });
+  }
+
+  /* Append a STABLE cache-buster (?v=<digits of updated_at>) so a REPLACED
+     service image is fetched fresh on the next reload, while an unchanged image
+     keeps a stable, cacheable URL. Deterministic — NOT a per-render timestamp
+     (which would defeat browser/CDN caching entirely). No-op without a version. */
+  function _svcimgBustUrl(url, ver) {
+    if (!url || !ver) return url;
+    var token = String(ver).replace(/[^0-9]/g, '');   // e.g. "2026-08-12 12:34:56" → "20260812123456"
+    if (!token) return url;
+    return url + (url.indexOf('?') > -1 ? '&' : '?') + 'v=' + token;
   }
 
   /* Build the per-slug override map from live CMS data and hand it to the

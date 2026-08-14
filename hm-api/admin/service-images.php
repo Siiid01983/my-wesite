@@ -181,10 +181,11 @@ function svcimg_upload(): void {
 
   $existing = svcimg_fetch_by_slug($slug);
   try {
+    $now = date('Y-m-d H:i:s');   // explicit updated_at bump → drives the homepage ?v= cache-buster
     if ($existing) {
       // Replace: swap image_path + is_active; keep alt/order unless explicitly provided.
-      $sets = ['image_path = ?', 'is_active = ?'];
-      $args = [$img['image_path'], $active];
+      $sets = ['image_path = ?', 'is_active = ?', 'updated_at = ?'];
+      $args = [$img['image_path'], $active, $now];
       if ($alt !== '') { $sets[] = 'alt_text = ?'; $args[] = $alt; }
       if (array_key_exists('display_order', $_POST) && $_POST['display_order'] !== '') {
         $sets[] = 'display_order = ?'; $args[] = (int)$_POST['display_order'];
@@ -199,10 +200,10 @@ function svcimg_upload(): void {
       $title = SVCIMG_SLUG_TITLES[$slug] ?? $slug;
       $st = hm_db()->prepare(
         'INSERT INTO hm_service_images
-           (category, title, image_path, alt_text, is_active, display_order)
-         VALUES (?,?,?,?,?,?)'
+           (category, title, image_path, alt_text, is_active, display_order, updated_at)
+         VALUES (?,?,?,?,?,?,?)'
       );
-      $st->execute([$slug, $title, $img['image_path'], $alt, $active, $order]);
+      $st->execute([$slug, $title, $img['image_path'], $alt, $active, $order, $now]);
       $id = (int)hm_db()->lastInsertId();
     }
   } catch (Throwable $e) {
@@ -248,6 +249,8 @@ function svcimg_update(): void {
   }
 
   if (!$sets) s_err('更新する項目がありません', 422);
+
+  $sets[] = 'updated_at = ?'; $args[] = date('Y-m-d H:i:s');   // bump version on every edit
 
   try {
     $args[] = $id;

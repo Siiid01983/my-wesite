@@ -4,6 +4,8 @@
     "test:smoke":  "node --test tests/smoke.test.js",
     "test:portal": "node --test tests/portalSelfService.test.js",
     "test:arch":   "node --test tests/architecture-lock.test.js",
+    "test:svc-cards": "node --test tests/service-cards-ui.test.js",
+    "test:svc-map":   "php tests/service-images-mapping.test.php",
     "test:inbox-reply": "node tests/inbox-reply-flow.verify.js",
     "test:booking-loc": "node tests/booking-service-location.verify.js",
     "test:fixes":  "node --test tests/calendar-timestamp-fixes.verify.js",

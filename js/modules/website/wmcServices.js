@@ -160,10 +160,18 @@ function _svcimgPaint() {
   });
 }
 
+/* Stable cache-buster (?v=<digits of updated_at>) so a freshly replaced image
+   repaints immediately in the admin preview instead of a stale cached copy. */
+function _svcimgBust(url, ver) {
+  if (!url || !ver) return url || '';
+  var t = String(ver).replace(/[^0-9]/g, '');
+  return t ? url + (url.indexOf('?') > -1 ? '&' : '?') + 'v=' + t : url;
+}
+
 function _svcimgCardHtml(def, row, idx, total) {
   var hasImg  = !!(row && row.image_url);
   var active  = !row || row.active !== false;                 // default cards read as "on"
-  var preview = row ? (row.thumb_url || row.image_webp || row.image_url) : '';
+  var preview = row ? _svcimgBust(row.thumb_url || row.image_webp || row.image_url, row.updated_at) : '';
   var dims    = (row && row.width && row.height) ? (row.width + '×' + row.height) : '';
 
   var previewBlock = hasImg

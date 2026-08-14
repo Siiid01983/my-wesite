@@ -39,6 +39,9 @@ jobs:
       - name: timeline windows (slot-gen + window CRUD, pure + DB)
         run: php tests/timeline-windows.test.php
 
+      - name: service-image slug mapping (DB-free, six cards resolve 1:1)
+        run: php tests/service-images-mapping.test.php
+
   node-tests:
     name: Node — arch lock + slot UI + regression
     runs-on: ubuntu-latest
@@ -69,6 +72,9 @@ jobs:
 
       - name: Architecture lock
         run: npm run test:arch
+
+      - name: Service cards UI (6-up desktop/2-up mobile, square, no badge, cache-bust)
+        run: npm run test:svc-cards
 
       - name: DataProvider unit (browser, static server)
         run: npm test
