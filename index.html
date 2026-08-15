@@ -3198,6 +3198,18 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     }
     return out;
   }
+  /* Fallback image for a service = the SAME one the homepage grid uses
+     (SERVICE_CONFIG[slug].imagePath), so when no DB/CMS image exists the two
+     surfaces still show the identical URL. Never the overlay's own hardcoded
+     Unsplash (which used a different width param → divergent URLs). */
+  function _baFallbackImg(baId) {
+    var slug = BA_SLUG[baId] || baId;
+    var cfg = (typeof SERVICE_CONFIG !== 'undefined') ? SERVICE_CONFIG : (window.SERVICE_CONFIG || null);
+    if (Array.isArray(cfg)) {
+      for (var i = 0; i < cfg.length; i++) { if (cfg[i] && cfg[i].id === slug) return cfg[i].imagePath || ''; }
+    }
+    return '';
+  }
   function baRenderServices() {
     var grid = document.getElementById('ba-svc-grid');
     if (!grid) return;
@@ -3207,7 +3219,10 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     grid.innerHTML = BA_SVC_CFG.map(function(s) {
       var o = ov[BA_SLUG[s.id] || s.id] || {};
       var label = (o.title != null && o.title !== '') ? o.title : s.name;
-      var img   = o.img || s.img;
+      /* precedence identical to the homepage: DB feed (o.img via window map) >
+         legacy KV (o.img) > SERVICE_CONFIG fallback. s.img (overlay-local
+         Unsplash) is no longer used as an image source. */
+      var img   = o.img || _baFallbackImg(s.id) || s.img;
       resolved[s.id] = label;
       var bd = (cfgBadges && Object.prototype.hasOwnProperty.call(cfgBadges, s.id)) ? (cfgBadges[s.id] || {}) : { text: s.badge, color: s.bc };
       var _bgc = bd.color || '#F5A623';
