@@ -51,7 +51,7 @@ html.v2-dark #serviceCardsGrid .svc-img-card:first-child .svc-img-card__photo,
   background: #12140f !important;
   border: 0 !important;
   padding: 0 !important;
-  cursor: zoom-in;              /* the photo opens the lightbox */
+  cursor: pointer;              /* whole card navigates to the Furniture/Items input */
 }
 html.v2-dark #serviceCardsGrid .svc-img-card__photo img,
 .v2 #serviceCardsGrid .svc-img-card__photo img {
@@ -72,7 +72,18 @@ html.v2-dark #serviceCardsGrid .svc-img-card__photo::before,
   background: none !important;
 }
 
-/* 4 · CAPTION BELOW the image (never overlaid on the photo) ----------------- */
+/* 4 · CARD = one clickable LINK; TITLE below the image ---------------------- */
+/* The whole card is an <a> → the Furniture/Items input. No underline, one pointer. */
+html.v2-dark #serviceCardsGrid a.svc-img-card,
+.v2 #serviceCardsGrid a.svc-img-card {
+  display: flex !important;
+  flex-direction: column !important;
+  text-decoration: none !important;
+  color: inherit !important;
+  cursor: pointer;
+}
+
+/* Title area: static below the photo, centered, uniform height across cards. */
 html.v2-dark #serviceCardsGrid .svc-img-card .svc-img-card__body,
 html.v2-dark #serviceCardsGrid .svc-img-card:first-child .svc-img-card__body,
 .v2 #serviceCardsGrid .svc-img-card .svc-img-card__body,
@@ -81,29 +92,40 @@ html.v2-dark #serviceCardsGrid .svc-img-card:first-child .svc-img-card__body,
   inset: auto !important;
   background: none !important;
   margin: 0 !important;
-  padding: 12px 14px 14px !important;
+  padding: 12px 12px 14px !important;
   display: flex !important;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: center;   /* title centered under the image */
+  text-align: center;
+  gap: 0;
 }
-/* Featured card's title was overlay-white/oversized — normalize to a tile title.
-   (Non-featured v2-dark titles already read white on the dark card body.) */
-.v2 #serviceCardsGrid .svc-img-card:first-child .svc-img-card__title {
-  font-size: 16px !important;
-  color: var(--v2-ink) !important;
-}
-html.v2-dark #serviceCardsGrid .svc-img-card:first-child .svc-img-card__title {
-  font-size: 16px !important;
-  color: #fff !important;
-}
-/* Featured card's "予約する →" affix → the plain arrow used by the other tiles. */
+/* Drop the "→" affix — the whole card is the link now, no per-card arrow. */
+html.v2-dark #serviceCardsGrid .svc-img-card .svc-img-card__body::after,
 html.v2-dark #serviceCardsGrid .svc-img-card:first-child .svc-img-card__body::after,
+.v2 #serviceCardsGrid .svc-img-card .svc-img-card__body::after,
 .v2 #serviceCardsGrid .svc-img-card:first-child .svc-img-card__body::after {
-  content: "\2192" !important;
-  font-size: 20px !important;
-  letter-spacing: normal !important;
-  margin-left: 0 !important;
+  content: none !important;
+  display: none !important;
+}
+/* Title type: Japanese premium/minimal (Noto Sans JP), 1–2 lines, no overflow,
+   uniform reserved height so every card aligns. Same size incl. the first card. */
+html.v2-dark #serviceCardsGrid .svc-img-card__title,
+html.v2-dark #serviceCardsGrid .svc-img-card:first-child .svc-img-card__title,
+.v2 #serviceCardsGrid .svc-img-card__title,
+.v2 #serviceCardsGrid .svc-img-card:first-child .svc-img-card__title {
+  font-family: var(--font-jp) !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+  line-height: 1.4 !important;
+  letter-spacing: .01em !important;
+  text-align: center !important;
+  margin: 0 !important;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: calc(1.4em * 2);   /* reserve two lines → all titles align */
+  word-break: keep-all;          /* avoid awkward mid-word JP breaks */
 }
 
 /* 5 · MOBILE — ONE per row (6 stacked), all six visible, NO carousel -------- */

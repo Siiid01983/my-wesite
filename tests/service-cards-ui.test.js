@@ -43,15 +43,32 @@ test('renderer maps the full SERVICE_CONFIG — no slice/limit that could drop a
   assert.ok(!/\.slice\(0\s*,\s*5\)/.test(html), 'no slice(0,5) anywhere in index.html');
 });
 
-test('the square normalizer + lightbox CSS are loaded LAST on the homepage', () => {
+test('the square normalizer CSS is loaded LAST on the homepage', () => {
   const html = read('index.html');
   const iSquare = html.indexOf('service-cards-square.css');
-  const iLbx = html.indexOf('service-lightbox.css');
   assert.ok(iSquare > -1, 'service-cards-square.css is linked');
-  assert.ok(iLbx > -1, 'service-lightbox.css is linked');
   ['css/v2.css', 'v2.1.css', 'v2.1-polish.css'].forEach((f) => {
     assert.ok(html.indexOf(f) < iSquare, f + ' is linked before the normalizer');
   });
+});
+
+test('SERVICE_CONFIG shows the six exact display titles (booking serviceValue untouched)', () => {
+  const html = read('index.html');
+  const m = html.match(/var SERVICE_CONFIG\s*=\s*\[([\s\S]*?)\];/);
+  const rows = m[1].split('\n').filter((l) => /id\s*:/.test(l));
+  const want = {
+    sameday: '当日・お急ぎ引越しプラン', single: '単身引越し', couple: 'カップル引越し',
+    student: '学生引越し', disposal: '不用品回収', furniture: '家具の組立・解体',
+  };
+  Object.keys(want).forEach((slug) => {
+    const row = rows.find((l) => new RegExp("id:'" + slug + "'").test(l));
+    assert.ok(row, 'row for ' + slug);
+    assert.ok(new RegExp("title:'" + want[slug] + "'").test(row), slug + ' title = ' + want[slug]);
+  });
+  // booking service values (serviceValue) must be the stable full names, unchanged
+  assert.ok(/serviceValue:'カップル・ご夫婦引越し'/.test(html), 'couple booking value unchanged');
+  assert.ok(/serviceValue:'家具組立・分解'/.test(html), 'furniture booking value unchanged');
+  assert.ok(/serviceValue:'不用品回収・処分サービス'/.test(html), 'disposal booking value unchanged');
 });
 
 test('CSS: square 1:1 photo, WHOLE image (contain, not cover)', () => {
@@ -78,32 +95,31 @@ test('CSS: mobile = ONE card per row (6 stacked), no carousel, hides no card', (
   assert.ok(!/repeat\(2,\s*1fr\)/.test(mq), 'mobile is NOT 2 columns');
   assert.ok(/grid-auto-flow:\s*row\s*!important/.test(mq), 'mobile flow is row (not a column carousel)');
   assert.ok(/overflow:\s*visible\s*!important/.test(mq), 'mobile grid does not overflow-scroll');
-  assert.ok(!/\.svc-img-card(?![_-])[^{]*\{\s*[^}]*display:\s*none/.test(css), 'no whole-card display:none');
+  // a whole-card hide would be `.svc-img-card { ... display:none }` (card element,
+  // optionally a pseudo, directly before `{`) — NOT a descendant/::after rule.
+  assert.ok(!/\.svc-img-card\s*(:[a-z-]+)?\s*\{[^}]*display:\s*none/.test(css), 'no whole-card display:none');
   assert.ok(!/svc-img-card:nth-child/.test(css), 'no nth-child card hiding');
 });
 
-test('renderer: photo → lightbox trigger, body → openBookingApp(), no badge markup', () => {
+test('renderer: WHOLE card is one link → openBookingApp(); no lightbox/badge on card', () => {
   const html = read('index.html');
   const m = html.match(/window\.HM_renderServiceCards\s*=\s*function[\s\S]*?if \(overrides\) window\.HM_revealServiceCards\(\);/);
   assert.ok(m, 'renderer body found');
   const body = m[0];
-  assert.ok(/class="svc-img-card__photo"[\s\S]*?data-lightbox-src="/.test(body), 'photo carries data-lightbox-src');
-  assert.ok(/data-lightbox-title="/.test(body), 'photo carries data-lightbox-title');
-  assert.ok(/class="svc-img-card__body"[\s\S]*?openBookingApp\(this\.dataset\.service\)/.test(body),
-    'body routes to openBookingApp()');
-  assert.ok(/data-service="/.test(body), 'body keeps data-service deep-link');
-  assert.ok(!/svc-img-card__badge/.test(body), 'no badge element rendered over the photo');
+  assert.ok(/<a class="svc-img-card"[\s\S]*?data-service="/.test(body), 'card root is an <a> with data-service');
+  assert.ok(/openBookingApp\(this\.dataset\.service\)/.test(body), 'card routes to openBookingApp() (→ furniture drawer)');
+  assert.ok(/class="svc-img-card__photo"/.test(body), 'photo present');
+  assert.ok(/class="svc-img-card__title"/.test(body), 'title present below image');
+  assert.ok(!/data-lightbox-src/.test(body), 'photo does NOT open a lightbox (whole card navigates)');
+  assert.ok(!/svc-img-card__badge/.test(body), 'no badge element on the card');
 });
 
-test('lightbox assets exist and are wired', () => {
-  const html = read('index.html');
-  assert.ok(html.includes('js/service-lightbox.js'), 'lightbox JS included');
-  const js = read('js/service-lightbox.js');
-  assert.ok(/data-lightbox-src/.test(js), 'delegated on data-lightbox-src');
-  assert.ok(/Escape/.test(js), 'closes on Escape');
-  assert.ok(/HMServiceLightbox/.test(js), 'exposes a public API');
-  const css = read('css/service-lightbox.css');
-  assert.ok(/object-fit:\s*contain/.test(css), 'lightbox shows the whole image');
+test('CSS: card is a link (no underline, pointer) and title uses Noto Sans JP, uniform height', () => {
+  const css = read('css/service-cards-square.css');
+  assert.ok(/a\.svc-img-card[\s\S]*?text-decoration:\s*none\s*!important/.test(css), 'card link has no underline');
+  assert.ok(/\.svc-img-card__title[\s\S]*?font-family:\s*var\(--font-jp\)\s*!important/.test(css), 'title uses --font-jp (Noto Sans JP)');
+  assert.ok(/min-height:\s*calc\(1\.4em \* 2\)/.test(css), 'title reserves 2 lines → uniform height');
+  assert.ok(/-webkit-line-clamp:\s*2/.test(css), 'title clamps to 2 lines (no overflow)');
 });
 
 test('ONE image source: ContentLoader publishes window.HM_SERVICE_IMAGES; overlay reads it', () => {

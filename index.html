@@ -1421,10 +1421,10 @@ body { padding-bottom: 76px; }
 var SERVICE_CONFIG = [
   { id:'sameday',   title:'当日・お急ぎ引越しプラン', serviceValue:'当日・お急ぎ引越しプラン', description:'', imagePath:'https://images.unsplash.com/photo-1614976523626-d598aafd4fda?auto=format&fit=crop&w=800&q=80', fallback:'linear-gradient(135deg,#241614 0%,#0e0b0a 100%)', badge:'当日対応', badgeType:'urgent' },
   { id:'single',    title:'単身引越し',               serviceValue:'単身引越し',               description:'', imagePath:'https://images.unsplash.com/photo-1616432043562-3671ea2e5242?auto=format&fit=crop&w=800&q=80', fallback:'linear-gradient(135deg,#161c15 0%,#0c0f0b 100%)', badge:'人気', badgeType:'popular' },
-  { id:'couple',    title:'カップル・ご夫婦引越し',   serviceValue:'カップル・ご夫婦引越し',   description:'', imagePath:'https://images.unsplash.com/photo-1758523670969-dd1b1254062d?auto=format&fit=crop&w=800&q=80', fallback:'linear-gradient(135deg,#141b1f 0%,#0b0e10 100%)', badge:'人気', badgeType:'popular' },
-  { id:'student',   title:'学生・新生活引越し',       serviceValue:'学生・新生活引越し',       description:'', imagePath:'https://images.unsplash.com/photo-1772724317350-520faccb15e6?auto=format&fit=crop&w=800&q=80', fallback:'linear-gradient(135deg,#1e170f 0%,#0e0b08 100%)', badge:'人気', badgeType:'popular' },
-  { id:'disposal',  title:'不用品回収・処分',         serviceValue:'不用品回収・処分サービス', description:'', imagePath:'https://images.unsplash.com/photo-1574974671999-24b7dfbb0d53?auto=format&fit=crop&w=800&q=80', fallback:'linear-gradient(135deg,#181a1c 0%,#0c0d0e 100%)', badge:null, badgeType:null },
-  { id:'furniture', title:'家具組立・分解',           serviceValue:'家具組立・分解',           description:'', imagePath:'https://images.unsplash.com/photo-1567361808960-dec9cb578182?auto=format&fit=crop&w=800&q=80', fallback:'linear-gradient(135deg,#1f1710 0%,#0f0b07 100%)', badge:null, badgeType:null }
+  { id:'couple',    title:'カップル引越し',           serviceValue:'カップル・ご夫婦引越し',   description:'', imagePath:'https://images.unsplash.com/photo-1758523670969-dd1b1254062d?auto=format&fit=crop&w=800&q=80', fallback:'linear-gradient(135deg,#141b1f 0%,#0b0e10 100%)', badge:'人気', badgeType:'popular' },
+  { id:'student',   title:'学生引越し',               serviceValue:'学生・新生活引越し',       description:'', imagePath:'https://images.unsplash.com/photo-1772724317350-520faccb15e6?auto=format&fit=crop&w=800&q=80', fallback:'linear-gradient(135deg,#1e170f 0%,#0e0b08 100%)', badge:'人気', badgeType:'popular' },
+  { id:'disposal',  title:'不用品回収',               serviceValue:'不用品回収・処分サービス', description:'', imagePath:'https://images.unsplash.com/photo-1574974671999-24b7dfbb0d53?auto=format&fit=crop&w=800&q=80', fallback:'linear-gradient(135deg,#181a1c 0%,#0c0d0e 100%)', badge:null, badgeType:null },
+  { id:'furniture', title:'家具の組立・解体',         serviceValue:'家具組立・分解',           description:'', imagePath:'https://images.unsplash.com/photo-1567361808960-dec9cb578182?auto=format&fit=crop&w=800&q=80', fallback:'linear-gradient(135deg,#1f1710 0%,#0f0b07 100%)', badge:null, badgeType:null }
 ];
 
 /* Render the service-picker grid. `overrides` (optional) is a map
@@ -1453,25 +1453,22 @@ window.HM_renderServiceCards = function renderServiceCards(overrides) {
     var descHtml = desc
       ? '<p class="svc-img-card__desc" style="margin:4px 0 0;font-size:12px;line-height:1.5;color:var(--gray-1,#6b7280)">' + esc(desc) + '</p>'
       : '';
-    /* Card = two distinct targets:
-         • PHOTO  → opens the image lightbox (data-lightbox-src = the SAME image
-                    the card shows: DB image_path/versioned, or the fallback).
-         • BODY   → the booking deep-link. data-service / booking come ONLY from
-                    SERVICE_CONFIG so CMS content edits never affect routing;
-                    openBookingApp() stays the single booking entry point.
-       No badge is rendered over the photo (removed per spec). */
-    return '<div class="svc-img-card">'
-      + '<button type="button" class="svc-img-card__photo" '
-        + 'data-lightbox-src="' + esc(image) + '" data-lightbox-title="' + esc(title) + '" '
-        + 'aria-label="' + esc(title) + ' の画像を拡大">'
+    /* The WHOLE card (image + title) is ONE clickable link → openBookingApp(),
+       which opens the Furniture / Items Input drawer for this service. Routing
+       uses data-service = SERVICE_CONFIG.serviceValue (the stable booking name),
+       so CMS title/image edits never change where the card leads. No badge and
+       no lightbox over the photo (spec: card click must navigate, not zoom). */
+    return '<a class="svc-img-card" href="#booking" data-service="' + esc(svc.serviceValue) + '" '
+        + 'onclick="openBookingApp(this.dataset.service);return false;" '
+        + 'aria-label="' + esc(title) + 'の見積りへ進む">'
+      + '<div class="svc-img-card__photo">'
       + '<img src="' + esc(image) + '" alt="' + esc(title) + '" loading="lazy" onerror="this.style.display=\'none\'">'
-      + '</button>'
-      + '<a class="svc-img-card__body" href="#booking" data-service="' + esc(svc.serviceValue) + '" '
-        + 'onclick="openBookingApp(this.dataset.service);return false;" aria-label="' + esc(title) + ' を予約">'
+      + '</div>'
+      + '<div class="svc-img-card__body">'
       + '<h3 class="svc-img-card__title">' + esc(title) + '</h3>'
       + descHtml
-      + '</a>'
-      + '</div>';
+      + '</div>'
+      + '</a>';
   }).join('');
   /* Reveal on the CMS pass (`overrides` present — even {} means ContentLoader
      finished and this content is final). The fallback pass keeps the grid
@@ -3202,14 +3199,18 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
      (SERVICE_CONFIG[slug].imagePath), so when no DB/CMS image exists the two
      surfaces still show the identical URL. Never the overlay's own hardcoded
      Unsplash (which used a different width param → divergent URLs). */
-  function _baFallbackImg(baId) {
+  function _baSvcCfg(baId) {
     var slug = BA_SLUG[baId] || baId;
     var cfg = (typeof SERVICE_CONFIG !== 'undefined') ? SERVICE_CONFIG : (window.SERVICE_CONFIG || null);
     if (Array.isArray(cfg)) {
-      for (var i = 0; i < cfg.length; i++) { if (cfg[i] && cfg[i].id === slug) return cfg[i].imagePath || ''; }
+      for (var i = 0; i < cfg.length; i++) { if (cfg[i] && cfg[i].id === slug) return cfg[i]; }
     }
-    return '';
+    return null;
   }
+  function _baFallbackImg(baId) { var c = _baSvcCfg(baId); return c ? (c.imagePath || '') : ''; }
+  // DISPLAY title = the SAME source the homepage card uses (SERVICE_CONFIG[slug].title),
+  // so Homepage title === Estimate title. Kept separate from the booking name.
+  function _baSvcTitle(baId) { var c = _baSvcCfg(baId); return c ? (c.title || '') : ''; }
   function baRenderServices() {
     var grid = document.getElementById('ba-svc-grid');
     if (!grid) return;
@@ -3218,24 +3219,29 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     var resolved = {};  // id → display name (used by the delegated click handler)
     grid.innerHTML = BA_SVC_CFG.map(function(s) {
       var o = ov[BA_SLUG[s.id] || s.id] || {};
-      var label = (o.title != null && o.title !== '') ? o.title : s.name;
+      /* bookingName drives baGoBooking → baState.service. Kept EXACTLY as before
+         (CMS title or the canonical BA_SVC_CFG.name) so booking data is unchanged.
+         displayLabel is what the card SHOWS: identical precedence to the homepage
+         (CMS title → SERVICE_CONFIG[slug].title → name) so titles always match. */
+      var bookingName  = (o.title != null && o.title !== '') ? o.title : s.name;
+      var displayLabel = (o.title != null && o.title !== '') ? o.title : (_baSvcTitle(s.id) || s.name);
       /* precedence identical to the homepage: DB feed (o.img via window map) >
          legacy KV (o.img) > SERVICE_CONFIG fallback. s.img (overlay-local
          Unsplash) is no longer used as an image source. */
       var img   = o.img || _baFallbackImg(s.id) || s.img;
-      resolved[s.id] = label;
+      resolved[s.id] = bookingName;
       var bd = (cfgBadges && Object.prototype.hasOwnProperty.call(cfgBadges, s.id)) ? (cfgBadges[s.id] || {}) : { text: s.badge, color: s.bc };
       var _bgc = bd.color || '#F5A623';
       var _txc = /^#(f5a623|ffb|ffc|f7b)/i.test(_bgc) ? '#0C0E0B' : '#fff';
       var badge = bd.text ? '<span class="ba-svc-badge" style="background:' + _baEsc(_bgc) + ';color:' + _txc + '">' + _baEsc(bd.text) + '</span>' : '';
       var media = img
-        ? '<img src="' + _baEsc(img) + '" alt="' + _baEsc(label) + '" loading="lazy" onerror="this.style.display=\'none\'">'
+        ? '<img src="' + _baEsc(img) + '" alt="' + _baEsc(displayLabel) + '" loading="lazy" onerror="this.style.display=\'none\'">'
         : (BA_SVC_SVG[s.id] || '');
       // data-attr + delegated listener (below) — never inline CMS text into onclick.
       return '<button type="button" class="ba-svc-card" data-svc-id="' + s.id + '">'
         + '<div class="ba-svc-card__illus">' + media + '</div>'
         + badge
-        + '<div class="ba-svc-card__name">' + _baEsc(label) + '</div>'
+        + '<div class="ba-svc-card__name">' + _baEsc(displayLabel) + '</div>'
         + '</button>';
     }).join('');
     grid.querySelectorAll('.ba-svc-card').forEach(function (btn) {

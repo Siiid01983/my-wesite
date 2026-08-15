@@ -50,12 +50,12 @@ async function readHomepage(page) {
     const vis = cards.filter((c) => c.getBoundingClientRect().width > 0);
     return {
       count: vis.length,
-      order: vis.map((c) => {
-        const a = c.querySelector('.svc-img-card__body');
-        return a ? a.getAttribute('data-service') : '';
-      }),
+      // data-service now lives on the card root <a> (the whole card is the link)
+      order: vis.map((c) => c.getAttribute('data-service') || ''),
       imgs: vis.map((c) => { const i = c.querySelector('.svc-img-card__photo img'); return i ? i.getAttribute('src') : ''; }),
-      lbx: vis.map((c) => { const b = c.querySelector('.svc-img-card__photo'); return b ? b.getAttribute('data-lightbox-src') : ''; }),
+      titles: vis.map((c) => { const t = c.querySelector('.svc-img-card__title'); return t ? t.textContent.trim() : ''; }),
+      isLink: vis.map((c) => c.tagName.toLowerCase() === 'a' && !!c.getAttribute('data-service')),
+      hasLbx: vis.some((c) => { const b = c.querySelector('[data-lightbox-src]'); return !!b; }),
       badges: grid ? [...grid.querySelectorAll('.svc-img-card__badge')].filter((b) => getComputedStyle(b).display !== 'none').length : -1,
     };
   });
@@ -64,14 +64,16 @@ async function readOverlay(page) {
   return page.evaluate((baSlug) => {
     const grid = document.getElementById('ba-svc-grid');
     const cards = grid ? [...grid.querySelectorAll('.ba-svc-card')] : [];
-    const out = {};
+    const imgs = {}, titles = {};
     cards.forEach((c) => {
       const id = c.getAttribute('data-svc-id');
       const slug = baSlug[id] || id;
       const i = c.querySelector('img');
-      out[slug] = i ? i.getAttribute('src') : '';
+      const n = c.querySelector('.ba-svc-card__name');
+      imgs[slug] = i ? i.getAttribute('src') : '';
+      titles[slug] = n ? n.textContent.trim() : '';
     });
-    return out;
+    return { imgs, titles };
   }, BA_SLUG);
 }
 
@@ -111,33 +113,46 @@ async function readOverlay(page) {
         s.includes('単身') ? 'single' : s.includes('カップル') ? 'couple' :
         s.includes('学生') ? 'student' : s.includes('不用品') ? 'disposal' : 'furniture')) === JSON.stringify(CANON));
     chk('homepage 0 badges over photos', home.badges === 0);
+    chk('every card is a single <a> link (image + title clickable together)', home.isLink.every(Boolean) && home.isLink.length === 6);
+    chk('no lightbox trigger on cards (whole card navigates)', home.hasLbx === false);
+
+    // exact display titles, and Homepage title === Estimate title per slug
+    const WANT_TITLE = { sameday:'当日・お急ぎ引越しプラン', single:'単身引越し', couple:'カップル引越し', student:'学生引越し', disposal:'不用品回収', furniture:'家具の組立・解体' };
+    chk('homepage shows the six exact display titles', CANON.every((s, i) => home.titles[i] === WANT_TITLE[s]));
+    chk('TITLE consistency: homepage title === Estimate title (all 6)', CANON.every((s) => ov.titles[s] === WANT_TITLE[s]));
 
     // UNIFICATION: homepage img === overlay img === published DB url, per slug
-    let unified = true, lbxOk = true;
+    let unified = true;
     CANON.forEach((slug, i) => {
       const want = map1[slug];
       if (home.imgs[i] !== want) { unified = false; console.log('     home[' + slug + ']=' + home.imgs[i]); }
-      if (ov[slug] !== want) { unified = false; console.log('     overlay[' + slug + ']=' + ov[slug]); }
-      if (home.lbx[i] !== want) { lbxOk = false; }
+      if (ov.imgs[slug] !== want) { unified = false; console.log('     overlay[' + slug + ']=' + ov.imgs[slug]); }
     });
     chk('SINGLE SOURCE: homepage img === Estimate overlay img === DB map (all 6 slugs)', unified);
-    chk('lightbox data-src === card image (all 6)', lbxOk);
     chk('all published URLs are versioned (?v=)', CANON.every((s) => /[?&]v=\d+/.test(map1[s])));
 
-    // ── Lightbox opens with the ORIGINAL image, closes on Escape ─────────────
-    await page.evaluate(() => document.querySelector('#serviceCardsGrid .svc-img-card__photo').click());
-    await page.waitForTimeout(120);
-    const lb = await page.evaluate(() => {
-      const o = document.querySelector('.hm-lbx');
-      const img = document.querySelector('.hm-lbx__img');
-      return { open: !!(o && o.classList.contains('is-open')), src: img ? img.getAttribute('src') : '' };
+    // ── NAVIGATION: image AND title → openBookingApp(serviceValue) → furniture drawer
+    const serviceValues = await page.evaluate(() => {
+      const out = {}; (window.SERVICE_CONFIG || []).forEach((s) => { out[s.id] = s.serviceValue; }); return out;
     });
-    chk('clicking a photo opens the lightbox', lb.open === true);
-    chk('lightbox shows the same (original) image URL', lb.src === map1['sameday']);
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(120);
-    const closed = await page.evaluate(() => { const o = document.querySelector('.hm-lbx'); return !(o && o.classList.contains('is-open')); });
-    chk('Escape closes the lightbox', closed === true);
+    // spy on openBookingApp to capture the routed service, without side effects
+    await page.evaluate(() => {
+      window.__routed = [];
+      const real = window.openBookingApp;
+      window.openBookingApp = function (svc) { window.__routed.push(svc); return real.apply(this, arguments); };
+    });
+    // click the PHOTO of card 0 (sameday) and the TITLE of card 2 (couple)
+    await page.evaluate(() => document.querySelector('#serviceCardsGrid .svc-img-card:nth-child(1) .svc-img-card__photo').click());
+    await page.waitForTimeout(200);
+    const drawerAfterPhoto = await page.evaluate(() => document.getElementById('ba-drawer-furniture').classList.contains('open'));
+    await page.evaluate(() => { try { window.closeBookingApp(); } catch (e) {} });
+    await page.evaluate(() => document.querySelector('#serviceCardsGrid .svc-img-card:nth-child(3) .svc-img-card__title').click());
+    await page.waitForTimeout(200);
+    const routed = await page.evaluate(() => window.__routed);
+    await page.evaluate(() => { try { window.closeBookingApp(); } catch (e) {} });
+    chk('clicking the IMAGE routes to openBookingApp(sameday serviceValue) → furniture drawer',
+      routed[0] === serviceValues.sameday && drawerAfterPhoto === true);
+    chk('clicking the TITLE routes to openBookingApp(couple serviceValue)', routed[1] === serviceValues.couple);
 
     // ── REPLACE sameday image (new updated_at → new ?v=) reflects in BOTH ────
     const V2 = '20260815093000';
@@ -149,7 +164,7 @@ async function readOverlay(page) {
     const home2 = await readHomepage(page);
     const ov2 = await readOverlay(page);
     chk('after replace: homepage sameday URL changed (old ≠ new)', home2.imgs[0] === map2['sameday'] && home2.imgs[0] !== map1['sameday']);
-    chk('after replace: Estimate sameday URL changed to the SAME new URL', ov2['sameday'] === map2['sameday']);
+    chk('after replace: Estimate sameday URL changed to the SAME new URL', ov2.imgs['sameday'] === map2['sameday']);
 
     // ── FALLBACK unity: no DB image → homepage img === Estimate img (SERVICE_CONFIG)
     await page.evaluate(() => {
@@ -163,7 +178,7 @@ async function readOverlay(page) {
     const ovF = await readOverlay(page);
     let fbUnified = true;
     CANON.forEach((slug, i) => {
-      if (homeF.imgs[i] !== ovF[slug]) { fbUnified = false; console.log('     fb home[' + slug + ']=' + homeF.imgs[i] + '  overlay=' + ovF[slug]); }
+      if (homeF.imgs[i] !== ovF.imgs[slug]) { fbUnified = false; console.log('     fb home[' + slug + ']=' + homeF.imgs[i] + '  overlay=' + ovF.imgs[slug]); }
     });
     chk('FALLBACK unity: with NO DB image, homepage img === Estimate img (all 6, via SERVICE_CONFIG)', fbUnified);
 
