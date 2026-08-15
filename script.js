@@ -288,6 +288,12 @@
   async function syncCalendarFromApi() {
     if (_calSyncing) return;
     if (typeof BookingService === 'undefined' || !BookingService.getBookings) return;
+    // Reading the full bookings table is a STAFF-ONLY operation (rest.php gates a
+    // `bookings` SELECT behind hm_require_staff_read → requires X-ADMIN-TOKEN).
+    // The public homepage has no admin token, so skip the sync entirely — never
+    // issue the request that would 401. Server-side availability.php remains the
+    // authoritative source for the public booking flow.
+    if (!window.__HM_ADMIN_TOKEN) return;
     _calSyncing = true;
     let bookings;
     try {
@@ -336,9 +342,13 @@
   document.addEventListener('booking:created', () => { syncCalendarFromApi(); });
 
   // Minimal polling while the tab is visible (replaces the old _pollCalAvail).
-  setInterval(() => {
-    if (document.visibilityState === 'visible') syncCalendarFromApi();
-  }, 120000);
+  // Staff contexts only — the public page has no admin token and must not poll
+  // the staff-only bookings read. (syncCalendarFromApi also self-guards above.)
+  if (window.__HM_ADMIN_TOKEN) {
+    setInterval(() => {
+      if (document.visibilityState === 'visible') syncCalendarFromApi();
+    }, 120000);
+  }
 
   // Park Mode toggle
   const _parkBtn = document.getElementById('parkModeToggle');
