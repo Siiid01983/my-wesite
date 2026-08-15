@@ -122,8 +122,12 @@ test('titles are FORCED from SERVICE_CONFIG (CMS title override ignored for disp
   assert.ok(!/var title = \(o\.title/.test(body), 'homepage title no longer reads o.title (CMS)');
   // Estimate overlay display label is forced from SERVICE_CONFIG too (not CMS o.title)
   assert.ok(/var displayLabel = _baSvcTitle\(s\.id\) \|\| s\.name;/.test(html), 'Estimate display title forced from SERVICE_CONFIG');
-  // booking name is still allowed to use the CMS/canonical value (unchanged)
-  assert.ok(/var bookingName\s*=\s*\(o\.title != null/.test(html), 'Estimate booking name unchanged (CMS/canonical)');
+  // Estimate booking name is sourced from SERVICE_CONFIG.serviceValue (same as the
+  // homepage deep-link) so both surfaces record the identical service string.
+  assert.ok(/var bookingName\s*=\s*_baSvcValue\(s\.id\)\s*\|\|/.test(html), 'Estimate booking name derives from SERVICE_CONFIG.serviceValue');
+  assert.ok(/function _baSvcValue\(baId\)\s*\{[^}]*serviceValue/.test(html), '_baSvcValue reads SERVICE_CONFIG.serviceValue');
+  // the short display title must NOT be used as a booking value
+  assert.ok(!/var bookingName\s*=\s*_baSvcTitle/.test(html), 'booking name is not the short display title');
 });
 
 test('CSS: card is a link (no underline, pointer) and title uses Noto Sans JP, uniform height', () => {

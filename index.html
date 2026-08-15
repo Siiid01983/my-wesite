@@ -3211,6 +3211,10 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   // DISPLAY title = the SAME source the homepage card uses (SERVICE_CONFIG[slug].title),
   // so Homepage title === Estimate title. Kept separate from the booking name.
   function _baSvcTitle(baId) { var c = _baSvcCfg(baId); return c ? (c.title || '') : ''; }
+  // BOOKING name = the SAME canonical value the homepage deep-link sends
+  // (SERVICE_CONFIG[slug].serviceValue), so a booking started from the Estimate
+  // picker records the identical service string as one started from a homepage card.
+  function _baSvcValue(baId) { var c = _baSvcCfg(baId); return c ? (c.serviceValue || '') : ''; }
   function baRenderServices() {
     var grid = document.getElementById('ba-svc-grid');
     if (!grid) return;
@@ -3219,12 +3223,15 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     var resolved = {};  // id → display name (used by the delegated click handler)
     grid.innerHTML = BA_SVC_CFG.map(function(s) {
       var o = ov[BA_SLUG[s.id] || s.id] || {};
-      /* bookingName drives baGoBooking → baState.service. Kept EXACTLY as before
-         (CMS title or the canonical BA_SVC_CFG.name) so booking data is unchanged.
+      /* bookingName drives baGoBooking → baState.service. Sourced from
+         SERVICE_CONFIG[slug].serviceValue — the SAME canonical string the homepage
+         deep-link sends — so a booking is recorded identically no matter which
+         surface it started from (aligns the disposal name; a no-op for the other
+         five, which already matched). Falls back to CMS title / BA name.
          displayLabel is what the card SHOWS: FORCED from SERVICE_CONFIG[slug].title
          (the short canonical label, NOT CMS-overridable) — identical to the
          homepage card, so the two surfaces always show the same short title. */
-      var bookingName  = (o.title != null && o.title !== '') ? o.title : s.name;
+      var bookingName  = _baSvcValue(s.id) || (o.title != null && o.title !== '' ? o.title : s.name);
       var displayLabel = _baSvcTitle(s.id) || s.name;
       /* precedence identical to the homepage: DB feed (o.img via window map) >
          legacy KV (o.img) > SERVICE_CONFIG fallback. s.img (overlay-local
