@@ -690,9 +690,25 @@ window.ContentLoader = (function () {
          upgrade with the DB-backed images once service-images.php resolves. The
          upgrade re-render only fires when the API actually returns images, so a
          missing table / offline API is a zero-cost no-op (no regression). */
+      /* Hydrate the SHARED service-image map from the last persisted DB snapshot
+         so any surface that opens before the async fetch resolves (notably the
+         booking/Estimate overlay) already sees DB-backed, versioned URLs — the
+         SAME single source the homepage uses. */
+      try {
+        var _dbSeed = JSON.parse(localStorage.getItem('hm_service_images_db') || 'null');
+        if (_dbSeed && typeof _dbSeed === 'object') window.HM_SERVICE_IMAGES = _dbSeed;
+      } catch (e) {}
+
       _applyServicesToGrid(svcsForGrid, imgCfg);
       _fetchServiceImagesApi().then(function (apiImages) {
         if (apiImages && Object.keys(apiImages).length) {
+          /* Publish the canonical { slug: versioned-URL } map as the ONE source
+             of service-card images shared by the homepage grid AND the Estimate
+             overlay (index.html baRenderServices reads window.HM_SERVICE_IMAGES).
+             Persisted so it survives reloads and is available before the next
+             fetch resolves. */
+          window.HM_SERVICE_IMAGES = apiImages;
+          _ls('hm_service_images_db', apiImages);
           _applyServicesToGrid(svcsForGrid, imgCfg, apiImages);
         }
       });

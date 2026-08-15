@@ -36,22 +36,28 @@ html.v2-dark #serviceCardsGrid .svc-img-card,
   min-height: 0 !important;
 }
 
-/* 2 · PHOTO — near-square, identical height on every card (incl. first) ----- */
+/* 2 · PHOTO — square 1:1 box, WHOLE image visible (no crop), tap = zoom ------ */
 html.v2-dark #serviceCardsGrid .svc-img-card .svc-img-card__photo,
 html.v2-dark #serviceCardsGrid .svc-img-card:first-child .svc-img-card__photo,
 .v2 #serviceCardsGrid .svc-img-card .svc-img-card__photo,
 .v2 #serviceCardsGrid .svc-img-card:first-child .svc-img-card__photo {
-  aspect-ratio: 1 / .92 !important;
+  aspect-ratio: 1 / 1 !important;
   height: auto !important;
   width: 100% !important;
   position: relative;
   overflow: hidden;
+  /* neutral frame behind letterboxed (contain) images so the whole photo shows
+     without cropping important parts; blends with the dark card. */
+  background: #12140f !important;
+  border: 0 !important;
+  padding: 0 !important;
+  cursor: zoom-in;              /* the photo opens the lightbox */
 }
 html.v2-dark #serviceCardsGrid .svc-img-card__photo img,
 .v2 #serviceCardsGrid .svc-img-card__photo img {
   width: 100% !important;
   height: 100% !important;
-  object-fit: cover !important;
+  object-fit: contain !important;   /* FULL image, never cropped */
   display: block !important;
 }
 
@@ -100,20 +106,25 @@ html.v2-dark #serviceCardsGrid .svc-img-card:first-child .svc-img-card__body::af
   margin-left: 0 !important;
 }
 
-/* 5 · MOBILE — 2 per row, all six visible, NO carousel --------------------- */
+/* 5 · MOBILE — ONE per row (6 stacked), all six visible, NO carousel -------- */
 @media (max-width: 700px) {
   html.v2-dark #serviceCardsGrid,
   .v2 #serviceCardsGrid {
-    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-columns: 1fr !important;   /* each service on its own row */
     grid-auto-flow: row !important;
     grid-auto-columns: auto !important;
     overflow: visible !important;
     scroll-snap-type: none !important;
-    gap: 12px !important;
+    gap: 14px !important;
   }
   html.v2-dark #serviceCardsGrid > *,
   .v2 #serviceCardsGrid > * {
     scroll-snap-align: none !important;
     width: auto !important;
+  }
+  /* keep the photo comfortably square (not a tall column) on a full-width card */
+  html.v2-dark #serviceCardsGrid .svc-img-card .svc-img-card__photo,
+  .v2 #serviceCardsGrid .svc-img-card .svc-img-card__photo {
+    max-height: 62vh;
   }
 }

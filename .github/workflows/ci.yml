@@ -73,8 +73,11 @@ jobs:
       - name: Architecture lock
         run: npm run test:arch
 
-      - name: Service cards UI (6-up desktop/2-up mobile, square, no badge, cache-bust)
+      - name: Service cards UI (square, full-image, no badge, lightbox, unified source, cache-bust)
         run: npm run test:svc-cards
+
+      - name: Service image SOURCE unity E2E (homepage == Estimate == DB map + lightbox)
+        run: npm run test:svc-source
 
       - name: DataProvider unit (browser, static server)
         run: npm test

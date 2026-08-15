@@ -1173,7 +1173,8 @@ body { padding-bottom: 76px; }
 <link rel="stylesheet" href="css/v2.1.css?v=6" /><!-- V2.1 premium refinement — Geist · gold-orange · tighter · motion -->
 <link rel="stylesheet" href="css/v2.1-polish.css?v=2" /><!-- V2.1 final art-direction: depth · atmosphere · rhythm -->
 <link rel="stylesheet" href="css/booking-v2.css?v=1" /><!-- Booking overlay → V2 dark glass + gold, redesigned calendar -->
-<link rel="stylesheet" href="css/service-cards-square.css?v=1" /><!-- Service cards: uniform near-square tiles, 6-up desktop / 2-up mobile, no badge/overlay (loaded LAST) -->
+<link rel="stylesheet" href="css/service-cards-square.css?v=2" /><!-- Service cards: full-image square tiles, 6-up desktop / 1-up mobile, no badge/overlay (loaded LAST) -->
+<link rel="stylesheet" href="css/service-lightbox.css?v=1" /><!-- Service image lightbox (tap a card photo to zoom the full image) -->
 </head>
 <body class="v2">
 
@@ -1447,29 +1448,30 @@ window.HM_renderServiceCards = function renderServiceCards(overrides) {
     var title = (o.title != null && String(o.title).trim() !== '') ? o.title : svc.title;
     var desc  = (o.description != null && String(o.description).trim() !== '') ? o.description : (svc.description || '');
     var image = (o.image != null && String(o.image).trim() !== '') ? o.image : svc.imagePath;
-    /* badge: CMS may override the text; keep the config's style class. An
-       explicit empty CMS badge ('') hides it. */
-    var badgeTxt  = (o.badge !== undefined && o.badge !== null) ? o.badge : svc.badge;
-    var badgeType = svc.badgeType || 'popular';
-    var badgeHtml = badgeTxt
-      ? '<span class="svc-img-card__badge svc-img-card__badge--' + esc(badgeType) + '">' + esc(badgeTxt) + '</span>'
-      : '';
+    /* No badge is rendered over the service photo (removed per spec). The
+       SERVICE_CONFIG badge field is retained for the Estimate overlay only. */
     var descHtml = desc
       ? '<p class="svc-img-card__desc" style="margin:4px 0 0;font-size:12px;line-height:1.5;color:var(--gray-1,#6b7280)">' + esc(desc) + '</p>'
       : '';
-    /* data-service / href come ONLY from SERVICE_CONFIG → booking deep-links
-       are never affected by CMS content edits. The whole card (image + text)
-       is ONE booking link — tap anywhere = book that service. */
-    return '<a class="svc-img-card" href="#booking" data-service="' + esc(svc.serviceValue) + '" aria-label="' + esc(title) + '">'
-      + '<div class="svc-img-card__photo" style="background:' + svc.fallback + '">'
+    /* Card = two distinct targets:
+         • PHOTO  → opens the image lightbox (data-lightbox-src = the SAME image
+                    the card shows: DB image_path/versioned, or the fallback).
+         • BODY   → the booking deep-link. data-service / booking come ONLY from
+                    SERVICE_CONFIG so CMS content edits never affect routing;
+                    openBookingApp() stays the single booking entry point.
+       No badge is rendered over the photo (removed per spec). */
+    return '<div class="svc-img-card">'
+      + '<button type="button" class="svc-img-card__photo" '
+        + 'data-lightbox-src="' + esc(image) + '" data-lightbox-title="' + esc(title) + '" '
+        + 'aria-label="' + esc(title) + ' の画像を拡大">'
       + '<img src="' + esc(image) + '" alt="' + esc(title) + '" loading="lazy" onerror="this.style.display=\'none\'">'
-      + badgeHtml
-      + '</div>'
-      + '<div class="svc-img-card__body">'
+      + '</button>'
+      + '<a class="svc-img-card__body" href="#booking" data-service="' + esc(svc.serviceValue) + '" '
+        + 'onclick="openBookingApp(this.dataset.service);return false;" aria-label="' + esc(title) + ' を予約">'
       + '<h3 class="svc-img-card__title">' + esc(title) + '</h3>'
       + descHtml
-      + '</div>'
-      + '</a>';
+      + '</a>'
+      + '</div>';
   }).join('');
   /* Reveal on the CMS pass (`overrides` present — even {} means ContentLoader
      finished and this content is final). The fallback pass keeps the grid
@@ -3180,6 +3182,20 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
         if (slug && s.title) { out[slug] = out[slug] || {}; out[slug].title = s.title; }
       });
     }
+    /* HIGHEST precedence — the DB-backed service images from
+       hm-api/service-images.php: the SAME versioned { slug: url } map the
+       homepage grid uses (published by ContentLoader as window.HM_SERVICE_IMAGES,
+       persisted to hm_service_images_db). This makes the Estimate overlay show
+       exactly the image chosen in Website Management → サービス画像管理, so the
+       homepage and the Estimate picker never diverge. */
+    var _db = (window.HM_SERVICE_IMAGES && typeof window.HM_SERVICE_IMAGES === 'object')
+      ? window.HM_SERVICE_IMAGES : _baReadJSON('hm_service_images_db');
+    if (_db && typeof _db === 'object') {
+      Object.keys(_db).forEach(function (k) {
+        var slug = _BA_SLUG_ALIAS[k] || k, url = _db[k];
+        if (url) { out[slug] = out[slug] || {}; out[slug].img = url; }
+      });
+    }
     return out;
   }
   function baRenderServices() {
@@ -3911,6 +3927,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 <script src="js/reviews-carousel.js" defer></script>
 <script src="js/works-gallery.js" defer></script>
 <script src="js/back-to-top.js" defer></script>
+<script src="js/service-lightbox.js" defer></script><!-- Service card photo → full-image lightbox (X / backdrop / Esc; tap to zoom) -->
 <script src="js/motion.js" defer></script><!-- scroll-reveal / stagger / counter motion system -->
 <script src="js/v2.js" defer></script><!-- HELLO MOVING V2: header scroll-state + hero parallax -->
 <script src="js/v2.1.js" defer></script><!-- V2.1 motion enhancer: cursor-depth tilt (motion-safe) -->
