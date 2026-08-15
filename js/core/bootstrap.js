@@ -142,7 +142,7 @@
 
         /* Stage 4 — API client */
         window.__BOOTSTRAP__.stage = 'data-client';
-        await _load('js/services/dataClient.js');
+        await _loadWithRetry('js/services/dataClient.js', 1, 1000);
         if (!window.api) {
           /* Not fatal — site renders static content; log clearly */
           console.warn('[Bootstrap] ApiClient is null — site will display static defaults. Check env.js credentials.');
@@ -150,15 +150,15 @@
 
         /* Stage 5 — Fallback logger */
         window.__BOOTSTRAP__.stage = 'fallback-logger';
-        await _load('js/services/fallbackLogger.js');
+        await _loadWithRetry('js/services/fallbackLogger.js', 1, 1000);
 
         /* Stage 6 — Data provider */
         window.__BOOTSTRAP__.stage = 'data-provider';
-        await _load('js/services/dataProvider.js');
+        await _loadWithRetry('js/services/dataProvider.js', 1, 1000);
 
         /* Stage 7 — Service registry (must set window.__APP_READY__ = true) */
         window.__BOOTSTRAP__.stage = 'service-registry';
-        await _load('js/services/serviceRegistry.js');
+        await _loadWithRetry('js/services/serviceRegistry.js', 1, 1000);
         if (!window.__APP_READY__) {
           throw new Error(
             'serviceRegistry.js loaded but window.__APP_READY__ was not set — ' +
@@ -172,7 +172,7 @@
 
         /* Stage 9 — Content loader (auto-calls ContentLoader.init() on load) */
         window.__BOOTSTRAP__.stage = 'content-loader';
-        await _load('js/services/contentLoader.js');
+        await _loadWithRetry('js/services/contentLoader.js', 1, 1000);
 
         /* Stage 10 — Service worker registration */
         window.__BOOTSTRAP__.stage = 'sw-register';
