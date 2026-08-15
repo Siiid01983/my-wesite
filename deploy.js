@@ -67,6 +67,19 @@ const SKIP = new Set([
 // never clobber the server's real _config.php.
 const SKIP_ANY_DEPTH = new Set(['_config.php']);
 
+// ── Prune list ───────────────────────────────────────────────────────────────
+// FTP upload is ADD-ONLY: files deleted from the repo are never removed from the
+// server, so they linger as orphans. List those dead web-root-relative paths here
+// and the deploy DELETEs them after uploading. This is an explicit allowlist, NOT
+// a mirror/sync — it must ONLY name retired app assets. NEVER list server-owned
+// paths (hm-api/_config.php, hm-api/_uploads/**, media/**, user uploads): a wrong
+// entry here permanently deletes live data. Add a path when you `git rm` a shipped
+// asset; safe to leave entries after the file is gone (a missing target is a no-op).
+const PRUNE = [
+  'css/service-lightbox.css',   // removed — service cards became a whole-card link (no lightbox)
+  'js/service-lightbox.js',
+];
+
 /*
  * Upload localDir contents into the FTP server's current working directory.
  * Uses explicit cd/cdup so the CWD is always known and uploadFrom always
@@ -130,6 +143,33 @@ async function uploadDir(client, localDir) {
   }
 }
 
+/*
+ * Delete retired assets (the PRUNE list) from the server. Runs AFTER uploadDir,
+ * when the CWD is back at the web root. For each path: cd into its directory,
+ * DELE the file, cd back to the web root. A missing target (already pruned, or
+ * never existed) is logged and skipped — never fatal. `webRoot` is the absolute
+ * CWD captured after login/navigation so we always return to a known location.
+ */
+async function pruneRemote(client, webRoot) {
+  if (!PRUNE.length) return;
+  console.log('\n── Prune: removing retired assets from server ──');
+  for (const rel of PRUNE) {
+    const parts = rel.split('/').filter(Boolean);
+    const file  = parts.pop();
+    const dir   = parts.join('/');
+    try {
+      if (dir) await client.cd(dir);
+      await client.remove(file);
+      console.log('  pruned ' + rel);
+    } catch (e) {
+      const msg = (e && e.message ? String(e.message).split('\n')[0] : 'absent');
+      console.log('  skip   ' + rel + ' (' + msg + ')');
+    } finally {
+      try { await client.cd(webRoot); } catch (_) {}   // always return to the web root
+    }
+  }
+}
+
 (async () => {
   // Step 1 — generate env.js pointing the data client at the self-hosted PHP API.
   const envPath    = path.join(__dirname, 'js', 'config', 'env.js');
@@ -188,6 +228,7 @@ async function uploadDir(client, localDir) {
     }
 
     await uploadDir(client, __dirname); // upload relative to CWD
+    await pruneRemote(client, pwdAfterSetup); // delete retired assets (add-only FTP never prunes)
     console.log(`\n✓ Deploy complete → ${HOST}/${REMOTE}`);
 
     // Production content verification
