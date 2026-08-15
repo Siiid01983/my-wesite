@@ -1441,10 +1441,11 @@ window.HM_renderServiceCards = function renderServiceCards(overrides) {
   }
   grid.innerHTML = SERVICE_CONFIG.map(function (svc) {
     var o     = ov[svc.id] || {};
-    /* Conditional rendering: only accept a CMS override when it is non-empty
-       after trimming — otherwise fall back to the SERVICE_CONFIG default so a
-       card never renders a blank title/image. */
-    var title = (o.title != null && String(o.title).trim() !== '') ? o.title : svc.title;
+    /* TITLE is FORCED from SERVICE_CONFIG (the short canonical labels) and is NOT
+       overridable by the CMS — product decision to keep the six card titles
+       tight and consistent. (description + image still honor CMS/DB overrides,
+       falling back to SERVICE_CONFIG when empty.) */
+    var title = svc.title;
     var desc  = (o.description != null && String(o.description).trim() !== '') ? o.description : (svc.description || '');
     var image = (o.image != null && String(o.image).trim() !== '') ? o.image : svc.imagePath;
     /* No badge is rendered over the service photo (removed per spec). The
@@ -3220,10 +3221,11 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
       var o = ov[BA_SLUG[s.id] || s.id] || {};
       /* bookingName drives baGoBooking → baState.service. Kept EXACTLY as before
          (CMS title or the canonical BA_SVC_CFG.name) so booking data is unchanged.
-         displayLabel is what the card SHOWS: identical precedence to the homepage
-         (CMS title → SERVICE_CONFIG[slug].title → name) so titles always match. */
+         displayLabel is what the card SHOWS: FORCED from SERVICE_CONFIG[slug].title
+         (the short canonical label, NOT CMS-overridable) — identical to the
+         homepage card, so the two surfaces always show the same short title. */
       var bookingName  = (o.title != null && o.title !== '') ? o.title : s.name;
-      var displayLabel = (o.title != null && o.title !== '') ? o.title : (_baSvcTitle(s.id) || s.name);
+      var displayLabel = _baSvcTitle(s.id) || s.name;
       /* precedence identical to the homepage: DB feed (o.img via window map) >
          legacy KV (o.img) > SERVICE_CONFIG fallback. s.img (overlay-local
          Unsplash) is no longer used as an image source. */

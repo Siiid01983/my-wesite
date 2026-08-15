@@ -114,6 +114,18 @@ test('renderer: WHOLE card is one link → openBookingApp(); no lightbox/badge o
   assert.ok(!/svc-img-card__badge/.test(body), 'no badge element on the card');
 });
 
+test('titles are FORCED from SERVICE_CONFIG (CMS title override ignored for display)', () => {
+  const html = read('index.html');
+  const m = html.match(/window\.HM_renderServiceCards\s*=\s*function[\s\S]*?if \(overrides\) window\.HM_revealServiceCards\(\);/);
+  const body = m[0];
+  assert.ok(/var title = svc\.title;/.test(body), 'homepage title is forced from SERVICE_CONFIG (svc.title)');
+  assert.ok(!/var title = \(o\.title/.test(body), 'homepage title no longer reads o.title (CMS)');
+  // Estimate overlay display label is forced from SERVICE_CONFIG too (not CMS o.title)
+  assert.ok(/var displayLabel = _baSvcTitle\(s\.id\) \|\| s\.name;/.test(html), 'Estimate display title forced from SERVICE_CONFIG');
+  // booking name is still allowed to use the CMS/canonical value (unchanged)
+  assert.ok(/var bookingName\s*=\s*\(o\.title != null/.test(html), 'Estimate booking name unchanged (CMS/canonical)');
+});
+
 test('CSS: card is a link (no underline, pointer) and title uses Noto Sans JP, uniform height', () => {
   const css = read('css/service-cards-square.css');
   assert.ok(/a\.svc-img-card[\s\S]*?text-decoration:\s*none\s*!important/.test(css), 'card link has no underline');

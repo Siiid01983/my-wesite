@@ -121,6 +121,20 @@ async function readOverlay(page) {
     chk('homepage shows the six exact display titles', CANON.every((s, i) => home.titles[i] === WANT_TITLE[s]));
     chk('TITLE consistency: homepage title === Estimate title (all 6)', CANON.every((s) => ov.titles[s] === WANT_TITLE[s]));
 
+    // FORCE: even with a CMS-style title override, the card shows the SERVICE_CONFIG short title
+    await page.evaluate((m) => {
+      window.HM_SERVICE_IMAGES = m;
+      const ov = {}; Object.keys(m).forEach((s) => { ov[s] = { image: m[s], title: 'CMS_LONG_' + s + '・ご夫婦・新生活・処分' }; });
+      window.HM_renderServiceCards(ov);
+    }, map1);
+    await page.waitForTimeout(120);
+    const forced = await readHomepage(page);
+    chk('FORCE: CMS title override is IGNORED — homepage still shows the short titles',
+      CANON.every((s, i) => forced.titles[i] === WANT_TITLE[s]));
+    // restore the clean render for the remaining checks
+    await page.evaluate((ov) => window.HM_renderServiceCards(ov), overridesFrom(map1));
+    await page.waitForTimeout(80);
+
     // UNIFICATION: homepage img === overlay img === published DB url, per slug
     let unified = true;
     CANON.forEach((slug, i) => {
