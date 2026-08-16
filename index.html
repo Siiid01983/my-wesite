@@ -1514,6 +1514,20 @@ function HM_svcSnapshotOverrides() {
       if (cfg && cfg.image_url) { out[slug] = out[slug] || {}; out[slug].image = cfg.image_url; }
     });
   }
+  /* PREFERRED image source: the DB-backed map ContentLoader persists on every
+     public load (hm_service_images_db = { slug: versioned-URL string }). Applied
+     LAST so the last-known-good DB image wins over any stale legacy image_url and
+     over the SERVICE_CONFIG fallback — the first paint then matches the current
+     image, eliminating the old/fallback → current swap. Falls through to the
+     legacy KV / SERVICE_CONFIG only for a slug with no persisted DB image. */
+  var dbImgs = read('hm_service_images_db');
+  if (dbImgs && typeof dbImgs === 'object') {
+    out = out || {};
+    Object.keys(dbImgs).forEach(function (k) {
+      var url = dbImgs[k], slug = ALIAS[k] || k;
+      if (url && typeof url === 'string') { out[slug] = out[slug] || {}; out[slug].image = url; }
+    });
+  }
   return out;
 }
 var _svcSeed = HM_svcSnapshotOverrides();

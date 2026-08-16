@@ -699,7 +699,11 @@ window.ContentLoader = (function () {
         if (_dbSeed && typeof _dbSeed === 'object') window.HM_SERVICE_IMAGES = _dbSeed;
       } catch (e) {}
 
-      _applyServicesToGrid(svcsForGrid, imgCfg);
+      /* Seed this first (pre-API) render with the last-known-good DB map too, so
+         it does NOT briefly fall back to legacy-KV / SERVICE_CONFIG images before
+         the live feed resolves. Prevents the old/Unsplash → DB image flash on the
+         service cards; passing undefined (fresh visitor, no snapshot) is a no-op. */
+      _applyServicesToGrid(svcsForGrid, imgCfg, window.HM_SERVICE_IMAGES || undefined);
       _fetchServiceImagesApi().then(function (apiImages) {
         if (apiImages && Object.keys(apiImages).length) {
           /* Publish the canonical { slug: versioned-URL } map as the ONE source
