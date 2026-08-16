@@ -36,19 +36,21 @@ html.v2-dark #serviceCardsGrid .svc-img-card,
   min-height: 0 !important;
 }
 
-/* 2 · PHOTO — square 1:1 box, WHOLE image visible (no crop), tap = zoom ------ */
+/* 2 · PHOTO — 3:2 box MATCHING the source images (all 1536×1024) + object-fit
+   cover. Because the box ratio equals the image ratio, the photo fills edge-to-
+   edge with NO letterbox black bars AND NO cropping of subject matter. Uniform
+   across all six cards. (The prior 1:1 box + contain produced the black bars —
+   the bars were CSS letterboxing, NOT baked into the PNG files.) ------------- */
 html.v2-dark #serviceCardsGrid .svc-img-card .svc-img-card__photo,
 html.v2-dark #serviceCardsGrid .svc-img-card:first-child .svc-img-card__photo,
 .v2 #serviceCardsGrid .svc-img-card .svc-img-card__photo,
 .v2 #serviceCardsGrid .svc-img-card:first-child .svc-img-card__photo {
-  aspect-ratio: 1 / 1 !important;
+  aspect-ratio: 3 / 2 !important;   /* matches the 1536×1024 source images → no bars, no crop */
   height: auto !important;
   width: 100% !important;
   position: relative;
   overflow: hidden;
-  /* neutral frame behind letterboxed (contain) images so the whole photo shows
-     without cropping important parts; blends with the dark card. */
-  background: #12140f !important;
+  background: var(--surface-1, #12140f) !important;  /* fallback only; cover leaves no visible bars */
   border: 0 !important;
   padding: 0 !important;
   cursor: pointer;              /* whole card navigates to the Furniture/Items input */
@@ -57,7 +59,8 @@ html.v2-dark #serviceCardsGrid .svc-img-card__photo img,
 .v2 #serviceCardsGrid .svc-img-card__photo img {
   width: 100% !important;
   height: 100% !important;
-  object-fit: contain !important;   /* FULL image, never cropped */
+  object-fit: cover !important;   /* fills the 3:2 box; matching ratio ⇒ no crop, no bars */
+  object-position: center !important;
   display: block !important;
 }
 
@@ -83,7 +86,10 @@ html.v2-dark #serviceCardsGrid a.svc-img-card,
   cursor: pointer;
 }
 
-/* Title area: static below the photo, centered, uniform height across cards. */
+/* ACTION ROW below the photo: [ service name .................. → ]
+   A refined navigation control (not a loud button) — subtle hairline, generous
+   tap target, trailing directional arrow. It lives INSIDE the single card <a>,
+   so there are NO nested anchors; the whole card still routes via openBookingApp. */
 html.v2-dark #serviceCardsGrid .svc-img-card .svc-img-card__body,
 html.v2-dark #serviceCardsGrid .svc-img-card:first-child .svc-img-card__body,
 .v2 #serviceCardsGrid .svc-img-card .svc-img-card__body,
@@ -92,23 +98,46 @@ html.v2-dark #serviceCardsGrid .svc-img-card:first-child .svc-img-card__body,
   inset: auto !important;
   background: none !important;
   margin: 0 !important;
-  padding: 12px 12px 14px !important;
+  padding: 13px 16px !important;
+  min-height: 54px;                                  /* comfortable touch target */
   display: flex !important;
   align-items: center;
-  justify-content: center;   /* title centered under the image */
-  text-align: center;
-  gap: 0;
+  justify-content: space-between;                    /* name left · arrow right */
+  gap: 10px;
+  text-align: left;
+  border-top: 1px solid rgba(255,255,255,.08);       /* subtle divider photo↔action */
 }
-/* Drop the "→" affix — the whole card is the link now, no per-card arrow. */
+/* Refined trailing arrow = the directional control (no emoji, no badge). */
 html.v2-dark #serviceCardsGrid .svc-img-card .svc-img-card__body::after,
 html.v2-dark #serviceCardsGrid .svc-img-card:first-child .svc-img-card__body::after,
 .v2 #serviceCardsGrid .svc-img-card .svc-img-card__body::after,
 .v2 #serviceCardsGrid .svc-img-card:first-child .svc-img-card__body::after {
-  content: none !important;
-  display: none !important;
+  content: "\2192" !important;                        /* → */
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--accent, #F5A623);
+  border: 1px solid rgba(245,166,35,.35);
+  transition: transform .2s ease, background .2s ease, border-color .2s ease;
 }
-/* Title type: Japanese premium/minimal (Noto Sans JP), 1–2 lines, no overflow,
-   uniform reserved height so every card aligns. Same size incl. the first card. */
+/* Whole card is the link → lift the arrow control on hover/focus. */
+html.v2-dark #serviceCardsGrid a.svc-img-card:hover .svc-img-card__body::after,
+html.v2-dark #serviceCardsGrid a.svc-img-card:focus-visible .svc-img-card__body::after,
+.v2 #serviceCardsGrid a.svc-img-card:hover .svc-img-card__body::after,
+.v2 #serviceCardsGrid a.svc-img-card:focus-visible .svc-img-card__body::after {
+  transform: translateX(3px);
+  background: rgba(245,166,35,.12);
+  border-color: rgba(245,166,35,.6);
+}
+/* Title: Japanese premium/minimal (Noto Sans JP), clearly visible, left-aligned
+   in the action row, 1–2 lines, no overflow. Colour inherits the theme (white on
+   the dark card) from the existing v2 rules. */
 html.v2-dark #serviceCardsGrid .svc-img-card__title,
 html.v2-dark #serviceCardsGrid .svc-img-card:first-child .svc-img-card__title,
 .v2 #serviceCardsGrid .svc-img-card__title,
@@ -116,15 +145,15 @@ html.v2-dark #serviceCardsGrid .svc-img-card:first-child .svc-img-card__title,
   font-family: var(--font-jp) !important;
   font-weight: 700 !important;
   font-size: 15px !important;
-  line-height: 1.4 !important;
+  line-height: 1.35 !important;
   letter-spacing: .01em !important;
-  text-align: center !important;
+  text-align: left !important;
   margin: 0 !important;
+  flex: 1 1 auto;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: calc(1.4em * 2);   /* reserve two lines → all titles align */
   word-break: keep-all;          /* avoid awkward mid-word JP breaks */
 }
 

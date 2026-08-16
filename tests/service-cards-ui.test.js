@@ -71,12 +71,26 @@ test('SERVICE_CONFIG shows the six exact display titles (booking serviceValue un
   assert.ok(/serviceValue:'不用品回収・処分サービス'/.test(html), 'disposal booking value unchanged');
 });
 
-test('CSS: square 1:1 photo, WHOLE image (contain, not cover)', () => {
+test('CSS: photo box matches image ratio (3:2) + cover → no black bars, no crop', () => {
   const css = read('css/service-cards-square.css');
-  assert.ok(/aspect-ratio:\s*1\s*\/\s*1\s*!important/.test(css), 'photo box is 1:1');
-  assert.ok(/object-fit:\s*contain\s*!important/.test(css), 'object-fit: contain (full image)');
-  assert.ok(!/object-fit:\s*cover/.test(css), 'no object-fit: cover (would crop)');
+  assert.ok(/aspect-ratio:\s*3\s*\/\s*2\s*!important/.test(css), 'photo box is 3:2 (matches 1536x1024 images)');
+  assert.ok(/object-fit:\s*cover\s*!important/.test(css), 'object-fit: cover (fills box, no letterbox bars)');
+  assert.ok(!/object-fit:\s*contain/.test(css), 'no object-fit: contain (that caused the black bars)');
   assert.ok(/:first-child\s+\.svc-img-card__photo/.test(css), 'first-child photo normalized too');
+});
+
+test('CSS: service-name action row is a refined control (arrow + tap target), one <a>', () => {
+  const css = read('css/service-cards-square.css');
+  // trailing directional arrow (→ = \2192) as the action control
+  assert.ok(/content:\s*"\\2192"\s*!important/.test(css), 'action row has a → arrow control');
+  // comfortable tap target on the action row
+  assert.ok(/\.svc-img-card__body[\s\S]*?min-height:\s*54px/.test(css), 'action row has a ~54px tap target');
+  assert.ok(/justify-content:\s*space-between/.test(css), 'action row lays out name · arrow');
+  // whole card remains a single <a> (no nested anchors introduced in the renderer)
+  const html = read('index.html');
+  const m = html.match(/window\.HM_renderServiceCards\s*=\s*function[\s\S]*?if \(overrides\) window\.HM_revealServiceCards\(\);/)[0];
+  assert.strictEqual((m.match(/<a /g) || []).length, 1, 'renderer emits exactly ONE <a> per card (no nested anchors)');
+  assert.ok(/openBookingApp\(this\.dataset\.service\)/.test(m), 'card still routes via openBookingApp');
 });
 
 test('CSS: no badge inside the service-card photo', () => {
@@ -130,11 +144,12 @@ test('titles are FORCED from SERVICE_CONFIG (CMS title override ignored for disp
   assert.ok(!/var bookingName\s*=\s*_baSvcTitle/.test(html), 'booking name is not the short display title');
 });
 
-test('CSS: card is a link (no underline, pointer) and title uses Noto Sans JP, uniform height', () => {
+test('CSS: card is a link (no underline, pointer) and title uses Noto Sans JP, clamped', () => {
   const css = read('css/service-cards-square.css');
   assert.ok(/a\.svc-img-card[\s\S]*?text-decoration:\s*none\s*!important/.test(css), 'card link has no underline');
   assert.ok(/\.svc-img-card__title[\s\S]*?font-family:\s*var\(--font-jp\)\s*!important/.test(css), 'title uses --font-jp (Noto Sans JP)');
-  assert.ok(/min-height:\s*calc\(1\.4em \* 2\)/.test(css), 'title reserves 2 lines → uniform height');
+  // uniform card height now comes from the fixed 3:2 photo + the ~54px action row
+  assert.ok(/\.svc-img-card__body[\s\S]*?min-height:\s*54px/.test(css), 'action row reserves a uniform ~54px height');
   assert.ok(/-webkit-line-clamp:\s*2/.test(css), 'title clamps to 2 lines (no overflow)');
 });
 
