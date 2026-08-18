@@ -254,7 +254,7 @@
       var mli = document.createElement('li');
       var ma = document.createElement('a');
       ma.href = '#customer-login'; ma.className = 'cl-mnav-link'; ma.textContent = '予約確認 / My Booking';
-      mli.appendChild(ma); mUl.insertBefore(mli, mUl.querySelector('.mobile-contacts') || null); bindEntry(ma);
+      mli.appendChild(ma); mUl.insertBefore(mli, mUl.querySelector('.mobile-cta') || null); bindEntry(ma);
     }
     // Footer CTA strip
     var ftBtns = document.querySelector('.hm-ft__cta-btns');
