@@ -1171,7 +1171,7 @@ body { padding-bottom: 76px; }
 <link rel="stylesheet" href="css/v2-tokens.css" /><!-- V2 shared design tokens — single source of truth -->
 <link rel="stylesheet" href="css/v2.css" /><!-- HELLO MOVING V2 dark design system -->
 <link rel="stylesheet" href="css/v2.1.css?v=6" /><!-- V2.1 premium refinement — Geist · gold-orange · tighter · motion -->
-<link rel="stylesheet" href="css/v2.1-polish.css?v=2" /><!-- V2.1 final art-direction: depth · atmosphere · rhythm -->
+<link rel="stylesheet" href="css/v2.1-polish.css?v=3" /><!-- V2.1 final art-direction: depth · atmosphere · rhythm -->
 <link rel="stylesheet" href="css/booking-v2.css?v=1" /><!-- Booking overlay → V2 dark glass + gold, redesigned calendar -->
 <link rel="stylesheet" href="css/service-cards-square.css?v=2" /><!-- Service cards: full-image square tiles, 6-up desktop / 1-up mobile, no badge/overlay (loaded LAST) -->
 </head>
@@ -1605,7 +1605,8 @@ setTimeout(window.HM_revealServiceCards, 2500);
         <div class="gmb-platform">Google マップ口コミ</div>
       </div>
     </header>
-    <div class="review-grid" id="revGridEl">
+    <p class="reviews-swipe-hint">横にスワイプして口コミを見る <span aria-hidden="true">→</span></p>
+    <div class="review-grid" id="revGridEl" tabindex="0" role="group" aria-label="お客様の声（横にスクロールできます）">
       <article class="review-card">
         <div class="review-meta-line"><span class="review-stars">★★★★★</span><span>カップル・ご夫婦引越し • ご利用日：2026年5月</span></div>
         <h3>とても丁寧で、安心しておまかせできました</h3>
