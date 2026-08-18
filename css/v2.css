@@ -1283,12 +1283,18 @@ html.v2-dark .svc-img-card__photo { background-color: var(--surface-1); }
 }
 
 /* ============================================================================
-   MENU (nav-toggle) — recolor white → brand orange accent in every header state
-   (hero, scrolled, dark). Color only; size/position/type/animation unchanged.
+   MENU (nav-toggle) — solid ORANGE button with BLACK icon + label, legible on
+   the dark header in every state (hero, scrolled, dark). The orange fill is the
+   "frame"; the hamburger bars + "メニュー" text are near-black so they read on
+   it. Size, position, animation and behaviour are unchanged.
    Reuses --accent (#F5A623, css/v2-tokens.css) — the existing CTA/accent token.
    ========================================================================== */
+.v2 #siteHeader .nav-toggle {
+  background: var(--accent);
+  border-radius: 10px;
+}
 .v2 #siteHeader .nav-toggle-label,
-.v2 #siteHeader.v2-scrolled .nav-toggle-label { color: var(--accent); }
+.v2 #siteHeader.v2-scrolled .nav-toggle-label { color: #0C0E0B; }
 .v2 #siteHeader .nav-toggle span,
 .v2 #siteHeader.v2-scrolled .nav-toggle span,
-html.v2-dark #siteHeader .nav-toggle span { background: var(--accent); }
+html.v2-dark #siteHeader .nav-toggle span { background: #0C0E0B; }

@@ -101,3 +101,64 @@
 .v2 .svc-img-card__badge--popular { background: #F5A623 !important; color: #0C0E0B !important; }
 
 @media (prefers-reduced-motion: reduce) { .v2 body::after { opacity: .04; } }
+
+/* ── 10 · Reviews → horizontal scroll carousel ──────────────────────────────
+   Was a stacking grid on mobile / 3-col on desktop (featured-first grid in
+   v2.css). Convert the container to a horizontal, scroll-snapped track.
+   Card content, type, colours, ratings and reviewer info are unchanged — only
+   the container layout + the first card's full-width feature sizing change so
+   the track is uniform. No CSS animation added (prefers-reduced-motion safe);
+   mobile auto-play already lives in js/reviews-carousel.js and only scrolls. */
+html.v2-dark #revGridEl {
+  display: flex;
+  flex-wrap: nowrap;
+  grid-template-columns: none;          /* cancel the grid tracks */
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: 4px;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 10px;                 /* room for card shadow + scrollbar */
+  max-width: 100%;                      /* never widen the page */
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+html.v2-dark #revGridEl::-webkit-scrollbar { height: 8px; }
+html.v2-dark #revGridEl::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
+/* uniform carousel cards — desktop shows ~3, scrolls when they overflow */
+html.v2-dark #revGridEl > .review-card {
+  flex: 0 0 auto;
+  width: clamp(280px, 30%, 360px);
+  scroll-snap-align: start;
+}
+/* neutralise the full-width featured first card so the track is uniform */
+html.v2-dark #revGridEl .review-card:first-child {
+  grid-column: auto !important;
+  width: clamp(280px, 30%, 360px) !important;
+  padding: 24px 26px !important;
+}
+html.v2-dark #revGridEl .review-card:first-child h3 { font-size: 18px !important; line-height: 1.5 !important; }
+html.v2-dark #revGridEl .review-card:first-child p  { font-size: 15px !important; line-height: 1.9 !important; }
+html.v2-dark #revGridEl .review-card:first-child::before { font-size: 90px !important; }
+
+/* Mobile: one card + a peek of the next; centre-snap; natural touch swipe */
+@media (max-width: 720px) {
+  html.v2-dark #revGridEl { gap: 12px; scroll-padding-left: 16px; }
+  html.v2-dark #revGridEl > .review-card,
+  html.v2-dark #revGridEl .review-card:first-child {
+    width: 82% !important;              /* ~18% of the next card peeks in */
+    scroll-snap-align: center;
+  }
+}
+
+/* subtle swipe hint — muted premium line, consistent with the JP theme */
+.v2 .reviews-swipe-hint {
+  margin: 2px 0 14px;
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: .08em;
+  color: var(--text-2);
+}
+.v2 .reviews-swipe-hint span { color: var(--accent); font-weight: 700; }
