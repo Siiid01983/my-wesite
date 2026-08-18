@@ -149,3 +149,37 @@ registered in `websiteManagement.html` (nav button + `#wmc-view-*` container +
 - Use brand palette strictly
 - New components as standalone HTML files where practical
 - Generate Claude Code prompts for complex changes when asked, don't execute directly
+
+## Contact-form End-to-End Verification (runbook)
+How to prove the public お問い合わせ form works on production, from submit →
+admin Inbox → cleanup. The form posts via `js/contact-form.js` →
+`hm-api/contact.php`, which INSERTs an `inbox_messages` row (mailbox `contact@`),
+fires a LINE push, and returns `{ok, data:{inbox:true,...}}`. The on-page
+"お問い合わせを送信しました。…" message renders ONLY on a server-OK response, so
+seeing it == the DB write succeeded.
+1. **Submit** — fill `#cfName`/`#cfEmail`/`#cfMessage` (phone/subject optional),
+   mark the subject + body clearly as `[TEST] … please ignore`, submit. Success
+   message = Submission + contact.php PASS, no PHP/API error.
+2. **Verify in admin** — the row appears in Website Management Center → Inbox
+   (`websiteManagement.html#inbox`): From = submitted email, Subject, mailbox
+   `contact@`. Seeing it render there == Inbox record + Inbox display PASS.
+3. **Cleanup** — delete ONLY the test row (see rest.php reference below), or
+   delete it from the Inbox UI. Re-check to confirm it's gone.
+
+### `hm-api/rest.php` — authenticated data API (select/delete reference)
+Generic PostgREST-style endpoint. **JSON POST body, not query-string.** Every
+request needs `X-API-KEY` (page-served `window.API_KEY`, not sensitive) AND, for
+sensitive tables, `X-ADMIN-TOKEN` (admin HMAC session token — mint ONLY via
+`admin-login.php`; **never forge it from the signing secret** — that's an auth
+bypass). Admin token is required for: any `delete` (any table), writes on
+content tables (`hm_data, services, inbox_messages, blog_posts`), and `select`
+on sensitive tables (`bookings, communications, inbox_messages, audit_log`).
+- Body: `{ table, action:select|insert|upsert|update|delete, columns:"a,b",
+  filters:[{col,op,val,negate?}], order:[{col,ascending}], limit, single,
+  values, onConflict, returning }`
+- `op` ∈ `eq neq gt gte lt lte like ilike in is`; cols/tables are allowlisted.
+- **Deletes require a non-empty filter** (unfiltered → 400 `no_filter`); filter
+  by the uuid `id` for a guaranteed single-row delete. Use `returning:true` to
+  echo the deleted row back for confirmation.
+- Example delete: `{ "table":"inbox_messages","action":"delete",
+  "filters":[{"col":"id","op":"eq","val":"<uuid>"}],"returning":true }`
