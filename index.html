@@ -1437,7 +1437,12 @@ window.HM_renderServiceCards = function renderServiceCards(overrides) {
        falling back to SERVICE_CONFIG when empty.) */
     var title = svc.title;
     var desc  = (o.description != null && String(o.description).trim() !== '') ? o.description : (svc.description || '');
-    var image = (o.image != null && String(o.image).trim() !== '') ? o.image : svc.imagePath;
+    /* DB/CMS/legacy image ONLY. Never fall back to svc.imagePath (an external
+       Unsplash URL): on a first-ever visit with no persisted image we paint the
+       local placeholder tile (below, the CSS var(--surface-1) fallback) instead
+       of requesting an external image. ContentLoader re-renders with the DB PNG
+       (keeping its ?v=updated_at) once the feed arrives. */
+    var image = (o.image != null && String(o.image).trim() !== '') ? String(o.image).trim() : '';
     /* No badge is rendered over the service photo (removed per spec). The
        SERVICE_CONFIG badge field is retained for the Estimate overlay only. */
     var descHtml = desc
@@ -1452,7 +1457,7 @@ window.HM_renderServiceCards = function renderServiceCards(overrides) {
         + 'onclick="openBookingApp(this.dataset.service);return false;" '
         + 'aria-label="' + esc(title) + 'の見積りへ進む">'
       + '<div class="svc-img-card__photo">'
-      + '<img src="' + esc(image) + '" alt="' + esc(title) + '" loading="lazy" onerror="this.style.display=\'none\'">'
+      + (image ? '<img src="' + esc(image) + '" alt="' + esc(title) + '" loading="lazy" onerror="this.style.display=\'none\'">' : '')
       + '</div>'
       + '<div class="svc-img-card__body">'
       + '<h3 class="svc-img-card__title">' + esc(title) + '</h3>'
@@ -1460,10 +1465,12 @@ window.HM_renderServiceCards = function renderServiceCards(overrides) {
       + '</div>'
       + '</a>';
   }).join('');
-  /* Reveal on the CMS pass (`overrides` present — even {} means ContentLoader
-     finished and this content is final). The fallback pass keeps the grid
-     hidden so the fallback→CMS swap is never visible. */
-  if (overrides) window.HM_revealServiceCards();
+  /* Reveal on EVERY pass. The no-image (first-visit) pass now paints a neutral
+     local placeholder tile — no external image — so it is safe to show at once:
+     the cards render immediately on a first-ever visit and hydrate to the DB PNG
+     when ContentLoader delivers (placeholder→image, never old-image→new-image).
+     Repeat visitors are seeded with the DB image, so they reveal it directly. */
+  window.HM_revealServiceCards();
 };
 
 /* Drop the .svc-loading gate (idempotent). */

@@ -180,21 +180,20 @@ async function readOverlay(page) {
     chk('after replace: homepage sameday URL changed (old ≠ new)', home2.imgs[0] === map2['sameday'] && home2.imgs[0] !== map1['sameday']);
     chk('after replace: Estimate sameday URL changed to the SAME new URL', ov2.imgs['sameday'] === map2['sameday']);
 
-    // ── FALLBACK unity: no DB image → homepage img === Estimate img (SERVICE_CONFIG)
+    // ── FALLBACK: no DB image → homepage renders a LOCAL placeholder tile, never
+    //    an external (Unsplash) image. The homepage no longer falls back to
+    //    SERVICE_CONFIG.imagePath; the card photo is an empty box (CSS dark-tile
+    //    placeholder) that hydrates to the DB PNG once ContentLoader delivers.
     await page.evaluate(() => {
       window.HM_SERVICE_IMAGES = {};
       try { localStorage.removeItem('hm_service_images'); localStorage.removeItem('hm_service_images_db'); } catch (e) {}
     });
-    await page.evaluate(() => window.HM_renderServiceCards({}));   // no image overrides → SERVICE_CONFIG fallback
-    await page.evaluate(() => { try { window.openBookingApp(); } catch (e) {} });
-    await page.waitForTimeout(150);
+    await page.evaluate(() => window.HM_renderServiceCards({}));   // no image overrides → local placeholder (no external img)
     const homeF = await readHomepage(page);
-    const ovF = await readOverlay(page);
-    let fbUnified = true;
-    CANON.forEach((slug, i) => {
-      if (homeF.imgs[i] !== ovF.imgs[slug]) { fbUnified = false; console.log('     fb home[' + slug + ']=' + homeF.imgs[i] + '  overlay=' + ovF.imgs[slug]); }
-    });
-    chk('FALLBACK unity: with NO DB image, homepage img === Estimate img (all 6, via SERVICE_CONFIG)', fbUnified);
+    const noExternalImg = homeF.imgs.every((s) => !s);                     // no <img> rendered = placeholder tile
+    const noUnsplash    = !homeF.imgs.some((s) => /unsplash/i.test(s || ''));
+    homeF.imgs.forEach((s, i) => { if (s) console.log('     fb home[' + CANON[i] + ']=' + s); });
+    chk('FALLBACK: with NO DB image, homepage renders a local placeholder (no <img>, never Unsplash)', noExternalImg && noUnsplash);
 
     // ── Mobile 375px: 6 cards, one per row (stacked) ─────────────────────────
     const m = await ctx.newPage();
