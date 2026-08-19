@@ -6,6 +6,14 @@
 
 const CHANGELOG = [
   {
+    version: 'v5.0', date: '2026-08-20', label: '最新',
+    entries: [
+      { type:'fix', text:'本番UIちらつき修正① サービスカード：トップページのサービスカード6枚で発生していた画像ちらつきを修正。初回訪問時の Unsplash フォールバック画像リクエストを撤廃し、ローカルのプレースホルダー（暗色タイル）を即時表示。サービス画像フィード到着後に現行の DB PNG 画像へハイドレート。再訪問者は永続化された hm_service_images_db の画像をそのまま使用。本番検証：Unsplash リクエスト0件・レガシー JPEG リクエスト0件・現行 DB PNG 表示・旧→新画像のちらつきなし・6枚（PC 3×2／モバイル 6×1）確認' },
+      { type:'fix', text:'本番UIちらつき修正② 家具アイテムアイコン：予約フォームの家具アイテムアイコン40個の読み込みちらつきを修正。loading="lazy" を撤廃（decoding="async" は維持）し、ドロワーを開いた時点で全40アイコンがデコード済みに。空アイコン枠やアイコンのポップインが発生しない。本番検証：ドロワー展開時 40/40 デコード済み・loading="lazy" 0件・ドロワー正常動作・__APP_READY__ = true' },
+      { type:'improve', text:'スコープ：いずれもUI・画像読み込みのみの修正。データベース・API（hm-api/*）・storage.php・WAF・Service Worker・予約ロジック・BookingService/createBooking・BAオーバーレイ/openBookingApp・serviceValue/data-service（予約識別子）・hm_service_images_db ロジック・window.HM_SERVICE_IMAGES・js/services/contentLoader.js・WMC/CMS設定・レビュー機能・予約/アイテムデータ・家具ドロワー挙動は変更なし' },
+    ]
+  },
+  {
     version: 'v4.9', date: '2026-07-03', label: '最新',
     entries: [
       { type:'feat',    text:'予約フロー（BAオーバーレイ）に「希望時間」ステップを追加：午前(9-12)/午後(12-15)/夕方(15-18)/夜間(18-21)/時間指定なし から選ぶ必須項目。確認・完了画面に表示し、BookingService.createBooking() の time および予約通知（booking_time）へ送信' },
