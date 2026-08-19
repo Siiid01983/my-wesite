@@ -88,7 +88,7 @@ test('CSS: service-name action row is a refined control (arrow + tap target), on
   assert.ok(/justify-content:\s*space-between/.test(css), 'action row lays out name · arrow');
   // whole card remains a single <a> (no nested anchors introduced in the renderer)
   const html = read('index.html');
-  const m = html.match(/window\.HM_renderServiceCards\s*=\s*function[\s\S]*?if \(overrides\) window\.HM_revealServiceCards\(\);/)[0];
+  const m = html.match(/window\.HM_renderServiceCards\s*=\s*function[\s\S]*?window\.HM_revealServiceCards\(\);/)[0];
   assert.strictEqual((m.match(/<a /g) || []).length, 1, 'renderer emits exactly ONE <a> per card (no nested anchors)');
   assert.ok(/openBookingApp\(this\.dataset\.service\)/.test(m), 'card still routes via openBookingApp');
 });
@@ -117,7 +117,7 @@ test('CSS: mobile = ONE card per row (6 stacked), no carousel, hides no card', (
 
 test('renderer: WHOLE card is one link → openBookingApp(); no lightbox/badge on card', () => {
   const html = read('index.html');
-  const m = html.match(/window\.HM_renderServiceCards\s*=\s*function[\s\S]*?if \(overrides\) window\.HM_revealServiceCards\(\);/);
+  const m = html.match(/window\.HM_renderServiceCards\s*=\s*function[\s\S]*?window\.HM_revealServiceCards\(\);/);
   assert.ok(m, 'renderer body found');
   const body = m[0];
   assert.ok(/<a class="svc-img-card"[\s\S]*?data-service="/.test(body), 'card root is an <a> with data-service');
@@ -130,7 +130,7 @@ test('renderer: WHOLE card is one link → openBookingApp(); no lightbox/badge o
 
 test('titles are FORCED from SERVICE_CONFIG (CMS title override ignored for display)', () => {
   const html = read('index.html');
-  const m = html.match(/window\.HM_renderServiceCards\s*=\s*function[\s\S]*?if \(overrides\) window\.HM_revealServiceCards\(\);/);
+  const m = html.match(/window\.HM_renderServiceCards\s*=\s*function[\s\S]*?window\.HM_revealServiceCards\(\);/);
   const body = m[0];
   assert.ok(/var title = svc\.title;/.test(body), 'homepage title is forced from SERVICE_CONFIG (svc.title)');
   assert.ok(!/var title = \(o\.title/.test(body), 'homepage title no longer reads o.title (CMS)');
