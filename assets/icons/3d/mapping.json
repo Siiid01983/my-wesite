@@ -103,13 +103,13 @@
  },
  {
   "slug": "dresser-s",
-  "item": "ドレッサー 小",
+  "item": "チェスト大",
   "model": "hm_dresser_s (authored)",
   "tier": "exact"
  },
  {
   "slug": "dresser-l",
-  "item": "ドレッサー 大",
+  "item": "ドレッサー",
   "model": "hm_dresser_l (authored)",
   "tier": "exact"
  },

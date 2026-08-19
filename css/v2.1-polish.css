@@ -144,7 +144,13 @@ html.v2-dark #revGridEl .review-card:first-child::before { font-size: 90px !impo
 
 /* Mobile: one card + a peek of the next; centre-snap; natural touch swipe */
 @media (max-width: 720px) {
-  html.v2-dark #revGridEl { gap: 12px; scroll-padding-left: 16px; }
+  /* max-width:100% (set above, for desktop page-overflow safety) collided with the
+     mobile full-bleed pattern (ui-enhancements margin:-22px / padding:22px): it
+     clamped the track's border-box to the container width, so the negative margins
+     only bled LEFT and left a background strip on the RIGHT. Let the track span the
+     full viewport width (like .commit-grid) → symmetric peek, no strip. It equals
+     the viewport exactly, so the page still never scrolls horizontally. */
+  html.v2-dark #revGridEl { gap: 12px; scroll-padding-left: 16px; max-width: none; }
   html.v2-dark #revGridEl > .review-card,
   html.v2-dark #revGridEl .review-card:first-child {
     width: 82% !important;              /* ~18% of the next card peeks in */
