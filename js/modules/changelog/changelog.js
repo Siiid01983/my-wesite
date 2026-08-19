@@ -14,7 +14,7 @@ const CHANGELOG = [
     ]
   },
   {
-    version: 'v4.9', date: '2026-07-03', label: '最新',
+    version: 'v4.9', date: '2026-07-03',
     entries: [
       { type:'feat',    text:'予約フロー（BAオーバーレイ）に「希望時間」ステップを追加：午前(9-12)/午後(12-15)/夕方(15-18)/夜間(18-21)/時間指定なし から選ぶ必須項目。確認・完了画面に表示し、BookingService.createBooking() の time および予約通知（booking_time）へ送信' },
       { type:'fix',     text:'予約画面のサービス選択がCMSと同期しない問題を修正：ハードコードされた既定値ではなく、トップページと同じCMSデータ（hm_services のサービス名・hm_service_images の画像）を反映。管理画面での名称・画像編集が予約フローにも即反映される（BA-id↔正規スラッグ対応：tansin→single・assembly→furniture、emergency→sameday エイリアス）。CMSデータが無い場合は既定のBA_SVC_CFGにフォールバック' },
