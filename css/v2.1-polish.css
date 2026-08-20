@@ -168,3 +168,21 @@ html.v2-dark #revGridEl .review-card:first-child::before { font-size: 90px !impo
   color: var(--text-2);
 }
 .v2 .reviews-swipe-hint span { color: var(--accent); font-weight: 700; }
+
+/* ── 11 · Mobile touch targets ───────────────────────────────────────────────
+   Lift a few short (<40px) SECONDARY text links to a comfortable ~44px tap
+   height. Padding / min-height only — text, size, colour, alignment unchanged;
+   gated to ≤700px so desktop layout is untouched. Primary CTAs (already 44px+)
+   are not affected. The reviews "もっと見る" button keeps its author-set inline
+   style (padding:0) — we add height via min-height + flex centering, so no
+   !important and no change to contentLoader.js. */
+@media (max-width: 700px) {
+  /* footer legal links (プライバシーポリシー / 利用規約) — were 20px tall */
+  .v2 .hm-ft__legal a { display: inline-block; padding: 10px 4px; }
+  /* footer phone link — was 21px tall */
+  .v2 .hm-ft__info a[href^="tel:"] { display: inline-block; padding: 10px 4px; }
+  /* mid-page LINE text row — was 24px tall (secondary to the LINE buttons) */
+  .v2 .midpage-line-row a { padding: 10px; }
+  /* reviews "口コミをもっと見る" — was 23px tall */
+  .v2 .rev-more-btn { display: inline-flex; align-items: center; min-height: 44px; }
+}
