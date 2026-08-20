@@ -97,6 +97,9 @@
 
 /* Dots. */
 .wg-dots { display: flex; gap: 8px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+/* Mobile: hide the (43-item) dot strip — it wraps into tiny 8px rows and isn't a
+   usable pager on small screens. Swipe + the prev/next arrows remain the nav. */
+@media (max-width: 700px) { .wg-dots { display: none; } }
 .wg-dot {
   width: 8px; height: 8px; border-radius: 50%;
   border: none; padding: 0; cursor: pointer;
