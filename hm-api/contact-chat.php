@@ -109,6 +109,11 @@ function cc_ensure_table(PDO $db): void {
 // emits an IDENTICAL generic response for "unknown code" and "wrong email" so a
 // short code can never be brute-force-probed for existence.
 function cc_verify(PDO $db): array {
+  // Self-heal: ensure the table exists so resume/list/send return the intended
+  // generic 'invalid' (not a 500) even before contact-migrate.php has been run or
+  // any conversation has been started. Creates an EMPTY table only — no rows, so
+  // this never fabricates or exposes a conversation.
+  cc_ensure_table($db);
   $p     = hm_body();
   $email = strtolower(trim((string)($p['email'] ?? '')));
   $code  = strtoupper(trim((string)($p['contact_id'] ?? $p['code'] ?? '')));
