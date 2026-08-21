@@ -8,6 +8,7 @@
     "test:svc-source": "node tests/service-image-source.e2e.js",
     "test:svc-map":   "php tests/service-images-mapping.test.php",
     "test:inbox-reply": "node tests/inbox-reply-flow.verify.js",
+    "test:contact-chat": "node tests/contact-chat.e2e.js",
     "test:booking-loc": "node tests/booking-service-location.verify.js",
     "test:fixes":  "node --test tests/calendar-timestamp-fixes.verify.js",
     "test:timeline-cal":     "node tests/timeline-calendar.smoke.js",

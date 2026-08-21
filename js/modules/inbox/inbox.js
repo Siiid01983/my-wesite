@@ -501,6 +501,41 @@
      portal chat room WITHOUT sending an email. It inserts an outbound row
      (labels.outbound + labels.chat) into thread 'chat:<bookingId>' via the
      staff-authed rest.php seam — the formal 返信 (email) path is untouched. */
+  /* ── Contact Chat reply bar (booking-INDEPENDENT お問い合わせ threads) ─────
+     Contact Chat conversations (js/contact-chat.js → contact-chat.php) have NO
+     booking_id; their rows carry thread_id 'contact:<CODE>' + labels.contact. The
+     admin replies here through contact-chat.php?action=admin-reply (X-ADMIN-TOKEN),
+     which stores the reply in-thread AND emails the customer only when they are not
+     recently active (the server-side "active rule"). Separate from the booking
+     Direct Chat bar so booking logic is never touched. */
+  function _isContactThread(m) {
+    return String(m && m.thread_id || '').indexOf('contact:') === 0 || !!_labelsOf(m).contact;
+  }
+  function _contactCidOf(m) {
+    var l = _labelsOf(m);
+    if (l && l.cid) return String(l.cid);
+    var t = String(m && m.thread_id || '');
+    return t.indexOf('contact:') === 0 ? t.slice(8) : '';
+  }
+  function _contactChatBar(t) {
+    var m   = t.latest;
+    var cid = _esc(_contactCidOf(m));
+    var cat = _esc(_labelsOf(m).category || '');
+    return '<div class="ibx-cc" data-cid="' + cid + '">' +
+      '<div class="ibx-cc-meta" style="font-size:12px;color:var(--gray-1);padding:8px 0 6px;border-top:1px dashed var(--line);margin-top:8px">' +
+        'お問い合わせ番号 <strong style="color:var(--ink);letter-spacing:1px">' + cid + '</strong>' +
+        (cat ? ' · ' + cat : '') +
+        ' <span class="ibx-cc-status" data-cid="' + cid + '" style="color:var(--gray-2)"></span>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;align-items:flex-end">' +
+        '<input class="ibx-cc-input" type="text" maxlength="4000" placeholder="チャットで返信（閲覧中でなければメール通知します）…" style="flex:1;padding:9px 13px;border:1px solid var(--line);border-radius:18px;font-size:13px">' +
+        '<button class="btn btn-primary btn-sm ibx-cc-send" type="button">返信</button>' +
+        '<button class="btn btn-ghost btn-sm ibx-cc-archive" type="button" title="アーカイブ">アーカイブ</button>' +
+      '</div>' +
+      '<div class="ibx-cc-pending" style="font-size:12px;margin-top:4px"></div>' +
+      '</div>';
+  }
+
   function _directChatBar(t) {
     var bid = _esc(t.latest.booking_id || '');
     return '<div class="ibx-dc" data-booking="' + bid + '">' +
@@ -594,6 +629,65 @@
     _messages.push(Object.assign({}, row, { created_at: now, received_at: now }));
     _renderMessages();
     _toast('チャットを送信しました');
+  }
+
+  /* ── Contact Chat admin actions (contact-chat.php, X-ADMIN-TOKEN) ─────────── */
+  function _ccPost(action, body) {
+    var base = (window.API_BASE || '').replace(/\/$/, '');
+    return fetch(base + '/contact-chat.php?action=' + action, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-KEY': window.API_KEY || '',
+        'X-ADMIN-TOKEN': window.__HM_ADMIN_TOKEN || '',
+      },
+      body: JSON.stringify(body || {}),
+    }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+  }
+  async function _contactChatSend(btn) {
+    var bar = btn.closest && btn.closest('.ibx-cc');
+    if (!bar) return;
+    var input = bar.querySelector('.ibx-cc-input');
+    var text  = (input && input.value || '').trim();
+    var cid   = bar.getAttribute('data-cid');
+    if (!text || !cid) return;
+    btn.disabled = true;
+    var out = await _ccPost('admin-reply', { contact_id: cid, message: text });
+    btn.disabled = false;
+    if (out && out.ok) {
+      if (input) input.value = '';
+      var note = out.emailed ? '（メール通知しました）'
+               : (out.notify === 'customer_active' ? '（お客様が閲覧中のためメールは送信していません）' : '');
+      _toast('返信を送信しました' + note);
+      renderInbox();
+    } else {
+      _toast('送信に失敗しました');
+    }
+  }
+  async function _contactArchive(btn) {
+    var bar = btn.closest && btn.closest('.ibx-cc');
+    var cid = bar && bar.getAttribute('data-cid');
+    if (!cid) return;
+    if (!window.confirm('このお問い合わせをアーカイブしますか？')) return;
+    var out = await _ccPost('admin-close', { contact_id: cid, status: 'archived' });
+    _toast(out && out.ok ? 'アーカイブしました' : 'アーカイブに失敗しました');
+  }
+  // Lazily fetch + show the conversation status/last-activity strip (once per card).
+  async function _contactLoadMeta(cid, el) {
+    if (!cid || !el || el.getAttribute('data-loaded')) return;
+    el.setAttribute('data-loaded', '1');
+    try {
+      var base = (window.API_BASE || '').replace(/\/$/, '');
+      var res = await fetch(base + '/contact-chat.php?action=admin-meta&contact_id=' + encodeURIComponent(cid), {
+        headers: { 'X-API-KEY': window.API_KEY || '', 'X-ADMIN-TOKEN': window.__HM_ADMIN_TOKEN || '' },
+      });
+      var out = await res.json().catch(function () { return { ok: false }; });
+      if (out && out.ok && out.data) {
+        var d = out.data;
+        var last = d.last_customer_activity ? _fmtDate(d.last_customer_activity) : '—';
+        el.textContent = ' · 状態:' + (d.status || 'open') + ' · 最終:' + last;
+      }
+    } catch (e) { /* non-fatal */ }
   }
 
   /* ── Delete a message (Part 3, admin/moderation) ──────────
@@ -858,12 +952,17 @@
           '</div>' +
           '<div style="border-top:1px solid var(--line);margin-top:6px">' + _transcript(t) + '</div>' +
           '<div style="margin-top:8px;display:flex;justify-content:flex-end;border-top:1px dashed var(--line);padding-top:10px">' + _actionBtns(m) + '</div>' +
-          (m.booking_id ? _bookingCtxPanel(t) + _directChatBar(t) : '') +
+          (m.booking_id ? _bookingCtxPanel(t) + _directChatBar(t)
+                        : (_isContactThread(m) ? _contactChatBar(t) : '')) +
         '</div>';
     }).join('');
 
     container.innerHTML = header + cards;
     _hydrateAttachments(container);   // resolve signed URLs for chat media thumbnails
+    // Lazily populate each Contact Chat status strip (status + last activity).
+    container.querySelectorAll('.ibx-cc-status').forEach(function (el) {
+      _contactLoadMeta(el.getAttribute('data-cid'), el);
+    });
 
     // Restore search focus + caret (re-render replaces the input).
     if (_search) {
@@ -1401,6 +1500,10 @@
     if (rm) { var bar1 = rm.closest('.ibx-dc'); var list1 = _dcPending[bar1.getAttribute('data-booking')] || []; list1.splice(+rm.getAttribute('data-rm'), 1); _dcRenderPending(bar1); return; }
     var send = e.target.closest('.ibx-dc-send');
     if (send) { _directChatSend(send); return; }
+    var ccSend = e.target.closest('.ibx-cc-send');
+    if (ccSend) { _contactChatSend(ccSend); return; }
+    var ccArch = e.target.closest('.ibx-cc-archive');
+    if (ccArch) { _contactArchive(ccArch); return; }
   });
   document.addEventListener('change', function (e) {
     var f = e.target.closest && (e.target.closest('.ibx-dc-file') || e.target.closest('.ibx-dc-camfile'));
@@ -1414,6 +1517,12 @@
       var bar = e.target.closest('.ibx-dc');
       var btn = bar && bar.querySelector('.ibx-dc-send');
       if (btn) _directChatSend(btn);
+    }
+    if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('ibx-cc-input')) {
+      e.preventDefault();
+      var barC = e.target.closest('.ibx-cc');
+      var btnC = barC && barC.querySelector('.ibx-cc-send');
+      if (btnC) _contactChatSend(btnC);
     }
   });
 

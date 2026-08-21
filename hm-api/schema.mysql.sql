@@ -208,6 +208,34 @@ CREATE TABLE IF NOT EXISTS audit_log (
   KEY idx_audit_actor (actor)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ── contact_conversations : Contact Chat identity + retention lifecycle ───────
+--    Booking-INDEPENDENT お問い合わせ conversations. Auth = public_contact_id (a
+--    short human-friendly code, e.g. HM7K4P2) + email (second factor). Messages
+--    themselves live in inbox_messages (thread_id = 'contact:<public_contact_id>')
+--    so they appear in the admin Inbox; this table owns identity + the 180-day
+--    (config: contact_retention_days) retention window enforced by
+--    contact-retention.php. Created/updated by contact-chat.php / contact-migrate.php.
+--    No FK to bookings — Contact Chat never touches booking identity.
+CREATE TABLE IF NOT EXISTS contact_conversations (
+  id                     CHAR(36)     NOT NULL,
+  public_contact_id      VARCHAR(16)  NOT NULL,        -- customer-facing short code (HM…)
+  email                  VARCHAR(255) NOT NULL,        -- second-factor for resume
+  customer_name          TEXT,
+  category               VARCHAR(40)  NOT NULL DEFAULT '',
+  status                 VARCHAR(20)  NOT NULL DEFAULT 'open',   -- open | closed | archived
+  created_at             TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at             TIMESTAMP    NULL DEFAULT NULL,
+  confirmed_at           TIMESTAMP    NULL DEFAULT NULL,        -- set on first submit (visibility gate)
+  last_customer_activity TIMESTAMP    NULL DEFAULT NULL,        -- drives the reply-email "active" rule
+  last_admin_activity    TIMESTAMP    NULL DEFAULT NULL,
+  expires_at             TIMESTAMP    NULL DEFAULT NULL,        -- retention: purge when < NOW()
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_contact_code (public_contact_id),
+  KEY idx_contact_email (email),
+  KEY idx_contact_status (status),
+  KEY idx_contact_expires (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ════════════════════════════════════════════════════════════════════════════

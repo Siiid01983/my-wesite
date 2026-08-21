@@ -1847,6 +1847,18 @@ setTimeout(window.HM_revealServiceCards, 2500);
       <h2>お気軽にお問い合わせください。</h2>
       <p>料金確認・日程調整・当日対応など、<br/>担当者がご状況に合わせてご案内します。</p>
 
+      <!-- Contact Chat launcher → js/contact-chat.js (hm-api/contact-chat.php).
+           Booking-INDEPENDENT persistent お問い合わせ chat; separate from the BA
+           overlay / Estimate flow. The email form below remains as a fallback. -->
+      <div class="cc-launch" style="max-width:640px;margin:28px auto 0;background:#fff;border:1px solid #e2e7d8;border-radius:14px;padding:22px 20px;text-align:center">
+        <h3 style="margin:0 0 6px;font-size:16px;color:#2C3626">チャットでお問い合わせ</h3>
+        <p style="margin:0 0 16px;font-size:13px;line-height:1.9;color:var(--gray-2)">お問い合わせ番号を発行し、いつでも会話を再開できます。担当者が順次ご返信いたします。</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+          <button type="button" class="btn btn-primary" onclick="if(window.openContactChat)openContactChat('new')">新しくお問い合わせ</button>
+          <button type="button" class="btn btn-ghost" onclick="if(window.openContactChat)openContactChat('resume')">お問い合わせを再開</button>
+        </div>
+      </div>
+
       <!-- Inline contact form → hm-api/contact.php (js/contact-form.js) -->
       <form id="hmContactForm" class="cta-form" style="max-width:640px;margin:28px auto 0;text-align:left" novalidate>
         <h3>メールでお問い合わせ</h3>
@@ -3961,6 +3973,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 <script src="js/ba-overlay-prefill.js"></script><!-- Customer Portal V2 — BA overlay prefill API (additive; public-surface only) -->
 <script src="js/rebook-receiver.js"></script><!-- Customer Portal V2 rebook handoff — additive; no-op unless a rebook is in progress -->
 <script src="js/contact-form.js" defer></script>
+<script src="js/contact-chat.js" defer></script><!-- Contact Chat overlay (booking-independent お問い合わせ; additive, public-surface only) -->
 <script src="js/reviews-carousel.js" defer></script>
 <script src="js/works-gallery.js" defer></script>
 <script src="js/back-to-top.js" defer></script>
