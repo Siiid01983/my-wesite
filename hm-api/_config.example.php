@@ -260,4 +260,22 @@ return [
     ['mailbox' => 'support@hello-moving.com', 'user' => 'support@hello-moving.com', 'pass' => ''],
     ['mailbox' => 'contact@hello-moving.com', 'user' => 'contact@hello-moving.com', 'pass' => ''],
   ],
+
+  // ── Contact Chat (hm-api/contact-chat.php + contact-retention.php) ─────────
+  //  Booking-INDEPENDENT お問い合わせ conversations. Identity = a short customer-
+  //  facing code (HM7K4P2) + email; messages live in inbox_messages (thread
+  //  'contact:<code>') so they appear in the admin Inbox automatically.
+  //    contact_retention_days : the ONLY place the retention window is defined.
+  //                 A conversation + its messages + attachment files are hard-
+  //                 deleted by contact-retention.php once expires_at (= last
+  //                 activity + this many days) is in the past. Business/legal
+  //                 decision — set deliberately. Default 180.
+  //    contact_active_window  : seconds. If the customer polled within this window
+  //                 an admin reply is shown in-app WITHOUT emailing them (avoids
+  //                 duplicate notifications); otherwise the reply is emailed. 300 = 5 min.
+  //    contact_cron_token     : token for triggering contact-retention.php over
+  //                 HTTP from the server's own cron (same-server only; CLI needs none).
+  'contact_retention_days' => 180,
+  'contact_active_window'  => 300,
+  'contact_cron_token'     => '',
 ];
