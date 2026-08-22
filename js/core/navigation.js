@@ -126,7 +126,6 @@ function go(view) {
   if (view==='media') renderMedia();
   if (view==='customers') { renderCustomers(); _syncCustomersFromApi(); }
   if (view==='portal-users') renderPortalUsers();
-  if (view==='line') renderLine();
   if (view==='email') renderEmail();
   if (view==='changelog') renderChangelog();
   if (view==='security')      renderSecurity();

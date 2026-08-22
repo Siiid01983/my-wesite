@@ -608,14 +608,12 @@ function saveBooking() {
       // booking-status.php (routed via BookingService.updateBooking →
       // Adapter.setBookingStatus), so the former client _sendBookingEmail() calls
       // were removed here to avoid a DUPLICATE customer email. The admin-facing
-      // LINE + email notifications (sendLineNotif / sendEmailNotif → admin mailbox)
-      // are unchanged.
+      // email notification (sendEmailNotif → admin mailbox) is unchanged. The
+      // former LINE ping was retired when notifications standardized on Telegram.
       if (b.status === '確定') {
-        sendLineNotif(`✅ 予約確定\n${b.name}様 (${b.id})\nサービス: ${b.service}\n日程: ${b.date}`,'statusConfirmed');
         sendEmailNotif({ subject:`[Hello Moving] 予約確定 - ${b.name}様`, trigger_type:'予約確定', ...bkEmailParams(b) },'statusConfirmed');
       }
       if (b.status === '完了') {
-        sendLineNotif(`🎉 引越し完了\n${b.name}様 (${b.id})\nサービス: ${b.service}`,'statusComplete');
         sendEmailNotif({ subject:`[Hello Moving] 引越し完了 - ${b.name}様`, trigger_type:'引越し完了', ...bkEmailParams(b) },'statusComplete');
       }
     }
@@ -623,7 +621,6 @@ function saveBooking() {
     Adapter.addBooking(b);
     BookingService.recordBooking(b);
     toast('予約を追加しました');
-    sendLineNotif(`📅 新規予約\n${b.name}様\nサービス: ${b.service}\n日程: ${b.date || '未定'}\nID: ${b.id}`,'newBooking');
     sendEmailNotif({ subject:`[Hello Moving] 新規予約 - ${b.name}様`, trigger_type:'新規予約', ...bkEmailParams(b) },'newBooking');
     _sendBookingEmail(b, 'newBooking');
   }
@@ -658,9 +655,6 @@ function quickBookSlot(fields) {
   };
   Adapter.addBooking(b);
   BookingService.recordBooking(b);            // locks the day-slot + syncs public calendar
-  if (typeof sendLineNotif === 'function') {
-    sendLineNotif(`📅 枠予約\n${b.name}様\nサービス: ${b.service}\n日程: ${b.date} ${b.time}\nID: ${b.id}`, 'newBooking');
-  }
   if (typeof sendEmailNotif === 'function') {
     try { sendEmailNotif({ subject:`[Hello Moving] 新規枠予約 - ${b.name}様`, trigger_type:'新規予約', ...bkEmailParams(b) }, 'newBooking'); } catch(e) {}
   }

@@ -7,8 +7,8 @@
 //
 //  The SOLE admin notification channel: used by contact-chat.php, create-booking.php,
 //  contact.php, chat.php and inbox-poll.php to alert the admin. It replaced the former
-//  LINE helper (removed). The standalone admin manual-push endpoint line-push.php is a
-//  separate, independent tool and is unaffected.
+//  LINE integration, which has been fully retired (helper, push endpoint, and admin UI
+//  all removed).
 //
 //  SECURITY / ROBUSTNESS:
 //    • The bot token is a SERVER SECRET (telegram_bot_token in _config.php). It is
