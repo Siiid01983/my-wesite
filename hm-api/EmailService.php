@@ -119,7 +119,51 @@ class EmailService {
     $subject = (string)($p['subject'] ?? '') ?: '[Hello Moving] ご連絡';
     $html    = (string)($p['html'] ?? '');
     $text    = (string)($p['text'] ?? '');
-    $replyTo = trim((string)($p['replyTo'] ?? '')) ?: $acc['email'];
+
+    // ── Sender identity resolution (the multi-mailbox / cPanel fix) ─────────────
+    //  On shared cPanel there is ONE real SMTP login (smtp_user, e.g. booking@).
+    //  support@ / contact@ are additional From identities that CANNOT authenticate
+    //  on their own. Exim rejects — or silently drops — a message whose envelope
+    //  sender (SMTP MAIL FROM / Return-Path) is not the authenticated mailbox, so
+    //  "send From support@/contact@ while AUTH-ed as booking@" is exactly what was
+    //  failing. The rule that always holds:
+    //    • envelope sender (MAIL FROM / Return-Path) = the AUTHENTICATED mailbox
+    //    • the department identity is preserved via the From display name + Reply-To
+    $authMailbox = trim((string)($cfg['smtp_user'] ?? ''));
+    $authValid   = $authMailbox !== '' && strpbrk($authMailbox, "\r\n") === false
+                   && filter_var($authMailbox, FILTER_VALIDATE_EMAIL);
+    $envelope    = $authValid ? $authMailbox : $acc['email'];
+
+    // From-header strategy — 'mail_from_mode' in _config.php (default 'align'):
+    //   'align'  (default, most deliverable) — the From ADDRESS is the authenticated
+    //            mailbox, shown with the DEPARTMENT display name (e.g. "Hello Moving
+    //            カスタマーサポート <booking@…>"); the department mailbox becomes the
+    //            Reply-To. From == envelope == AUTH → zero mismatch, nothing to reject.
+    //   'routed' (legacy look) — the From ADDRESS stays the department mailbox and a
+    //            Sender: header discloses the authenticated agent (RFC 5322 §3.6.2).
+    //            The envelope is STILL aligned to the authenticated mailbox (that is
+    //            the actual rejection fix); some strict receivers may still dislike
+    //            From ≠ auth, which is why 'align' is the default.
+    $fromMode = strtolower((string)($cfg['mail_from_mode'] ?? 'align'));
+    if ($fromMode === 'align' && $authValid) {
+      $fromEmail = $authMailbox;
+    } else {
+      $fromEmail = $acc['email'];
+    }
+    $fromName = $acc['name'];               // department display name is always kept
+
+    // Reply-To: an explicit caller override wins (e.g. the contact form points it at
+    // the submitter so staff reply to the customer); otherwise route replies to the
+    // DEPARTMENT mailbox so a customer reply still lands in the right inbox even when
+    // From is the authenticated account.
+    $replyTo = trim((string)($p['replyTo'] ?? ''));
+    if ($replyTo === '' || strpbrk($replyTo, "\r\n") !== false) $replyTo = $acc['email'];
+
+    // A Sender: header is only meaningful when the visible From differs from the
+    // authenticated/envelope mailbox (i.e. 'routed' mode). In 'align' mode they are
+    // identical, so no Sender header is emitted.
+    $senderHdr = (strcasecmp($fromEmail, $envelope) !== 0) ? $envelope : '';
+
     // Threading headers (CR/LF-guarded downstream in _smtp / here).
     $inReplyTo  = trim((string)($p['inReplyTo']  ?? $p['in_reply_to'] ?? ''));
     $references = trim((string)($p['references'] ?? ''));
@@ -128,9 +172,6 @@ class EmailService {
     $inReplyTo  = $hdrSafe($inReplyTo);
     $references = $hdrSafe($references);
 
-    // The authenticated SMTP mailbox — used only to decide whether a Sender:
-    // header is warranted (From ≠ auth mailbox).
-    $authMailbox = (string)($cfg['smtp_user'] ?? '');
     $mode = (string)($cfg['mail_mode'] ?? 'mail');
 
     if ($mode === 'smtp') {
@@ -142,11 +183,13 @@ class EmailService {
       }
       try {
         $res = $hasPhpmailer
-          ? self::viaPhpmailer($cfg, $acc, $to, $subject, $html, $text, $replyTo, $authMailbox, $inReplyTo, $references)
-          : hm_smtp_send($cfg, $acc['email'], $acc['name'], $to, $subject, $html, $text,
-                         ['replyTo' => $replyTo, 'sender' => $authMailbox,
+          ? self::viaPhpmailer($cfg, $fromEmail, $fromName, $envelope, $to, $subject, $html, $text,
+                               $replyTo, $senderHdr, $inReplyTo, $references)
+          : hm_smtp_send($cfg, $fromEmail, $fromName, $to, $subject, $html, $text,
+                         ['replyTo' => $replyTo, 'sender' => $senderHdr,
+                          'envelopeFrom' => $envelope,
                           'inReplyTo' => $inReplyTo, 'references' => $references]);
-        return ['ok' => true, 'from' => $acc['email'],
+        return ['ok' => true, 'from' => $fromEmail, 'envelope' => $envelope,
                 'messageId' => $res['messageId'], 'transport' => $res['transport'] ?? 'smtp'];
       } catch (\Throwable $e) {
         // Native client throws HM_SMTP_Exception (carries ->smtpCode); PHPMailer
@@ -166,19 +209,18 @@ class EmailService {
     }
     $headers  = 'MIME-Version: 1.0' . "\r\n";
     $headers .= 'Content-Type: text/html; charset=UTF-8' . "\r\n";
-    $headers .= 'From: ' . mb_encode_mimeheader($acc['name'], 'UTF-8') . ' <' . $acc['email'] . '>' . "\r\n";
+    $headers .= 'From: ' . mb_encode_mimeheader($fromName, 'UTF-8') . ' <' . $fromEmail . '>' . "\r\n";
     $headers .= 'Reply-To: ' . $replyTo . "\r\n";
-    if ($authMailbox !== '' && filter_var($authMailbox, FILTER_VALIDATE_EMAIL)
-        && strcasecmp($authMailbox, $acc['email']) !== 0) {
-      $headers .= 'Sender: ' . $authMailbox . "\r\n";
+    if ($senderHdr !== '' && filter_var($senderHdr, FILTER_VALIDATE_EMAIL)) {
+      $headers .= 'Sender: ' . $senderHdr . "\r\n";
     }
     if ($inReplyTo  !== '') $headers .= 'In-Reply-To: ' . $inReplyTo . "\r\n";
     if ($references !== '') $headers .= 'References: ' . $references . "\r\n";
     $encSubject = mb_encode_mimeheader($subject, 'UTF-8');
-    // '-f' sets the envelope sender → Return-Path = the From mailbox.
-    $ok = @mail($to, $encSubject, $html, $headers, '-f' . $acc['email']);
+    // '-f' sets the envelope sender → Return-Path = the authenticated mailbox.
+    $ok = @mail($to, $encSubject, $html, $headers, '-f' . $envelope);
     if ($ok) {
-      return ['ok' => true, 'from' => $acc['email'], 'messageId' => 'mail-' . time(), 'transport' => 'mail'];
+      return ['ok' => true, 'from' => $fromEmail, 'envelope' => $envelope, 'messageId' => 'mail-' . time(), 'transport' => 'mail'];
     }
     return self::fail('mail() delivery failed (check cPanel mail / SPF / from address)', null, 'mail_send', 502);
   }
@@ -189,8 +231,12 @@ class EmailService {
   }
 
   // ── PHPMailer adapter (used only when hm-api/vendor/autoload.php exists) ─────
-  private static function viaPhpmailer(array $cfg, array $acc, string $to, string $subject,
-                                       string $html, string $text, string $replyTo, string $authMailbox,
+  //  $fromEmail/$fromName = visible From; $envelope = authenticated mailbox used
+  //  for the SMTP MAIL FROM / Return-Path; $senderHdr = non-empty only when a
+  //  Sender: disclosure header is warranted (From ≠ envelope, i.e. 'routed' mode).
+  private static function viaPhpmailer(array $cfg, string $fromEmail, string $fromName, string $envelope,
+                                       string $to, string $subject, string $html, string $text,
+                                       string $replyTo, string $senderHdr,
                                        string $inReplyTo = '', string $references = ''): array {
     require_once __DIR__ . '/vendor/autoload.php';
     $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
@@ -202,14 +248,15 @@ class EmailService {
     $mail->Username   = (string)($cfg['smtp_user'] ?? '');
     $mail->Password   = (string)($cfg['smtp_pass'] ?? '');
     $mail->SMTPSecure = ((string)($cfg['smtp_secure'] ?? 'tls')) ?: 'tls';
-    $mail->setFrom($acc['email'], $acc['name']);
+    $mail->setFrom($fromEmail, $fromName);
     $mail->addAddress($to);
-    $mail->addReplyTo($replyTo);
-    // Keep Return-Path aligned with From across all transports.
-    $mail->Sender = $acc['email'];
-    // Disclose the authenticated mailbox via a Sender: header when it differs.
-    if ($authMailbox !== '' && strcasecmp($authMailbox, $acc['email']) !== 0) {
-      $mail->addCustomHeader('Sender', $authMailbox);
+    if ($replyTo !== '') $mail->addReplyTo($replyTo);
+    // Envelope sender (SMTP MAIL FROM / Return-Path) = the authenticated mailbox,
+    // so cPanel/Exim never rejects on an unauthenticated envelope sender.
+    $mail->Sender = $envelope;
+    // Disclose the authenticated mailbox via a Sender: header only when From differs.
+    if ($senderHdr !== '' && strcasecmp($senderHdr, $fromEmail) !== 0) {
+      $mail->addCustomHeader('Sender', $senderHdr);
     }
     if ($inReplyTo  !== '') $mail->addCustomHeader('In-Reply-To', $inReplyTo);
     if ($references !== '') $mail->addCustomHeader('References', $references);
