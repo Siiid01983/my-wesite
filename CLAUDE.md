@@ -150,22 +150,20 @@ registered in `websiteManagement.html` (nav button + `#wmc-view-*` container +
 - New components as standalone HTML files where practical
 - Generate Claude Code prompts for complex changes when asked, don't execute directly
 
-## Contact-form End-to-End Verification (runbook)
-How to prove the public お問い合わせ form works on production, from submit →
-admin Inbox → cleanup. The form posts via `js/contact-form.js` →
-`hm-api/contact.php`, which INSERTs an `inbox_messages` row (mailbox `contact@`),
-fires a Telegram admin alert, emails the submitter a confirmation (best-effort),
-and returns `{ok, data:{inbox:true,...}}`. The on-page
-"お問い合わせを送信しました。…" message renders ONLY on a server-OK response, so
-seeing it == the DB write succeeded.
-1. **Submit** — fill `#cfName`/`#cfEmail`/`#cfMessage` (phone/subject optional),
-   mark the subject + body clearly as `[TEST] … please ignore`, submit. Success
-   message = Submission + contact.php PASS, no PHP/API error.
-2. **Verify in admin** — the row appears in Website Management Center → Inbox
-   (`websiteManagement.html#inbox`): From = submitted email, Subject, mailbox
-   `contact@`. Seeing it render there == Inbox record + Inbox display PASS.
-3. **Cleanup** — delete ONLY the test row (see rest.php reference below), or
-   delete it from the Inbox UI. Re-check to confirm it's gone.
+## Public inquiry flow — Contact Chat ONLY (legacy email form REMOVED)
+The public お問い合わせ on index.html is the **Contact Chat** flow only
+(`js/contact-chat.js` → `hm-api/contact-chat.php`; the 新しくお問い合わせ /
+お問い合わせを再開 launchers in the `#contact` section). The legacy inline email form
+("メールでお問い合わせ", `#hmContactForm`) and `js/contact-form.js` were REMOVED
+(2026-08-22). Do NOT re-add a public form — route inquiries through Contact Chat.
+- `hm-api/contact.php` is RETAINED (not orphaned): it is now the server-side intake
+  for the customer PORTAL messaging (`js/portal/message.js` → `contact@` channel) and
+  is asserted by `tests/telegram.test.php`. It still INSERTs an `inbox_messages` row
+  (mailbox `contact@`), fires a Telegram alert, and emails a best-effort confirmation.
+- The footer "Email Contact ・ メールでのお問い合わせ" band (direct `mailto:` to
+  booking@/support@/contact@) is a SEPARATE contact method and intentionally remains.
+- The `#contact` section id is unchanged, so header/footer/sticky "お問い合わせ" anchors
+  still resolve (they now land on the Contact Chat launcher).
 
 ### `hm-api/rest.php` — authenticated data API (select/delete reference)
 Generic PostgREST-style endpoint. **JSON POST body, not query-string.** Every
