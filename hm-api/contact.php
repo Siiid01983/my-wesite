@@ -28,7 +28,7 @@ require_once __DIR__ . '/_lib.php';
 require_once __DIR__ . '/_db.php';
 require_once __DIR__ . '/_cache.php';
 require_once __DIR__ . '/_ratelimit.php';
-require_once __DIR__ . '/_line.php';
+require_once __DIR__ . '/_telegram.php';   // admin notification channel (standardized on Telegram)
 
 // Guarded load so a missing EmailService.php degrades to a structured error
 // instead of a fatal.
@@ -121,12 +121,12 @@ try {
   hm_log_error('contact inbox row failed', ['err' => $e->getMessage()]);
 }
 
-// ── LINE alert — mirrors the new-booking push. Fires only when a NEW inbound
+// ── Telegram alert — mirrors the new-booking push. Fires only when a NEW inbound
 // row was created (no row → no alert), and the poller can't re-notify for the
 // same mail because the shared Message-ID makes it skip the emailed copy.
-// Fire-and-forget: hm_line_push never throws.
+// Fire-and-forget: hm_telegram_send never throws (Telegram admin channel).
 if ($inboxOk) {
-  hm_line_push("📩 新着お問い合わせ: {$name}（{$email}）\n件名: {$subject}\n▶ https://hello-moving.com/websiteManagement.html#inbox");
+  hm_telegram_send("📩 新着お問い合わせ: {$name}（{$email}）\n件名: {$subject}\n▶ https://hello-moving.com/websiteManagement.html#inbox");
 }
 
 // Success if the message reached EITHER channel; error only when both failed.

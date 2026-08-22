@@ -87,5 +87,18 @@ t('contact-chat.php no longer calls LINE (hm_line_push removed)',
 t('contact-chat.php requires _telegram.php',
   strpos($cc, "require_once __DIR__ . '/_telegram.php'") !== false);
 
+// Standardized on Telegram: new-booking + contact-form alerts migrated too.
+$cb = file_get_contents(__DIR__ . '/../hm-api/create-booking.php');
+t('create-booking.php notifies via Telegram (hm_telegram_send + hm_telegram_enabled)',
+  strpos($cb, 'hm_telegram_send(') !== false && strpos($cb, 'hm_telegram_enabled(') !== false);
+t('create-booking.php no longer calls LINE',
+  strpos($cb, 'hm_line_push') === false && strpos($cb, 'hm_line_enabled') === false);
+
+$cf = file_get_contents(__DIR__ . '/../hm-api/contact.php');
+t('contact.php notifies via Telegram (hm_telegram_send)',
+  strpos($cf, 'hm_telegram_send(') !== false);
+t('contact.php no longer calls LINE',
+  strpos($cf, 'hm_line_push') === false);
+
 echo "\n$pass passed, $fail failed\n";
 exit($fail === 0 ? 0 : 1);
