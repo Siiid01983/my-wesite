@@ -20,6 +20,8 @@
 //       admin Inbox on the contact@ channel; staff reply from the card.
 //    2. Notification email to contact@ (best-effort; submission still succeeds
 //       if SMTP is down as long as the Inbox row was written).
+//  The submitter also gets a best-effort CUSTOMER confirmation email (step 1b);
+//  it is independent and never affects whether the submission succeeds.
 //  The row reuses the email's Message-ID, so when inbox-poll.php later imports
 //  contact@'s INBOX the self-sent copy is skipped as a duplicate.
 // ════════════════════════════════════════════════════════════════════════════
@@ -87,6 +89,34 @@ if ($HM_EMAIL_READY) {
   hm_log_error('contact email unavailable', ['reason' => 'EmailService.php missing or invalid']);
 }
 $emailed = (bool)($res['ok'] ?? false);
+
+// ── 1b. Customer confirmation email (best-effort) ────────────────────────────
+// Acknowledge receipt to the SUBMITTER so they know the form went through. This
+// form has no Contact ID (that belongs to the Contact Chat flow) — it simply
+// confirms and echoes the subject. Independent + fire-and-forget: it NEVER affects
+// whether the submission succeeds (that is decided by the admin email / Inbox row),
+// and it is a separate message to the customer, so it does not touch the inbox
+// dedup Message-ID above.
+if ($HM_EMAIL_READY) {
+  $cacc    = EmailService::account($cfg, 'contact');
+  $ackText = "{$name} 様\n\n"
+    . "お問い合わせいただきありがとうございます。以下の内容で受け付けました。\n"
+    . "担当者より順次ご返信いたします。\n\n"
+    . "────────────\n"
+    . "件名：{$subject}\n\n{$message}";
+  $cres = EmailService::deliver($cfg, [
+    'account' => 'contact',
+    'to'      => $email,
+    'subject' => '[Hello Moving] お問い合わせを受け付けました',
+    'html'    => EmailService::customerHtml($cacc, $ackText, ''),
+    'text'    => $ackText,
+  ]);
+  if (empty($cres['ok'])) {
+    hm_log_error('contact ack email failed', [
+      'code' => $cres['code'] ?? '', 'err' => $cres['error_raw'] ?? $cres['error'] ?? '', 'to' => $email,
+    ]);
+  }
+}
 
 // ── 2. WMC Inbox row (authoritative intake) ──────────────────────────────────
 // Shares the email's Message-ID so inbox-poll.php skips the self-sent copy in
