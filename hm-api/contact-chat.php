@@ -20,7 +20,7 @@
 //    start   { name, email, category?, message }
 //              → creates the conversation, generates a short Contact ID, stores
 //                the FIRST message (nothing is admin-visible until this call),
-//                notifies the company (LINE + Inbox row). Returns { public_contact_id }.
+//                notifies the company (Telegram + Inbox row). Returns { public_contact_id }.
 //    resume  { contact_id, email }         → { public_contact_id, category, status, name, messages }
 //    list    { contact_id, email }         → { public_contact_id, status, messages }   (poll)
 //    send    { contact_id, email, message }→ { id }
@@ -40,7 +40,7 @@ require_once __DIR__ . '/_lib.php';
 require_once __DIR__ . '/_db.php';
 require_once __DIR__ . '/_cache.php';
 require_once __DIR__ . '/_ratelimit.php';
-require_once __DIR__ . '/_line.php';
+require_once __DIR__ . '/_telegram.php';   // admin notification channel (replaces LINE for Contact Chat)
 
 // Guarded load so a missing EmailService.php degrades to "not emailed" instead of
 // a fatal — the in-app reply is always stored regardless of mail availability.
@@ -258,16 +258,16 @@ if ($action === 'start') {
     hm_err('メッセージを保存できませんでした', 500, 'msg_failed');
   }
 
-  // Company notification — reuse LINE infra; the admin Inbox pollers also pick up
-  // the new row. Fire-and-forget (hm_line_push never throws).
-  $preview = mb_substr($message, 0, 80);
-  hm_line_push(
-    "📩 新着お問い合わせ（チャット）\n" .
+  // Company notification — Telegram admin channel; the admin Inbox pollers also
+  // pick up the new row. Fire-and-forget (hm_telegram_send never throws), so a
+  // Telegram outage can never fail the customer's request.
+  hm_telegram_send(
+    "📩 新着お問い合わせ（チャット）\n\n" .
     "お問い合わせ番号: {$code}\n" .
     "カテゴリ: " . ($category !== '' ? $category : '（未選択）') . "\n" .
     "お名前: {$name}\n" .
-    "メール: {$email}\n" .
-    "{$preview}\n▶ {$ADMIN_LINK}"
+    "メール: {$email}\n\n" .
+    "▶ {$ADMIN_LINK}"
   );
 
   hm_ok(['public_contact_id' => $code, 'category' => $category, 'status' => 'open']);
@@ -334,8 +334,14 @@ if ($action === 'send') {
     hm_json(['ok' => false, 'data' => null, 'error' => ['message' => 'server', 'code' => 'server']], 500);
   }
 
-  $preview = mb_substr($message, 0, 80);
-  hm_line_push("💬 お問い合わせ返信（{$code}）\n{$name}\n{$preview}\n▶ {$ADMIN_LINK}");
+  // Fire-and-forget Telegram admin alert (never fails the customer's send).
+  $preview = mb_substr($message, 0, 200);
+  hm_telegram_send(
+    "💬 新着メッセージ\n\n" .
+    "お問い合わせ番号: {$code}\n\n" .
+    "{$preview}\n\n" .
+    "▶ {$ADMIN_LINK}"
+  );
   hm_ok(['id' => 'ok']);
 }
 

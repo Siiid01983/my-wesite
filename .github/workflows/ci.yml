@@ -42,6 +42,9 @@ jobs:
       - name: service-image slug mapping (DB-free, six cards resolve 1:1)
         run: php tests/service-images-mapping.test.php
 
+      - name: Telegram notifier unit (gating + no-throw + no token leak, no network)
+        run: php tests/telegram.test.php
+
   node-tests:
     name: Node — arch lock + slot UI + regression
     runs-on: ubuntu-latest

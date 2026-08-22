@@ -278,4 +278,21 @@ return [
   'contact_retention_days' => 180,
   'contact_active_window'  => 300,
   'contact_cron_token'     => '',
+
+  // ── Telegram admin notifications (hm-api/_telegram.php) ────────────────────
+  //  Contact Chat's admin notification channel (REPLACES LINE for Contact Chat).
+  //  A new お問い合わせ conversation (start) and each new customer message (send)
+  //  push a concise alert to the admin's private Telegram chat via the official
+  //  Bot API (sendMessage). Fire-and-forget: a Telegram failure NEVER fails the
+  //  customer's Contact Chat request.
+  //    telegram_enabled    : master switch. Leave false until token + chat id set.
+  //    telegram_bot_token  : BotFather token — a SERVER SECRET. Set it directly in
+  //                          _config.php on the server; never commit it, never
+  //                          expose it to JS/HTML/API/logs.
+  //    telegram_chat_id    : your private chat id (start the bot from your personal
+  //                          Telegram, then read it from getUpdates — numeric, may
+  //                          be negative for groups).
+  'telegram_enabled'   => false,
+  'telegram_bot_token' => '',
+  'telegram_chat_id'   => '',
 ];
