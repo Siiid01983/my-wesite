@@ -32,8 +32,10 @@ const path = require('path');
 
 const CONTACT_JS_PATH = path.join(__dirname, '..', 'js', 'contact-chat.js');
 const CONTACT_PHP_PATH = path.join(__dirname, '..', 'hm-api', 'contact-chat.php');
+const TELEGRAM_PHP_PATH = path.join(__dirname, '..', 'hm-api', '_telegram.php');
 const CONTACT_JS  = fs.readFileSync(CONTACT_JS_PATH, 'utf8');
 const CONTACT_PHP = fs.readFileSync(CONTACT_PHP_PATH, 'utf8');
+const TELEGRAM_PHP = fs.readFileSync(TELEGRAM_PHP_PATH, 'utf8');
 
 // The customer-facing ID alphabet the server MUST use (no O/0, I/1, S/5).
 const ID_ALPHABET = 'ABCDEFGHJKLMNPQRTUVWXYZ23456789';
@@ -136,6 +138,22 @@ function harness() {
   check('SERVER never queries the bookings table / BookingService / create-booking',
     !/(FROM|INTO|UPDATE|JOIN)\s+bookings\b/i.test(CONTACT_PHP) &&
     !/BookingService/.test(CONTACT_PHP) && !/create-booking/.test(CONTACT_PHP));
+
+  // Notifications: Telegram REPLACES LINE for Contact Chat (fire-and-forget).
+  check('Contact Chat notifies via Telegram, not LINE',
+    /hm_telegram_send\(/.test(CONTACT_PHP) && !/hm_line_push/.test(CONTACT_PHP));
+  check('Contact Chat requires the Telegram helper (not _line.php)',
+    /require_once __DIR__ \. '\/_telegram\.php'/.test(CONTACT_PHP) && !/_line\.php/.test(CONTACT_PHP));
+  check('Telegram helper uses the official Bot API sendMessage endpoint',
+    /https:\/\/api\.telegram\.org\/bot' \. \$token \. '\/sendMessage/.test(TELEGRAM_PHP));
+  check('Telegram helper is fire-and-forget (gated by telegram_enabled, returns bool)',
+    /empty\(\$cfg\['telegram_enabled'\]\)\) return false/.test(TELEGRAM_PHP));
+  check('Telegram helper sets a network timeout',
+    /CURLOPT_TIMEOUT/.test(TELEGRAM_PHP) && /'timeout'/.test(TELEGRAM_PHP));
+  check('Telegram helper never logs the token or the token-bearing URL',
+    !/hm_log_error\([^;]*\$token/.test(TELEGRAM_PHP) && !/hm_log_error\([^;]*\$url/.test(TELEGRAM_PHP));
+  check('Telegram helper sends plain text (no parse_mode parameter → no formatting injection)',
+    !/'parse_mode'\s*=>/.test(TELEGRAM_PHP));
 
   // ═══════════ Layer A — CLIENT behavior (browser) ═══════════
   const browser = await chromium.launch({ headless: true });
