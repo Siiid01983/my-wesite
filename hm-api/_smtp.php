@@ -390,8 +390,11 @@ if (!defined('HM_SMTP_CONFIG_ERROR')) {
 }
 
 // ── One-shot authenticated send. Throws HM_SMTP_Exception on any failure. ────
-//   $opts (optional): ['replyTo' => addr, 'sender' => authenticated-mailbox].
+//   $opts (optional): ['replyTo' => addr, 'sender' => authenticated-mailbox,
+//                      'envelopeFrom' => authenticated-mailbox].
 //   replyTo defaults to $fromEmail; an invalid/injecting value is ignored.
+//   envelopeFrom sets the SMTP MAIL FROM / Return-Path (must be the authenticated
+//   mailbox on cPanel/Exim); it defaults to $fromEmail when omitted/invalid.
 function hm_smtp_send(array $cfg, string $fromEmail, string $fromName, string $to,
                       string $subject, string $html, string $text, array $opts = []): array {
   $opt = hm_smtp_opts($cfg);
@@ -410,6 +413,17 @@ function hm_smtp_send(array $cfg, string $fromEmail, string $fromName, string $t
     $replyTo = $fromEmail;
   }
 
+  // Envelope sender (SMTP MAIL FROM / Return-Path). On shared cPanel, Exim requires
+  // this to be the AUTHENTICATED mailbox — authenticating as booking@ but issuing
+  // MAIL FROM:<contact@/support@> is what gets rejected or silently dropped. Callers
+  // pass the smtp_user here even when the visible From is a different department
+  // address; it falls back to $fromEmail (the historical behaviour) when omitted or
+  // invalid so existing single-mailbox callers are unaffected.
+  $envelopeFrom = trim((string)($opts['envelopeFrom'] ?? ''));
+  if ($envelopeFrom === '' || strpbrk($envelopeFrom, "\r\n") !== false || !filter_var($envelopeFrom, FILTER_VALIDATE_EMAIL)) {
+    $envelopeFrom = $fromEmail;
+  }
+
   [$raw, $mid] = hm_smtp_build_message($fromEmail, $fromName, $to, $replyTo, $subject, $html, $text, $opts);
 
   $smtp = new HM_SMTP($opt);
@@ -418,7 +432,7 @@ function hm_smtp_send(array $cfg, string $fromEmail, string $fromName, string $t
     $smtp->ehlo();
     if ($opt['secure'] === 'tls') { $smtp->startTls(); $smtp->ehlo(); } // re-EHLO inside TLS
     $smtp->authenticate();
-    $resp = $smtp->mail($fromEmail, $to, $raw);
+    $resp = $smtp->mail($envelopeFrom, $to, $raw);   // envelope = authenticated mailbox
     $smtp->quit();
     return ['messageId' => $mid, 'response' => $resp, 'transport' => 'smtp'];
   } finally {
