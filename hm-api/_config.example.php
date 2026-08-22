@@ -185,6 +185,20 @@ return [
   'mail_from_booking' => 'booking@hello-moving.com',
   'mail_from_support' => 'support@hello-moving.com',
   'mail_from_contact' => 'contact@hello-moving.com',
+  //   mail_from_mode — how the visible From is built when the message is routed
+  //   through a mailbox (contact@/support@) that is NOT the authenticated SMTP
+  //   login (smtp_user, e.g. booking@). On shared cPanel, Exim rejects/drops a
+  //   message whose SMTP envelope sender is not the authenticated mailbox, so the
+  //   ENVELOPE sender is ALWAYS forced to smtp_user regardless of this setting;
+  //   this only controls the visible From ADDRESS:
+  //     'align'  (default, recommended) → From address = smtp_user, shown with the
+  //              department display name; the department mailbox becomes Reply-To.
+  //              From == envelope == AUTH → most deliverable, nothing to reject.
+  //     'routed' → From address stays the department mailbox (contact@/support@)
+  //              with a Sender: header disclosing smtp_user. Envelope is still
+  //              aligned to smtp_user; use only if you specifically need the
+  //              department address visible in From and your receivers accept it.
+  'mail_from_mode' => 'align',
   //   smtp_secure:  'tls' → STARTTLS on port 587 (recommended)
   //                 'ssl' → implicit TLS on port 465
   //                 ''    → no encryption on port 25 (not recommended)
