@@ -154,7 +154,8 @@ registered in `websiteManagement.html` (nav button + `#wmc-view-*` container +
 How to prove the public お問い合わせ form works on production, from submit →
 admin Inbox → cleanup. The form posts via `js/contact-form.js` →
 `hm-api/contact.php`, which INSERTs an `inbox_messages` row (mailbox `contact@`),
-fires a LINE push, and returns `{ok, data:{inbox:true,...}}`. The on-page
+fires a Telegram admin alert, emails the submitter a confirmation (best-effort),
+and returns `{ok, data:{inbox:true,...}}`. The on-page
 "お問い合わせを送信しました。…" message renders ONLY on a server-OK response, so
 seeing it == the DB write succeeded.
 1. **Submit** — fill `#cfName`/`#cfEmail`/`#cfMessage` (phone/subject optional),
@@ -183,3 +184,36 @@ on sensitive tables (`bookings, communications, inbox_messages, audit_log`).
   echo the deleted row back for confirmation.
 - Example delete: `{ "table":"inbox_messages","action":"delete",
   "filters":[{"col":"id","op":"eq","val":"<uuid>"}],"returning":true }`
+
+### Ops / diagnostic CLI scripts (server-side, CLI-only)
+Two dependency-light tools live in `hm-api/`. Both are **CLI-only** (return HTTP
+403 if hit over the web) and load `_config.php` directly, so they need NO API key
+and NO admin token. Run from the cPanel shell (paths shown from the account home;
+drop `public_html/` if already inside the web root).
+- **`smtp-selftest-cli.php`** — direct SMTP connect/AUTH test via the app's own
+  `hm_smtp_selftest()` (DNS → connect → STARTTLS/implicit-TLS → AUTH → optional
+  send). Prints the EXACT SMTP error + code; NEVER prints `smtp_pass`. Exit 0/1.
+    - `php hm-api/smtp-selftest-cli.php`                  (connect + auth only)
+    - `php hm-api/smtp-selftest-cli.php you@example.com`  (+ real test send)
+    - Code → fix: `smtp_auth` = wrong user/pass · `smtp_config` = blank
+      `smtp_pass` · `smtp_connect`/`smtp_tls` = port/encryption mismatch (587=tls,
+      465=ssl).
+- **`cleanup-test-data.php`** — removes E2E test rows directly via the DB (no
+  admin token, no HTTP). For a match TOKEN it deletes matching `inbox_messages`
+  rows + whole Contact Chat threads, and HARD-deletes matching
+  `contact_conversations` (which rest.php CANNOT — not in its allowlist). Safety:
+  DRY-RUN by default, `--apply` to execute; requires a token >= 4 chars; escapes
+  LIKE wildcards (literal match); all deletes in one transaction.
+    - `php hm-api/cleanup-test-data.php "<token>"`          (preview)
+    - `php hm-api/cleanup-test-data.php "<token>" --apply`  (delete)
+
+### Email transport (EmailService.php + _smtp.php) — multi-mailbox / cPanel
+Outbound mail routes through `EmailService::deliver()` (accounts `booking` /
+`support` / `contact`). On shared cPanel there is ONE authenticating SMTP login
+(`smtp_user`, e.g. `booking@`); Exim rejects/drops a message whose SMTP envelope
+sender isn't that mailbox. So the **envelope sender (MAIL FROM / Return-Path /
+`-f`) is ALWAYS forced to `smtp_user`** across native SMTP, PHPMailer, and
+`mail()`. `mail_from_mode` in `_config.php` controls only the VISIBLE From:
+`'align'` (default) = From address is `smtp_user` shown with the department
+display name + Reply-To = department mailbox; `'routed'` = keep the department
+address in From with a `Sender:` disclosure. Both keep the envelope aligned.
