@@ -5,10 +5,10 @@
 //  Sends a message via the official Telegram Bot API:
 //      POST https://api.telegram.org/bot<TOKEN>/sendMessage   { chat_id, text }
 //
-//  Used by contact-chat.php to notify the admin of new お問い合わせ conversations /
-//  messages. It REPLACES LINE as the Contact Chat notification channel; the LINE
-//  helper (_line.php) is untouched and still used elsewhere (create-booking / contact
-//  / portal chat).
+//  The SOLE admin notification channel: used by contact-chat.php, create-booking.php,
+//  contact.php, chat.php and inbox-poll.php to alert the admin. It replaced the former
+//  LINE helper (removed). The standalone admin manual-push endpoint line-push.php is a
+//  separate, independent tool and is unaffected.
 //
 //  SECURITY / ROBUSTNESS:
 //    • The bot token is a SERVER SECRET (telegram_bot_token in _config.php). It is

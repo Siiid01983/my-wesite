@@ -78,6 +78,7 @@ const SKIP_ANY_DEPTH = new Set(['_config.php']);
 const PRUNE = [
   'css/service-lightbox.css',   // removed — service cards became a whole-card link (no lightbox)
   'js/service-lightbox.js',
+  'hm-api/_line.php',           // retired — all notifications standardized on Telegram (_telegram.php)
 ];
 
 /*
