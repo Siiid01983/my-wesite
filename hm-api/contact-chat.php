@@ -20,6 +20,7 @@
 //    start   { name, email, category?, message }
 //              → creates the conversation, generates a short Contact ID, stores
 //                the FIRST message (nothing is admin-visible until this call),
+//                emails the customer a confirmation carrying the Contact ID, and
 //                notifies the company (Telegram + Inbox row). Returns { public_contact_id }.
 //    resume  { contact_id, email }         → { public_contact_id, category, status, name, messages }
 //    list    { contact_id, email }         → { public_contact_id, status, messages }   (poll)
@@ -256,6 +257,29 @@ if ($action === 'start') {
   } catch (Throwable $e) {
     hm_log_error('contact start message failed', ['err' => $e->getMessage(), 'code' => $code]);
     hm_err('メッセージを保存できませんでした', 500, 'msg_failed');
+  }
+
+  // Customer confirmation email — sends the Contact ID so the customer can resume
+  // later (resume requires contact_id + email). Unlike admin-reply there is NO
+  // active/away gate: a brand-new inquiry always gets a confirmation. Fire-and-
+  // forget — a mail failure is logged but never fails the customer's submission
+  // (the conversation + Contact ID already exist and are shown on-screen).
+  if ($HM_EMAIL_READY) {
+    $acc      = EmailService::account($cfg, 'contact');
+    $bodyText = "お問い合わせを受け付けました。担当者より順次ご返信いたします。\n\n"
+      . "────────────\n"
+      . "お問い合わせ番号：{$code}\n"
+      . "この番号とご登録のメールアドレスで、いつでもお問い合わせを再開できます。\n{$SITE_URL}";
+    $res = EmailService::deliver($cfg, [
+      'account' => 'contact',
+      'to'      => $email,
+      'subject' => '[Hello Moving] お問い合わせを受け付けました（' . $code . '）',
+      'html'    => EmailService::customerHtml($acc, $bodyText, ''),
+      'text'    => $bodyText,
+    ]);
+    if (empty($res['ok'])) {
+      hm_log_error('contact start email failed', ['code' => $code, 'err' => $res['error_raw'] ?? $res['error'] ?? '']);
+    }
   }
 
   // Company notification — Telegram admin channel; the admin Inbox pollers also
