@@ -100,5 +100,17 @@ t('contact.php notifies via Telegram (hm_telegram_send)',
 t('contact.php no longer calls LINE',
   strpos($cf, 'hm_line_push') === false);
 
+$ch = file_get_contents(__DIR__ . '/../hm-api/chat.php');
+t('chat.php notifies via Telegram (hm_telegram_send)',
+  strpos($ch, 'hm_telegram_send(') !== false);
+t('chat.php no longer calls LINE',
+  strpos($ch, 'hm_line_push') === false);
+
+$ip = file_get_contents(__DIR__ . '/../hm-api/inbox-poll.php');
+t('inbox-poll.php notifies via Telegram (hm_telegram_send + hm_telegram_enabled)',
+  strpos($ip, 'hm_telegram_send(') !== false && strpos($ip, 'hm_telegram_enabled(') !== false);
+t('inbox-poll.php no longer calls LINE',
+  strpos($ip, 'hm_line_push') === false && strpos($ip, 'hm_line_enabled') === false);
+
 echo "\n$pass passed, $fail failed\n";
 exit($fail === 0 ? 0 : 1);

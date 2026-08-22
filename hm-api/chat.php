@@ -31,7 +31,7 @@ require_once __DIR__ . '/_lib.php';
 require_once __DIR__ . '/_db.php';
 require_once __DIR__ . '/_cache.php';
 require_once __DIR__ . '/_ratelimit.php';
-require_once __DIR__ . '/_line.php';
+require_once __DIR__ . '/_telegram.php';   // admin notification channel (standardized on Telegram)
 
 hm_cors();
 hm_require_api_key();
@@ -314,9 +314,9 @@ if ($action === 'send') {
     hm_json(['ok' => false, 'data' => null, 'error' => 'server'], 500);
   }
 
-  // LINE alert — mirrors the new-booking / contact push. Fire-and-forget.
+  // Telegram alert — mirrors the new-booking / contact push. Fire-and-forget.
   $preview = $message !== '' ? mb_substr($message, 0, 60) : '📎 添付ファイル';
-  hm_line_push("💬 新着チャット: {$name}（予約 {$v['ref']}）\n{$preview}\n▶ https://hello-moving.com/websiteManagement.html#inbox");
+  hm_telegram_send("💬 新着チャット: {$name}（予約 {$v['ref']}）\n{$preview}\n▶ https://hello-moving.com/websiteManagement.html#inbox");
 
   hm_ok(['id' => $mid]);
 }
