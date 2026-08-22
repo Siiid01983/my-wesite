@@ -109,8 +109,6 @@
     prices:  'hm_prices',
     disposal:'hm_disposal',
     cust:    'hm_customers',
-    line:    'hm_line',
-    linelog: 'hm_linelog',
     email:   'hm_email',
     emaillog:'hm_emaillog',
     gcal:         'hm_gcal',
@@ -893,13 +891,6 @@
       return stored;
     },
     saveDisposal: (v) => wt(K.disposal, v),
-
-    /* ── LINE Notify ──────────────────────────────────── */
-    getLineSettings: () => _ls(K.line, { token:'', enabled:false, proxyUrl:'', triggers:{ newBooking:true, statusConfirmed:true, statusComplete:true, newQuote:false } }),
-    saveLineSettings: (v) => wt(K.line, v),
-    getLineLog: () => _ls(K.linelog, []),
-    pushLineLog(entry) { const log = this.getLineLog(); log.unshift(entry); wt(K.linelog, log.slice(0, 20)); },
-    clearLineLog() { wt(K.linelog, []); },
 
     /* ── Email Notify ─────────────────────────────────── */
     getEmailSettings: () => _ls(K.email, { enabled:false, triggers:{ newBooking:true, statusConfirmed:true, statusComplete:true, newQuote:false } }),

@@ -107,7 +107,6 @@ const PRECACHE = [
   '/js/modules/backup/backup.js',
   '/js/modules/backup/csvReport.js',
   '/js/modules/notifications/email.js',
-  '/js/modules/notifications/line.js',
   '/js/modules/changelog/changelog.js',
   '/js/modules/customers/customers.js',
   '/js/modules/media/media.js',

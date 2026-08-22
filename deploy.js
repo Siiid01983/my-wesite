@@ -79,6 +79,8 @@ const PRUNE = [
   'css/service-lightbox.css',   // removed — service cards became a whole-card link (no lightbox)
   'js/service-lightbox.js',
   'hm-api/_line.php',           // retired — all notifications standardized on Telegram (_telegram.php)
+  'hm-api/line-push.php',       // retired — manual LINE-push admin tool removed
+  'js/modules/notifications/line.js',   // retired — manual LINE-push admin UI removed
 ];
 
 /*
