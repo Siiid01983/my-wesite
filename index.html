@@ -1849,7 +1849,8 @@ setTimeout(window.HM_revealServiceCards, 2500);
 
       <!-- Contact Chat launcher → js/contact-chat.js (hm-api/contact-chat.php).
            Booking-INDEPENDENT persistent お問い合わせ chat; separate from the BA
-           overlay / Estimate flow. The email form below remains as a fallback. -->
+           overlay / Estimate flow. This is the sole on-page inquiry flow (the
+           legacy email form + js/contact-form.js were removed). -->
       <div class="cc-launch" style="max-width:640px;margin:28px auto 0;background:#fff;border:1px solid #e2e7d8;border-radius:14px;padding:22px 20px;text-align:center">
         <h3 style="margin:0 0 6px;font-size:16px;color:#2C3626">チャットでお問い合わせ</h3>
         <p style="margin:0 0 16px;font-size:13px;line-height:1.9;color:var(--gray-2)">お問い合わせ番号を発行し、いつでも会話を再開できます。担当者が順次ご返信いたします。</p>
@@ -1858,40 +1859,6 @@ setTimeout(window.HM_revealServiceCards, 2500);
           <button type="button" class="btn btn-ghost" onclick="if(window.openContactChat)openContactChat('resume')">お問い合わせを再開</button>
         </div>
       </div>
-
-      <!-- Inline contact form → hm-api/contact.php (js/contact-form.js) -->
-      <form id="hmContactForm" class="cta-form" style="max-width:640px;margin:28px auto 0;text-align:left" novalidate>
-        <h3>メールでお問い合わせ</h3>
-        <p style="font-size:13px;color:var(--gray-2);line-height:1.9;margin-bottom:26px;letter-spacing:.03em">
-          下記フォームよりお気軽にご連絡ください。担当者より通常1営業日以内にご返信いたします。
-        </p>
-        <div class="form-row">
-          <label>
-            <span>お名前 <em>*</em></span>
-            <input type="text" name="name" id="cfName" required autocomplete="name" placeholder="山田 太郎" />
-          </label>
-          <label>
-            <span>メールアドレス <em>*</em></span>
-            <input type="email" name="email" id="cfEmail" required autocomplete="email" placeholder="you@example.com" />
-          </label>
-        </div>
-        <div class="form-row">
-          <label>
-            <span>電話番号（任意）</span>
-            <input type="tel" name="phone" id="cfPhone" autocomplete="tel" placeholder="090-1234-5678" />
-          </label>
-          <label>
-            <span>件名（任意）</span>
-            <input type="text" name="subject" id="cfSubject" placeholder="お問い合わせの件名" />
-          </label>
-        </div>
-        <label class="full" style="margin-bottom:24px">
-          <span>メッセージ <em>*</em></span>
-          <textarea name="message" id="cfMessage" required rows="5" placeholder="ご相談内容をご記入ください。"></textarea>
-        </label>
-        <button type="submit" id="cfSubmit" class="btn btn-primary btn-lg btn-block">送信する</button>
-        <p id="cfStatus" role="status" aria-live="polite" style="display:none;text-align:center;font-size:13.5px;line-height:1.8;margin-top:18px;letter-spacing:.03em"></p>
-      </form>
     </div>
   </div>
 </section>
@@ -3972,7 +3939,6 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 <script src="js/customer-login.js"></script>
 <script src="js/ba-overlay-prefill.js"></script><!-- Customer Portal V2 — BA overlay prefill API (additive; public-surface only) -->
 <script src="js/rebook-receiver.js"></script><!-- Customer Portal V2 rebook handoff — additive; no-op unless a rebook is in progress -->
-<script src="js/contact-form.js" defer></script>
 <script src="js/contact-chat.js" defer></script><!-- Contact Chat overlay (booking-independent お問い合わせ; additive, public-surface only) -->
 <script src="js/reviews-carousel.js" defer></script>
 <script src="js/works-gallery.js" defer></script>
