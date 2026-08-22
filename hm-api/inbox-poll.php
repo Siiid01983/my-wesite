@@ -26,7 +26,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_lib.php';
 require_once __DIR__ . '/_db.php';
 require_once __DIR__ . '/_imap.php';
-require_once __DIR__ . '/_line.php';
+require_once __DIR__ . '/_telegram.php';   // admin notification channel (standardized on Telegram)
 
 $isCli = (PHP_SAPI === 'cli');
 
@@ -223,7 +223,7 @@ function poll_mailbox(array $cfg, array $acct): array {
             $msg['received_at'],
           ]);
           $res['imported']++;
-          // LINE alert candidate — genuine inbound only (never our own mailboxes).
+          // Telegram alert candidate — genuine inbound only (never our own mailboxes).
           if (!isset($own[strtolower($senderEmail)])) {
             $res['notify'][] = ['name' => $senderName, 'email' => $senderEmail, 'subject' => $msg['subject']];
           }
@@ -269,15 +269,15 @@ try {
   @fclose($lock);
 }
 
-// ── LINE alert for newly imported inbound mail (one push per run) ────────────
+// ── Telegram alert for newly imported inbound mail (one push per run) ────────
 // Dedup by construction: a message is imported exactly ONCE (Message-ID dedup
 // + UID watermark), so a notification can never repeat for the same mail, and
 // own-mailbox senders are excluded upstream. Aggregating into a single push
-// per run means a first-time backlog import can never flood LINE.
-// Fire-and-forget — hm_line_push never throws.
+// per run means a first-time backlog import can never flood the channel.
+// Fire-and-forget — hm_telegram_send never throws.
 $notify = [];
 foreach ($results as $r) { foreach (($r['notify'] ?? []) as $n) $notify[] = $n; }
-if ($notify && hm_line_enabled()) {
+if ($notify && hm_telegram_enabled()) {
   $url = 'https://hello-moving.com/websiteManagement.html#inbox';
   $who = function (array $n): string {
     return ($n['name'] !== '' && strcasecmp($n['name'], $n['email']) !== 0)
@@ -293,7 +293,7 @@ if ($notify && hm_line_enabled()) {
     $msg  = '📩 新着メッセージ ' . count($notify) . "件\n" . implode("\n", $lines)
           . ($more > 0 ? "\n…他{$more}件" : '') . "\n▶ {$url}";
   }
-  hm_line_push($msg);
+  hm_telegram_send($msg);
 }
 
 poll_out([
