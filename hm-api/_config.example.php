@@ -91,6 +91,15 @@ return [
   //   admins obtain a token, THEN flip the flag. Rollback = set it back to false
   //   (one line, no redeploy).
   'admin_auth_enabled' => false,
+
+  //   WORKER PHASE (W1) — DORMANT. When false (default), the 'worker' role is
+  //   completely inert: worker accounts cannot log in, the scoped worker endpoints
+  //   (conversations.php) refuse worker tokens, and storage.php applies no worker
+  //   scope. Admin/manager behavior is unchanged regardless. Do NOT flip this until
+  //   the worker phase (W2–W4) is reviewed, staged, and worker accounts exist.
+  //   Rollback = set back to false (one line, no redeploy).
+  'worker_role_enabled' => false,
+
   //   bcrypt hash of the admin password. Generate on the server with:
   //     php -r "echo password_hash('YOUR_ADMIN_PASSWORD', PASSWORD_DEFAULT), PHP_EOL;"
   //   LEGACY single-account path. With the MySQL admin_users table (see below)

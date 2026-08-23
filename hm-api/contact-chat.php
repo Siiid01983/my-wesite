@@ -42,6 +42,7 @@ require_once __DIR__ . '/_db.php';
 require_once __DIR__ . '/_cache.php';
 require_once __DIR__ . '/_ratelimit.php';
 require_once __DIR__ . '/_telegram.php';   // admin notification channel (replaces LINE for Contact Chat)
+require_once __DIR__ . '/_contact.php';    // shared helpers (cc_thread / cc_insert_message / cc_do_admin_reply)
 
 // Guarded load so a missing EmailService.php degrades to "not emailed" instead of
 // a fatal — the in-app reply is always stored regardless of mail availability.
@@ -77,7 +78,7 @@ function cc_gen_code(): string {
 function cc_valid_code(string $c): bool {
   return (bool)preg_match('/^HM[' . CC_ALPHABET . ']{' . CC_BODY_LEN . '}$/', $c);
 }
-function cc_thread(string $code): string { return 'contact:' . $code; }
+// cc_thread(): defined in the shared _contact.php library (required above).
 
 // Idempotent table creation — makes the endpoint deploy-order-safe (works even
 // before contact-migrate.php is run). Mirrors chat.php's inline audit_log create.
@@ -185,26 +186,9 @@ function cc_messages(PDO $db, string $code): array {
   return $out;
 }
 
-// Insert one message row into the conversation's thread. $out = admin/company.
-function cc_insert_message(PDO $db, string $code, string $category, string $name,
-                           string $email, string $body, bool $out, string $mailbox): string {
-  $mid    = '<contact-' . hm_uuid4() . '@hello-moving.com>';
-  $labels = ['contact' => true, 'cid' => $code, 'category' => $category];
-  if ($out) { $labels['outbound'] = true; $labels['chat'] = true; }
-  $st = $db->prepare(
-    'INSERT INTO inbox_messages
-       (id, sender, sender_name, email, subject, body, body_text, mailbox,
-        message_id, thread_id, labels, received_at, is_read, status)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?, NOW(), ?, \'open\')'
-  );
-  $st->execute([
-    hm_uuid4(), $name, $name, $email,
-    'お問い合わせ（' . $code . '）', $body, $body, $mailbox,
-    $mid, cc_thread($code), json_encode($labels, JSON_UNESCAPED_UNICODE),
-    $out ? 1 : 0,
-  ]);
-  return $mid;
-}
+// cc_insert_message() and cc_do_admin_reply(): defined in the shared _contact.php
+// library (required above) so the scoped worker endpoint reuses the identical
+// customer-facing behavior. Kept out of this file to avoid duplication.
 
 // ── action=start ─────────────────────────────────────────────────────────────
 if ($action === 'start') {
@@ -393,49 +377,15 @@ if ($action === 'admin-reply') {
   }
   if (!$row) hm_err('conversation not found', 404, 'not_found');
 
-  $category = (string)($row['category'] ?? '');
   try {
-    cc_insert_message($db, $code, $category, 'Hello Moving', (string)$row['email'], $message, true, $MAILBOX);
-    $db->prepare(
-      'UPDATE contact_conversations
-          SET last_admin_activity = NOW(), updated_at = NOW(),
-              expires_at = DATE_ADD(NOW(), INTERVAL ? DAY)
-        WHERE id = ?'
-    )->execute([$RETENTION_DAYS, (string)$row['id']]);
-    hm_cache_invalidate_table('inbox_messages');
+    $r = cc_do_admin_reply($db, $cfg, $row, $code, $message,
+                           $RETENTION_DAYS, $ACTIVE_WINDOW, $SITE_URL, $MAILBOX, $HM_EMAIL_READY);
   } catch (Throwable $e) {
     hm_log_error('contact admin-reply failed', ['err' => $e->getMessage(), 'code' => $code]);
     hm_err('server error', 500, 'server');
   }
 
-  // ── Active rule ── email the customer ONLY when they are not recently active
-  // (i.e. not currently watching the poll), so a live chat never double-notifies.
-  $lastActTs = !empty($row['last_customer_activity']) ? (int)strtotime((string)$row['last_customer_activity']) : 0;
-  $isActive  = $lastActTs > 0 && (time() - $lastActTs) < $ACTIVE_WINDOW;
-  $emailed   = false; $reason = $isActive ? 'customer_active' : 'no_mailer';
-
-  if (!$isActive && $HM_EMAIL_READY) {
-    $acc      = EmailService::account($cfg, 'contact');
-    $bodyText = $message
-      . "\n\n────────────\n"
-      . "お問い合わせ番号：{$code}\n"
-      . "この番号とご登録のメールアドレスで、いつでもお問い合わせを再開できます。\n{$SITE_URL}";
-    $html = EmailService::customerHtml($acc, $bodyText, '');
-    $res  = EmailService::deliver($cfg, [
-      'account' => 'contact',
-      'to'      => (string)$row['email'],
-      'subject' => '[Hello Moving] お問い合わせへのご返信（' . $code . '）',
-      'html'    => $html,
-      'text'    => $bodyText,
-    ]);
-    $emailed = (bool)($res['ok'] ?? false);
-    $reason  = $emailed ? 'emailed' : 'email_failed';
-    if (!$emailed) {
-      hm_log_error('contact admin-reply email failed', ['code' => $code, 'err' => $res['error_raw'] ?? $res['error'] ?? '']);
-    }
-  }
-
-  hm_ok(['id' => 'ok', 'emailed' => $emailed, 'notify' => $reason]);
+  hm_ok(['id' => 'ok', 'emailed' => $r['emailed'], 'notify' => $r['notify']]);
 }
 
 // ── action=admin-close (staff) ───────────────────────────────────────────────

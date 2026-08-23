@@ -37,16 +37,26 @@ hm_rate_limit('admin_api', 90, 60);
 $p      = hm_body(true);
 $action = (string)($p['action'] ?? 'login');
 
-// Mint the existing HMAC admin token for a verified user. role:'admin' keeps the
-// rest.php gate satisfied for both admin + manager (panel operators); the real
-// account role travels in `urole` for management-permission checks.
+// Mint the existing HMAC admin token for a verified user. For admin + manager the
+// token `role` is 'admin' — this keeps the rest.php staff gate satisfied for both
+// panel operators (the real account role travels in `urole` for management checks),
+// PRESERVING existing behavior exactly.
+//
+// Worker phase (W1): a 'worker' account mints role:'worker' instead, so EVERY
+// existing staff gate (rest.php hm_require_staff_write/read, hm_require_admin,
+// contact-chat/chat admin actions — all of which require role admin|manager) fails
+// CLOSED for workers. Worker access is granted ONLY by the purpose-built, scoped
+// conversations.php endpoints. This is what prevents a worker token from ever
+// inheriting admin/manager data access.
 function hm_admin_issue_token(array $user): array {
   $ttl = max(300, (int)(hm_config()['admin_session_ttl'] ?? 43200));
   $exp = time() + $ttl;
+  $acctRole  = (string)($user['role'] ?? 'admin');
+  $tokenRole = ($acctRole === 'worker') ? 'worker' : 'admin';   // admin+manager ⇒ 'admin' (unchanged)
   $token = hm_admin_token_sign([
-    'role'  => 'admin',
+    'role'  => $tokenRole,
     'uid'   => (string)$user['id'],
-    'urole' => (string)$user['role'],
+    'urole' => $acctRole,
     'iat'   => time(),
     'exp'   => $exp,
   ]);
@@ -79,6 +89,16 @@ try {
     if (!$user || !$okPass || !(int)$user['active']) {
       hm_log_auth_fail('admin_login');
       hm_err('Invalid credentials', 401, 'invalid');
+    }
+
+    // Worker phase (W1) DORMANCY GATE: a 'worker' account may authenticate ONLY
+    // when the operator has enabled the phase on the server. While the flag is off
+    // (default) worker login is refused — the entire worker capability stays inert.
+    // Verified AFTER the credential check so it never reveals whether the account
+    // exists (uniform failure). Admin/manager logins are unaffected.
+    if ((string)($user['role'] ?? '') === 'worker' && !hm_worker_role_enabled()) {
+      hm_log_auth_fail('worker_login_disabled');
+      hm_err('Worker access is not enabled', 403, 'worker_disabled');
     }
 
     // Opportunistic rehash if the cost/algorithm changed.

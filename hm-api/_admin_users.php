@@ -19,7 +19,13 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_db.php';   // pulls in _lib.php (token sign/verify, hm_config, hm_uuid4)
 
-const HM_ADMIN_ROLES = ['admin', 'manager'];
+// Assignable account roles. 'worker' (W1) is a LOGIN-CAPABLE but LOW-TRUST role:
+// it can be provisioned by an admin at any time, but a worker can only actually log
+// in when hm_worker_role_enabled() is true (admin-login.php dormancy gate), and even
+// then holds NO admin/manager capability — the existing staff gates (which require
+// role admin|manager) reject worker tokens; access comes solely from the scoped
+// conversations.php endpoints. Account MANAGEMENT stays admin-only (hm_admin_require_manage_role).
+const HM_ADMIN_ROLES = ['admin', 'manager', 'worker'];
 
 // ── Table presence / provisioning ────────────────────────────────────────────
 // True when the admin_users table exists. Cached per-request.

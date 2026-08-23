@@ -140,6 +140,35 @@ function hm_require_api_key(): void {
 function hm_admin_secret(): string { return (string)(hm_config()['admin_session_secret'] ?? ''); }
 function hm_admin_hash():   string { return (string)(hm_config()['admin_pass_hash'] ?? ''); }
 
+// ── Worker phase (W1) — DORMANT feature gate ─────────────────────────────────
+// When false (default), the 'worker' role is inert: worker accounts cannot log in
+// (admin-login.php), the scoped worker endpoints (conversations.php) refuse worker
+// tokens, and storage.php applies no worker signing scope. Admin/manager behavior
+// is entirely unaffected either way. Flip to true on the server ONLY after the
+// worker phase (W2–W4) is reviewed and staged. Safe-by-default: absent ⇒ false.
+function hm_worker_role_enabled(): bool { return (bool)(hm_config()['worker_role_enabled'] ?? false); }
+
+// Current assignee of a conversation (thread_id) = the MOST RECENT NON-EMPTY
+// assignee across its non-internal inbox_messages rows. Robust to new inbound rows
+// (which arrive with a NULL assignee): assignment is sticky until an admin reassigns
+// (bulk-rewrites every row) or unassigns (bulk-NULLs every row). Returns '' when
+// unassigned. Shared by conversations.php (access gate) and storage.php (worker
+// attachment scope). Lowercased for case-insensitive email comparison.
+function hm_conversation_assignee(PDO $db, string $threadId): string {
+  $st = $db->prepare(
+    'SELECT assignee, labels FROM inbox_messages WHERE thread_id = ?
+      ORDER BY COALESCE(received_at, created_at) DESC, id DESC'
+  );
+  $st->execute([$threadId]);
+  foreach ($st->fetchAll() as $r) {
+    $lb = $r['labels'] ? (is_array($r['labels']) ? $r['labels'] : (json_decode((string)$r['labels'], true) ?: [])) : [];
+    if (!empty($lb['internal'])) continue;
+    $a = strtolower(trim((string)($r['assignee'] ?? '')));
+    if ($a !== '') return $a;
+  }
+  return '';
+}
+
 // Enforcement is OFF unless explicitly enabled AND the token signing secret is
 // provisioned (without it, tokens cannot be verified). Credentials may come from
 // the legacy single hash (admin_pass_hash) OR the admin_users table — either one

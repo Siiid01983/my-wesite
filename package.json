@@ -9,6 +9,7 @@
     "test:svc-map":   "php tests/service-images-mapping.test.php",
     "test:inbox-reply": "node tests/inbox-reply-flow.verify.js",
     "test:ops-comm": "node tests/ops-communication.test.js",
+    "test:worker-auth": "node tests/worker-auth.test.js",
     "test:contact-chat": "node tests/contact-chat.e2e.js",
     "test:telegram": "php tests/telegram.test.php",
     "test:booking-loc": "node tests/booking-service-location.verify.js",

@@ -77,6 +77,34 @@ function self_url(): string {
     . strtok($_SERVER['REQUEST_URI'] ?? '/storage.php', '?');
 }
 
+// ── Worker Phase (W1) — scope attachment signing for worker-role callers ──────
+// Closes audit finding §J.1 for low-trust workers: a WORKER may only sign a URL for
+// a `chat/<bookingId>/…` file whose conversation (chat:<bookingId>) is ASSIGNED to
+// them. NO-OP for everyone else — admin/manager (role 'admin'), the customer signing
+// flows, and any caller without a worker token are entirely unaffected, and the whole
+// guard is dormant unless hm_worker_role_enabled(). DB/admin libs are loaded lazily,
+// only when an actual worker token is present, so the common storage path is unchanged.
+function hm_storage_worker_sign_guard(string $bucket, string $path): void {
+  if (!function_exists('hm_worker_role_enabled') || !hm_worker_role_enabled()) return;
+  $tok = hm_request_header('X-ADMIN-TOKEN');
+  if (!is_string($tok) || $tok === '') return;                       // no token → not a worker
+  $p = hm_admin_token_verify($tok);
+  if (!is_array($p) || ($p['role'] ?? '') !== 'worker') return;      // admin/manager/other → unchanged
+  // From here the caller IS a worker: fail closed on anything unexpected.
+  require_once __DIR__ . '/_db.php';
+  require_once __DIR__ . '/_admin_users.php';
+  if (!hm_admin_token_account_valid($p)) { http_response_code(403); exit('forbidden'); }
+  if ($bucket !== 'chat') { http_response_code(403); exit('forbidden'); }   // workers sign chat files only
+  $uid   = (string)($p['uid'] ?? '');
+  $u     = $uid !== '' ? hm_admin_user_by_id($uid) : null;
+  $email = $u ? strtolower(trim((string)($u['email'] ?? ''))) : '';
+  $parts = explode('/', str_replace('\\', '/', $path));
+  $bookingId = $parts[0] ?? '';
+  if ($bookingId === '' || $email === '') { http_response_code(403); exit('forbidden'); }
+  $assignee = hm_conversation_assignee(hm_db(), 'chat:' . $bookingId);
+  if ($assignee === '' || $assignee !== $email) { http_response_code(403); exit('forbidden'); }
+}
+
 try {
   if ($action === 'upload') {
     // When the POST body exceeds PHP's post_max_size, PHP discards BOTH $_POST
@@ -190,6 +218,7 @@ try {
     $path   = sanitize_path($_GET['path'] ?? '');
     $ttl    = max(30, min(86400, (int)($_GET['ttl'] ?? 300)));
     if ($bucket === '' || $path === '') hm_err('Missing bucket/path', 400);
+    hm_storage_worker_sign_guard($bucket, $path);   // Worker Phase W1: scope worker signing (no-op otherwise)
     $exp = time() + $ttl;
     $sig = hash_hmac('sha256', "$bucket/$path:$exp", $SECRET);
     $url = self_url() . '?action=get&bucket=' . rawurlencode($bucket)
