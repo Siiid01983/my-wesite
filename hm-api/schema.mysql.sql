@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   status         VARCHAR(20)  NOT NULL DEFAULT 'pending',
   notes          TEXT,
   items          JSON,
+  agreed_price   INT UNSIGNED NULL,   -- admin-entered confirmed price in JPY (NULL until set)
   created_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),

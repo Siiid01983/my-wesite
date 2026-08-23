@@ -532,6 +532,8 @@ function openEdit(id) {
   document.getElementById('mFrom').value = b.fromAddr||'';
   document.getElementById('mTo').value = b.toAddr||'';
   document.getElementById('mNotes').value = b.notes||'';
+  var _ap = document.getElementById('mAgreedPrice');
+  if (_ap) _ap.value = (b.agreedPrice != null && b.agreedPrice !== '') ? b.agreedPrice : '';
   document.getElementById('editModal').classList.add('open');
   closeDetail();
 }
@@ -597,6 +599,15 @@ function saveBooking() {
     fromAddr: document.getElementById('mFrom').value.trim(),
     toAddr: document.getElementById('mTo').value.trim(),
     notes: document.getElementById('mNotes').value.trim(),
+    // Admin-entered confirmed price (JPY). '' → left unchanged/NULL; a number persists
+    // to bookings.agreed_price and the 予約確定 email renders it (e.g. 45,000円).
+    agreedPrice: (function () {
+      var el = document.getElementById('mAgreedPrice');
+      var v  = el ? String(el.value).trim() : '';
+      if (v === '') return null;
+      var n = parseInt(v, 10);
+      return (isFinite(n) && n >= 0) ? n : null;
+    })(),
     createdAt: existing?.createdAt || new Date().toISOString()
   };
   if (_editId) {

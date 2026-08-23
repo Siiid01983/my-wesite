@@ -112,9 +112,11 @@ $notifyCustomer = ($nv === null) ? true : !in_array(strtolower(trim((string)$nv)
 
 try {
   $db = hm_db();
+  // Deploy-order-safe: ensure the agreed_price column exists before we read it.
+  if (function_exists('hm_bookings_ensure_price_col')) hm_bookings_ensure_price_col($db);
 
   // Booking must exist and not be an admin block.
-  $q = $db->prepare('SELECT customer_name, customer_email, booking_date, notes, status, start_at FROM bookings WHERE id = ? LIMIT 1');
+  $q = $db->prepare('SELECT customer_name, customer_email, booking_date, notes, status, start_at, agreed_price FROM bookings WHERE id = ? LIMIT 1');
   $q->execute([$bookingId]);
   $bk = $q->fetch(PDO::FETCH_ASSOC);
   if (!$bk) bkst_out(['ok' => false, 'error' => 'not_found'], $isCli, 404);
@@ -138,6 +140,13 @@ try {
   $startTime = '';
   $saRaw = (string)($bk['start_at'] ?? '');
   if ($saRaw !== '') { $sts = strtotime($saRaw); if ($sts) $startTime = date('H:i', $sts); }
+  // Agreed price — a DEDICATED INT (JPY) column, NEVER parsed from notes. NULL / absent
+  // for estimate-stage or pre-existing bookings → the price line is simply omitted.
+  $priceLine = '';
+  if (isset($bk['agreed_price']) && $bk['agreed_price'] !== null && $bk['agreed_price'] !== '') {
+    $priceInt = (int)$bk['agreed_price'];
+    if ($priceInt > 0) $priceLine = '確定金額: ' . number_format($priceInt) . '円';
+  }
 
   // Customer-facing message (clean, professional). Needs_Revision carries the note.
   //   confirmed → 予約確定のお知らせ (STEP B) · completed → 作業完了のお知らせ (STEP C)
@@ -156,13 +165,12 @@ try {
   ];
   if ($svc !== '') $lines[] = "サービス: {$svc}";
   $lines[] = "日程: {$bdate}" . ($startTime !== '' ? "（開始 {$startTime}）" : '');
-  // Agreed price / confirmation details ride in the admin note (there is no dedicated
-  // price column): for a CONFIRMED booking the note is the agreed amount + conditions,
-  // so label it accordingly; other statuses keep the generic 備考 / revision label.
+  // Confirmed / completed notifications show the stored agreed price (dedicated column).
+  if ($priceLine !== '' && in_array($status, ['confirmed', 'completed'], true)) $lines[] = $priceLine;
+  // The admin note is a free-form remark only (NOT the price). Needs_Revision carries
+  // the revision request; everything else labels it 備考.
   if ($note !== '') {
-    $noteLabel = $status === 'needs_revision' ? '修正のお願い: '
-               : ($status === 'confirmed' ? 'お見積り金額・ご確定内容: ' : '備考: ');
-    $lines[] = $noteLabel . $note;
+    $lines[] = ($status === 'needs_revision' ? '修正のお願い: ' : '備考: ') . $note;
   }
   // STEP C: thank-you + a clear review link, REUSING the existing portal review system
   // (log in with the booking reference → 「口コミを投稿」 → PortalReviews). No new system.
