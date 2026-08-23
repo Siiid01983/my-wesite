@@ -300,21 +300,22 @@ try {
       $pref2    = $nx('pref2');
 
       $lines = [
-        '📩 ご予約リクエストを受け付けました',
+        '📩 見積もり依頼を受け付けました',
         '',
         "{$name} 様",
         '',
-        'この度はお問い合わせいただきありがとうございます。以下の内容でご予約リクエストを受け付けました。',
-        '担当者が確認のうえ、確定のご連絡をお送りします（現時点ではまだ確定していません）。',
+        'この度はお問い合わせいただきありがとうございます。以下の内容で見積もり依頼を受け付けました。',
+        'これはお見積りのご依頼の受付であり、ご予約はまだ確定していません。担当者が内容を確認し、料金確定後にあらためて「予約確定のお知らせ」をお送りします。',
         '',
-        "予約番号: {$ref}",
+        "受付番号: {$ref}",
       ];
-      if ($service !== '')  $lines[] = "サービス: {$service}";
-      $lines[] = "ご希望日: {$bdateStr}" . ($timeBand !== '' ? "（{$timeBand}）" : '');
+      if ($service !== '')  $lines[] = "ご依頼サービス: {$service}";
+      $lines[] = "ご希望日: {$bdateStr}";
+      if ($timeBand !== '') $lines[] = "ご希望の開始時刻: {$timeBand}";
       if ($pref1 !== '')    $lines[] = "第1希望: {$pref1}";
       if ($pref2 !== '')    $lines[] = "第2希望: {$pref2}";
       $lines[] = '';
-      $lines[] = '確定次第、あらためてメールでお知らせいたします。';
+      $lines[] = '料金確定後、あらためて「予約確定のお知らせ」メールでご連絡いたします。';
       $msg = implode("\n", $lines);
 
       $emailStatus = 'error';
@@ -324,7 +325,7 @@ try {
         $acc  = EmailService::account($cfg, 'booking');
         $html = EmailService::customerHtml($acc, $msg, $ref, EmailService::chatUrl($cfg, $ref));
         $er   = EmailService::deliver($cfg, ['account' => 'booking', 'to' => $email,
-                  'subject' => "【予約リクエスト受付 {$ref}】" . $name . ' 様', 'html' => $html, 'text' => $msg]);
+                  'subject' => "【見積もり依頼の受付 {$ref}】" . $name . ' 様', 'html' => $html, 'text' => $msg]);
         if (!empty($er['ok'])) {
           $emailStatus = 'sent';
           hm_log_write('info.log', ['type' => 'new_booking_email', 'result' => 'sent',

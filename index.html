@@ -2664,6 +2664,14 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 .ba-filter-list{display:flex;flex-direction:column;gap:10px}
 .ba-filter-label{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--ba-border);border-radius:8px;cursor:pointer;font-size:14px;color:var(--ba-forest)}
 .ba-filter-label input{width:18px;height:18px;accent-color:var(--ba-forest);flex-shrink:0}
+/* Start-time slot chips (希望の開始時刻): base look + a distinct selected state driven
+   by the radio's :checked (native single-select). Instant feedback on tap/click, one
+   at a time, keyboard-focusable. Uses the brand theme (--ba-forest). */
+.ba-tl-chip{display:inline-block;padding:9px 14px;border:1px solid var(--ba-border);border-radius:9px;background:#fff;color:#0b0f17;font-weight:700;font-size:14px;cursor:pointer;min-width:64px;text-align:center;transition:background-color .12s,border-color .12s,color .12s}
+.ba-tl-slot:hover .ba-tl-chip{border-color:var(--ba-olive)}
+.ba-tl-slot input:checked + .ba-tl-chip{background:var(--ba-forest);border-color:var(--ba-forest);color:#fff}
+.ba-tl-slot input:checked + .ba-tl-chip::after{content:"\2713";margin-left:6px;font-weight:800}
+.ba-tl-slot input:focus-visible + .ba-tl-chip{outline:2px solid var(--ba-forest);outline-offset:2px}
 /* Screens */
 .ba-screen{display:none;flex:1;flex-direction:column;overflow:hidden}
 .ba-screen.active{display:flex;animation:baScreenIn .18s ease}
@@ -3837,7 +3845,11 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     if (slots.length) {
       slotHtml = slots.map(function (t) {
         var sel = baState.startAt && baState.startAt.slice(11, 16) === t;
-        return '<label class="ba-tl-slot" style="display:inline-block"><input type="radio" name="ba-tl" value="' + t + '"' + (sel ? ' checked' : '') + ' style="position:absolute;opacity:0"><span style="display:inline-block;padding:9px 14px;border:1px solid ' + (sel ? '#2C3626' : '#d5dae1') + ';border-radius:9px;background:' + (sel ? '#2C3626' : '#fff') + ';color:' + (sel ? '#fff' : '#0b0f17') + ';font-weight:700;font-size:14px;cursor:pointer;min-width:64px;text-align:center">' + t + '</span></label>';
+        // The selected LOOK is driven entirely by the radio's :checked state (see the
+        // .ba-tl-slot CSS): the span always renders in its base/unselected style, so
+        // native single-select (shared name="ba-tl") + CSS give instant, correct
+        // feedback on click with no stale "selected" chip. `checked` only pre-selects.
+        return '<label class="ba-tl-slot" style="display:inline-block"><input type="radio" name="ba-tl" value="' + t + '"' + (sel ? ' checked' : '') + ' style="position:absolute;opacity:0"><span class="ba-tl-chip">' + t + '</span></label>';
       }).join('');
     } else if (baAvailError) {
       // Transient load failure — NOT "no availability". Offer a retry (never a manual
