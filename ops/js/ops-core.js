@@ -572,6 +572,117 @@
 
     /* Calendar / availability --------------------------------------------- */
     availability: function (date) { return Api.getJSON('availability.php', { date: date }); },
+
+    /* ══ Communication Center (admin/manager control of existing inbox_messages) ══
+       Every method REUSES an existing endpoint. No new table, no schema change,
+       no auth-model change. Assignment/status/read use REAL columns; priority +
+       internal notes use the EXISTING labels JSON; contact replies route through
+       the EXISTING contact-chat.php admin actions. */
+
+    // お問い合わせ (Contact Chat) staff actions → contact-chat.php (X-ADMIN-TOKEN).
+    // admin-reply appends an outbound row AND emails the customer per the server's
+    // existing "active rule" (never double-notifies a live chat) + Telegram.
+    contactReply: function (cid, text) {
+      return fetch(cfg.base + '/contact-chat.php?action=admin-reply', {
+        method: 'POST', headers: headers(true),
+        body: JSON.stringify({ contact_id: cid, message: text }),
+      }).then(function (r) { return r.text().then(function (t) {
+        var j = null; try { j = JSON.parse(t); } catch (_) {}
+        if (j && j.ok) return { ok: true, data: j.data || {} };
+        return { ok: false, error: (j && j.error && (j.error.message || j.error)) || ('HTTP ' + r.status) };
+      }); }).catch(function (e) { return { ok: false, error: (e && e.message) || 'network' }; });
+    },
+    contactMeta: function (cid) {
+      return Api.getJSON('contact-chat.php', { action: 'admin-meta', contact_id: cid })
+        .then(function (j) { return (j && j.ok && j.data) ? j.data : null; });
+    },
+    contactClose: function (cid, status) {
+      return fetch(cfg.base + '/contact-chat.php?action=admin-close', {
+        method: 'POST', headers: headers(true),
+        body: JSON.stringify({ contact_id: cid, status: status || 'archived' }),
+      }).then(function (r) { return r.json().catch(function () { return null; }); })
+        .then(function (j) { return { ok: !!(j && j.ok), data: j && j.data }; })
+        .catch(function () { return { ok: false }; });
+    },
+
+    // A conversation is every inbox_messages row sharing a thread_id. These real
+    // columns are safe to bulk-update by thread_id — they NEVER touch labels, so
+    // attachments/quote/outbound flags on individual rows are preserved.
+    _convFilter: function (conv) {
+      return (conv && conv.threadId)
+        ? [{ col: 'thread_id', op: 'eq', val: conv.threadId }]
+        : [{ col: 'id', op: 'eq', val: conv && conv.anchorId }];
+    },
+    setAssignee: function (conv, assignee) {
+      return Api.rest({ table: 'inbox_messages', action: 'update',
+        values: { assignee: assignee || null }, filters: Api._convFilter(conv) });
+    },
+    setConvStatus: function (conv, status) {
+      return Api.rest({ table: 'inbox_messages', action: 'update',
+        values: { status: String(status || 'open') }, filters: Api._convFilter(conv) });
+    },
+    setArchived: function (conv, archived) {
+      return Api.rest({ table: 'inbox_messages', action: 'update',
+        values: { archived: archived ? 1 : 0 }, filters: Api._convFilter(conv) });
+    },
+    // Mark this conversation's UNREAD inbound rows read (is_read=0 targets exactly
+    // inbound customer messages — outbound + internal notes are stored is_read=1).
+    markThreadRead: function (conv) {
+      var f = Api._convFilter(conv).concat([{ col: 'is_read', op: 'eq', val: 0 }]);
+      return Api.rest({ table: 'inbox_messages', action: 'update', values: { is_read: 1 }, filters: f });
+    },
+    // Priority has no column — stored (read-modify-write) on the conversation's
+    // ANCHOR row labels so that row's other labels are preserved. anchorLabels is
+    // the fresh copy the caller already holds from listInbox.
+    setPriority: function (conv, priority, anchorLabels) {
+      var lb = Object.assign({}, anchorLabels || {});
+      if (priority && priority !== 'normal') lb.priority = priority; else delete lb.priority;
+      return Api.rest({ table: 'inbox_messages', action: 'update',
+        values: { labels: lb }, filters: [{ col: 'id', op: 'eq', val: conv.anchorId }] });
+    },
+    // Internal note — a NEW inbox_messages row flagged labels.internal=true. The
+    // customer serializers (chat.php list / contact-chat.php cc_messages) SKIP
+    // labels.internal, so a note NEVER reaches the customer. Not outbound, never
+    // emailed, no Telegram. Staff-surface only.
+    addInternalNote: function (conv, text, actor) {
+      var uuid = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now() + '-' + Math.random().toString(16).slice(2));
+      var labels = { internal: true, ref: conv.ref || '' };
+      if (conv.cid) labels.cid = conv.cid;
+      var row = {
+        id: uuid, sender: actor || 'スタッフ', sender_name: actor || 'スタッフ',
+        email: conv.email || '', subject: '内部メモ',
+        body: text, body_text: text,
+        booking_id: conv.bookingId || null,
+        mailbox: 'contact@hello-moving.com',
+        message_id: '<note-' + uuid + '@hello-moving.com>',
+        thread_id: conv.threadId || ('note:' + uuid),
+        labels: labels, is_read: 1, status: 'open',
+      };
+      return Api.rest({ table: 'inbox_messages', action: 'insert', values: row })
+        .then(function (res) { return { ok: !res.error, row: row, error: res.error }; });
+    },
+    // Append-only audit trail (EXISTING audit_log table).
+    auditAction: function (action, targetId, details, actor) {
+      var uuid = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now() + '-' + Math.random().toString(16).slice(2));
+      return Api.rest({ table: 'audit_log', action: 'insert', values: {
+        id: uuid, actor: actor || 'admin', action: String(action).slice(0, 40),
+        target_type: 'conversation', target_id: String(targetId || '').slice(0, 191),
+        details: JSON.stringify(details || {}),
+      } });
+    },
+    // Staff accounts for the assignment picker (admin-users.php list_users — token,
+    // available to admin AND manager). Read-only; degrades to [] on any error.
+    listStaff: function () {
+      return fetch(cfg.base + '/admin-users.php', {
+        method: 'POST', headers: headers(true), body: JSON.stringify({ action: 'list_users' }),
+      }).then(function (r) { return r.json().catch(function () { return null; }); })
+        .then(function (j) {
+          var d = j && (j.data || j.users) || [];
+          if (d && !Array.isArray(d) && Array.isArray(d.users)) d = d.users;
+          return Array.isArray(d) ? d : [];
+        })
+        .catch(function () { return []; });
+    },
   });
 
   /* ── Notifications (lightweight local store; push-ready shape) ──────────── */
@@ -677,7 +788,7 @@
     { key: 'dashboard', href: 'index.html', label: 'ホーム', icon: 'dashboard' },
     { key: 'bookings', href: 'bookings.html', label: '予約', icon: 'bookings' },
     { key: 'customers', href: 'customers.html', label: '顧客', icon: 'customers' },
-    { key: 'chat', href: 'messages.html', label: 'チャット', icon: 'chat' },
+    { key: 'chat', href: 'communication.html', label: 'チャット', icon: 'chat' },
     { key: 'calendar', href: 'calendar.html', label: 'カレンダー', icon: 'calendar' },
   ];
 

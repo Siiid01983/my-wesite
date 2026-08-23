@@ -211,6 +211,11 @@ if ($action === 'list') {
     if (!empty($r['labels'])) {
       $labels = is_array($r['labels']) ? $r['labels'] : (json_decode((string)$r['labels'], true) ?: []);
     }
+    // Internal staff notes (labels.internal) are STAFF-ONLY — never serialize them
+    // to the customer. This is the server-side half of the internal-notes boundary
+    // (the OPS Communication Center writes these rows; the UI never renders them to
+    // customers, but the guard here is what actually enforces it).
+    if (!empty($labels['internal'])) continue;
     $isOutbound = !empty($labels['outbound']);   // admin/company reply vs customer
     $deleted    = !empty($labels['deleted']);
     // Channel: customer messages are always 'chat'. Company messages are 'chat'

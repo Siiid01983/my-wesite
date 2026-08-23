@@ -170,6 +170,7 @@ function cc_messages(PDO $db, string $code): array {
       $labels = is_array($r['labels']) ? $r['labels'] : (json_decode((string)$r['labels'], true) ?: []);
     }
     if (!empty($labels['deleted'])) continue;            // hidden tombstone
+    if (!empty($labels['internal'])) continue;           // staff-only internal note — never shown to the customer
     $isOut = !empty($labels['outbound']);
     $text  = ($r['body_text'] !== null && $r['body_text'] !== '') ? (string)$r['body_text'] : (string)($r['body'] ?? '');
     $out[] = [

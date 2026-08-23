@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#0C0E0B" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>コミュニケーション · Hello Moving Ops</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/ops.css" />
+  <!-- V2 dark identity — must load AFTER ops.css -->
+  <link rel="stylesheet" href="css/ops-dark-v2.css" />
+  <!-- V2 experience layer (empty/skeleton/spacing) — after the dark theme -->
+  <link rel="stylesheet" href="css/ops-experience-v2.css" />
+  <!-- Reuse the existing chat component styles (mc-*), unmodified -->
+  <link rel="stylesheet" href="css/messages.css" />
+  <!-- Communication Center styles (additive; last) -->
+  <link rel="stylesheet" href="css/communication.css" />
+  <link rel="icon" href="/assets/brand/hm-favicon.svg" type="image/svg+xml">
+</head>
+<body>
+  <main class="ops-main" id="ops-main">
+    <div id="ops-content"></div>
+  </main>
+
+  <script src="../js/config/env.js"></script>
+  <script src="../locales/ja.js"></script>
+  <script src="../locales/en.js"></script>
+  <script src="../js/lib/localeManager.js"></script>
+  <script src="../js/lib/chatFormat.js"></script>
+  <script src="../js/lib/imageCompress.js"></script>
+  <script src="js/ops-core.js"></script>
+  <script src="js/communication.js"></script>
+</body>
+</html>
