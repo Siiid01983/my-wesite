@@ -116,6 +116,12 @@ function _bookingToRow(b) {
   // live; harmless (stripped) otherwise.
   if (b.startAt)     row.start_at     = b.startAt;
   if (b.durationMin) row.duration_min = b.durationMin;
+  // Admin-entered confirmed price (JPY, INT). Only sent when a value is present, so
+  // booking creation (no price) never writes it and existing rows stay NULL.
+  if (b.agreedPrice !== undefined && b.agreedPrice !== null && b.agreedPrice !== '') {
+    const _ap = parseInt(b.agreedPrice, 10);
+    if (Number.isFinite(_ap) && _ap >= 0) row.agreed_price = _ap;
+  }
   return row;
 }
 
@@ -147,6 +153,9 @@ function _rowToBooking(r) {
     // T5 — the two requested date/time-band options (existing columns; display only).
     preferred_start_1: r.preferred_start_1 || extra.pref1 || '',
     preferred_start_2: r.preferred_start_2 || extra.pref2 || '',
+    // Admin-entered confirmed price (JPY). null when unset (existing bookings).
+    agreedPrice: (r.agreed_price !== undefined && r.agreed_price !== null && r.agreed_price !== '')
+                 ? parseInt(r.agreed_price, 10) : null,
   };
 }
 

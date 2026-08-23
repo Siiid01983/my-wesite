@@ -35,3 +35,26 @@ function hm_db(): PDO {
   }
   return $pdo;
 }
+
+/**
+ * Ensure the `bookings.agreed_price` column exists (idempotent, deploy-order-safe).
+ * Mirrors hm_iv_ensure_cols: SHOW COLUMNS probe + a single ALTER, so a fresh deploy
+ * needs NO operator migration. INT UNSIGNED NULL → every existing row stays NULL and
+ * keeps working exactly as before. Best-effort: never throws, and never ALTERs inside
+ * a transaction (an ALTER implicitly commits) — the next call outside a tx retries.
+ * MySQL only; on SQLite the probe throws and is swallowed (test fixtures add the col).
+ */
+function hm_bookings_ensure_price_col(PDO $db): void {
+  static $ensured = false;
+  if ($ensured) return;
+  try {
+    $q = $db->query("SHOW COLUMNS FROM bookings LIKE 'agreed_price'");
+    if ($q && $q->fetch()) { $ensured = true; return; }   // already present
+    if ($db->inTransaction()) return;                       // never ALTER mid-tx
+    $db->exec("ALTER TABLE bookings ADD COLUMN agreed_price INT UNSIGNED NULL");
+    $ensured = true;
+  } catch (Throwable $e) {
+    // Leave $ensured false so a later call can retry; reads/writes of the price
+    // simply behave as "unset" until the column heals.
+  }
+}

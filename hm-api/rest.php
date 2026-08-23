@@ -40,8 +40,8 @@ $SCHEMA = [
     'uuid_pk' => true, 'unique' => ['key'],
   ],
   'bookings' => [
-    'cols' => ['id','customer_name','customer_email','customer_phone','booking_date','start_at','end_at','preferred_start_1','preferred_start_2','service_id','status','notes','items','created_at','updated_at'],
-    'json' => ['items'], 'bool' => [], 'int' => [],
+    'cols' => ['id','customer_name','customer_email','customer_phone','booking_date','start_at','end_at','preferred_start_1','preferred_start_2','service_id','status','notes','items','agreed_price','created_at','updated_at'],
+    'json' => ['items'], 'bool' => [], 'int' => ['agreed_price'],
     'uuid_pk' => true, 'unique' => ['id'],
   ],
   'reviews' => [
@@ -128,6 +128,13 @@ if ($action === 'select' && in_array($table, $SENSITIVE_READ_TABLES, true)) {
 }
 
 $db     = hm_db();
+
+// Deploy-order-safe: self-heal the bookings.agreed_price column before any bookings
+// read/write, so a fresh deploy needs no operator migration (mirrors the timeline
+// interval-column self-heal). No-op once present.
+if ($table === 'bookings' && function_exists('hm_bookings_ensure_price_col')) {
+  hm_bookings_ensure_price_col($db);
+}
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 $qid = fn(string $c) => '`' . str_replace('`', '', $c) . '`';   // safe (already allowlisted)
