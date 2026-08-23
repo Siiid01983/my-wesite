@@ -285,7 +285,7 @@ class EmailService {
       . '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f2f2ef;padding:32px 0"><tr><td align="center">'
       . '<table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;max-width:600px;width:100%">'
       . '<tr><td style="background:#0a1f44;padding:28px 36px"><p style="margin:0;font-size:22px;font-weight:700;color:#fff">Hello Moving</p>'
-      . '<p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,.55)">TOKYO MOVING SERVICE</p></td></tr>'
+      . '<p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,.55)">引っ越しサービス</p></td></tr>'
       . '<tr><td style="padding:36px"><p style="margin:0 0 20px;font-size:14px;line-height:1.9;color:#0b0f17">' . $msgHtml . '</p>'
       . ($bookingId ? '<table width="100%" style="border:1px solid #e8e8e4;border-radius:8px;margin-bottom:20px">' . $bookingRow . '</table>' : '')
       . $chatCta

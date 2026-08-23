@@ -125,14 +125,25 @@ try {
   $name  = (string)($bk['customer_name']  ?? '');
   $email = (string)($bk['customer_email'] ?? '');
   $bdate = (string)($bk['booking_date']   ?? '未定');
+  // Old status (BEFORE this update) — the idempotency key: lifecycle EMAILS fire only
+  // on a real transition (old !== new), never on re-saving an already-set status.
+  $oldStatus = strtolower(trim((string)($bk['status'] ?? '')));
   // Prefer the human HM- reference packed in notes; fall back to the row id.
   $ref = $bookingId;
   if (preg_match('/^ref:\s*(\S+)/m', (string)($bk['notes'] ?? ''), $rm)) $ref = trim($rm[1]);
+  // Service (packed in notes by bookingService._packNotes) + confirmed start time
+  // (from the timeline start_at) — surfaced on the confirmed/completed notifications.
+  $svc = '';
+  if (preg_match('/^service:\s*(.+)$/m', (string)($bk['notes'] ?? ''), $sm)) $svc = trim($sm[1]);
+  $startTime = '';
+  $saRaw = (string)($bk['start_at'] ?? '');
+  if ($saRaw !== '') { $sts = strtotime($saRaw); if ($sts) $startTime = date('H:i', $sts); }
 
   // Customer-facing message (clean, professional). Needs_Revision carries the note.
+  //   confirmed → 予約確定のお知らせ (STEP B) · completed → 作業完了のお知らせ (STEP C)
   $head = [
-    'confirmed'      => '✅ ご予約が確定しました',
-    'completed'      => '🎉 引越しが完了しました。ご利用ありがとうございました',
+    'confirmed'      => '✅ 予約確定のお知らせ',
+    'completed'      => '🎉 作業完了のお知らせ',
     'cancelled'      => '❌ ご予約がキャンセルされました',
     'needs_revision' => '✏️ ご予約内容のご確認をお願いします',
     'pending'        => '🕒 ご予約を確認中です',
@@ -142,9 +153,26 @@ try {
     $head, '',
     "予約番号: {$ref}",
     "お名前: {$name} 様",
-    "日程: {$bdate}",
   ];
-  if ($note !== '') $lines[] = ($status === 'needs_revision' ? "修正のお願い: " : "備考: ") . $note;
+  if ($svc !== '') $lines[] = "サービス: {$svc}";
+  $lines[] = "日程: {$bdate}" . ($startTime !== '' ? "（開始 {$startTime}）" : '');
+  // Agreed price / confirmation details ride in the admin note (there is no dedicated
+  // price column): for a CONFIRMED booking the note is the agreed amount + conditions,
+  // so label it accordingly; other statuses keep the generic 備考 / revision label.
+  if ($note !== '') {
+    $noteLabel = $status === 'needs_revision' ? '修正のお願い: '
+               : ($status === 'confirmed' ? 'お見積り金額・ご確定内容: ' : '備考: ');
+    $lines[] = $noteLabel . $note;
+  }
+  // STEP C: thank-you + a clear review link, REUSING the existing portal review system
+  // (log in with the booking reference → 「口コミを投稿」 → PortalReviews). No new system.
+  if ($status === 'completed') {
+    $siteUrl = rtrim((string)(hm_config()['site_url'] ?? 'https://hello-moving.com'), '/');
+    $lines[] = '';
+    $lines[] = 'この度はご利用いただき誠にありがとうございました。';
+    $lines[] = 'よろしければ、ご感想・ご評価をお聞かせください（ポータルにログイン後「口コミを投稿」より）:';
+    $lines[] = $siteUrl . '/login.html?ref=' . rawurlencode($ref);
+  }
   $msg = implode("\n", $lines);
 
   $db->beginTransaction();
@@ -203,8 +231,17 @@ try {
   //    governs the inbox row): Ops confirm passes notify=false yet the customer must
   //    still get the email. Non-fatal + ALWAYS logged (success / failure / SMTP
   //    error) — never silently fails; a send error does not fail the status change.
+  // Duplicate-email guard (idempotency): a lifecycle email fires ONLY on a real
+  // status transition (old !== new). Re-saving an already-confirmed / already-completed
+  // / already-cancelled booking sends NOTHING. The status UPDATE itself is idempotent
+  // and always runs; only the notification semantics are transition-gated.
+  $isTransition = ($oldStatus !== $status);
   $emailStatus = 'skipped';
-  if (in_array($status, ['confirmed', 'completed', 'cancelled'], true)
+  if (!$isTransition && in_array($status, ['confirmed', 'completed', 'cancelled'], true)) {
+    $emailStatus = 'skipped_no_transition';
+  }
+  if ($isTransition
+      && in_array($status, ['confirmed', 'completed', 'cancelled'], true)
       && $email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
     $emailStatus = 'error';
     try {
