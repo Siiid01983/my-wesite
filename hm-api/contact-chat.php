@@ -174,12 +174,31 @@ function cc_messages(PDO $db, string $code): array {
     if (!empty($labels['internal'])) continue;           // staff-only internal note — never shown to the customer
     $isOut = !empty($labels['outbound']);
     $text  = ($r['body_text'] !== null && $r['body_text'] !== '') ? (string)$r['body_text'] : (string)($r['body'] ?? '');
+    // Attachments (Phase 1) — return name/mime + a short-lived signed read URL so the
+    // customer can view them in-thread. Same private `chat` bucket + HMAC scheme as
+    // booking chat. A media-only reply's placeholder body is blanked for display.
+    $atts = [];
+    if (!empty($labels['attachments']) && is_array($labels['attachments'])) {
+      $secret = (string)(hm_config()['storage_secret'] ?? 'change-me');
+      foreach ($labels['attachments'] as $a) {
+        if (!empty($a['deleted'])) { $atts[] = ['deleted' => true, 'name' => (string)($a['name'] ?? 'file')]; continue; }
+        $path = (string)($a['path'] ?? '');
+        if ($path === '') continue;
+        $atts[] = [
+          'name' => (string)($a['name'] ?? 'file'),
+          'mime' => (string)($a['mime'] ?? ''),
+          'url'  => cc_sign_url($path, $secret, 1800),   // 30-min TTL (customer view has no re-sign path)
+        ];
+      }
+    }
+    if ($atts && preg_match('/^\s*\[\d+件の添付ファイルを送信しました\]\s*$/', $text)) $text = '';
     $out[] = [
       'id'          => (string)$r['id'],
       'sender_type' => $isOut ? 'company' : 'customer',
       'sender_name' => $isOut ? ((string)($r['sender_name'] ?? '') ?: 'Hello Moving')
                               : ((string)($r['sender_name'] ?? '') ?: (string)($r['sender'] ?? '')),
       'text'        => $text,
+      'attachments' => $atts,
       'created_at'  => (string)($r['received_at'] ?? $r['created_at'] ?? ''),
     ];
   }
@@ -363,8 +382,11 @@ if ($action === 'admin-reply') {
   $p       = hm_body();
   $code    = strtoupper(trim((string)($p['contact_id'] ?? $p['code'] ?? '')));
   $message = trim((string)($p['message'] ?? ''));
+  // Phase 1 — optional attachments (validated + scoped to this conversation's folder).
+  $CC_ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+  $atts = cc_clean_attachments($p['attachments'] ?? null, $code, $CC_ALLOWED_MIME);
   if (!cc_valid_code($code)) hm_err('invalid contact id', 400, 'bad_code');
-  if ($message === '')       hm_err('empty message', 400, 'empty');
+  if ($message === '' && !$atts) hm_err('empty message', 400, 'empty');   // text OR ≥1 valid attachment
   if (mb_strlen($message) > 4000) $message = mb_substr($message, 0, 4000);
 
   try {
@@ -379,7 +401,7 @@ if ($action === 'admin-reply') {
 
   try {
     $r = cc_do_admin_reply($db, $cfg, $row, $code, $message,
-                           $RETENTION_DAYS, $ACTIVE_WINDOW, $SITE_URL, $MAILBOX, $HM_EMAIL_READY);
+                           $RETENTION_DAYS, $ACTIVE_WINDOW, $SITE_URL, $MAILBOX, $HM_EMAIL_READY, $atts);
   } catch (Throwable $e) {
     hm_log_error('contact admin-reply failed', ['err' => $e->getMessage(), 'code' => $code]);
     hm_err('server error', 500, 'server');

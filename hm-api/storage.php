@@ -99,9 +99,12 @@ function hm_storage_worker_sign_guard(string $bucket, string $path): void {
   $u     = $uid !== '' ? hm_admin_user_by_id($uid) : null;
   $email = $u ? strtolower(trim((string)($u['email'] ?? ''))) : '';
   $parts = explode('/', str_replace('\\', '/', $path));
-  $bookingId = $parts[0] ?? '';
-  if ($bookingId === '' || $email === '') { http_response_code(403); exit('forbidden'); }
-  $assignee = hm_conversation_assignee(hm_db(), 'chat:' . $bookingId);
+  // Resolve the conversation this file belongs to: 'contact/<CODE>/…' → contact:<CODE>,
+  // otherwise '<bookingId>/…' → chat:<bookingId>.
+  if (($parts[0] ?? '') === 'contact') { $threadId = 'contact:' . strtoupper((string)($parts[1] ?? '')); }
+  else                                 { $threadId = 'chat:' . (string)($parts[0] ?? ''); }
+  if ($email === '' || $threadId === 'chat:' || $threadId === 'contact:') { http_response_code(403); exit('forbidden'); }
+  $assignee = hm_conversation_assignee(hm_db(), $threadId);
   if ($assignee === '' || $assignee !== $email) { http_response_code(403); exit('forbidden'); }
 }
 

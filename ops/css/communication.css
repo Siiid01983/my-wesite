@@ -118,3 +118,11 @@
   border: 1px dashed var(--hm-line, #2a2f26); border-radius: 8px; font-size: 12px;
   color: var(--hm-muted, #8a8f86); font-style: italic;
 }
+
+/* ── 見積 (quote) block ─────────────────────────────────────────────────────── */
+.cc-quote label.cc-ctl-k { font-size: .74rem; font-weight: 600; color: var(--hm-muted, #8a8f86); }
+.cc-quote .cc-select { width: 100%; }
+.cc-q-prev {
+  font-size: .76rem; color: #b9d493; background: rgba(154,181,122,.12);
+  border: 1px solid rgba(154,181,122,.3); border-radius: 8px; padding: 6px 10px; margin-bottom: 8px;
+}

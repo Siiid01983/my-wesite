@@ -133,6 +133,40 @@ function conv_serialize(PDO $db, string $threadId): array {
   return $out;
 }
 
+// The conversation's ANCHOR row (oldest message) — stable id used for RMW writes
+// of conversation-level labels (priority, quote). Returns ['id'=>, 'labels'=>array].
+function conv_anchor_row(PDO $db, string $threadId): ?array {
+  $st = $db->prepare('SELECT id, labels FROM inbox_messages WHERE thread_id = ? ORDER BY COALESCE(received_at, created_at) ASC, id ASC LIMIT 1');
+  $st->execute([$threadId]);
+  $r = $st->fetch();
+  if (!$r) return null;
+  $lb = $r['labels'] ? (is_array($r['labels']) ? $r['labels'] : (json_decode((string)$r['labels'], true) ?: [])) : [];
+  return ['id' => (string)$r['id'], 'labels' => $lb];
+}
+
+// Validate + scope a staff attachment list to THIS conversation's own storage folder
+// (contact/<CODE>/… for contact threads, <bookingId>/… for booking threads). Same
+// MIME allow-list, traversal guard, and 10-item cap as chat.php — never trusts the
+// client's path, so a reply can't reference another conversation's/arbitrary file.
+function conv_clean_attachments($raw, string $threadId, array $allowedMime): array {
+  if (!is_array($raw)) return [];
+  if (strncmp($threadId, 'contact:', 8) === 0)      $prefix = 'contact/' . strtoupper(substr($threadId, 8)) . '/';
+  elseif (strncmp($threadId, 'chat:', 5) === 0)     $prefix = substr($threadId, 5) . '/';
+  else return [];
+  $out = [];
+  foreach ($raw as $a) {
+    if (!is_array($a)) continue;
+    $path = str_replace('\\', '/', trim((string)($a['path'] ?? '')));
+    if ($path === '' || strpos($path, '..') !== false) continue;
+    if (strncmp($path, $prefix, strlen($prefix)) !== 0) continue;
+    $mime = strtolower(trim((string)($a['mime'] ?? '')));
+    if ($mime !== '' && !in_array($mime, $allowedMime, true)) continue;
+    $out[] = ['path' => $path, 'name' => mb_substr(trim((string)($a['name'] ?? 'file')), 0, 200), 'mime' => $mime, 'size' => (int)($a['size'] ?? 0)];
+    if (count($out) >= 10) break;
+  }
+  return $out;
+}
+
 // ── action=list ──────────────────────────────────────────────────────────────
 if ($action === 'list') {
   $p = conv_auth(); $actor = conv_actor($p); $db = hm_db();
@@ -173,9 +207,14 @@ if ($action === 'reply') {
   $threadId = trim((string)($body['thread_id'] ?? ''));
   $message  = trim((string)($body['message'] ?? ''));
   if ($threadId === '') hm_err('missing thread_id', 400, 'missing');
-  if ($message === '')  hm_err('empty message', 400, 'empty');
   if (mb_strlen($message) > 4000) $message = mb_substr($message, 0, 4000);
   conv_require_access($db, $threadId, $p, $actor);
+
+  // Optional attachments (Phase 1) — validated + scoped to THIS conversation's own
+  // storage folder (contact/<CODE>/… or <bookingId>/…), same MIME allow-list as chat.php.
+  $CONV_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+  $atts = conv_clean_attachments($body['attachments'] ?? null, $threadId, $CONV_MIME);
+  if ($message === '' && !$atts) hm_err('empty message', 400, 'empty');   // text OR ≥1 valid attachment
 
   // Contact Chat thread → reuse the shared reply core (identical customer behavior).
   if (strncmp($threadId, 'contact:', 8) === 0) {
@@ -187,9 +226,9 @@ if ($action === 'reply') {
     } catch (Throwable $e) { hm_log_error('conv reply lookup failed', ['err' => $e->getMessage()]); hm_err('server error', 500, 'server'); }
     if (!$row) hm_err('conversation not found', 404, 'not_found');
     try {
-      $r = cc_do_admin_reply($db, $cfg, $row, $code, $message, $RETENTION_DAYS, $ACTIVE_WINDOW, $SITE_URL, $MAILBOX, $HM_EMAIL_READY);
+      $r = cc_do_admin_reply($db, $cfg, $row, $code, $message, $RETENTION_DAYS, $ACTIVE_WINDOW, $SITE_URL, $MAILBOX, $HM_EMAIL_READY, $atts);
     } catch (Throwable $e) { hm_log_error('conv contact reply failed', ['err' => $e->getMessage()]); hm_err('server error', 500, 'server'); }
-    conv_audit($db, 'reply', $threadId, $actor, ['type' => 'contact']);
+    conv_audit($db, 'reply', $threadId, $actor, ['type' => 'contact', 'atts' => count($atts)]);
     hm_ok(['id' => 'ok', 'emailed' => $r['emailed'], 'notify' => $r['notify']]);
   }
 
@@ -212,6 +251,8 @@ if ($action === 'reply') {
     $uuid   = hm_uuid4();
     $mid    = '<chat-' . $uuid . '@hello-moving.com>';
     $labels = ['outbound' => true, 'chat' => true, 'ref' => $ref, 'staff_id' => $actor['uid']];
+    if ($atts) $labels['attachments'] = $atts;
+    $bodyOut = $message !== '' ? $message : ($atts ? '[' . count($atts) . '件の添付ファイルを送信しました]' : '');
     try {
       $st = $db->prepare(
         'INSERT INTO inbox_messages
@@ -221,16 +262,122 @@ if ($action === 'reply') {
       );
       $st->execute([
         $uuid, 'Hello Moving', 'Hello Moving', $custEmail,
-        'チャット' . ($ref ? '（予約番号 ' . $ref . '）' : ''), $message, $message,
+        'チャット' . ($ref ? '（予約番号 ' . $ref . '）' : ''), $bodyOut, $bodyOut,
         $bookingId, $MAILBOX, $mid, $threadId, json_encode($labels, JSON_UNESCAPED_UNICODE),
       ]);
       hm_cache_invalidate_table('inbox_messages');
     } catch (Throwable $e) { hm_log_error('conv booking reply failed', ['err' => $e->getMessage()]); hm_err('server error', 500, 'server'); }
-    conv_audit($db, 'reply', $threadId, $actor, ['type' => 'booking']);
+    conv_audit($db, 'reply', $threadId, $actor, ['type' => 'booking', 'atts' => count($atts)]);
     hm_ok(['id' => $mid]);
   }
 
   hm_err('reply not supported for this conversation type', 400, 'unsupported');
+}
+
+// ── action=assign (full-staff only) ──────────────────────────────────────────
+// Assignment/reassignment is an admin/manager action — workers cannot self-assign.
+if ($action === 'assign') {
+  $p = conv_auth(); $actor = conv_actor($p); $db = hm_db();
+  if (!conv_is_full($p)) conv_forbid('assign_role');
+  $threadId = trim((string)($body['thread_id'] ?? ''));
+  $assignee = strtolower(trim((string)($body['assignee'] ?? '')));
+  if ($threadId === '') hm_err('missing thread_id', 400, 'missing');
+  try {
+    $st = $db->prepare('UPDATE inbox_messages SET assignee = ? WHERE thread_id = ?');
+    $st->execute([$assignee !== '' ? $assignee : null, $threadId]);
+    hm_cache_invalidate_table('inbox_messages');
+  } catch (Throwable $e) { hm_log_error('conv assign failed', ['err' => $e->getMessage()]); hm_err('server error', 500, 'server'); }
+  conv_audit($db, $assignee !== '' ? 'assign' : 'unassign', $threadId, $actor, ['assignee' => $assignee]);
+  hm_ok(['assignee' => $assignee]);
+}
+
+// ── action=set-status / set-archived — conversation operational state ─────────
+// Real columns (never touch labels). Workers may set these on THEIR assigned
+// conversations (D3); admin/manager on any.
+if ($action === 'set-status') {
+  $p = conv_auth(); $actor = conv_actor($p); $db = hm_db();
+  $threadId = trim((string)($body['thread_id'] ?? ''));
+  $status   = strtolower(trim((string)($body['status'] ?? 'open')));
+  if ($threadId === '') hm_err('missing thread_id', 400, 'missing');
+  if (!in_array($status, ['open', 'pending', 'waiting', 'resolved', 'closed'], true)) $status = 'open';
+  conv_require_access($db, $threadId, $p, $actor);
+  try {
+    $st = $db->prepare('UPDATE inbox_messages SET status = ? WHERE thread_id = ?');
+    $st->execute([$status, $threadId]);
+    hm_cache_invalidate_table('inbox_messages');
+  } catch (Throwable $e) { hm_log_error('conv set-status failed', ['err' => $e->getMessage()]); hm_err('server error', 500, 'server'); }
+  conv_audit($db, 'status', $threadId, $actor, ['status' => $status]);
+  hm_ok(['status' => $status]);
+}
+if ($action === 'set-archived') {
+  $p = conv_auth(); $actor = conv_actor($p); $db = hm_db();
+  $threadId = trim((string)($body['thread_id'] ?? ''));
+  $archived = !empty($body['archived']) ? 1 : 0;
+  if ($threadId === '') hm_err('missing thread_id', 400, 'missing');
+  conv_require_access($db, $threadId, $p, $actor);
+  try {
+    $st = $db->prepare('UPDATE inbox_messages SET archived = ? WHERE thread_id = ?');
+    $st->execute([$archived, $threadId]);
+    hm_cache_invalidate_table('inbox_messages');
+  } catch (Throwable $e) { hm_log_error('conv set-archived failed', ['err' => $e->getMessage()]); hm_err('server error', 500, 'server'); }
+  conv_audit($db, $archived ? 'archive' : 'unarchive', $threadId, $actor, []);
+  hm_ok(['archived' => (bool)$archived]);
+}
+
+// ── action=set-priority — stored on the anchor (oldest) row's labels (RMW) ────
+if ($action === 'set-priority') {
+  $p = conv_auth(); $actor = conv_actor($p); $db = hm_db();
+  $threadId = trim((string)($body['thread_id'] ?? ''));
+  $priority = strtolower(trim((string)($body['priority'] ?? 'normal')));
+  if ($threadId === '') hm_err('missing thread_id', 400, 'missing');
+  conv_require_access($db, $threadId, $p, $actor);
+  $anchor = conv_anchor_row($db, $threadId);
+  if (!$anchor) hm_err('conversation not found', 404, 'not_found');
+  $lb = $anchor['labels'];
+  if ($priority === 'high') $lb['priority'] = 'high'; else unset($lb['priority']);
+  try {
+    $st = $db->prepare('UPDATE inbox_messages SET labels = ? WHERE id = ?');
+    $st->execute([json_encode($lb, JSON_UNESCAPED_UNICODE), $anchor['id']]);
+    hm_cache_invalidate_table('inbox_messages');
+  } catch (Throwable $e) { hm_log_error('conv set-priority failed', ['err' => $e->getMessage()]); hm_err('server error', 500, 'server'); }
+  conv_audit($db, 'priority', $threadId, $actor, ['priority' => $priority]);
+  hm_ok(['priority' => $priority === 'high' ? 'high' : 'normal']);
+}
+
+// ── action=quote — persist labels.quote (anchor row) + agreed_price (booking) ─
+// Reuses the EXISTING labels.quote model (admin.html Inbox) + the bookings.agreed_price
+// column. The quote EMAIL itself is sent separately by the client via send-email.php
+// (the existing email mechanism) — this endpoint only owns the durable data.
+if ($action === 'quote') {
+  $p = conv_auth(); $actor = conv_actor($p); $db = hm_db();
+  $threadId = trim((string)($body['thread_id'] ?? ''));
+  if ($threadId === '') hm_err('missing thread_id', 400, 'missing');
+  conv_require_access($db, $threadId, $p, $actor);
+  $price = (int)round((float)($body['price'] ?? 0));
+  if ($price <= 0) hm_err('invalid price', 400, 'bad_price');
+  $quote = [
+    'price'    => $price,
+    'expiry'   => trim((string)($body['expiry'] ?? '')),
+    'terms'    => mb_substr(trim((string)($body['terms'] ?? '')), 0, 2000),
+    'quotedAt' => gmdate('c'),
+    'by'       => $actor['email'],
+  ];
+  $anchor = conv_anchor_row($db, $threadId);
+  if (!$anchor) hm_err('conversation not found', 404, 'not_found');
+  $lb = $anchor['labels']; $lb['quote'] = $quote;
+  try {
+    $db->prepare('UPDATE inbox_messages SET labels = ? WHERE id = ?')
+       ->execute([json_encode($lb, JSON_UNESCAPED_UNICODE), $anchor['id']]);
+    // agreed_price on the booking (chat: threads only). NULL/absent bookings are skipped.
+    if (strncmp($threadId, 'chat:', 5) === 0) {
+      $bookingId = substr($threadId, 5);
+      $db->prepare('UPDATE bookings SET agreed_price = ? WHERE id = ?')->execute([$price, $bookingId]);
+    }
+    hm_cache_invalidate_table('inbox_messages');
+    hm_cache_invalidate_table('bookings');
+  } catch (Throwable $e) { hm_log_error('conv quote failed', ['err' => $e->getMessage()]); hm_err('server error', 500, 'server'); }
+  conv_audit($db, 'quote', $threadId, $actor, ['price' => $price]);
+  hm_ok(['quote' => $quote]);
 }
 
 // ── action=mark-read ─────────────────────────────────────────────────────────

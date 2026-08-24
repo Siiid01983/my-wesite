@@ -23,11 +23,16 @@ if (!function_exists('cc_thread')) {
 
 if (!function_exists('cc_insert_message')) {
   // Insert one message row into the conversation's thread. $out = admin/company.
+  // $attachments (optional, Phase 1) is an already-VALIDATED list of
+  // {path,name,mime,size} stored in the EXISTING labels.attachments JSON — the same
+  // no-migration pattern chat.php uses for booking-chat media.
   function cc_insert_message(PDO $db, string $code, string $category, string $name,
-                             string $email, string $body, bool $out, string $mailbox): string {
+                             string $email, string $body, bool $out, string $mailbox,
+                             array $attachments = []): string {
     $mid    = '<contact-' . hm_uuid4() . '@hello-moving.com>';
     $labels = ['contact' => true, 'cid' => $code, 'category' => $category];
     if ($out) { $labels['outbound'] = true; $labels['chat'] = true; }
+    if ($attachments) $labels['attachments'] = $attachments;
     $st = $db->prepare(
       'INSERT INTO inbox_messages
          (id, sender, sender_name, email, subject, body, body_text, mailbox,
@@ -44,6 +49,54 @@ if (!function_exists('cc_insert_message')) {
   }
 }
 
+if (!function_exists('cc_clean_attachments')) {
+  // Validate a staff-supplied attachment list for a Contact Chat reply. Mirrors
+  // chat.php::chat_clean_attachments EXACTLY (same MIME allow-list, same traversal
+  // guard, same 10-item cap) but scopes the path to THIS conversation's own folder
+  // ('contact/<CODE>/…') so a reply can never reference another conversation's or an
+  // arbitrary file. Returns the sanitised list to persist in labels.attachments.
+  function cc_clean_attachments($raw, string $code, array $allowedMime): array {
+    if (!is_array($raw)) return [];
+    $prefix = 'contact/' . $code . '/';
+    $out = [];
+    foreach ($raw as $a) {
+      if (!is_array($a)) continue;
+      $path = str_replace('\\', '/', trim((string)($a['path'] ?? '')));
+      if ($path === '' || strpos($path, '..') !== false) continue;
+      if (strncmp($path, $prefix, strlen($prefix)) !== 0) continue;   // must be THIS conversation's file
+      $mime = strtolower(trim((string)($a['mime'] ?? '')));
+      if ($mime !== '' && !in_array($mime, $allowedMime, true)) continue;
+      $out[] = [
+        'path' => $path,
+        'name' => mb_substr(trim((string)($a['name'] ?? 'file')), 0, 200),
+        'mime' => $mime,
+        'size' => (int)($a['size'] ?? 0),
+      ];
+      if (count($out) >= 10) break;
+    }
+    return $out;
+  }
+}
+
+if (!function_exists('cc_sign_url')) {
+  // Short-lived HMAC-signed read URL for a private `chat`-bucket file — identical
+  // scheme to storage.php's `sign`/`get`, so customers (and Ops) can view Contact
+  // Chat attachments without a public bucket. Same secret, same signature string.
+  function cc_storage_url(): string {
+    $https  = (($_SERVER['HTTPS'] ?? '') === 'on') || (($_SERVER['SERVER_PORT'] ?? '') == 443);
+    $scheme = $https ? 'https' : 'http';
+    $dir    = rtrim(str_replace('\\', '/', dirname((string)($_SERVER['SCRIPT_NAME'] ?? '/hm-api/contact-chat.php'))), '/');
+    return $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . $dir . '/storage.php';
+  }
+  function cc_sign_url(string $path, string $secret, int $ttl = 300): string {
+    $bucket = 'chat';
+    $exp = time() + $ttl;
+    $sig = hash_hmac('sha256', "$bucket/$path:$exp", $secret);
+    return cc_storage_url() . '?action=get&bucket=' . rawurlencode($bucket)
+         . '&path=' . rawurlencode($path) . '&exp=' . $exp . '&sig=' . $sig;
+  }
+}
+
 if (!function_exists('cc_do_admin_reply')) {
   // Shared reply core — a staff company reply into a Contact Chat thread. Byte-for-
   // byte the behavior action=admin-reply used:
@@ -57,9 +110,12 @@ if (!function_exists('cc_do_admin_reply')) {
   // a DB error (caller maps to 500).
   function cc_do_admin_reply(PDO $db, array $cfg, array $row, string $code, string $message,
                              int $retentionDays, int $activeWindow, string $siteUrl,
-                             string $mailbox, bool $emailReady): array {
+                             string $mailbox, bool $emailReady, array $attachments = []): array {
     $category = (string)($row['category'] ?? '');
-    cc_insert_message($db, $code, $category, 'Hello Moving', (string)$row['email'], $message, true, $mailbox);
+    // Attachment-only reply → a placeholder body so the admin Inbox / thread list is
+    // never blank (mirrors chat.php); the display layer hides this text.
+    $body = $message !== '' ? $message : ($attachments ? '[' . count($attachments) . '件の添付ファイルを送信しました]' : '');
+    cc_insert_message($db, $code, $category, 'Hello Moving', (string)$row['email'], $body, true, $mailbox, $attachments);
     $db->prepare(
       'UPDATE contact_conversations
           SET last_admin_activity = NOW(), updated_at = NOW(),
@@ -74,7 +130,7 @@ if (!function_exists('cc_do_admin_reply')) {
 
     if (!$isActive && $emailReady && class_exists('EmailService')) {
       $acc      = EmailService::account($cfg, 'contact');
-      $bodyText = $message
+      $bodyText = ($message !== '' ? $message : '添付ファイルをお送りしました。チャットからご確認ください。')
         . "\n\n────────────\n"
         . "お問い合わせ番号：{$code}\n"
         . "この番号とご登録のメールアドレスで、いつでもお問い合わせを再開できます。\n{$siteUrl}";

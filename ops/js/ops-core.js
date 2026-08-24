@@ -230,6 +230,8 @@
       // columns are stripped. Display only; surfaced via HMFmt.preferredOptions.
       preferred_start_1: r.preferred_start_1 || e.pref1 || '',
       preferred_start_2: r.preferred_start_2 || e.pref2 || '',
+      // Admin-entered confirmed price (JPY) — used by the Communication Center 見積 form.
+      agreedPrice: (r.agreed_price != null && r.agreed_price !== '') ? Number(r.agreed_price) : null,
     };
   }
   Ops.normalizeBooking = normalizeBooking;
@@ -670,6 +672,66 @@
         details: JSON.stringify(details || {}),
       } });
     },
+    /* ══ Phase 1 — scoped conversation data path (conversations.php) ══════════
+       The Communication Center migrates its conversation reads/writes here so it
+       shares ONE authorization/data model (the same one that will later serve
+       workers). Server-side gates apply on every call; audit is written server-side
+       (actor derived from the token — the client no longer asserts the actor). */
+    convPost: function (action, payload) {
+      return fetch(cfg.base + '/conversations.php?action=' + encodeURIComponent(action), {
+        method: 'POST', headers: headers(true), body: JSON.stringify(payload || {}),
+      }).then(function (r) { return r.text().then(function (t) {
+        var j = null; try { j = JSON.parse(t); } catch (_) {}
+        if (j && j.ok) return { ok: true, data: j.data };
+        return { ok: false, error: (j && j.error && (j.error.message || j.error)) || ('HTTP ' + r.status), status: r.status };
+      }); }).catch(function (e) { return { ok: false, error: (e && e.message) || 'network' }; });
+    },
+    // Conversation LIST (replaces the rest.php inbox read for the Center). Returns
+    // the same row shape the Center already groups by thread_id.
+    convList: function () {
+      return Api.convPost('list', {}).then(function (r) { return { data: (r.ok && Array.isArray(r.data)) ? r.data : [], error: r.ok ? null : { message: r.error } }; });
+    },
+    convReply:    function (threadId, message, attachments) { return Api.convPost('reply', { thread_id: threadId, message: message || '', attachments: attachments || [] }); },
+    convMarkRead: function (threadId) { return Api.convPost('mark-read', { thread_id: threadId }); },
+    convNote:     function (threadId, text) { return Api.convPost('note', { thread_id: threadId, text: text }); },
+    convAssign:   function (threadId, assignee) { return Api.convPost('assign', { thread_id: threadId, assignee: assignee || '' }); },
+    convStatus:   function (threadId, status) { return Api.convPost('set-status', { thread_id: threadId, status: status }); },
+    convArchived: function (threadId, archived) { return Api.convPost('set-archived', { thread_id: threadId, archived: !!archived }); },
+    convPriority: function (threadId, priority) { return Api.convPost('set-priority', { thread_id: threadId, priority: priority }); },
+    convQuote:    function (threadId, q) { return Api.convPost('quote', { thread_id: threadId, price: q.price, expiry: q.expiry || '', terms: q.terms || '' }); },
+
+    // Outbound email via the EXISTING send-email.php (used for quote emails and for
+    // replying to email-only threads). log_inbox threads the reply back into the
+    // conversation. No second email mechanism is introduced.
+    sendEmail: function (params) {
+      return fetch(cfg.base + '/send-email.php', { method: 'POST', headers: headers(true), body: JSON.stringify(params || {}) })
+        .then(function (r) { return r.text().then(function (t) {
+          var j = null; try { j = JSON.parse(t); } catch (_) {}
+          if (j && (j.ok || j.messageId)) return { ok: true, data: j };
+          return { ok: false, error: (j && (j.error && (j.error.message || j.error))) || ('HTTP ' + r.status) };
+        }); }).catch(function (e) { return { ok: false, error: (e && e.message) || 'network' }; });
+    },
+
+    // Generalized private-bucket upload (chat bucket). pathPrefix scopes the file to
+    // a conversation folder: '<bookingId>' for booking chat, 'contact/<CODE>' for
+    // Contact Chat. Mirrors uploadChatFile (kept for the legacy chat pages).
+    uploadStorageFile: function (pathPrefix, file) {
+      var safe = String(file.name || 'file').replace(/[^\w.\-]+/g, '_').slice(-80) || 'file';
+      var path = String(pathPrefix).replace(/\/+$/, '') + '/' + Date.now() + '-' + safe;
+      var fd = new FormData();
+      fd.append('bucket', 'chat'); fd.append('path', path); fd.append('file', file);
+      var h = {};
+      if (cfg.key) h['X-API-KEY'] = cfg.key;
+      if (window.__HM_ADMIN_TOKEN) h['X-ADMIN-TOKEN'] = window.__HM_ADMIN_TOKEN;
+      return fetch(cfg.base + '/storage.php?action=upload', { method: 'POST', headers: h, body: fd })
+        .then(function (r) { return r.json().catch(function () { return null; }); })
+        .then(function (j) {
+          if (!j || !j.ok || !j.data) return { ok: false, error: (j && j.error && (j.error.message || j.error)) || 'upload failed' };
+          return { ok: true, path: j.data.path, mime: j.data.mime || file.type || '', size: j.data.size || file.size || 0, name: file.name || 'file' };
+        })
+        .catch(function () { return { ok: false, error: 'network' }; });
+    },
+
     // Staff accounts for the assignment picker (admin-users.php list_users — token,
     // available to admin AND manager). Read-only; degrades to [] on any error.
     listStaff: function () {

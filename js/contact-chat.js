@@ -310,6 +310,19 @@
     return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日（' + dow + '）';
   }
 
+  // Attachment markup — image thumbnail (opens full) or a file chip. URLs are
+  // short-lived server-signed (contact-chat.php cc_sign_url); no client secret.
+  function _attHtml(atts) {
+    if (!atts || !atts.length) return '';
+    return '<div class="hmcc-atts" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">' + atts.map(function (a) {
+      if (a && a.deleted) return '<span style="font-size:12px;color:#8a8f86;font-style:italic">🗑 ' + _esc(a.name || 'file') + '</span>';
+      if (/^image\//.test(a.mime || '')) {
+        return '<a href="' + _esc(a.url) + '" target="_blank" rel="noopener"><img src="' + _esc(a.url) + '" alt="' + _esc(a.name || '') + '" style="max-width:180px;max-height:180px;border-radius:8px;display:block" /></a>';
+      }
+      return '<a href="' + _esc(a.url) + '" target="_blank" rel="noopener" download style="display:inline-flex;align-items:center;gap:5px;padding:6px 10px;background:rgba(0,0,0,.05);border-radius:8px;font-size:12.5px;text-decoration:none;color:inherit">📎 ' + _esc(a.name || 'file') + '</a>';
+    }).join('') + '</div>';
+  }
+
   function _renderStream(messages) {
     var stream = document.getElementById('hmccStream');
     if (!stream) return;
@@ -327,9 +340,11 @@
       if (day && day !== lastDay) { html += '<div class="hmcc-day">' + _esc(day) + '</div>'; lastDay = day; }
       var me = m.sender_type === 'customer';
       var name = me ? '' : '<div class="hmcc-name">' + _esc(m.sender_name || 'Hello Moving') + '</div>';
+      var atts = _attHtml(m.attachments);
+      // Skip an empty text bubble when the message is attachment-only.
+      var bubble = (m.text && m.text.trim()) ? '<div class="hmcc-b">' + _esc(m.text) + '</div>' : '';
       html += '<div class="hmcc-row ' + (me ? 'me' : 'them') + '">' +
-                '<div>' + name +
-                  '<div class="hmcc-b">' + _esc(m.text) + '</div>' +
+                '<div>' + name + bubble + atts +
                   '<div class="hmcc-meta">' + _fmtTime(m.created_at) + '</div>' +
                 '</div></div>';
     });
