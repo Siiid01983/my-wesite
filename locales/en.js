@@ -38,6 +38,11 @@ window.LOCALES.en = {
   "comm.note.hint": "Internal notes are never shown to the customer", "comm.note.saved": "Internal note saved",
   "comm.note.badge": "Internal note", "comm.customer": "Customer", "comm.staff": "Staff",
   "comm.markedRead": "Marked as read",
+  "comm.q.title": "Quote", "comm.q.price": "Quote amount (JPY, tax incl.)", "comm.q.expiry": "Valid until",
+  "comm.q.terms": "Terms / notes (optional)", "comm.q.termsPh": "e.g. includes furniture assembly",
+  "comm.q.save": "Save", "comm.q.send": "Send quote", "comm.q.saved": "Quote saved",
+  "comm.q.sent": "Quote sent", "comm.q.badPrice": "Enter a valid amount",
+  "comm.q.emailFailed": "Failed to send email", "comm.q.prev": "Previous quote: ¥{yen}",
 
   /* login / session / chrome */
   "login.title": "Operations", "login.subtitle": "Hello Moving Staff App",

@@ -37,6 +37,11 @@ window.LOCALES.ja = {
   "comm.note.hint": "内部メモはお客様には表示されません", "comm.note.saved": "内部メモを保存しました",
   "comm.note.badge": "内部メモ", "comm.customer": "お客様", "comm.staff": "スタッフ",
   "comm.markedRead": "既読にしました",
+  "comm.q.title": "お見積り", "comm.q.price": "お見積金額（円・税込）", "comm.q.expiry": "有効期限",
+  "comm.q.terms": "条件・備考（任意）", "comm.q.termsPh": "例：家具の分解・組立を含みます",
+  "comm.q.save": "保存", "comm.q.send": "見積を送信", "comm.q.saved": "見積りを保存しました",
+  "comm.q.sent": "見積りを送信しました", "comm.q.badPrice": "金額を正しく入力してください",
+  "comm.q.emailFailed": "メール送信に失敗しました", "comm.q.prev": "前回の見積り：{yen} 円",
 
   /* login / session / chrome */
   "login.title": "オペレーション", "login.subtitle": "Hello Moving 業務アプリ",

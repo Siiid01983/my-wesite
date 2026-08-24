@@ -94,14 +94,18 @@
 
       // Conversation-level operational state = the latest NON-internal row (so an
       // internal note never flips status/archive; a new CUSTOMER message reopens).
-      var assignee = '', convStatus = 'open', archived = false;
+      var assignee = '', convStatus = 'open', archived = false, lastMessageId = '', mailbox = '';
       for (var i = grp.length - 1; i >= 0; i--) {
         if (parseLabels(grp[i]).internal) continue;
-        assignee   = String(grp[i].assignee || '');
-        convStatus = String(grp[i].status || 'open');
-        archived   = (grp[i].archived === 1 || grp[i].archived === true);
+        assignee      = String(grp[i].assignee || '');
+        convStatus    = String(grp[i].status || 'open');
+        archived      = (grp[i].archived === 1 || grp[i].archived === true);
+        lastMessageId = String(grp[i].message_id || '');
         break;
       }
+      // Mailbox (for email-thread from_account) + any saved quote on the thread.
+      var quote = null;
+      grp.forEach(function (m) { var l = parseLabels(m); if (!mailbox && m.mailbox) mailbox = String(m.mailbox); if (l.quote) quote = l.quote; });
 
       var name = (bk && bk.name) || '';
       if (!name) { for (var j = 0; j < msgs.length; j++) { if (!msgs[j].out && !msgs[j].internal) { name = msgs[j].name; break; } } }
@@ -125,16 +129,19 @@
         ref: ref || (bk && bk.ref) || '',
         name: name || custEmail || T('comm.customer'),
         email: custEmail || (bk && bk.email) || '',
-        booking: bk, hasQuote: hasQuote,
+        booking: bk, hasQuote: hasQuote, quote: quote,
         messages: msgs,
         anchorId: anchor.id || '', anchorLabels: parseLabels(anchor),
         assignee: assignee, convStatus: convStatus, archived: archived,
         priority: (parseLabels(anchor).priority) || 'normal',
         lastText: last.deleted ? '（削除されたメッセージ）' : (last.text || ''),
-        lastTs: last.ts,
+        lastTs: last.ts, lastMessageId: lastMessageId, mailbox: mailbox,
         unread: visible.filter(function (m) { return !m.out && !m.read; }).length,
-        canReply: isContact ? !!cid : !!bookingId,   // email-only threads: read-only in OPS
-        canAttach: !!bookingId && !isContact,
+        // Phase 1: contact + booking reply via conversations.php; email-only threads
+        // reply via send-email.php (needs the customer email).
+        canReply: isContact ? !!cid : (bookingId ? true : !!(custEmail || (bk && bk.email))),
+        canAttach: (!!bookingId && !isContact) || (isContact && !!cid),   // contact now supports attachments
+        isEmail: type === 'email',
       };
     });
 
@@ -344,7 +351,29 @@
           '<button class="ops-btn cc-mini" id="cc-note-add">' + T('comm.note.add') + '</button></div>' +
       '</div>';
 
-    return '<div class="mc-scroll">' + mgmt + rows + '</div>';
+    // ── 見積 (quote) — booking-scoped: labels.quote + bookings.agreed_price ────
+    var quoteBlock = '';
+    if (c.bookingId) {
+      var q = c.quote || {};
+      var agreed = (c.booking && (c.booking.agreedPrice != null)) ? c.booking.agreedPrice : (q.price || '');
+      quoteBlock =
+        '<div class="mc-sec">' + T('comm.q.title') + '</div>' +
+        '<div class="mc-card cc-quote">' +
+          (q && q.price ? '<div class="cc-q-prev">' + T('comm.q.prev', { yen: Number(q.price).toLocaleString('ja-JP') }) + '</div>' : '') +
+          '<label class="cc-ctl-k">' + T('comm.q.price') + '</label>' +
+          '<input class="cc-select" id="cc-q-price" type="number" min="0" step="500" value="' + U.esc(agreed) + '" placeholder="例：35000" />' +
+          '<label class="cc-ctl-k" style="margin-top:8px;display:block">' + T('comm.q.expiry') + '</label>' +
+          '<input class="cc-select" id="cc-q-expiry" type="date" value="' + U.esc(q.expiry || '') + '" />' +
+          '<label class="cc-ctl-k" style="margin-top:8px;display:block">' + T('comm.q.terms') + '</label>' +
+          '<textarea class="cc-note-input" id="cc-q-terms" rows="2" placeholder="' + U.esc(T('comm.q.termsPh')) + '">' + U.esc(q.terms || '') + '</textarea>' +
+          '<div class="cc-ctl-btns" style="margin-top:10px">' +
+            '<button class="ops-btn ghost cc-mini" id="cc-q-save">' + T('comm.q.save') + '</button>' +
+            '<button class="ops-btn cc-mini" id="cc-q-send">' + T('comm.q.send') + '</button>' +
+          '</div>' +
+        '</div>';
+    }
+
+    return '<div class="mc-scroll">' + mgmt + quoteBlock + rows + '</div>';
   }
   function kv(k, v) { return v ? '<div class="mc-kv"><span class="k">' + k + '</span><span class="v">' + U.esc(v) + '</span></div>' : ''; }
   function kvA(k, v) { return '<div class="mc-kv"><span class="k">' + k + '</span><span class="v">' + (v ? U.esc(v) : '—') + '</span></div>'; }
@@ -449,6 +478,8 @@
     var pr = scr.querySelector('#cc-prio'); if (pr) pr.querySelectorAll('[data-p]').forEach(function (b) { b.addEventListener('click', function () { doPriority(c, b.getAttribute('data-p')); }); });
     var ar = scr.querySelector('#cc-archive'); if (ar) ar.addEventListener('click', function () { doArchive(c, !c.archived); });
     var nb = scr.querySelector('#cc-note-add'); if (nb) nb.addEventListener('click', function () { doNote(c); });
+    var qs = scr.querySelector('#cc-q-save'); if (qs) qs.addEventListener('click', function () { doQuote(c, false); });
+    var qsnd = scr.querySelector('#cc-q-send'); if (qsnd) qsnd.addEventListener('click', function () { doQuote(c, true); });
   }
 
   function rerenderOpen() {
@@ -463,7 +494,10 @@
     if (state.detailTab === 'chat' && atBottom) scrollBottom();
   }
 
-  /* ── Reply (contact-chat.php admin-reply OR chat.php via Api.sendChat) ────── */
+  /* ── Reply — Phase 1 unified path ──────────────────────────────────────────
+     contact + booking → conversations.php (Api.convReply, attachments supported);
+     email-only threads → send-email.php (Api.sendEmail, threaded via log_inbox).
+     Sender identity + audit are server-side; the client no longer asserts them. */
   function doSend(c) {
     var input = document.getElementById('cc-input'), btn = document.getElementById('cc-send');
     var text = (input && input.value || '').trim();
@@ -478,29 +512,45 @@
       if (input) { input.value = ''; input.style.height = 'auto'; }
       state.pending = []; renderPending();
       var now = new Date().toISOString();
-      c.messages.push({ id: 'tmp-' + now, internal: false, out: true, name: 'Hello Moving', text: text, attachments: atts, deleted: false, channel: 'chat', ts: now, read: true });
+      c.messages.push({ id: 'tmp-' + now, internal: false, out: true, name: 'Hello Moving', text: text, attachments: atts, deleted: false, channel: (c.isEmail ? 'email' : 'chat'), ts: now, read: true });
       c.lastText = text || '（添付ファイル）'; c.lastTs = now; c.convStatus = 'open';
       var scr = document.getElementById('cc-scroll'); if (scr) { scr.innerHTML = bubbles(c); scrollBottom(); hydrateAtts(scr); }
-      Api.auditAction('reply', c.key, { type: c.type, ref: c.ref, cid: c.cid }, state.me);
       UI.toast(T('comm.replySent'));
     };
 
-    if (c.isContact) {
-      Api.contactReply(c.cid, text).then(function (res) { done(res.ok, res.error); });
+    if (c.isEmail) {
+      // Reply to an inbound email thread via the existing send-email.php flow.
+      var account = mailboxToAccount(c.mailbox);
+      var subject = 'Re: お問い合わせ';
+      Api.sendEmail({
+        to: c.email, from_account: account, subject: subject, message: text,
+        in_reply_to: c.lastMessageId || '', thread_id: c.threadId || '', log_inbox: true,
+      }).then(function (res) { done(res.ok, res.error); });
     } else {
-      Api.sendChat(c.bookingId, text, c.ref, c.email, atts).then(function (res) { done(res.ok, res.error && (res.error.message || res.error)); });
+      Api.convReply(c.threadId, text, atts).then(function (res) { done(res.ok, res.error); });
     }
+  }
+
+  // Derive the send-email.php from_account from the mailbox that received the thread.
+  function mailboxToAccount(mbox) {
+    var m = String(mbox || '').toLowerCase();
+    if (m.indexOf('support@') === 0 || m.indexOf('support@') > 0) return 'support';
+    if (m.indexOf('contact@') === 0 || m.indexOf('contact@') > 0) return 'contact';
+    return 'booking';
   }
 
   function handleFiles(c, files) {
     if (!files || !c.canAttach) return;
+    // Scope uploads to THIS conversation's folder: booking → '<bookingId>',
+    // contact → 'contact/<CODE>'. Server re-validates the path prefix.
+    var prefix = c.isContact ? ('contact/' + c.cid) : c.bookingId;
     Array.prototype.slice.call(files).forEach(function (f0) {
       if (state.pending.length >= 10) { UI.toast(T('chat.sendFailed')); return; }
       var tok = { name: f0.name, uploading: true };
       state.pending.push(tok); renderPending();
       Promise.resolve(window.HMImageCompress ? HMImageCompress.process(f0) : f0).then(function (f) {
         tok.name = f.name; renderPending();
-        Api.uploadChatFile(c.bookingId, f).then(function (res) {
+        Api.uploadStorageFile(prefix, f).then(function (res) {
           var i = state.pending.indexOf(tok);
           if (!res.ok) { if (i >= 0) state.pending.splice(i, 1); renderPending(); UI.toast(T('chat.sendFailed') + '：' + (res.error || '')); return; }
           if (i >= 0) state.pending[i] = { path: res.path, name: res.name, mime: res.mime, size: res.size };
@@ -518,37 +568,33 @@
     host.querySelectorAll('[data-rm]').forEach(function (b) { b.addEventListener('click', function () { state.pending.splice(+b.getAttribute('data-rm'), 1); renderPending(); }); });
   }
 
-  /* ── Management actions (existing columns / labels; each audited) ─────────── */
+  /* ── Management actions — via conversations.php (server-side gate + audit) ── */
   function doAssign(c, who) {
-    Api.setAssignee(c, who).then(function (res) {
-      if (res.error) { UI.toast(T('common.saveFailed')); return; }
-      c.assignee = who || '';
-      Api.auditAction(who ? 'assign' : 'unassign', c.key, { assignee: who }, state.me);
+    Api.convAssign(c.threadId, who).then(function (res) {
+      if (!res.ok) { UI.toast(T('common.saveFailed')); return; }
+      c.assignee = (who || '').toLowerCase();
       UI.toast(T('common.saved')); rerenderOpen();
     });
   }
   function doStatus(c, st) {
-    Api.setConvStatus(c, st).then(function (res) {
-      if (res.error) { UI.toast(T('common.saveFailed')); return; }
+    Api.convStatus(c.threadId, st).then(function (res) {
+      if (!res.ok) { UI.toast(T('common.saveFailed')); return; }
       c.convStatus = st;
-      Api.auditAction('status', c.key, { status: st }, state.me);
       UI.toast(T('common.saved')); rerenderOpen();
     });
   }
   function doPriority(c, p) {
-    Api.setPriority(c, p, c.anchorLabels).then(function (res) {
-      if (res.error) { UI.toast(T('common.saveFailed')); return; }
+    Api.convPriority(c.threadId, p).then(function (res) {
+      if (!res.ok) { UI.toast(T('common.saveFailed')); return; }
       c.priority = p; c.anchorLabels = Object.assign({}, c.anchorLabels, p === 'high' ? { priority: 'high' } : {});
       if (p !== 'high') delete c.anchorLabels.priority;
-      Api.auditAction('priority', c.key, { priority: p }, state.me);
       UI.toast(T('common.saved')); rerenderOpen();
     });
   }
   function doArchive(c, on) {
-    Api.setArchived(c, on).then(function (res) {
-      if (res.error) { UI.toast(T('common.saveFailed')); return; }
+    Api.convArchived(c.threadId, on).then(function (res) {
+      if (!res.ok) { UI.toast(T('common.saveFailed')); return; }
       c.archived = !!on;
-      Api.auditAction(on ? 'archive' : 'unarchive', c.key, {}, state.me);
       UI.toast(T('common.saved')); rerenderOpen();
     });
   }
@@ -556,25 +602,61 @@
     var ta = document.getElementById('cc-note'); var text = (ta && ta.value || '').trim();
     if (!text) return;
     var btn = document.getElementById('cc-note-add'); if (btn) btn.disabled = true;
-    Api.addInternalNote(c, text, state.me).then(function (res) {
+    Api.convNote(c.threadId, text).then(function (res) {
       if (btn) btn.disabled = false;
       if (!res.ok) { UI.toast(T('common.saveFailed')); return; }
       if (ta) ta.value = '';
-      c.messages.push({ id: res.row.id, internal: true, out: false, name: state.me || T('comm.staff'), text: text, attachments: [], deleted: false, channel: 'chat', ts: new Date().toISOString(), read: true });
-      Api.auditAction('internal_note', c.key, { len: text.length }, state.me);
+      c.messages.push({ id: (res.data && res.data.id) || ('note-' + Date.now()), internal: true, out: false, name: state.me || T('comm.staff'), text: text, attachments: [], deleted: false, channel: 'chat', ts: new Date().toISOString(), read: true });
       UI.toast(T('comm.note.saved'));
     });
   }
 
+  /* ── 見積 (quote) — persist labels.quote + agreed_price, optionally email ──── */
+  function doQuote(c, send) {
+    var priceEl = document.getElementById('cc-q-price');
+    var price = Math.round(Number((priceEl && priceEl.value) || 0));
+    var expiry = (document.getElementById('cc-q-expiry') || {}).value || '';
+    var terms = (document.getElementById('cc-q-terms') || {}).value || '';
+    if (!price || price <= 0) { UI.toast(T('comm.q.badPrice')); return; }
+    var btn = document.getElementById(send ? 'cc-q-send' : 'cc-q-save'); if (btn) btn.disabled = true;
+    Api.convQuote(c.threadId, { price: price, expiry: expiry, terms: terms }).then(function (res) {
+      if (!res.ok) { if (btn) btn.disabled = false; UI.toast(T('common.saveFailed') + (res.error ? '：' + res.error : '')); return; }
+      c.quote = (res.data && res.data.quote) || { price: price, expiry: expiry, terms: terms };
+      if (c.booking) c.booking.agreedPrice = price;
+      if (!send) { if (btn) btn.disabled = false; UI.toast(T('comm.q.saved')); rerenderOpen(); return; }
+      // Send the quote as an email through the existing send-email.php flow.
+      Api.sendEmail({
+        to: c.email, from_account: mailboxToAccount(c.mailbox || 'contact@'),
+        subject: '[Hello Moving] お見積りのご案内' + (c.ref ? '（予約番号 ' + c.ref + '）' : ''),
+        message: quoteEmailText(c, c.quote),
+        booking_id: c.bookingId || '', thread_id: c.threadId || '', log_inbox: true,
+      }).then(function (er) {
+        if (btn) btn.disabled = false;
+        if (!er.ok) { UI.toast(T('comm.q.emailFailed') + (er.error ? '：' + er.error : '')); return; }
+        UI.toast(T('comm.q.sent')); rerenderOpen();
+      });
+    });
+  }
+  // Plain-text quote body (mirrors admin.html inbox quote template).
+  function quoteEmailText(c, q) {
+    var yen = Number(q.price).toLocaleString('ja-JP');
+    var exp = q.expiry ? new Date(q.expiry + 'T00:00:00').toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' }) : '—';
+    var L = [(c.name || 'お客') + ' 様', '', 'お見積りをご案内いたします。', '',
+      '■ お見積り金額：' + yen + ' 円（税込）', '■ 有効期限　　：' + exp];
+    if (q.terms) L.push('■ 条件・備考　：' + q.terms);
+    L.push('', 'ご不明な点がございましたらお気軽にご連絡ください。', 'Hello Moving（ハロームービング）');
+    return L.join('\n');
+  }
+
   function markRead(c) {
     if (!c.unread) return;
-    Api.markThreadRead(c).then(function () { c.messages.forEach(function (m) { m.read = true; }); c.unread = 0; });
+    Api.convMarkRead(c.threadId).then(function () { c.messages.forEach(function (m) { m.read = true; }); c.unread = 0; });
   }
 
   /* ── Load / poll ─────────────────────────────────────────────────────────── */
   function load(initial) {
     if (initial) document.getElementById('ops-content').innerHTML = UI.skeleton(6);
-    return Promise.all([Api.listInbox(), Api.listBookings()]).then(function (r) {
+    return Promise.all([Api.convList(), Api.listBookings()]).then(function (r) {
       if ((r[0].error && !(r[0].data && r[0].data.length)) && (r[1].error && !(r[1].data && r[1].data.length))) {
         state.error = true;
         document.getElementById('ops-content').innerHTML = UI.empty(T('comm.errorTitle'), T('bookings.errorSub'), 'empty');

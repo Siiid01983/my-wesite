@@ -51,16 +51,16 @@ ok(/table:\s*'audit_log'/.test(core), 'auditAction writes to existing audit_log'
 ok(/setPriority:[\s\S]*?filters:\s*\[\{\s*col:\s*'id'/.test(core),
   'setPriority updates labels by anchor row id (no labels clobber)');
 
-/* ── 3. Communication Center reuses existing infra (no new chat system) ──── */
-section('communication.js reuses the existing messaging infrastructure');
+/* ── 3. Communication Center reuses existing infra (Phase 1: conversations.php) ── */
+section('communication.js uses the scoped conversations.php data path');
 const comm = read('ops/js/communication.js');
-ok(/Api\.listInbox\(\)/.test(comm) && /Api\.listBookings\(\)/.test(comm), 'reads via existing listInbox/listBookings');
-ok(/Api\.sendChat\(/.test(comm), 'booking/estimate reply routes through existing Api.sendChat (chat.php)');
-ok(/Api\.contactReply\(/.test(comm), 'contact reply routes through existing contact-chat.php');
-ok(/Api\.addInternalNote\(/.test(comm), 'internal notes supported');
-ok(/Api\.setAssignee\(|Api\.setConvStatus\(|Api\.setArchived\(|Api\.setPriority\(/.test(comm), 'management controls wired');
-ok(/Api\.markThreadRead\(/.test(comm), 'read-state wired');
-ok(/Api\.auditAction\(/.test(comm), 'actions are audited');
+ok(/Api\.convList\(\)/.test(comm) && /Api\.listBookings\(\)/.test(comm), 'reads via conversations.php (convList) + rest bookings context');
+ok(/Api\.convReply\(/.test(comm), 'reply routes through conversations.php (contact + booking)');
+ok(/Api\.sendEmail\(/.test(comm), 'email-only threads reply via existing send-email.php');
+ok(/Api\.convNote\(/.test(comm), 'internal notes via conversations.php');
+ok(/Api\.convAssign\(|Api\.convStatus\(|Api\.convArchived\(|Api\.convPriority\(/.test(comm), 'management controls via conversations.php');
+ok(/Api\.convMarkRead\(/.test(comm), 'read-state via conversations.php');
+ok(!/Api\.auditAction\(/.test(comm), 'client no longer asserts the audit actor (server-side audit now)');
 ['all','unread','contact','estimate','booking','mine','unassigned','active','waiting','resolved','archived']
   .forEach((f) => ok(comm.indexOf("'" + f + "'") >= 0, 'filter present: ' + f));
 

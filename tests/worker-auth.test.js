@@ -86,7 +86,7 @@ ok(/function hm_storage_worker_sign_guard/.test(store), 'worker sign guard defin
 ok(/hm_storage_worker_sign_guard\(\$bucket, \$path\)/.test(store), 'sign action invokes the guard');
 ok(/\(\$p\['role'\]\s*\?\?\s*''\)\s*!==\s*'worker'\)\s*return;/.test(store), 'guard is a no-op for non-worker callers');
 ok(/\$bucket !== 'chat'.*forbidden/s.test(store) || /if \(\$bucket !== 'chat'\)/.test(store), 'workers may sign chat files only');
-ok(/hm_conversation_assignee\(hm_db\(\), 'chat:'/.test(store), 'guard checks the booking chat assignee');
+ok(/hm_conversation_assignee\(hm_db\(\), \$threadId\)/.test(store) && /'chat:'|'contact:'/.test(store), 'guard checks the conversation assignee (chat + contact paths)');
 ok((store.match(/exit\('forbidden'\)/g) || []).length >= 3, 'guard fails closed (403) on any mismatch');
 
 /* ── 8. DRY: shared Contact Chat core, not duplicated ─────────────────────── */
