@@ -53,6 +53,15 @@
     setTimeout(settle, 1200);
   }
 
+  /* Is the element within the initial viewport right now? Read live geometry
+     (getBoundingClientRect) — opacity:0 from `.hm-reveal` does not affect layout,
+     so the rect is accurate the instant after tagging. */
+  function inInitialViewport(el) {
+    var r = el.getBoundingClientRect();
+    var vh = window.innerHeight || document.documentElement.clientHeight || 0;
+    return r.top < vh && r.bottom > 0 && (r.width > 0 || r.height > 0);
+  }
+
   /* Tag one element for reveal (idempotent). `i` = index within its group. */
   function tag(el, effect, i, counterEl) {
     if (el.__hmTagged) return;
@@ -67,6 +76,17 @@
     if (counterEl) el.__hmCounter = counterEl;
 
     if (REDUCED || !io) { el.classList.add('hm-in', 'hm-done'); return; }
+
+    // Above the fold at tag time: reveal in THIS same JS turn (add hm-done so the
+    // opacity:0 resting state is never painted → no visible→hidden flash on warm /
+    // fast paints). Skip the entrance animation but keep the count-up (it only
+    // mutates number text, no opacity change). Below-fold elements fall through to
+    // the IntersectionObserver and keep their scroll-triggered entrance unchanged.
+    if (inInitialViewport(el)) {
+      el.classList.add('hm-in', 'hm-done');
+      if (counterEl) countUp(counterEl);
+      return;
+    }
     io.observe(el);
   }
 
