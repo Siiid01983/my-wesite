@@ -139,7 +139,10 @@ echo "$BODY" | grep -q '"ok":true' && ok "Ops reply sent (message id=$OPS_MID)" 
 
 # 4) Upload an attachment to THIS booking's folder (storage.php upload)
 hdr "5) attachment upload (storage.php)"
-TMPIMG="$(mktemp 2>/dev/null || echo "./ph1_$TS.png")"; TMPIMG="${TMPIMG%.png}.png"
+# Relative CWD path (NOT an absolute /tmp path): a Windows-native curl.exe — common on
+# PATH even inside Git Bash — cannot open @/tmp/... for a multipart file, which silently
+# produced the empty upload response. A relative path resolves for both MSYS and native curl.
+TMPIMG="ph1_${TS}.png"
 # FIX 2 — a GUARANTEED-valid 1x1 PNG via base64 (immune to printf-escape / redirect
 # byte-mangling that produced an invalid image before). Falls back to openssl if the
 # base64 CLI lacks -d.
@@ -148,14 +151,16 @@ printf '%s' "$PNG_B64" | base64 -d > "$TMPIMG" 2>/dev/null \
   || printf '%s' "$PNG_B64" | base64 --decode > "$TMPIMG" 2>/dev/null \
   || printf '%s' "$PNG_B64" | openssl base64 -d -A > "$TMPIMG" 2>/dev/null
 [ -s "$TMPIMG" ] || die "could not generate the PNG test fixture (base64 decode failed)"
+# 2>&1 (not 2>/dev/null): if curl cannot open the file it exits without sending and only
+# prints "Couldn't open file …" to stderr — capture it so the failure is never silent.
 UP=$(curl -sk -A "$UA" ${API_KEY:+-H "X-API-KEY: $API_KEY"} -H "X-ADMIN-TOKEN: $TOKEN" \
-  -F "bucket=chat" -F "path=$APATH" -F "file=@$TMPIMG;type=image/png" --max-time 60 "$BASE/storage.php?action=upload" 2>/dev/null)
+  -F "bucket=chat" -F "path=$APATH" -F "file=@$TMPIMG;type=image/png" --max-time 60 "$BASE/storage.php?action=upload" 2>&1)
 RPATH=$(printf '%s' "$UP" | sed -n 's/.*"path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
 # FIX 3 — success = the server returned a stored path (do NOT require it to equal the
 # requested path; storage.php sanitize_path may normalize it). Use the SERVER-returned
 # path (SENTPATH) for the reply + cleanup so they always reference the real file on disk.
 # On failure the raw $UP body (e.g. a 415 bad_mime) is surfaced for diagnosis.
-if [ -n "$RPATH" ]; then SENTPATH="$RPATH"; ok "attachment uploaded → $SENTPATH"; else SENTPATH="$APATH"; bad "upload failed (no stored path returned): $UP"; fi
+if [ -n "$RPATH" ]; then SENTPATH="$RPATH"; ok "attachment uploaded → $SENTPATH"; else SENTPATH="$APATH"; bad "upload failed — no stored path (storage error OR curl couldn't send the file): $UP"; fi
 
 # 5) Ops reply WITH the attachment
 hdr "6) Ops reply with attachment"
