@@ -815,7 +815,7 @@
         if (!seenSet[m.id]) {
           var who = m.sender_name || m.sender || m.email || 'お客様';
           var preview = (m.body_text || m.body || '').slice(0, 40);
-          if (this.add({ id: 'msg-' + m.id, type: 'message', title: '新着メッセージ', text: who + '：' + preview, link: 'chat.html', ts: Date.parse((m.created_at || '').replace(' ', 'T')) || Date.now() })) added++;
+          if (this.add({ id: 'msg-' + m.id, type: 'message', title: '新着メッセージ', text: who + '：' + preview, link: 'communication.html', ts: Date.parse((m.created_at || '').replace(' ', 'T')) || Date.now() })) added++;
         }
       }, this);
       this._write(this.SEEN_MSG, ids);
