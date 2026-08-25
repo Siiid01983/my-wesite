@@ -54,6 +54,10 @@ code_only(){ local m="$1" url="$2"; shift 2; curl -sk -A "$UA" -o /dev/null -w '
 jget(){ printf '%s' "$BODY" | sed -n 's/.*"'"$1"'"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1; }
 # jnum <key> — first "key":number in BODY
 jnum(){ printf '%s' "$BODY" | sed -n 's/.*"'"$1"'"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1; }
+# jesc <string> — JSON-escape a value (backslash + double-quote) so a credential that
+# contains " or \ can't corrupt the request body. Matches the UI's JSON.stringify;
+# the shell-interpolation the login previously used would break on those characters.
+jesc(){ printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'; }
 uuid(){ if [ -r /proc/sys/kernel/random/uuid ]; then cat /proc/sys/kernel/random/uuid; \
         elif command -v uuidgen >/dev/null 2>&1; then uuidgen | tr 'A-Z' 'a-z'; \
         else printf '%s-%s-4%s-8%s-%s' "$(date +%s)" "$RANDOM$RANDOM" "$RANDOM" "$RANDOM" "$RANDOM$RANDOM"; fi; }
@@ -77,9 +81,20 @@ echo "  test reference      : $REF   (tag: $MARKER · email: $TEST_EMAIL)"
 
 # ── 0) Admin login → token (never printed) ───────────────────────────────────
 hdr "admin login"
-jpost "$BASE/admin-login.php" "{\"action\":\"login\",\"email\":\"$EMAIL\",\"password\":\"$PASS\"}"
+# Body built with jesc (JSON-safe), exactly like the UI's JSON.stringify — so a
+# credential containing " or \ can't corrupt it. EMAIL/PASS are NEVER echoed.
+jpost "$BASE/admin-login.php" "{\"action\":\"login\",\"email\":\"$(jesc "$EMAIL")\",\"password\":\"$(jesc "$PASS")\"}"
 TOKEN="$(jget token)"
-[ -n "$TOKEN" ] || die "admin login failed (HTTP $CODE). Nothing created."
+if [ -z "$TOKEN" ]; then
+  # admin-login.php returns HTTP 401 code=invalid for BOTH wrong creds AND EMPTY creds.
+  # The commonest cause of a curl-only 401 (while the UI logs in fine) is that
+  # EMAIL/PASS are not populated in THIS shell (e.g. they were passed inline to the
+  # smoke invocation and never exported). Report which, without printing values.
+  hint="check EMAIL/PASS values"
+  { [ -z "$EMAIL" ] || [ -z "$PASS" ]; } && hint="EMAIL and/or PASS is EMPTY in this shell — export them (not just inline) before running"
+  [ -z "$API_KEY" ] && hint="$hint; API_KEY is also empty (the login endpoint requires X-API-KEY)"
+  die "admin login failed (HTTP $CODE, no token). $hint. Nothing created."
+fi
 ok "admin session established (token hidden)"
 
 # ── PRE-FLIGHT: prove admin-authorized cleanup works BEFORE creating anything ─
