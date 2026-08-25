@@ -148,7 +148,7 @@
       '<div class="ops-section-title" style="margin:4px 2px 8px">' + t('bookings.quickActions') + '</div>' +
       '<div class="bk-quick">' +
         '<a class="ops-btn ghost"' + (b.phone ? ' href="tel:' + U.esc(b.phone) + '"' : ' disabled') + '>' + UI.icon('phone') + t('bookings.call') + '</a>' +
-        '<a class="ops-btn ghost" href="chat.html?booking=' + encodeURIComponent(b.dbId) + '&ref=' + encodeURIComponent(b.ref) + '">' + UI.icon('chat') + t('bookings.chat') + '</a>' +
+        '<a class="ops-btn ghost" href="communication.html?booking=' + encodeURIComponent(b.dbId) + '">' + UI.icon('chat') + t('bookings.chat') + '</a>' +
         '<a class="ops-btn ghost"' + (b.date ? ' href="calendar.html?date=' + encodeURIComponent(b.date) + '"' : ' disabled') + '>' + UI.icon('calendar') + t('bookings.slot') + '</a>' +
       '</div>' +
 

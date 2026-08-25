@@ -227,7 +227,7 @@
                         '<a class="ops-btn ghost" href="customers.html">' + UI.icon('customers') + t('notif.openCustomer') + '</a>';
       if (m.key === 'reminder' || m.key === 'calendar') actions += '<a class="ops-btn ghost" href="calendar.html' + (b && b.date ? '?date=' + encodeURIComponent(b.date) : '') + '">' + UI.icon('calendar') + t('notif.openCalendar') + '</a>';
     } else if (m.cat === 'message') {
-      actions += '<a class="ops-btn" href="message.html?' + (b ? 'booking=' + encodeURIComponent(b.dbId) + '&ref=' + encodeURIComponent(b.ref) : 'id=' + encodeURIComponent(dbIdOf(n) || '')) + '">' + UI.icon('chat') + t('notif.openChat') + '</a>';
+      actions += '<a class="ops-btn" href="communication.html?' + (b ? 'booking=' + encodeURIComponent(b.dbId) : 'thread=' + encodeURIComponent(dbIdOf(n) || '')) + '">' + UI.icon('chat') + t('notif.openChat') + '</a>';
     } else {
       actions += '<button class="ops-btn ghost" id="nc-log">' + UI.icon('clock') + t('notif.openLog') + '</button>';
     }

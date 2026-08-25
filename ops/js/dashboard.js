@@ -69,7 +69,7 @@
       '<div class="ops-quick-grid">' +
         quick('bookings.html', t('dashboard.qBookings'), t('dashboard.qBookingsSub'), 'bookings') +
         quick('customers.html', t('dashboard.qCustomers'), t('dashboard.qCustomersSub'), 'customers') +
-        quick('chat.html', t('dashboard.qChat'), t('dashboard.qChatSub'), 'chat') +
+        quick('communication.html', t('dashboard.qChat'), t('dashboard.qChatSub'), 'chat') +
         quick('calendar.html', t('dashboard.qCalendar'), t('dashboard.qCalendarSub'), 'calendar') +
       '</div>' +
 

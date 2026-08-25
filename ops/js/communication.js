@@ -26,6 +26,8 @@
   };
 
   var ATTACH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
+  // Camera capture — ported from the legacy messages renderer (mc-cam) for parity.
+  var CAM_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
 
   /* ── Timestamp / label helpers (JST-aware; never sort lexically) ─────────── */
   function tsMs(v) {
@@ -382,7 +384,9 @@
     if (state.detailTab !== 'chat') return '';
     if (!c.canReply) return '<div class="ops-chat-locked">' + T('comm.locked') + '</div>';
     return '<div class="ops-composer cc-composer">' +
-      (c.canAttach ? '<button class="cc-attach" id="cc-attach" aria-label="' + U.esc(T('chat.attachAria')) + '">' + ATTACH_SVG + '</button>' +
+      (c.canAttach ? '<button class="cc-attach" id="cc-cam" aria-label="' + U.esc(T('chat.cameraAria')) + '">' + CAM_SVG + '</button>' +
+        '<input type="file" id="cc-cam-file" accept="image/jpeg,image/png,image/webp" capture="environment" hidden />' +
+        '<button class="cc-attach" id="cc-attach" aria-label="' + U.esc(T('chat.attachAria')) + '">' + ATTACH_SVG + '</button>' +
         '<input type="file" id="cc-file" accept="image/*,application/pdf,.doc,.docx" multiple hidden />' : '') +
       '<div class="cc-cmid"><div class="cc-pending" id="cc-pending" style="display:none"></div>' +
         '<textarea id="cc-input" rows="1" placeholder="' + U.esc(T('comm.replyPh')) + '"></textarea></div>' +
@@ -456,6 +460,9 @@
       }
       var attach = scr.querySelector('#cc-attach'), file = scr.querySelector('#cc-file');
       if (attach && file) { attach.addEventListener('click', function () { file.click(); }); file.addEventListener('change', function () { handleFiles(c, file.files); file.value = ''; }); }
+      // Camera capture (mobile) — same upload pipeline as the paperclip/file picker.
+      var cam = scr.querySelector('#cc-cam'), camFile = scr.querySelector('#cc-cam-file');
+      if (cam && camFile) { cam.addEventListener('click', function () { camFile.click(); }); camFile.addEventListener('change', function () { handleFiles(c, camFile.files); camFile.value = ''; }); }
       renderPending();
       hydrateAtts(document.getElementById('cc-scroll'));
     } else {

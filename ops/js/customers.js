@@ -157,7 +157,7 @@
 
       '<div class="ops-btn-row" style="margin-top:16px">' +
         (c.phone ? '<a class="ops-btn ghost" href="tel:' + U.esc(c.phone) + '">' + UI.icon('phone') + t('bookings.call') + '</a>' : '') +
-        '<a class="ops-btn ghost" href="chat.html?booking=' + encodeURIComponent(latest.dbId) + '&ref=' + encodeURIComponent(latest.ref) + '">' + UI.icon('chat') + t('bookings.chat') + '</a>' +
+        '<a class="ops-btn ghost" href="communication.html?booking=' + encodeURIComponent(latest.dbId) + '">' + UI.icon('chat') + t('bookings.chat') + '</a>' +
       '</div>' +
       '<div class="ops-btn-row" style="margin-top:8px">' +
         '<a class="ops-btn ghost" href="bookings.html?ref=' + encodeURIComponent(latest.ref) + '">' + UI.icon('bookings') + t('customers.viewBookings') + '</a>' +
