@@ -111,37 +111,43 @@ hdr "1) create disposable test booking"
 NOTES="${MARKER} disposable booking / [HM_EXTRAS] / ref:${REF} / service:${MARKER}"
 jpost "$BASE/rest.php" "{\"table\":\"bookings\",\"action\":\"insert\",\"returning\":true,\"values\":{\"id\":\"$BID\",\"customer_name\":\"${MARKER} QA\",\"customer_email\":\"$TEST_EMAIL\",\"customer_phone\":\"000-0000-0000\",\"booking_date\":\"2099-12-31\",\"service_id\":\"${MARKER}\",\"status\":\"pending\",\"notes\":\"$NOTES\"}}"
 if [ "$CODE" != "200" ]; then die "booking insert HTTP $CODE: $BODY (nothing to clean up)"; fi
-# FIX 1 — the booking row's id is AUTHORITATIVE from the create response (returning:true),
-# not the client-proposed id. If the server generated/normalized a different id we adopt
-# it so THREAD, quote, cleanup and the verify-select all key off the SAME row the
-# customer path (chat.php, which resolves by reference) will use.
-NEWID="$(jget id)"
-if [ -n "$NEWID" ] && [ "$NEWID" != "$BID" ]; then
-  echo "  note: server assigned a different booking id — adopting it as authoritative"
-  BID="$NEWID"
-fi
-[ -n "$BID" ] || die "could not determine the created booking id from the response: $BODY"
+# FIX 1 (authoritative id) — neither the client-proposed id nor the create response can
+# be trusted (the server may honor, generate, or normalize the id). Resolve the booking's
+# REAL DB id EXACTLY as chat.php does — by its unique reference in notes (ref:<REF>) — and
+# key EVERYTHING off it, so the Ops path and the customer path provably use one id.
+jpost "$BASE/rest.php" "{\"table\":\"bookings\",\"action\":\"select\",\"columns\":\"id\",\"filters\":[{\"col\":\"notes\",\"op\":\"like\",\"val\":\"%ref:${REF}%\"}],\"order\":[{\"col\":\"created_at\",\"ascending\":false}],\"limit\":1}"
+REALID="$(jget id)"
+[ -n "$REALID" ] || die "created booking could not be resolved by ref ($REF): $BODY"
+[ "$REALID" != "$BID" ] && echo "  note: server-stored id differs from the proposed id — using the real DB id"
+BID="$REALID"
 THREAD="chat:${BID}"
 APATH="${BID}/${TS}-phase1test.png"
-ok "booking created id=$BID"
+ok "booking created + resolved authoritative id=$BID"
 echo "  thread          : $THREAD"
 
 # 2) Customer-side message (chat.php send: email + reference) → inbound row
 hdr "2/3) customer message path (chat.php send)"
-jpost "$BASE/chat.php?action=send" "{\"email\":\"$TEST_EMAIL\",\"reference\":\"$REF\",\"message\":\"${MARKER} customer hello\"}"
+jpost "$BASE/chat.php?action=send" "{\"email\":\"$TEST_EMAIL\",\"reference\":\"$REF\",\"message\":\"${MARKER} ${REF} customer hello\"}"
 CUST_MID="$(jget id)"
 echo "$BODY" | grep -q '"ok":true' && ok "customer message accepted (id=$CUST_MID)" || bad "customer send HTTP $CODE: $BODY"
 
 # 3) Ops text reply via conversations.php
 hdr "4) Ops reply (conversations.php reply)"
-jpost "$BASE/conversations.php?action=reply" "{\"thread_id\":\"$THREAD\",\"message\":\"${MARKER} ops reply\"}"
+jpost "$BASE/conversations.php?action=reply" "{\"thread_id\":\"$THREAD\",\"message\":\"${MARKER} ${REF} ops reply\"}"
 OPS_MID="$(jget id)"
 echo "$BODY" | grep -q '"ok":true' && ok "Ops reply sent (message id=$OPS_MID)" || bad "reply HTTP $CODE: $BODY"
 
 # 4) Upload an attachment to THIS booking's folder (storage.php upload)
 hdr "5) attachment upload (storage.php)"
 TMPIMG="$(mktemp 2>/dev/null || echo "./ph1_$TS.png")"; TMPIMG="${TMPIMG%.png}.png"
-printf '\211PNG\r\n\032\n\0\0\0\rIHDR\0\0\0\1\0\0\0\1\10\6\0\0\0\37\25\304\211\0\0\0\nIDATx\234c\370\17\0\1\1\1\0\30\335\215\260\0\0\0\0IEND\256B\140\202' > "$TMPIMG"
+# FIX 2 — a GUARANTEED-valid 1x1 PNG via base64 (immune to printf-escape / redirect
+# byte-mangling that produced an invalid image before). Falls back to openssl if the
+# base64 CLI lacks -d.
+PNG_B64='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+printf '%s' "$PNG_B64" | base64 -d > "$TMPIMG" 2>/dev/null \
+  || printf '%s' "$PNG_B64" | base64 --decode > "$TMPIMG" 2>/dev/null \
+  || printf '%s' "$PNG_B64" | openssl base64 -d -A > "$TMPIMG" 2>/dev/null
+[ -s "$TMPIMG" ] || die "could not generate the PNG test fixture (base64 decode failed)"
 UP=$(curl -sk -A "$UA" ${API_KEY:+-H "X-API-KEY: $API_KEY"} -H "X-ADMIN-TOKEN: $TOKEN" \
   -F "bucket=chat" -F "path=$APATH" -F "file=@$TMPIMG;type=image/png" --max-time 60 "$BASE/storage.php?action=upload" 2>/dev/null)
 RPATH=$(printf '%s' "$UP" | sed -n 's/.*"path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
@@ -153,7 +159,7 @@ if [ -n "$RPATH" ]; then SENTPATH="$RPATH"; ok "attachment uploaded → $SENTPAT
 
 # 5) Ops reply WITH the attachment
 hdr "6) Ops reply with attachment"
-jpost "$BASE/conversations.php?action=reply" "{\"thread_id\":\"$THREAD\",\"message\":\"${MARKER} photo\",\"attachments\":[{\"path\":\"$SENTPATH\",\"name\":\"phase1test.png\",\"mime\":\"image/png\",\"size\":100}]}"
+jpost "$BASE/conversations.php?action=reply" "{\"thread_id\":\"$THREAD\",\"message\":\"${MARKER} ${REF} photo\",\"attachments\":[{\"path\":\"$SENTPATH\",\"name\":\"phase1test.png\",\"mime\":\"image/png\",\"size\":100}]}"
 ATT_MID="$(jget id)"
 echo "$BODY" | grep -q '"ok":true' && ok "attachment reply sent (message id=$ATT_MID)" || bad "attach reply HTTP $CODE: $BODY"
 
@@ -170,7 +176,7 @@ else bad "no signed url present"; fi
 
 # 7) 見積 — quote persist (labels.quote + agreed_price)
 hdr "8/9/10) 見積 quote + agreed_price"
-jpost "$BASE/conversations.php?action=quote" "{\"thread_id\":\"$THREAD\",\"price\":35000,\"expiry\":\"2099-12-31\",\"terms\":\"${MARKER} terms\"}"
+jpost "$BASE/conversations.php?action=quote" "{\"thread_id\":\"$THREAD\",\"price\":35000,\"expiry\":\"2099-12-31\",\"terms\":\"${MARKER} ${REF} terms\"}"
 echo "$BODY" | grep -q '"ok":true' && ok "quote saved (labels.quote written)" || bad "quote HTTP $CODE: $BODY"
 # verify agreed_price on the booking
 jpost "$BASE/rest.php" "{\"table\":\"bookings\",\"action\":\"select\",\"columns\":\"id,agreed_price\",\"filters\":[{\"col\":\"id\",\"op\":\"eq\",\"val\":\"$BID\"}]}"
@@ -179,7 +185,7 @@ AP="$(jnum agreed_price)"
 
 # 8) Quote SEND via the existing send-email.php (to TEST_EMAIL only)
 hdr "11) quote email (send-email.php)"
-jpost "$BASE/send-email.php" "{\"to\":\"$TEST_EMAIL\",\"from_account\":\"booking\",\"subject\":\"[Hello Moving] ${MARKER} お見積り\",\"message\":\"${MARKER} お見積金額 35,000円\",\"booking_id\":\"$BID\",\"thread_id\":\"$THREAD\",\"log_inbox\":true}"
+jpost "$BASE/send-email.php" "{\"to\":\"$TEST_EMAIL\",\"from_account\":\"booking\",\"subject\":\"[Hello Moving] ${MARKER} お見積り\",\"message\":\"${MARKER} ${REF} お見積金額 35,000円\",\"booking_id\":\"$BID\",\"thread_id\":\"$THREAD\",\"log_inbox\":true}"
 QFROM="$(jget from)"; QMID="$(jget messageId)"
 if echo "$BODY" | grep -q '"ok":true'; then ok "quote email sent (from set; messageId captured)"; else bad "email send HTTP $CODE: $BODY"; fi
 
@@ -202,23 +208,33 @@ ri=$(code_only GET "${BASE%/hm-api}/index.html"); [ "$ri" = "200" ] && ok "index
 ra=$(code_only GET "${BASE%/hm-api}/admin.html"); [ "$ra" = "200" ] && ok "admin.html 200" || bad "admin.html HTTP $ra"
 
 # ══ CLEANUP (admin API only) ═════════════════════════════════════════════════
+# FIX 3 — cleanup is REFERENCE/MARKER-aware, not id-assumption-based: every created
+# record carries the run-unique REF, so cleanup removes this run's data even if the
+# server returned/normalized a different booking id or thread.
 hdr "CLEANUP — delete messages, attachment, booking (admin API)"
-# a) delete all inbox_messages rows for this thread
+# a) delete this thread's messages (by the resolved authoritative thread)…
 jpost "$BASE/rest.php" "{\"table\":\"inbox_messages\",\"action\":\"delete\",\"returning\":true,\"filters\":[{\"col\":\"thread_id\",\"op\":\"eq\",\"val\":\"$THREAD\"}]}"
 [ "$CODE" = "200" ] && ok "deleted inbox_messages for $THREAD" || bad "inbox delete HTTP $CODE: $BODY"
+# a2) …and belt-and-suspenders: any message tagged with this run's REF (any thread).
+jpost "$BASE/rest.php" "{\"table\":\"inbox_messages\",\"action\":\"delete\",\"returning\":true,\"filters\":[{\"col\":\"body_text\",\"op\":\"like\",\"val\":\"%${REF}%\"}]}"
+[ "$CODE" = "200" ] && ok "deleted any inbox_messages tagged ${REF}" || bad "inbox ref-delete HTTP $CODE: $BODY"
 # b) delete the attachment file
 jpost "$BASE/storage.php?action=remove" "{\"bucket\":\"chat\",\"paths\":[\"$SENTPATH\"]}"
 [ "$CODE" = "200" ] && ok "removed attachment file $SENTPATH" || bad "storage remove HTTP $CODE: $BODY"
-# c) delete the disposable booking
-jpost "$BASE/rest.php" "{\"table\":\"bookings\",\"action\":\"delete\",\"returning\":true,\"filters\":[{\"col\":\"id\",\"op\":\"eq\",\"val\":\"$BID\"}]}"
-[ "$CODE" = "200" ] && ok "deleted booking $BID" || bad "booking delete HTTP $CODE: $BODY"
+# c) delete the disposable booking by its UNIQUE reference (id-independent)
+jpost "$BASE/rest.php" "{\"table\":\"bookings\",\"action\":\"delete\",\"returning\":true,\"filters\":[{\"col\":\"notes\",\"op\":\"like\",\"val\":\"%ref:${REF}%\"}]}"
+[ "$CODE" = "200" ] && ok "deleted booking(s) with ref:${REF}" || bad "booking delete HTTP $CODE: $BODY"
 
-# ══ ZERO-RESIDUE VERIFICATION ════════════════════════════════════════════════
+# ══ ZERO-RESIDUE VERIFICATION (reference-aware — id-independent) ══════════════
 hdr "ZERO-RESIDUE verification"
-jpost "$BASE/rest.php" "{\"table\":\"bookings\",\"action\":\"select\",\"columns\":\"id\",\"filters\":[{\"col\":\"id\",\"op\":\"eq\",\"val\":\"$BID\"}]}"
-echo "$BODY" | grep -q "$BID" && bad "RESIDUE: booking still present" || ok "booking gone"
+# booking: by UNIQUE reference (catches it regardless of the stored id)
+jpost "$BASE/rest.php" "{\"table\":\"bookings\",\"action\":\"select\",\"columns\":\"id\",\"filters\":[{\"col\":\"notes\",\"op\":\"like\",\"val\":\"%ref:${REF}%\"}]}"
+echo "$BODY" | grep -qE '"id"' && bad "RESIDUE: booking with ref:${REF} still present" || ok "booking gone (by ref)"
+# messages: by resolved thread AND by run-unique REF (either non-empty = residue)
 jpost "$BASE/rest.php" "{\"table\":\"inbox_messages\",\"action\":\"select\",\"columns\":\"id\",\"filters\":[{\"col\":\"thread_id\",\"op\":\"eq\",\"val\":\"$THREAD\"}]}"
-echo "$BODY" | grep -qE '"id"' && bad "RESIDUE: thread messages still present" || ok "thread messages gone"
+echo "$BODY" | grep -qE '"id"' && bad "RESIDUE: thread messages still present ($THREAD)" || ok "thread messages gone"
+jpost "$BASE/rest.php" "{\"table\":\"inbox_messages\",\"action\":\"select\",\"columns\":\"id\",\"filters\":[{\"col\":\"body_text\",\"op\":\"like\",\"val\":\"%${REF}%\"}]}"
+echo "$BODY" | grep -qE '"id"' && bad "RESIDUE: messages tagged ${REF} still present" || ok "no messages tagged ${REF} remain"
 if [ -n "${SIGNED:-}" ]; then st=$(code_only GET "$SIGNED"); { [ "$st" = "404" ] || [ "$st" = "403" ]; } && ok "attachment file gone (HTTP $st)" || bad "RESIDUE: attachment still fetchable (HTTP $st)"; fi
 rm -f "$TMPIMG" 2>/dev/null
 
