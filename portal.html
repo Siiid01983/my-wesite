@@ -740,33 +740,16 @@
   <!-- ===================== SIDEBAR ===================== -->
   <aside class="p-sidebar" id="sidebar">
     <div class="p-nav-label">マイページ</div>
-    <button class="p-nav-item active" data-view="overview">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-      <span>ダッシュボード</span>
-    </button>
-    <button class="p-nav-item" data-view="booking">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      <span>予約内容</span>
-    </button>
-    <button class="p-nav-item" data-view="progress">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-      <span>進捗</span>
-    </button>
-    <button class="p-nav-item" data-view="chat">
+    <!-- Customer portal is intentionally chat-first: all booking info, progress,
+         questions and photos are handled INSIDE the chat (photos as attachments).
+         Only two customer-facing views remain — チャット and 口コミ投稿. -->
+    <button class="p-nav-item active" data-view="chat">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       <span>チャット</span>
-    </button>
-    <button class="p-nav-item" data-view="photos">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-      <span>写真</span>
     </button>
     <button class="p-nav-item" data-view="reviews">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
       <span>口コミ投稿</span>
-    </button>
-    <button class="p-nav-item" data-view="support">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.7 2.34a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.74-1.74a2 2 0 0 1 2.11-.45c.74.34 1.53.57 2.34.7A2 2 0 0 1 22 16.92z"/></svg>
-      <span>お問い合わせ</span>
     </button>
   </aside>
   <div class="p-overlay" id="overlay"></div>
@@ -1589,9 +1572,10 @@
     let _revRating = 0;        // current star selection in the form
     const REV_ADD_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
 
-    function starsInput() {
+    function starsInput(sel) {
+      sel = sel || 0;
       let h = '<div class="rev-stars" id="revStars">';
-      for (let i = 1; i <= 5; i++) h += `<span class="rev-star" data-v="${i}">★</span>`;
+      for (let i = 1; i <= 5; i++) h += `<span class="rev-star${i <= sel ? ' on' : ''}" data-v="${i}">★</span>`;
       return h + '</div>';
     }
     function starsStatic(n) {
@@ -1606,11 +1590,11 @@
           <div class="panel-title">口コミを投稿</div>
           <div class="rev-field">
             <div class="rev-label">サービスの評価（Rate Service）</div>
-            ${starsInput()}
+            ${starsInput(_revRating)}
           </div>
           <div class="rev-field">
-            <div class="rev-label">ご感想（Leave Review）</div>
-            <textarea class="rev-textarea" id="revText" placeholder="サービスのご感想をお聞かせください。" maxlength="2000"></textarea>
+            <div class="rev-label">ご感想（Leave Review）<span style="font-weight:400;color:var(--gray-3);font-size:12px">・任意</span></div>
+            <textarea class="rev-textarea" id="revText" placeholder="サービスのご感想をお聞かせください。（任意）" maxlength="2000"></textarea>
           </div>
           <div class="rev-field">
             <div class="rev-label">写真（任意・Upload Photos）</div>
@@ -1668,7 +1652,7 @@
         loadReviewPhotos();
         return;
       }
-      _revRating = 0;
+      _revRating = 5;   // ★★★★★ preselected (initial state only — never auto-submitted)
       host.innerHTML = renderReviewForm();
     }
 
@@ -1716,7 +1700,7 @@
       const text = ($('revText') && $('revText').value || '').trim();
       if (errEl) errEl.style.display = 'none';
       if (!_revRating) { if (errEl) { errEl.textContent = '評価（星）を選択してください。'; errEl.style.display = 'block'; } return; }
-      if (!text)       { if (errEl) { errEl.textContent = 'ご感想をご入力ください。'; errEl.style.display = 'block'; } return; }
+      // Comment is OPTIONAL — rating alone is a valid submission.
       btn.disabled = true; btn.textContent = '送信中…';
       try {
         const res = await PortalReviews.submit(_booking, { rating: _revRating, text: text });
@@ -1879,22 +1863,14 @@
       // Refresh header with the freshest record
       $('userName').textContent = _booking.name || 'お客様';
       $('userRef').textContent  = _booking.id || '';
-      // Deep-link from the post-booking「チャットで相談する」CTA (set on the
-      // booking success screen): land the customer directly in the Chat tab.
-      let _startView = 'overview';
+      // Customer portal is chat-first: Chat is the default (and primary) surface.
+      // Clear any legacy chat deep-link marker and land on the Chat tab.
       try {
-        if (sessionStorage.getItem('hm_after_login_view') === 'chat') {
-          sessionStorage.removeItem('hm_after_login_view');
-          sessionStorage.removeItem('hm_after_login_ref');
-          _startView = 'chat';
-        }
+        sessionStorage.removeItem('hm_after_login_view');
+        sessionStorage.removeItem('hm_after_login_ref');
       } catch (_) {}
-      if (_startView === 'chat') {
-        const navBtn = document.querySelector('.p-nav-item[data-view="chat"]');
-        if (navBtn) navBtn.click(); else render('overview');
-      } else {
-        render('overview');
-      }
+      const navBtn = document.querySelector('.p-nav-item[data-view="chat"]');
+      if (navBtn) navBtn.click(); else render('chat');
     })();
   })();
   </script>
