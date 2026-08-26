@@ -1004,11 +1004,14 @@ body { padding-bottom: 76px; }
 .hm-ft__cta-kicker { font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:rgba(255,255,255,.6); margin-bottom:6px; font-family:var(--font-en); }
 .hm-ft__cta-title { font-size:22px; font-weight:700; color:#fff; letter-spacing:.02em; margin:0; }
 .hm-ft__cta-btns { display:flex; gap:12px; flex-wrap:wrap; }
-.hm-ft__cta-primary, .hm-ft__cta-line { display:inline-flex; align-items:center; gap:8px; padding:14px 28px; border-radius:10px; font-size:14px; font-weight:600; letter-spacing:.04em; transition:transform .2s ease,box-shadow .2s ease,background .2s ease; min-height:48px; text-decoration:none; }
+.hm-ft__cta-primary, .hm-ft__cta-line, .hm-ft__cta-secondary { display:inline-flex; align-items:center; gap:8px; padding:14px 28px; border-radius:10px; font-size:14px; font-weight:600; letter-spacing:.04em; transition:transform .2s ease,box-shadow .2s ease,background .2s ease; min-height:48px; text-decoration:none; }
 .hm-ft__cta-primary { background:#fff; color:#1d5435; }
 .hm-ft__cta-primary:hover { background:#f0f9f4; transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.25); }
 .hm-ft__cta-line { background:#06c755; color:#fff; }
 .hm-ft__cta-line:hover { background:#05b84d; transform:translateY(-2px); box-shadow:0 8px 24px rgba(6,199,85,.35); }
+/* Restrained secondary CTA (マイ予約 → login.html) on the green footer band. */
+.hm-ft__cta-secondary { background:rgba(255,255,255,.1); color:#fff; border:1px solid rgba(255,255,255,.4); }
+.hm-ft__cta-secondary:hover { background:rgba(255,255,255,.18); transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.2); }
 
 /* Main 4-col grid */
 .hm-ft { display:grid !important; grid-template-columns:1.7fr 1fr 1fr 1fr; gap:56px; padding:72px 0 64px; }
@@ -1082,7 +1085,7 @@ body { padding-bottom: 76px; }
   .hm-ft__cta-strip { padding:32px 0; }
   .hm-ft__cta-title { font-size:18px; }
   .hm-ft__cta-btns { width:100%; }
-  .hm-ft__cta-primary, .hm-ft__cta-line { flex:1; justify-content:center; min-height:44px; padding:11px 16px; font-size:13.5px; }
+  .hm-ft__cta-primary, .hm-ft__cta-line, .hm-ft__cta-secondary { flex:1; justify-content:center; min-height:44px; padding:11px 16px; font-size:13.5px; }
   .hm-ft__links a { min-height:44px; }
   .hm-ft__trust-item { font-size:11.5px; padding:7px 14px; }
   .hm-ft__bottom { padding-top:32px !important; padding-bottom:calc(28px + env(safe-area-inset-bottom, 0px)) !important; }
@@ -1218,9 +1221,9 @@ body { padding-bottom: 76px; }
     </nav>
     <div class="header-cta">
       <div class="header-contacts" aria-label="お問い合わせ">
-        <a href="https://line.me/R/ti/p/~hellomoving" class="header-contact-link header-contact-line" target="_blank" rel="noopener noreferrer" aria-label="LINEで問い合わせ">
-          <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.6 1.6 4.9 4 6.4-.1.5-.6 2.1-.7 2.5 0 0 0 .3.2.4.2.1.4 0 .4 0 .6-.1 3-2 3.6-2.4.8.1 1.6.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3Z"/></svg>
-          <span>LINE</span>
+        <a href="login.html" class="header-contact-link" aria-label="マイ予約（会員ログイン）へ">
+          <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+          <span>マイ予約</span>
         </a>
         <a href="#contact" class="header-contact-link" aria-label="お問い合わせフォームへ">
           <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
@@ -1600,7 +1603,7 @@ setTimeout(window.HM_revealServiceCards, 2500);
       <p class="section-lead" data-content-key="process_lead">ご依頼から完了まで、わかりやすく、お客様の負担を最小限に。</p>
     </header>
     <ol class="process-timeline">
-      <li class="process-step"><span class="step-num">01</span><h3 data-content-key="process_step1_title">お問い合わせ</h3><p data-content-key="process_step1_body">お電話・LINE・フォームよりお気軽にご連絡ください。</p></li>
+      <li class="process-step"><span class="step-num">01</span><h3 data-content-key="process_step1_title">お問い合わせ</h3><p data-content-key="process_step1_body">ご不明な点がございましたら、チャットにてお気軽にお問い合わせください。</p></li>
       <li class="process-step"><span class="step-num">02</span><h3 data-content-key="process_step2_title">無料お見積り</h3><p data-content-key="process_step2_body">訪問またはオンラインで、ご状況を伺い正確な金額をご提示します。</p></li>
       <li class="process-step"><span class="step-num">03</span><h3 data-content-key="process_step3_title">事前のご準備</h3><p data-content-key="process_step3_body">梱包資材のご手配・当日の段取りまで、しっかりとサポートいたします。</p></li>
       <li class="process-step"><span class="step-num">04</span><h3 data-content-key="process_step4_title">引越し当日</h3><p data-content-key="process_step4_body">養生・搬出・搬入・設置まで、訓練を受けたスタッフが丁寧に作業します。</p></li>
@@ -1724,9 +1727,9 @@ setTimeout(window.HM_revealServiceCards, 2500);
   <div class="container midpage-single">
     <a href="#booking" onclick="openBookingApp();return false;" class="btn btn-light">今すぐ無料見積り →</a>
     <div class="midpage-line-row">
-      <a href="https://line.me/R/ti/p/~hellomoving" target="_blank" rel="noopener noreferrer">
-        <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.6 1.6 4.9 4 6.4-.1.5-.6 2.1-.7 2.5 0 0 0 .3.2.4.2.1.4 0 .4 0 .6-.1 3-2 3.6-2.4.8.1 1.6.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3Z"/></svg>
-        LINEで相談する
+      <a href="login.html">
+        <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+        マイ予約はこちら
       </a>
     </div>
   </div>
@@ -1742,7 +1745,7 @@ setTimeout(window.HM_revealServiceCards, 2500);
     </header>
     <div class="faq-list" id="faqListEl">
       <details class="faq-item"><summary>お見積りは無料ですか?</summary><p>はい、お見積りは完全無料です。訪問でのお見積り、オンラインでのお見積り、どちらにも対応しております。</p></details>
-      <details class="faq-item"><summary>当日のご依頼でも対応していただけますか?</summary><p>スケジュール状況により対応可能な場合がございます。お急ぎの際は、LINEまたはチャットにてご連絡くださいませ。</p></details>
+      <details class="faq-item"><summary>当日のご依頼でも対応していただけますか?</summary><p>スケジュール状況により対応可能な場合がございます。お急ぎの際は、チャットにてご連絡くださいませ。</p></details>
       <details class="faq-item"><summary>英語での対応は可能ですか?</summary><p>はい、日本語・英語の両方に対応しております。Yes, our team can assist you in English. ご遠慮なくご相談ください。</p></details>
       <details class="faq-item"><summary>お支払い方法を教えてください</summary><p>現金、銀行振込、主要クレジットカードに対応しております。法人のお客様には、請求書でのお支払いも承っております。</p></details>
       <details class="faq-item"><summary>家具の組立・分解だけのご依頼も可能ですか?</summary><p>はい、家具の組立・分解のみのご依頼も承っております。お見積りの際にご相談くださいませ。</p></details>
@@ -1850,7 +1853,7 @@ setTimeout(window.HM_revealServiceCards, 2500);
         <p id="selectionMessage" class="selection-text">ご希望のお引越し日をお選びください。</p>
         <div id="urgentNotice" class="urgent-notice" style="display: none;">
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
-          <p>本日・明日のお引越しをご希望の場合、お急ぎプランのご相談をおすすめいたします。LINEまたはチャットよりご連絡ください。</p>
+          <p>本日・明日のお引越しをご希望の場合、お急ぎプランのご相談をおすすめいたします。チャットにてご連絡ください。</p>
         </div>
       </div>
     </div>
@@ -1898,9 +1901,9 @@ setTimeout(window.HM_revealServiceCards, 2500);
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><rect x="3" y="2" width="14" height="16" rx="2"/><path d="M7 6h6M7 10h6M7 14h4"/></svg>
           無料見積り
         </a>
-        <a href="https://line.me/R/ti/p/~hellomoving" class="hm-ft__cta-line" target="_blank" rel="noopener noreferrer">
-          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.6 1.6 4.9 4 6.4-.1.5-.6 2.1-.7 2.5 0 0 0 .3.2.4.2.1.4 0 .4 0 .6-.1 3-2 3.6-2.4.8.1 1.6.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3Z"/></svg>
-          LINE相談
+        <a href="login.html" class="hm-ft__cta-secondary">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+          マイ予約
         </a>
       </div>
     </div>
@@ -2082,9 +2085,8 @@ setTimeout(window.HM_revealServiceCards, 2500);
   <a href="#contact" class="sticky-btn sticky-contact">
     <span>お問い合わせ</span>
   </a>
-  <a href="https://line.me/R/ti/p/~hellomoving" class="sticky-btn sticky-line" target="_blank" rel="noopener noreferrer">
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.6 1.6 4.9 4 6.4-.1.5-.6 2.1-.7 2.5 0 0 0 .3.2.4.2.1.4 0 .4 0 .6-.1 3-2 3.6-2.4.8.1 1.6.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3Z"/></svg>
-    <span>LINE</span>
+  <a href="login.html" class="sticky-btn sticky-mybooking">
+    <span>マイ予約</span>
   </a>
 </div>
 

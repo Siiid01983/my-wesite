@@ -62,7 +62,7 @@ const CONTENT_REGISTRY = [
   { group:'引越しの流れセクション', key:'process_lead',    label:'説明文',        def:'ご依頼から完了まで、わかりやすく、お客様の負担を最小限に。' },
 
   { group:'引越しの流れステップ', key:'process_step1_title', label:'ステップ1 見出し', def:'お問い合わせ' },
-  { group:'引越しの流れステップ', key:'process_step1_body',  label:'ステップ1 説明文', def:'お電話・LINE・フォームよりお気軽にご連絡ください。' },
+  { group:'引越しの流れステップ', key:'process_step1_body',  label:'ステップ1 説明文', def:'ご不明な点がございましたら、チャットにてお気軽にお問い合わせください。' },
   { group:'引越しの流れステップ', key:'process_step2_title', label:'ステップ2 見出し', def:'無料お見積り' },
   { group:'引越しの流れステップ', key:'process_step2_body',  label:'ステップ2 説明文', def:'訪問またはオンラインで、ご状況を伺い正確な金額をご提示します。' },
   { group:'引越しの流れステップ', key:'process_step3_title', label:'ステップ3 見出し', def:'事前のご準備' },
