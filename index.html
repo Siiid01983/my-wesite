@@ -687,12 +687,29 @@ section#home-hero .hero-cta {
   justify-content: center !important;
   margin-top: 28px !important;
 }
-section#home-hero .btn-hero-book {
-  padding: 18px 56px !important;
+/* Hero CTA PAIR — 無料見積もり依頼 (primary) + お問い合わせ (secondary) must be a
+   true pair: IDENTICAL size / height / border-radius / padding / typography and an
+   equal min-width. Only the fill differs (accent primary vs restrained ghost). */
+section#home-hero .v2hero__cta .v2btn {
+  padding: 18px 40px !important;
   border-radius: 12px !important;
-  box-shadow: 0 10px 26px rgba(44,54,38,.18) !important;
+  min-width: 280px !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  /* Neutralise the legacy .btn-hero-book column stack so BOTH lay out as one
+     horizontal row → identical intrinsic height (incl. stacked mobile). */
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  /* Deterministic, identical height on both (raw text vs .btn-lbl span would
+     otherwise inherit different line-heights → unequal height when stacked). */
+  min-height: 62px !important;
+  line-height: 1.2 !important;
 }
-section#home-hero .btn-hero-book .btn-lbl { font-size: 18px !important; font-weight: 700 !important; }
+section#home-hero .v2hero__cta .v2btn .btn-lbl { font-size: 18px !important; font-weight: 700 !important; line-height: 1.2 !important; }
+/* Keep the primary's signature depth; the ghost secondary stays flat/restrained. */
+section#home-hero .v2hero__cta .v2btn--primary { box-shadow: 0 10px 26px rgba(44,54,38,.18) !important; }
 
 /* ── 選ばれる4つの理由 — 4-card responsive grid ── */
 .hero-reasons {
@@ -1260,8 +1277,9 @@ body { padding-bottom: 76px; }
         <span class="btn-lbl" id="heroCtaBookLbl">無料見積もり依頼</span>
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/></svg>
       </a>
-      <a href="#works" class="v2btn v2btn--ghost">作業事例を見る</a>
+      <a href="#contact" class="v2btn v2btn--ghost">お問い合わせ</a>
     </div>
+    <p class="v2hero__more reveal-up"><a href="#works">作業事例を見る</a></p>
     <ul class="v2hero__trust reveal-up" aria-label="実績と認可">
       <li><b>15,000<i>+</i></b><span>引越し実績</span></li>
       <li><b>14<i>年</i></b><span>の経験</span></li>

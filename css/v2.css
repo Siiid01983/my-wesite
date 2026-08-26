@@ -160,6 +160,28 @@
 .v2btn--ghost { background: rgba(255,255,255,.04); color: #fff; border-color: rgba(255,255,255,.28); }
 .v2btn--ghost:hover { background: rgba(255,255,255,.1); transform: translateY(-2px); }
 
+/* Hero CTA pair — 無料見積もり依頼 (primary) + お問い合わせ (secondary) are a true
+   visual pair: identical geometry (size / shape / height / border-radius / padding /
+   typography). The size/shape/min-width is set together in index.html's hero block
+   (co-located with the primary's !important override); only the FILL differs here
+   (accent-filled primary vs restrained ghost). On mobile the RESPONSIVE rule below
+   already stacks them full-width, so they stay equal-width. */
+/* Shared, visible keyboard focus for BOTH hero buttons (same focus behaviour). */
+.v2btn:focus-visible { outline: 2px solid var(--v2-accent); outline-offset: 3px; }
+
+/* 作業事例を見る — quiet tertiary text link; must not compete with the CTA pair. */
+.v2hero__more { margin-top: 18px; text-align: center; }
+.v2hero__more a {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-jp); font-size: 13px; font-weight: 500; letter-spacing: .04em;
+  color: rgba(255,255,255,.66); text-decoration: none;
+  border-bottom: 1px solid transparent; padding-bottom: 1px;
+  transition: color .2s var(--v2-ease), border-color .2s var(--v2-ease);
+}
+.v2hero__more a:hover { color: #fff; border-bottom-color: rgba(255,255,255,.5); }
+.v2hero__more a:focus-visible { outline: 2px solid var(--v2-accent); outline-offset: 3px; }
+.v2hero__more.reveal-up { animation-delay: .58s; }
+
 /* hero trust row */
 .v2hero__trust {
   margin: 54px auto 0; padding: 0; list-style: none;
