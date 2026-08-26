@@ -173,12 +173,12 @@ html.dark .rv-footer a{color:#60a5fa}
           </div>
         </div>
         <div class="rv-field">
-          <label for="rvName">お名前またはイニシャル <span style="color:#ef4444" aria-hidden="true">*</span></label>
-          <input type="text" id="rvName" placeholder="例：田中さま / T.K." maxlength="30" autocomplete="name" required/>
+          <label for="rvName">お名前またはイニシャル <span style="font-weight:400;color:var(--gray-2);font-size:11px">（任意）</span></label>
+          <input type="text" id="rvName" placeholder="例：田中さま / T.K." maxlength="30" autocomplete="name"/>
         </div>
         <div class="rv-field">
-          <label for="rvText">ご感想 <span style="color:#ef4444" aria-hidden="true">*</span> <span style="font-weight:400;color:var(--gray-2);font-size:11px">最大200文字</span></label>
-          <textarea id="rvText" rows="5" maxlength="200" placeholder="引越し当日のご様子やスタッフへのご感想など、ご自由にお書きください。" required></textarea>
+          <label for="rvText">ご感想 <span style="font-weight:400;color:var(--gray-2);font-size:11px">（任意・最大200文字）</span></label>
+          <textarea id="rvText" rows="5" maxlength="200" placeholder="引越し当日のご様子やスタッフへのご感想など、ご自由にお書きください。"></textarea>
           <p class="rv-char"><span id="rvCount">0</span> / 200</p>
         </div>
         <p class="rv-form-err" id="rvFormErr" role="alert">すべての必須項目を入力してください。</p>
@@ -202,58 +202,49 @@ html.dark .rv-footer a{color:#60a5fa}
   © 2026 Hello Moving &nbsp;·&nbsp; <a href="/">トップに戻る</a>
 </footer>
 
+<!-- Public runtime config (same-origin API base + page-served API key). -->
+<script src="js/config/env.public.js"></script>
+<script src="js/config/env.js" onerror="console.warn('[Review] js/config/env.js missing — using env.public.js fallback')"></script>
 <script>
 (function(){
   'use strict';
-  var TK='hm_review_tokens', RV='hm_reviews';
 
-  function getTokens(){try{return JSON.parse(localStorage.getItem(TK)||'[]');}catch(e){return[];}}
-  function getReviews(){try{return JSON.parse(localStorage.getItem(RV)||'[]');}catch(e){return[];}}
-  function save(key,val){localStorage.setItem(key,JSON.stringify(val));}
+  var API = (window.API_BASE || (location.origin + '/hm-api')).replace(/\/$/,'');
+  var KEY = window.API_KEY || '';
+
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
   function show(id){
     document.querySelectorAll('.rv-state').forEach(function(el){el.classList.remove('active');});
     var el=document.getElementById(id);if(el)el.classList.add('active');
   }
-
-  var params=new URLSearchParams(location.search);
-  var token=(params.get('token')||'').replace(/[^a-z0-9]/gi,'');
-
-  if(!token){show('rvInvalid');return;}
-
-  var tokens=getTokens();
-  var tk=null;
-  for(var i=0;i<tokens.length;i++){if(tokens[i].token===token){tk=tokens[i];break;}}
-
-  if(!tk){show('rvInvalid');return;}
-  if(tk.used){show('rvUsed');return;}
-
-  // Populate booking info
-  var info=document.getElementById('rvBookingInfo');
-  if(info){
-    info.innerHTML=
-      '<span class="rv-pill">予約No. '+esc(tk.bookingId)+'</span>'+
-      '<span class="rv-pill">'+esc(tk.service)+'</span>'+
-      (tk.area?'<span class="rv-pill">'+esc(tk.area)+'</span>':'');
+  function api(path, opts){
+    opts = opts || {};
+    opts.headers = Object.assign({'X-API-KEY': KEY}, opts.headers || {});
+    return fetch(API + path, opts).then(function(r){ return r.json().catch(function(){ return null; }); });
   }
 
-  show('rvForm');
+  var params=new URLSearchParams(location.search);
+  // Token charset is hex + a single dot (see _reviewtoken.php). Reject anything else.
+  var token=(params.get('token')||'').trim();
+  if(!/^[a-f0-9]+\.[a-f0-9]+$/i.test(token)){show('rvInvalid');return;}
 
-  // Stars
+  // ── Stars (default: ★★★★★ preselected; the customer may lower it) ──
   var rating=0;
   var stars=document.querySelectorAll('.rv-star');
   function setRating(v){
     rating=v;
-    stars.forEach(function(s){s.classList.toggle('lit',parseInt(s.dataset.v)<=v);});
-    stars.forEach(function(s){s.setAttribute('aria-checked',s.dataset.v==v?'true':'false');});
+    stars.forEach(function(s){
+      var on = parseInt(s.dataset.v,10) <= v;
+      s.classList.toggle('lit', on);
+      s.setAttribute('aria-checked', s.dataset.v==v ? 'true':'false');
+    });
   }
   stars.forEach(function(s){
-    s.addEventListener('click',function(){setRating(parseInt(s.dataset.v));});
+    s.addEventListener('click',function(){setRating(parseInt(s.dataset.v,10));});
     s.addEventListener('keydown',function(e){
       if(e.key==='Enter'||e.key===' '){e.preventDefault();s.click();}
-      if(e.key==='ArrowRight'||e.key==='ArrowUp'){e.preventDefault();var v=Math.min(5,parseInt(s.dataset.v)+1);setRating(v);}
-      if(e.key==='ArrowLeft'||e.key==='ArrowDown'){e.preventDefault();var v=Math.max(1,parseInt(s.dataset.v)-1);setRating(v);}
+      if(e.key==='ArrowRight'||e.key==='ArrowUp'){e.preventDefault();setRating(Math.min(5,parseInt(s.dataset.v,10)+1));}
+      if(e.key==='ArrowLeft'||e.key==='ArrowDown'){e.preventDefault();setRating(Math.max(1,parseInt(s.dataset.v,10)-1));}
     });
   });
 
@@ -261,33 +252,53 @@ html.dark .rv-footer a{color:#60a5fa}
   var ta=document.getElementById('rvText'), cc=document.getElementById('rvCount');
   if(ta&&cc){ta.addEventListener('input',function(){cc.textContent=ta.value.length;});}
 
-  // Submit
+  // ── Validate the link, then reveal the form (or the used/invalid state) ──
+  api('/review.php?action=info&token='+encodeURIComponent(token))
+    .then(function(res){
+      if(!res || !res.ok){ show('rvInvalid'); return; }
+      if(res.data && res.data.state==='used'){ show('rvUsed'); return; }
+      var info=document.getElementById('rvBookingInfo');
+      if(info && res.data){
+        info.innerHTML =
+          (res.data.ref     ? '<span class="rv-pill">予約No. '+esc(res.data.ref)+'</span>' : '') +
+          (res.data.service ? '<span class="rv-pill">'+esc(res.data.service)+'</span>'      : '');
+      }
+      show('rvForm');
+      setRating(5);   // initial form state ONLY — never auto-submitted.
+    })
+    .catch(function(){ show('rvInvalid'); });
+
+  // ── Submit (explicit) — rating required; name + comment optional ──
   document.getElementById('rvForm').addEventListener('submit',function(e){
     e.preventDefault();
     var name=(document.getElementById('rvName').value||'').trim();
     var text=(ta?ta.value:'').trim();
     var errEl=document.getElementById('rvFormErr');
-    if(!rating||!name||!text){errEl.style.display='block';return;}
+    if(!rating){
+      errEl.textContent='星の評価を選択してください。';
+      errEl.style.display='block';
+      return;
+    }
     errEl.style.display='none';
     var btn=document.getElementById('rvSubmit');
     btn.disabled=true;btn.textContent='送信中...';
-    var reviews=getReviews();
-    reviews.push({
-      id:'r'+Date.now().toString(36),
-      token:token,bookingId:tk.bookingId,
-      name:name,service:tk.service,area:tk.area||'',
-      rating:rating,text:text,
-      date:new Date().toISOString().slice(0,10),
-      status:'pending',featured:false,
-      createdAt:new Date().toISOString()
+    api('/review.php?action=submit', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ token: token, rating: rating, name: name, comment: text })
+    }).then(function(res){
+      if(res && res.ok){ show('rvSuccess'); return; }
+      if(res && res.error==='used'){ show('rvUsed'); return; }
+      btn.disabled=false;btn.textContent='レビューを送信する';
+      errEl.textContent = (res && res.error==='bad_rating')
+        ? '星の評価を選択してください。'
+        : '送信に失敗しました。しばらくしてから再度お試しください。';
+      errEl.style.display='block';
+    }).catch(function(){
+      btn.disabled=false;btn.textContent='レビューを送信する';
+      errEl.textContent='接続エラーが発生しました。しばらくしてから再度お試しください。';
+      errEl.style.display='block';
     });
-    save(RV,reviews);
-    var updTokens=getTokens();
-    for(var i=0;i<updTokens.length;i++){
-      if(updTokens[i].token===token){updTokens[i].used=true;break;}
-    }
-    save(TK,updTokens);
-    show('rvSuccess');
   });
 })();
 </script>

@@ -142,8 +142,7 @@
 
     const rating = parseInt(payload.rating, 10);
     if (!(rating >= 1 && rating <= 5)) return { ok: false, error: 'bad-rating' };
-    const text = (payload.text || '').trim();
-    if (!text)               return { ok: false, error: 'no-text' };
+    const text = (payload.text || '').trim();   // comment is OPTIONAL (rating alone is valid)
     if (!sb)                 return { ok: false, error: 'unavailable' };
 
     const ids = _ids([booking.id, booking._dbId]);

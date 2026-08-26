@@ -147,6 +147,9 @@ try {
     $priceInt = (int)$bk['agreed_price'];
     if ($priceInt > 0) $priceLine = '確定金額: ' . number_format($priceInt) . '円';
   }
+  // Signed, single-use review link — set only on the completed transition below.
+  // Used as the HTML email's 「評価する」 button + a plaintext fallback link.
+  $reviewUrl = '';
 
   // Customer-facing message (clean, professional). Needs_Revision carries the note.
   //   confirmed → 予約確定のお知らせ (STEP B) · completed → 作業完了のお知らせ (STEP C)
@@ -172,14 +175,18 @@ try {
   if ($note !== '') {
     $lines[] = ($status === 'needs_revision' ? '修正のお願い: ' : '備考: ') . $note;
   }
-  // STEP C: thank-you + a clear review link, REUSING the existing portal review system
-  // (log in with the booking reference → 「口コミを投稿」 → PortalReviews). No new system.
+  // STEP C: thank-you + a one-tap review link. The link carries an opaque, signed,
+  // single-use token (no login required, no sensitive data in the URL) → review.html
+  // → review.php, which writes into the SAME reviews table as the portal flow.
   if ($status === 'completed') {
-    $siteUrl = rtrim((string)(hm_config()['site_url'] ?? 'https://hello-moving.com'), '/');
+    require_once __DIR__ . '/_reviewtoken.php';
+    $siteUrl   = rtrim((string)(hm_config()['site_url'] ?? 'https://hello-moving.com'), '/');
+    $reviewUrl = $siteUrl . '/review.html?token=' . hm_review_token_make($bookingId);
     $lines[] = '';
     $lines[] = 'この度はご利用いただき誠にありがとうございました。';
-    $lines[] = 'よろしければ、ご感想・ご評価をお聞かせください（ポータルにログイン後「口コミを投稿」より）:';
-    $lines[] = $siteUrl . '/login.html?ref=' . rawurlencode($ref);
+    $lines[] = 'よろしければ、下記のボタンより★の評価をお聞かせください（所要1分・コメントは任意です）。';
+    // The raw URL is NOT inlined here — the HTML email renders a 「評価する」 button
+    // and the plaintext part appends the link (below), keeping the body clean.
   }
   $msg = implode("\n", $lines);
 
@@ -258,8 +265,10 @@ try {
         $ecfg = hm_config();
         $subj = "【予約 {$ref}】" . $head;
         $acc  = EmailService::account($ecfg, 'booking');
-        $html = EmailService::customerHtml($acc, $msg, $ref, EmailService::chatUrl($ecfg, $ref));
-        $eres = EmailService::deliver($ecfg, ['account' => 'booking', 'to' => $email, 'subject' => $subj, 'html' => $html, 'text' => $msg]);
+        $html = EmailService::customerHtml($acc, $msg, $ref, EmailService::chatUrl($ecfg, $ref), $reviewUrl);
+        // Plaintext part keeps the review link actionable (HTML uses the button).
+        $textBody = $reviewUrl !== '' ? ($msg . "\n\n▶ " . $reviewUrl) : $msg;
+        $eres = EmailService::deliver($ecfg, ['account' => 'booking', 'to' => $email, 'subject' => $subj, 'html' => $html, 'text' => $textBody]);
         if (!empty($eres['ok'])) {
           $emailStatus = 'sent';
           if (function_exists('hm_log_write')) hm_log_write('info.log', ['type' => 'booking_status_email', 'result' => 'sent', 'status' => $status, 'booking' => $bookingId, 'to' => $email, 'transport' => (string)($eres['transport'] ?? '')]);

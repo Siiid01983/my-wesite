@@ -13,6 +13,7 @@
     "test:ops-phase1": "node tests/ops-phase1.test.js",
     "test:contact-chat": "node tests/contact-chat.e2e.js",
     "test:telegram": "php tests/telegram.test.php",
+    "test:review":   "php tests/review-token.test.php",
     "test:booking-loc": "node tests/booking-service-location.verify.js",
     "test:fixes":  "node --test tests/calendar-timestamp-fixes.verify.js",
     "test:timeline-cal":     "node tests/timeline-calendar.smoke.js",
