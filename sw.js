@@ -42,6 +42,7 @@ const PRECACHE = [
   '/css/motion.css',
   '/css/service-images.css',
   '/css/service-cards-square.css',
+  '/css/contact-cta.css',
   '/css/v2-tokens.css',
   '/css/v2.css',
   '/js/reviews-carousel.js',
