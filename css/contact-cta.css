@@ -58,3 +58,33 @@ html.v2-dark #siteHeader .header-contact-link[href="#contact"]:hover {
   background: #05a847 !important;
   border-color: #05a847 !important;
 }
+
+/* 4) Contact-section (#contact) chat launchers — same お問い合わせ green identity.
+      新しくお問い合わせ = filled green (primary); お問い合わせを再開 = green outline
+      (secondary), so both read as お問い合わせ green while keeping their hierarchy.
+      The launcher card is white, so filled-green + white text matches the other
+      お問い合わせ CTAs exactly. */
+.v2 #contact .cc-launch .btn.btn-primary,
+#contact .cc-launch .btn.btn-primary {
+  background: var(--line-green) !important;
+  border-color: var(--line-green) !important;
+  color: #fff !important;
+}
+.v2 #contact .cc-launch .btn.btn-primary:hover,
+#contact .cc-launch .btn.btn-primary:hover {
+  background: #05a847 !important;
+  border-color: #05a847 !important;
+  color: #fff !important;
+}
+.v2 #contact .cc-launch .btn.btn-ghost,
+#contact .cc-launch .btn.btn-ghost {
+  background: transparent !important;
+  border: 1px solid var(--line-green) !important;
+  color: var(--line-green) !important;
+}
+.v2 #contact .cc-launch .btn.btn-ghost:hover,
+#contact .cc-launch .btn.btn-ghost:hover {
+  background: rgba(6, 199, 85, .10) !important;
+  border-color: #05a847 !important;
+  color: #05a847 !important;
+}
