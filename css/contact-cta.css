@@ -88,3 +88,12 @@ html.v2-dark #siteHeader .header-contact-link[href="#contact"]:hover {
   border-color: #05a847 !important;
   color: #05a847 !important;
 }
+
+/* 5) Footer link お問い合わせ — same green identity. It's a text link (not a
+      button) on the dark footer, so only the text colour goes green; the
+      existing slide-on-hover affordance is kept. Targeted by href so a CMS
+      re-render of the footer column can't drop it. */
+.hm-ft__links a[href="#contact"],
+.hm-ft__links a[href="#contact"]:hover {
+  color: var(--line-green) !important;
+}
