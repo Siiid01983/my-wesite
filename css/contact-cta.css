@@ -1,0 +1,60 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   contact-cta.css — 「お問い合わせ」 CTA colour identity (site-wide)
+
+   Every customer-facing お問い合わせ CTA (header, hero, sticky bar) reuses the
+   EXISTING LINE brand token the old LINE CTAs used —
+       --line-green: #06C755   (defined in css/v2-tokens.css)
+   — so お問い合わせ has ONE consistent, vivid green identity everywhere. This file
+   changes COLOUR ONLY; dimensions / border-radius / typography / spacing /
+   handlers are inherited unchanged from the existing button rules.
+
+   Deliberately untouched:
+     • 無料見積もり依頼 → keeps its accent / yellow.
+     • マイ予約         → keeps its own neutral identity (outline in header,
+                          surface in the sticky bar) — never green.
+
+   Loaded LAST (after v2 / v2.1 / v2.1-polish) so it wins the theme's !important
+   layers. Targets the お問い合わせ CTAs by href="#contact" so マイ予約 (login.html)
+   and 無料見積り (#booking) are never affected.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* 1) Header / main-nav お問い合わせ (filled green pill; マイ予約 stays outline) */
+.v2 #siteHeader .header-contact-link[href="#contact"],
+.v2 #siteHeader.v2-scrolled .header-contact-link[href="#contact"],
+html.v2-dark #siteHeader .header-contact-link[href="#contact"] {
+  background: var(--line-green) !important;
+  border-color: var(--line-green) !important;
+  color: #fff !important;
+}
+.v2 #siteHeader .header-contact-link[href="#contact"] svg,
+.v2 #siteHeader .header-contact-link[href="#contact"] span { color: #fff !important; }
+.v2 #siteHeader .header-contact-link[href="#contact"]:hover,
+html.v2-dark #siteHeader .header-contact-link[href="#contact"]:hover {
+  background: #05a847 !important;
+  border-color: #05a847 !important;
+  color: #fff !important;
+}
+
+/* 2) Hero お問い合わせ (was ghost/outline → filled green; 無料見積もり依頼 stays accent) */
+.v2 .v2hero__cta .v2btn--ghost[href="#contact"] {
+  background: var(--line-green) !important;
+  border-color: var(--line-green) !important;
+  color: #fff !important;
+}
+.v2 .v2hero__cta .v2btn--ghost[href="#contact"]:hover {
+  background: #05a847 !important;
+  border-color: #05a847 !important;
+}
+
+/* 3) Sticky / floating bottom bar お問い合わせ (mirrors the old sticky-line green;
+      sticky-quote stays accent, sticky-mybooking stays neutral) */
+.v2 .sticky-cta .sticky-btn.sticky-contact {
+  background: var(--line-green) !important;
+  border-color: var(--line-green) !important;
+  color: #fff !important;
+}
+.v2 .sticky-cta .sticky-btn.sticky-contact span { color: #fff !important; }
+.v2 .sticky-cta .sticky-btn.sticky-contact:hover {
+  background: #05a847 !important;
+  border-color: #05a847 !important;
+}
