@@ -302,8 +302,8 @@ describe('Band UI removal (slotCalendar/slotCapacity retired)', () => {
     assert.ok(!/name="ba-time"/.test(indexHtml),
       'index.html must not render band time radios (name="ba-time")');
     assert.ok(/_baRenderTimelineSlots/.test(indexHtml), 'the customer time step must use the timeline slot picker');
-    assert.ok(/090-2489-3402/.test(indexHtml) && /ba-time-host/.test(indexHtml),
-      'a contact fallback must exist for when timeline availability is unavailable');
+    assert.ok(/LINEにてご連絡ください/.test(indexHtml) && /ba-time-host/.test(indexHtml),
+      'a contact fallback must exist for when timeline availability is unavailable (LINE — phone number removed by business decision)');
   });
 });
 

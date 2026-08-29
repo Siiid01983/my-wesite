@@ -41,3 +41,6 @@ hm-api/logs/*.log
 
 # 3D booking inventory icons — release assets (explicit exception to the global *.png ignore above)
 !assets/icons/3d/*.png
+
+# Internal legal-review working docs (draft package + request email) — never publish
+legal-review/

@@ -5,6 +5,12 @@
   RewriteEngine On
   RewriteCond %{HTTP_HOST} ^www\.hello-moving\.com$ [NC]
   RewriteRule ^(.*)$ https://hello-moving.com/$1 [R=301,L]
+
+  # ── Retire legacy/never-existed marketing paths that external links and
+  #    crawlers still request (were 404ing in the server logs). 301 → homepage
+  #    so any residual link equity and stray clicks land on a real page.
+  #    Scoped to these exact paths only — does NOT affect any real route.
+  RewriteRule ^our-services/?$ / [R=301,L]
 </IfModule>
 
 # ── Service worker — must never be cached by the server ──────────────────────
