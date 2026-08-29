@@ -1221,18 +1221,10 @@ body { padding-bottom: 76px; }
         <li><a href="/blog.html">ブログ</a></li>
       </ul>
     </nav>
-    <div class="header-cta">
-      <div class="header-contacts" aria-label="お問い合わせ">
-        <a href="login.html" class="header-contact-link" aria-label="マイ予約（会員ログイン）へ">
-          <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
-          <span>マイ予約</span>
-        </a>
-        <a href="#contact" class="header-contact-link" aria-label="お問い合わせフォームへ">
-          <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
-          <span>お問い合わせ</span>
-        </a>
-      </div>
-      <a href="#booking" onclick="openBookingApp();return false;" class="btn btn-primary" id="headerCtaBtnEl">無料見積り</a>
+    <div class="header-cta" aria-label="お問い合わせ・予約">
+      <a href="#booking" onclick="openBookingApp();return false;" class="btn btn-primary hcta" id="headerCtaBtnEl">無料見積り</a>
+      <a href="#contact" class="btn hcta hcta-contact" aria-label="お問い合わせへ">お問い合わせ</a>
+      <a href="login.html" class="btn hcta hcta-mybooking" aria-label="マイ予約（会員ログイン）へ">マイ予約</a>
     </div>
     <button class="nav-toggle" id="navToggle" aria-label="メニューを開く" aria-expanded="false">
       <span></span><span></span><span></span><span class="nav-toggle-label">メニュー</span>
@@ -1902,6 +1894,10 @@ setTimeout(window.HM_revealServiceCards, 2500);
         <a href="#booking" onclick="openBookingApp();return false;" class="hm-ft__cta-primary">
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><rect x="3" y="2" width="14" height="16" rx="2"/><path d="M7 6h6M7 10h6M7 14h4"/></svg>
           無料見積り
+        </a>
+        <a href="#contact" class="hm-ft__cta-line" aria-label="お問い合わせへ">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><rect x="2.5" y="4" width="15" height="12" rx="2"/><path d="M3 6l7 5 7-5"/></svg>
+          お問い合わせ
         </a>
         <a href="login.html" class="hm-ft__cta-secondary">
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
@@ -3970,7 +3966,9 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 </script>
 
 <script src="js/portal/postBookingChatCta.js" defer></script>
-<script src="js/customer-login.js"></script>
+<!-- js/customer-login.js REMOVED: the old modal-based 予約確認 / My Booking lookup
+     injected duplicate 予約確認 links into the nav / mobile drawer / footer CTA strip.
+     マイ予約 → login.html is now the single My Booking entry, so those duplicates are gone. -->
 <script src="js/ba-overlay-prefill.js"></script><!-- Customer Portal V2 — BA overlay prefill API (additive; public-surface only) -->
 <script src="js/rebook-receiver.js"></script><!-- Customer Portal V2 rebook handoff — additive; no-op unless a rebook is in progress -->
 <script src="js/contact-chat.js" defer></script><!-- Contact Chat overlay (booking-independent お問い合わせ; additive, public-surface only) -->
