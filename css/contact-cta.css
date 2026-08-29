@@ -18,21 +18,50 @@
    and 無料見積り (#booking) are never affected.
    ════════════════════════════════════════════════════════════════════════════ */
 
-/* 1) Header / main-nav お問い合わせ (filled green pill; マイ予約 stays outline) */
-.v2 #siteHeader .header-contact-link[href="#contact"],
-.v2 #siteHeader.v2-scrolled .header-contact-link[href="#contact"],
-html.v2-dark #siteHeader .header-contact-link[href="#contact"] {
+/* 1) Header CTA trio — 無料見積り | お問い合わせ | マイ予約 as one equal-geometry
+      button set. Height / radius / font-size / family come from `.header-cta .btn`
+      (styles.css) so all three share geometry; this block only assigns the three
+      colour identities and keeps their weight cohesive.
+        • 無料見積り  → keeps its gold accent (.btn-primary, from css/v2.1.css)
+        • お問い合わせ → filled LINE-green (#06C755)
+        • マイ予約    → neutral outline (mirrors the old header-contact-link) */
+.v2 #siteHeader .header-cta .hcta { font-weight: 600 !important; letter-spacing: .04em; }
+
+/* お問い合わせ — filled green, white text, in every header state */
+.v2 #siteHeader .header-cta .btn.hcta-contact,
+.v2 #siteHeader.v2-scrolled .header-cta .btn.hcta-contact,
+html.v2-dark #siteHeader .header-cta .btn.hcta-contact {
   background: var(--line-green) !important;
   border-color: var(--line-green) !important;
   color: #fff !important;
 }
-.v2 #siteHeader .header-contact-link[href="#contact"] svg,
-.v2 #siteHeader .header-contact-link[href="#contact"] span { color: #fff !important; }
-.v2 #siteHeader .header-contact-link[href="#contact"]:hover,
-html.v2-dark #siteHeader .header-contact-link[href="#contact"]:hover {
+.v2 #siteHeader .header-cta .btn.hcta-contact:hover,
+html.v2-dark #siteHeader .header-cta .btn.hcta-contact:hover {
   background: #05a847 !important;
   border-color: #05a847 !important;
   color: #fff !important;
+}
+
+/* マイ予約 — neutral outline that stays legible on the (dark) header in every state */
+.v2 #siteHeader .header-cta .btn.hcta-mybooking,
+.v2 #siteHeader.v2-scrolled .header-cta .btn.hcta-mybooking,
+html.v2-dark #siteHeader .header-cta .btn.hcta-mybooking {
+  background: transparent !important;
+  border: 1px solid var(--line) !important;
+  color: var(--text-1) !important;
+}
+.v2 #siteHeader .header-cta .btn.hcta-mybooking:hover,
+html.v2-dark #siteHeader .header-cta .btn.hcta-mybooking:hover {
+  background: rgba(255,255,255,.06) !important;
+  border-color: rgba(255,255,255,.30) !important;
+  color: var(--text-1) !important;
+}
+
+/* Mobile ≤1024px: keep the header compact — only 無料見積り stays here; the sticky
+   bottom bar already carries all three (無料見積り / お問い合わせ / マイ予約). */
+@media (max-width: 1024px) {
+  .header-cta .btn.hcta-contact,
+  .header-cta .btn.hcta-mybooking { display: none !important; }
 }
 
 /* 2) Hero お問い合わせ (was ghost/outline → filled green; 無料見積もり依頼 stays accent) */
