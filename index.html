@@ -1113,12 +1113,15 @@ body { padding-bottom: 76px; }
   }
   .process-timeline::before { display: none !important; }
 
-  /* 2-column grid: circle (40px) | title + desc stacked */
+  /* 2-column grid: circle (fits the 58px node) | title + desc stacked.
+     Column matches the real .step-num size (58px, set in css/v2.css) so the
+     circle can't overflow its track and touch the text; column-gap adds the
+     breathing room between the 01–05 node and its copy. Mobile only (≤720px). */
   .process-step {
     display: grid !important;
-    grid-template-columns: 40px 1fr !important;
+    grid-template-columns: 60px 1fr !important;
     grid-template-rows: auto auto !important;
-    column-gap: 14px !important;
+    column-gap: 18px !important;
     row-gap: 5px !important;
     align-items: start !important;
     padding: 16px 18px !important;
@@ -1153,7 +1156,7 @@ body { padding-bottom: 76px; }
   }
 }
 @media (max-width: 480px) {
-  .process-step { padding: 14px 14px !important; column-gap: 12px !important; }
+  .process-step { padding: 14px 14px !important; column-gap: 16px !important; }
   .process-step p { font-size: 12px !important; }
 }
 
