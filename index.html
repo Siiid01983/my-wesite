@@ -2079,12 +2079,9 @@ setTimeout(window.HM_revealServiceCards, 2500);
 </script>
 
 <!-- ============== STICKY MOBILE CTA ============== -->
-<div class="sticky-cta" aria-label="無料見積り・お問い合わせ">
+<div class="sticky-cta" aria-label="無料見積り・マイ予約">
   <a href="#booking" onclick="openBookingApp();return false;" class="sticky-btn sticky-quote">
     <span>今すぐ無料見積り</span>
-  </a>
-  <a href="#contact" class="sticky-btn sticky-contact">
-    <span>お問い合わせ</span>
   </a>
   <a href="login.html" class="sticky-btn sticky-mybooking">
     <span>マイ予約</span>
@@ -2687,12 +2684,20 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 .ba-filter-label input{width:18px;height:18px;accent-color:var(--ba-forest);flex-shrink:0}
 /* Start-time slot chips (希望の開始時刻): base look + a distinct selected state driven
    by the radio's :checked (native single-select). Instant feedback on tap/click, one
-   at a time, keyboard-focusable. Uses the brand theme (--ba-forest). */
+   at a time, keyboard-focusable. Selected = Hello Moving Contact green (#06C755). */
 .ba-tl-chip{display:inline-block;padding:9px 14px;border:1px solid var(--ba-border);border-radius:9px;background:#fff;color:#0b0f17;font-weight:700;font-size:14px;cursor:pointer;min-width:64px;text-align:center;transition:background-color .12s,border-color .12s,color .12s}
-.ba-tl-slot:hover .ba-tl-chip{border-color:var(--ba-olive)}
-.ba-tl-slot input:checked + .ba-tl-chip{background:var(--ba-forest);border-color:var(--ba-forest);color:#fff}
+/* available + unselected hover → hint the Contact green (green border + faint tint); text stays dark */
+.ba-tl-slot:hover .ba-tl-chip{border-color:#06C755;background:rgba(6,199,85,.08)}
+/* SELECTED slot → Hello Moving Contact green (#06C755). Dark text (≈8.3:1 on #06C755) keeps it
+   WCAG-readable; white on this green fails AA, so the selected chip uses the dark ink instead. */
+.ba-tl-slot input:checked + .ba-tl-chip{background:#06C755;border-color:#06C755;color:#0b0f17}
 .ba-tl-slot input:checked + .ba-tl-chip::after{content:"\2713";margin-left:6px;font-weight:800}
-.ba-tl-slot input:focus-visible + .ba-tl-chip{outline:2px solid var(--ba-forest);outline-offset:2px}
+/* selected hover/focus → slightly darker, consistent green */
+.ba-tl-slot:hover input:checked + .ba-tl-chip{background:#05a847;border-color:#05a847;color:#0b0f17}
+.ba-tl-slot input:focus-visible + .ba-tl-chip{outline:2px solid #05a847;outline-offset:2px}
+/* disabled / unavailable slot → clearly muted + distinguishable (defensive; the renderer normally
+   omits unavailable times rather than disabling them) */
+.ba-tl-slot input:disabled + .ba-tl-chip{background:#f3f4f6;border-color:#e5e7eb;color:#9ca3af;cursor:not-allowed;opacity:.7}
 /* Screens */
 .ba-screen{display:none;flex:1;flex-direction:column;overflow:hidden}
 .ba-screen.active{display:flex;animation:baScreenIn .18s ease}
