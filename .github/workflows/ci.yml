@@ -45,6 +45,9 @@ jobs:
       - name: Telegram notifier unit (gating + no-throw + no token leak, no network)
         run: php tests/telegram.test.php
 
+      - name: Ops Phase 1 logic (signed-URL HMAC / TTL / no-reuse, pure logic)
+        run: php tests/ops-phase1-logic.test.php
+
   node-tests:
     name: Node — arch lock + slot UI + regression
     runs-on: ubuntu-latest
@@ -120,3 +123,6 @@ jobs:
 
       - name: Ops calendar = shared timeline component (unified Admin+Ops)
         run: npm run test:ops-cal
+
+      - name: Ops Phase 1 (inquiry/reply/attachments/quotes/notes/worker-gating, source-static)
+        run: npm run test:ops-phase1
