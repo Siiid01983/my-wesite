@@ -1,0 +1,92 @@
+name: Ops Phase 1 — production smoke (manual)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MANUAL ONLY. Never runs on push or PR. On demand it executes the disposable,
+# self-cleaning, zero-residue Phase-1 booking smoke
+# (tests/ops-phase1-booking-smoke.sh) against production using vaulted secrets:
+# it creates + then deletes ONE PHASE1_TEST booking/thread/attachment and fails
+# unless zero residue remains.
+#
+# BEFORE this can run you must:
+#   1. Create a dedicated least-privilege QA admin account, then add its creds as
+#      repo secrets (values never leave your machine):
+#        gh secret set PHASE1_ADMIN_EMAIL
+#        gh secret set PHASE1_ADMIN_PASS
+#      (API_KEY and API_BASE secrets already exist and are reused.)
+#   2. Create a GitHub Environment named "production-smoke" and add "Required
+#      reviewers" so every dispatch must be human-approved before it runs.
+#
+# Secrets are passed via env only and never echoed; GitHub also masks secret
+# values in logs. The script prints PASS/FAIL + the disposable ids (no secrets).
+#
+# NOTE / KNOWN RISK: the production host's WAF intermittently returns 403/415 to
+# GitHub-runner IPs (a normal browser gets 200 — see deploy.yml). If the smoke's
+# HTTP calls fail with unexpected 403/415 (not the intended auth-boundary 401/403
+# checks), that is likely the WAF blocking the runner, not a real failure. In that
+# case run the script from a trusted IP / self-hosted runner instead.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Why are you running this production smoke? (audit note)'
+        required: true
+        type: string
+      test_email:
+        description: 'Test recipient — a REAL email is sent here. Default: qa+phase1@example.com'
+        required: false
+        default: 'qa+phase1@example.com'
+        type: string
+
+# Least privilege — the job only reads the checkout.
+permissions:
+  contents: read
+
+# Never run two smokes at once, and NEVER cancel a run mid-flight (cancelling
+# between create and cleanup could leave residue).
+concurrency:
+  group: ops-phase1-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: Phase 1 booking smoke (prod · disposable · zero-residue)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Requires a GitHub Environment "production-smoke" with Required reviewers so
+    # each dispatch needs explicit approval before the job starts.
+    environment: production-smoke
+    steps:
+      - name: Checkout (for tests/ only)
+        uses: actions/checkout@v5
+
+      - name: Preflight — required secrets present (names only, no values)
+        env:
+          PHASE1_ADMIN_EMAIL: ${{ secrets.PHASE1_ADMIN_EMAIL }}
+          PHASE1_ADMIN_PASS:  ${{ secrets.PHASE1_ADMIN_PASS }}
+          API_KEY:            ${{ secrets.API_KEY }}
+        run: |
+          missing=0
+          for k in PHASE1_ADMIN_EMAIL PHASE1_ADMIN_PASS API_KEY; do
+            if [ -z "${!k}" ]; then echo "::error::required secret $k is not set"; missing=1; fi
+          done
+          if [ "$missing" != 0 ]; then
+            echo "Add the QA-admin secrets (and confirm API_KEY exists) before running."
+            exit 1
+          fi
+          echo "All required secrets are present."
+
+      - name: Run Phase-1 booking smoke (disposable · self-cleaning · zero-residue)
+        # Inputs/secrets are passed via env (NOT inlined into the shell) to avoid
+        # any script-injection from ${{ }} expansion. The script never echoes them.
+        env:
+          EMAIL:      ${{ secrets.PHASE1_ADMIN_EMAIL }}
+          PASS:       ${{ secrets.PHASE1_ADMIN_PASS }}
+          API_KEY:    ${{ secrets.API_KEY }}
+          BASE:       ${{ secrets.API_BASE }}
+          TEST_EMAIL: ${{ inputs.test_email }}
+          REASON:     ${{ inputs.reason }}
+        run: |
+          echo "Dispatched by ${GITHUB_ACTOR} · reason: ${REASON}"
+          bash tests/ops-phase1-booking-smoke.sh
