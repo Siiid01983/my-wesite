@@ -41,9 +41,11 @@ chk("notes → pm",         hm_slot_band_from_notes($notes),                'pm'
 chk("notes no time → null", hm_slot_band_from_notes("just a note\nno extras"), null);
 chk("notes empty → null", hm_slot_band_from_notes(''),                    null);
 
-echo "band label round-trip\n";
-chk("am label",  hm_slot_band_label('am'), '午前（9:00〜12:00）');
-chk("nt label",  hm_slot_band_label('nt'), '夜間（18:00〜21:00）');
+// (band-label round-trip removed: hm_slot_band_label() was deleted in the dead
+//  booking_slots band-engine refactor (3bec781). Only the legacy band-ID parsers
+//  above survive — still used by migrate-bookings-to-timeline.php to read a legacy
+//  booking's stored band — so this file keeps their coverage. No production code
+//  references the removed label helper.)
 
 echo "\n" . ($fail ? "FAIL: $fail failed, $pass passed\n" : "PASS: all $pass checks\n");
 exit($fail ? 1 : 0);
