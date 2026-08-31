@@ -53,10 +53,20 @@ const DATA = {
 
   // ── 1) LOADING STATE ───────────────────────────────────────────────────────
   console.log('1) loading state appears immediately, before slots resolve');
-  await ctx.evaluate(() => window.baSetDate('2026-09-20'));   // returns AFTER the sync loading paint
-  chk('shows "空き時間を確認中…" while fetching', /空き時間を確認中/.test(await hostText()));
-  chk('renders ZERO selectable slots while loading', (await chipCount()) === 0);
-  chk('loading note is NOT the "no availability" message', !/空き時間がありません/.test(await hostText()));
+  // Capture the DOM in the SAME synchronous turn as baSetDate. _baFetchAvail clears the
+  // slots and paints "空き時間を確認中…" synchronously BEFORE it issues the fetch, so this
+  // snapshot deterministically observes the loading frame. (A separate async read is
+  // non-deterministic: on a slow machine it can land AFTER the mock-delayed response has
+  // resolved and see the final slots instead of the loading frame — a harness race, not a
+  // product bug. The production loading frame is present for the whole ~600ms fetch.)
+  const snap1 = await ctx.evaluate(() => {
+    window.baSetDate('2026-09-20');
+    const host = document.getElementById('ba-time-host');
+    return { host: host.textContent, chips: host.querySelectorAll('#ba-tl-slots .ba-tl-slot').length };
+  });
+  chk('shows "空き時間を確認中…" while fetching', /空き時間を確認中/.test(snap1.host));
+  chk('renders ZERO selectable slots while loading', snap1.chips === 0);
+  chk('loading note is NOT the "no availability" message', !/空き時間がありません/.test(snap1.host));
   await ctx.waitForFunction(() => document.querySelectorAll('#ba-tl-slots .ba-tl-slot').length > 0, { timeout: 5000 });
   chk('resolves to the server slots for that date', JSON.stringify(await slotVals()) === JSON.stringify(['09:00', '10:00', '11:00']));
 
@@ -66,11 +76,15 @@ const DATA = {
   await ctx.evaluate(() => window.baSetDate('2026-09-21'));
   await ctx.waitForFunction(() => document.querySelectorAll('#ba-tl-slots .ba-tl-slot').length > 0, { timeout: 5000 });
   chk('date A loaded its slots (07:00/08:00)', JSON.stringify(await slotVals()) === JSON.stringify(['07:00', '08:00']));
-  // now switch to a SLOW date; the instant after, A's slots must be gone
-  await ctx.evaluate(() => window.baSetDate('2026-09-22'));   // 700ms delay
-  const duringSwitch = await slotVals();
-  chk('previous date\'s slots are cleared immediately (no stale chips)', duringSwitch.length === 0);
-  chk('shows loading, not A\'s times, during the switch', /空き時間を確認中/.test(await hostText()));
+  // now switch to a SLOW date; the instant after, A's slots must be gone. Capture the
+  // state in the SAME synchronous turn as baSetDate (deterministic — see stage 1's note).
+  const snap2 = await ctx.evaluate(() => {
+    window.baSetDate('2026-09-22');   // 700ms delay
+    const host = document.getElementById('ba-time-host');
+    return { host: host.textContent, slots: [...host.querySelectorAll('#ba-tl-slots .ba-tl-slot input')].map(e => e.value) };
+  });
+  chk('previous date\'s slots are cleared immediately (no stale chips)', snap2.slots.length === 0);
+  chk('shows loading, not A\'s times, during the switch', /空き時間を確認中/.test(snap2.host));
   await ctx.waitForFunction(() => document.querySelectorAll('#ba-tl-slots .ba-tl-slot').length > 0, { timeout: 5000 });
   chk('date B resolves to ITS slots (15:00/16:00), never A\'s', JSON.stringify(await slotVals()) === JSON.stringify(['15:00', '16:00']));
 

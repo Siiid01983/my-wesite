@@ -115,5 +115,8 @@ jobs:
       - name: Customer picker uses admin timeline as single source (server slots)
         run: npm run test:customer-picker
 
+      - name: Customer picker loading/race-safety (loading frame + stale-clear + out-of-order)
+        run: npm run test:customer-picker-loading
+
       - name: Ops calendar = shared timeline component (unified Admin+Ops)
         run: npm run test:ops-cal
