@@ -3093,6 +3093,8 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   var baTimeline = false;
   var baAvailSlots = null;        // ["HH:MM", …] the ONLY source: server free start times (admin default duration)
   var baAvailError = false;       // last availability fetch failed (transient) — distinct from "truly no slots"
+  var baAvailLoading = false;     // an availability fetch is in flight → show "確認中…", never stale slots
+  var baAvailSeq = 0;             // monotonic token: only the LATEST fetch may update slots/UI (drops out-of-order responses)
   var baState = baBlankState();
   var baCurrentScreen = 'services';
   var baSubmitting = false;
@@ -3837,10 +3839,19 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     return s;
   }
   function _baFetchAvail(iso) {
+    // Enter the loading state: DROP any slots left over from a previously chosen date
+    // immediately, so the picker can never show — or let the customer tap — the prior
+    // date's times while this request is in flight. A monotonic token (seq) ensures
+    // only the LATEST fetch may update the slots/UI, so an out-of-order response for
+    // an older date is ignored. This is display-only; the server stays the sole source.
+    var seq = ++baAvailSeq;
     baAvailError = false;
+    baAvailLoading = true;
+    baAvailSlots = null;
     iso = _baDateOnly(iso);   // normalize before it hits the strict server validator
     var base = (window.API_BASE || '').replace(/\/+$/, '');
-    if (!iso || !base) { baRenderTimeSlots(); return; }
+    if (!iso || !base) { baAvailLoading = false; baRenderTimeSlots(); return; }
+    baRenderTimeSlots();      // paint "空き時間を確認中…" now, before the request resolves
     // cache:'no-store' + timestamp buster: a reopened day must show its slots again
     // instantly, never a stale (closed) cached availability response.
     fetch(base + '/availability.php?date=' + encodeURIComponent(iso) + '&_ts=' + Date.now(), {
@@ -3848,6 +3859,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     })
       .then(function (r) { return r.json(); })
       .then(function (out) {
+        if (seq !== baAvailSeq) return;   // a newer date was picked → ignore this stale response
         if (!out || !out.ok) { baAvailError = true; baAvailSlots = null; return; }
         // The SERVER is the single source of truth: availability.php returns `slots`,
         // the free START TIMES for the admin-configured duration (windows minus
@@ -3855,8 +3867,8 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
         // them — no duration choice, no client-side slot generation.
         baAvailSlots = Array.isArray(out.slots) ? out.slots : null;
       })
-      .catch(function () { baAvailError = true; baAvailSlots = null; })
-      .then(function () { baRenderTimeSlots(); });
+      .catch(function () { if (seq === baAvailSeq) { baAvailError = true; baAvailSlots = null; } })
+      .then(function () { if (seq === baAvailSeq) { baAvailLoading = false; baRenderTimeSlots(); } });
   }
   // Local (not UTC) "YYYY-MM-DD" for TODAY (used as the date-picker minimum).
   function _baTodayLocal() {
@@ -3871,7 +3883,11 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   function _baRenderTimelineSlots(host) {
     var slots = Array.isArray(baAvailSlots) ? baAvailSlots : [];
     var slotHtml;
-    if (slots.length) {
+    if (baAvailLoading) {
+      // A fetch is in flight (slots were just cleared) — show a neutral loading note,
+      // NOT the "no availability" empty state, and render no selectable chips.
+      slotHtml = '<p style="font-size:13px;color:#6b7280;margin:8px 0" aria-live="polite">空き時間を確認中…</p>';
+    } else if (slots.length) {
       slotHtml = slots.map(function (t) {
         var sel = baState.startAt && baState.startAt.slice(11, 16) === t;
         // The selected LOOK is driven entirely by the radio's :checked state (see the
