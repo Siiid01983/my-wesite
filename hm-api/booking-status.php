@@ -213,9 +213,15 @@ try {
 
     // 3) Auto-notification row (mirrors create-booking.php's inbox_messages insert).
     if ($notifyCustomer) {
+      // thread_id = 'chat:<bookingId>' pins this notification onto the booking's
+      // canonical conversation (same key chat.php uses), so the Ops Communication
+      // Center can group it and quote Save has a usable thread_id.
+      // labels.internal keeps this staff-only notification OUT of the customer
+      // portal chat (chat.php skips labels.internal rows) — the customer is
+      // notified by the lifecycle email, not by seeing this row in their thread.
       $ins = $db->prepare(
-        'INSERT INTO inbox_messages (id, sender, email, subject, body, body_text, booking_id, mailbox, sender_name, received_at)
-         VALUES (?,?,?,?,?,?,?,?,?,NOW())'
+        'INSERT INTO inbox_messages (id, sender, email, subject, body, body_text, booking_id, thread_id, mailbox, sender_name, labels, received_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW())'
       );
       $ins->execute([
         hm_uuid4(),
@@ -225,8 +231,10 @@ try {
         $msg,
         $msg,
         $bookingId,
+        'chat:' . $bookingId,
         'booking@hello-moving.com',
         'Hello Moving',
+        '{"internal":true}',
       ]);
     }
 

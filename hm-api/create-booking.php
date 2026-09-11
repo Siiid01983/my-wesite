@@ -256,9 +256,15 @@ try {
     // this is the notification body only; the authoritative full address stays in
     // bookings.notes and is revealed in Booking Details once the booking is 確定.
     if (!empty($data['notes'])) $body .= "\n---\n" . hm_mask_notes_addresses((string)$data['notes']);
+    // thread_id = 'chat:<bookingId>' pins this notification onto the booking's
+    // canonical conversation (same key chat.php uses), so the Ops Communication
+    // Center can group it and quote Save has a usable thread_id.
+    // labels.internal keeps this staff-only notification OUT of the customer
+    // portal chat (chat.php skips labels.internal rows) — the customer is
+    // notified by email, not by seeing this row in their thread.
     $st = hm_db()->prepare(
-      'INSERT INTO inbox_messages (id, sender, email, subject, body, body_text, booking_id, mailbox, sender_name, received_at)
-       VALUES (?,?,?,?,?,?,?,?,?,NOW())'
+      'INSERT INTO inbox_messages (id, sender, email, subject, body, body_text, booking_id, thread_id, mailbox, sender_name, labels, received_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW())'
     );
     $st->execute([
       hm_uuid4(),
@@ -268,8 +274,10 @@ try {
       $body,
       $body,
       $data['id'],
+      'chat:' . $data['id'],
       'booking@hello-moving.com',
       $name,
+      '{"internal":true}',
     ]);
     hm_cache_invalidate_table('inbox_messages');
   } catch (Throwable $e) {
