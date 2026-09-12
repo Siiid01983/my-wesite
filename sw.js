@@ -52,6 +52,8 @@ const PRECACHE = [
   '/js/v2.js',
   '/js/booking-carousel.js',
   '/js/blog/blogNavGate.js',
+  '/locales/public.en.js',
+  '/js/i18n/publicI18n.js',
   '/script.js',
   '/bookingService.js',
 
