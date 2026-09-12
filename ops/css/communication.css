@@ -61,12 +61,24 @@
 .cc-thd-body > .mc-scroll { flex: 1; overflow-y: auto; }
 
 /* ── Internal note block (visually distinct; staff-only) ───────────────────── */
+/* Automated/system note text uses the Ops olive-green identity (NOT the old pale
+   gold #e6ba6b), theme-split for readability against the note's own background:
+   • Light theme → medium-dark olive #4C5B2B — WCAG 6.33:1 on the composited
+     note ground (#F2EDDF = rgba(224,168,74,.10) over #f4f5f0). Strong AA.
+   • Dark theme  → sage-olive #9AB57A (the Ops --hm-sage) — WCAG 6.69:1 on the
+     dark composited note ground. Same olive family, readable on dark.
+   Background / border / layout / typography are unchanged. */
 .cc-note {
   align-self: center; max-width: 88%; margin: 8px auto; padding: 9px 12px;
   background: rgba(224,168,74,.10); border: 1px dashed rgba(224,168,74,.5);
-  border-radius: 10px; color: #e6ba6b; font-size: .84rem; line-height: 1.5;
+  border-radius: 10px; color: #4C5B2B; font-size: .84rem; line-height: 1.5;
   text-align: left; white-space: normal;
 }
+html.v2-dark .cc-note { color: #9AB57A; }
+/* Rating stars inside an automated note (e.g. the completion/review message) —
+   warm yellow-gold in both themes; they sit amid the dark olive note text, so
+   they read clearly as gold. Size/weight inherited so shape & spacing are kept. */
+.cc-note-star { color: #F4C542; }
 .cc-note-badge {
   display: inline-block; font-size: .62rem; font-weight: 800; letter-spacing: .04em;
   text-transform: uppercase; background: rgba(224,168,74,.25); color: #f0c988;

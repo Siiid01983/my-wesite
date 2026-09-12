@@ -272,8 +272,11 @@
     var lastDay = '';
     return c.messages.map(function (m) {
       if (m.internal) {
+        // Wrap star glyphs (esc leaves ★/☆/⭐ intact) so review/rating stars in an
+        // automated note render warm gold via .cc-note-star; the surrounding note
+        // text stays the readable dark note color.
         return '<div class="cc-note"><span class="cc-note-badge">' + U.esc(T('comm.note.badge')) + '</span>' +
-          U.esc(m.text).replace(/\n/g, '<br>') +
+          U.esc(m.text).replace(/\n/g, '<br>').replace(/([★☆⭐]+)/g, '<span class="cc-note-star">$1</span>') +
           '<span class="cc-note-time">' + U.esc(m.name) + ' · ' + U.fmtTime(m.ts) + '</span></div>';
       }
       var sep = '';
