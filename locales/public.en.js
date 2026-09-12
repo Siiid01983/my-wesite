@@ -93,6 +93,112 @@
     '下へスクロール': 'Scroll down',
     'ご不明な点・ご要望などをご記入ください。':
       'Please tell us any questions or requests.',
+
+    /* ── Shared footer / secondary nav (blog · article · reviews · legal) ─── */
+    'ホーム': 'Home',
+    'オンライン予約': 'Online booking',
+    'よくある質問': 'FAQ',
+    '東京を拠点に、丁寧で安心の引越しサービスを提供しています。日本語・英語対応。':
+      'Based in Tokyo, we provide careful, reliable moving services. Japanese & English support.',
+
+    /* ── Blog / article ──────────────────────────────────────────────────── */
+    '引越しのコツ・お知らせ': 'Moving tips & news',
+    '記事を読み込んでいます…': 'Loading articles…',
+
+    /* ── Reviews (public) — review CONTENT stays Japanese (data) ──────────── */
+    '← ホームへ戻る': '← Back to home',
+    '口コミ': 'Reviews',
+    'お客様の口コミ': 'Customer reviews',
+    '口コミを読み込んでいます…': 'Loading reviews…',
+    'お引越しをご検討中ですか？': 'Planning a move?',
+    '最短2時間でご返信。まずはお気軽に無料お見積りをどうぞ。':
+      'We reply within 2 hours. Get a free estimate — no obligation.',
+    '14年の実績・国交省認可': '14 years · Ministry-licensed',
+    'お引越しのご相談': 'Moving consultation',
+    '無料見積もり': 'Free estimate',
+    '✓ 認証済み': '✓ Verified',
+    '口コミをもっと見る': 'Read more reviews',
+
+    /* ── Customer login (login-v2) — display only; auth logic untouched ───── */
+    'マイページ ログイン': 'My Page Login',
+    'ご予約時のメールアドレスと予約番号（確認番号）を入力してください。':
+      'Enter the email address and reference (confirmation) number from your booking.',
+    'ご予約時に登録されたメールアドレスをご入力ください。':
+      'Enter the email address you registered when booking.',
+    '予約番号（確認番号）': 'Reference number (confirmation number)',
+    'ご予約確認メールに記載の予約番号をご入力ください。':
+      'Enter the reference number shown in your booking confirmation email.',
+    '管理者はメールアドレスのみでログインできます':
+      'Administrators can log in with email only',
+    'ログイン': 'Log in',
+
+    /* ── Customer portal (portal-v2) — display chrome; booking DATA stays JA ─ */
+    'マイページ': 'My Page',
+    '連絡先の更新（Update Contact）': 'Update Contact',
+    'メールアドレスはログインに使用するため変更できません。':
+      'Your email is used for login and cannot be changed.',
+    '連絡先を更新': 'Update contact',
+    'キャンセルのご依頼（Cancellation）': 'Cancellation',
+    'キャンセルのご依頼を受付けました。担当者がご連絡いたします。':
+      'Your cancellation request has been received. Our team will contact you.',
+    'キャンセルのご依頼（Request Cancellation）': 'Request Cancellation',
+    'キャンセル理由（任意）': 'Reason for cancellation (optional)',
+    'キャンセルを依頼する': 'Request cancellation',
+    'ご依頼後、担当者が確認のうえ手続きいたします。':
+      'After your request, our team will review and process it.',
+    '予約の管理': 'Manage booking',
+    'チャットで相談する': 'Chat with us',
+    '予約ステータス': 'Booking status',
+    '引越し日': 'Moving date',
+    '担当スタッフ': 'Assigned staff',
+    '見積もりステータス': 'Estimate status',
+    '最新の更新': 'Latest update',
+    'お見積もりの承認（Approve Estimate）': 'Approve Estimate',
+    '内容をご確認のうえ、お見積もりを承認してください。承認すると予約が確定します。':
+      'Please review the details and approve the estimate. Approving confirms your booking.',
+    'お見積もりを承認': 'Approve estimate',
+    '予約内容': 'Booking details',
+    '引越し詳細': 'Move details',
+    'ステータス': 'Status',
+    '希望日': 'Preferred date',
+    '希望時間': 'Preferred time',
+    '出発地': 'Origin',
+    '到着地': 'Destination',
+    '荷物': 'Items',
+    'サービス': 'Service',
+    '備考': 'Notes',
+    '✕ ご予約はキャンセルされました。': '✕ Your booking has been cancelled.',
+    '進捗': 'Progress',
+
+    /* ── Contact Chat shell (rendered on index.html by js/contact-chat.js;
+          the engine's observer translates it. Message bubbles stay Japanese) ─ */
+    'お問い合わせチャット': 'Contact chat',
+    'Hello Moving カスタマーサポート': 'Hello Moving Customer Support',
+    '前回のお問い合わせを続ける': 'Continue your previous inquiry',
+    'ご質問・ご相談をチャットでお受けします。担当者が順次ご返信いたします。':
+      'Ask us anything by chat. Our team will reply in order.',
+    '新しくお問い合わせ': 'New inquiry',
+    'お問い合わせを再開': 'Resume inquiry',
+    'お問い合わせ番号とメールアドレスで再開できます':
+      'Resume with your inquiry number and email address',
+    'お問い合わせ種別': 'Inquiry type',
+    'メッセージ': 'Message',
+    '送信して番号を発行': 'Send & get a number',
+    '送信後、お問い合わせ番号が発行されます。':
+      'After sending, an inquiry number will be issued.',
+    '← 戻る': '← Back',
+    'お名前をご入力ください。': 'Please enter your name.',
+    '正しいメールアドレスをご入力ください。': 'Please enter a valid email address.',
+    'メッセージをご入力ください。': 'Please enter a message.',
+    '送信先が設定されていません。お急ぎの場合はLINEよりご連絡ください。':
+      'No destination is configured. If urgent, please contact us via LINE.',
+    '送信しています…': 'Sending…',
+    'お問い合わせ番号が発行されました': 'Your inquiry number has been issued',
+    'お問い合わせ番号': 'Inquiry number',
+    '番号をコピー': 'Copy number',
+    'チャットを開く': 'Open chat',
+    'コピーしました ✓': 'Copied ✓',
+    'ご相談内容をご記入ください。': 'Please describe your inquiry.',
   };
 
   // Publish for the public i18n engine (browser) and tests (node).

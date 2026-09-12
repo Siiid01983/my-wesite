@@ -13,9 +13,12 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 const path = require('node:path');
+const fs = require('node:fs');
 
-const I = require(path.join(__dirname, '..', 'js', 'i18n', 'publicI18n.js'));
-const EN = require(path.join(__dirname, '..', 'locales', 'public.en.js'));
+const ROOT = path.join(__dirname, '..');
+const I = require(path.join(ROOT, 'js', 'i18n', 'publicI18n.js'));
+const EN = require(path.join(ROOT, 'locales', 'public.en.js'));
+const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 
 /* ── tagToLang ─────────────────────────────────────────────────────────── */
 test('tagToLang: en* → en, ja* → ja, other → null', () => {
@@ -104,6 +107,33 @@ test('dictionary: covers key public UI strings', () => {
   ['無料見積り', 'お問い合わせ', 'サービスを選択', 'お見積書を送信しました', '予約番号']
     .forEach((k) => assert.ok(EN[k] && EN[k] !== k, 'missing EN for ' + k));
 });
+/* ── each public page loads the shared engine (single system) ──────────── */
+test('every targeted public page loads the shared i18n engine + dictionary', () => {
+  ['index.html', 'blog.html', 'article.html', 'reviews.html', 'privacy.html',
+    'terms.html', 'login-v2.html', 'portal-v2.html'].forEach((f) => {
+    const html = read(f);
+    assert.ok(/locales\/public\.en\.js/.test(html), f + ' loads locales/public.en.js');
+    assert.ok(/js\/i18n\/publicI18n\.js/.test(html), f + ' loads js/i18n/publicI18n.js');
+  });
+});
+test('no second localization system introduced on public pages', () => {
+  // Public pages must NOT pull in the Ops/Admin engines (localeManager / utils/i18n).
+  ['blog.html', 'article.html', 'reviews.html', 'privacy.html', 'terms.html',
+    'login-v2.html', 'portal-v2.html'].forEach((f) => {
+    const html = read(f);
+    assert.ok(!/lib\/localeManager\.js/.test(html), f + ' must not load localeManager');
+    assert.ok(!/utils\/i18n\.js/.test(html), f + ' must not load admin utils/i18n');
+  });
+});
+
+/* ── new page strings translate; content/data stays Japanese ───────────── */
+test('dictionary: covers the newly added page chrome', () => {
+  ['ホーム', 'よくある質問', 'お客様の口コミ', '口コミをもっと見る',
+    'マイページ ログイン', 'ログイン', '連絡先を更新', 'チャットで相談する',
+    '新しくお問い合わせ', 'お問い合わせを再開', '送信して番号を発行']
+    .forEach((k) => assert.ok(EN[k] && EN[k] !== k, 'missing EN for ' + k));
+});
+
 test('dictionary: NEVER translates protected semantic values (status/service keys)', () => {
   // Status enums (bookingService.js), service-name keys, packed-note tokens, and
   // routing values must not be display-translated — they are logic.

@@ -299,5 +299,10 @@ button, input { font: inherit; color: inherit; }
   });
 })();
 </script>
+<!-- Public English layer (ADDITIVE): shared JA→EN overlay engine + dictionary.
+     Display-only; authentication/session logic is untouched. Japanese is source of
+     truth & fallback; ?lang=en / hm_pub_lang select English. -->
+<script src="locales/public.en.js" defer></script>
+<script src="js/i18n/publicI18n.js" defer></script>
 </body>
 </html>

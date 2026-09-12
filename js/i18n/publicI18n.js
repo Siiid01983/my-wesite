@@ -121,7 +121,8 @@
 
   // Regions whose text is dynamic/customer-data and must never be swapped.
   var SKIP_SEL = '.ba-val, .ba-review-table, .pchat-bubble, .hmcc-b, .pchat-name,' +
-    ' .hmcc-name, .ba-ref-num, [data-noi18n], [translate="no"], script, style, noscript';
+    ' .hmcc-name, .ba-ref-num, .pv2-bubble, .pv2-msg-list, [data-noi18n],' +
+    ' [translate="no"], script, style, noscript';
   var SKIP_TAGS = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, TEXTAREA: 1, INPUT: 1, CODE: 1, PRE: 1 };
   var ATTRS = ['placeholder', 'aria-label', 'title'];
 
@@ -208,7 +209,8 @@
     if (document.getElementById('hm-pub-lang-css')) return;
     var css =
       '.hm-pub-lang{display:inline-flex;align-items:center;border:1px solid var(--line,#dfe3d8);' +
-        'border-radius:999px;overflow:hidden;font-size:12px;font-weight:700;line-height:1;vertical-align:middle}' +
+        'border-radius:999px;overflow:hidden;font-size:12px;font-weight:700;line-height:1;' +
+        'vertical-align:middle;margin-left:10px;flex:none}' +
       '.hm-pub-lang a{padding:5px 10px;text-decoration:none;color:inherit;opacity:.72;white-space:nowrap}' +
       '.hm-pub-lang a.on{background:#9AB57A;color:#20301a;opacity:1}';
     var s = document.createElement('style'); s.id = 'hm-pub-lang-css'; s.textContent = css;
@@ -232,20 +234,36 @@
     return wrap;
   }
 
+  // Prefer mounting the switch INSIDE an existing header/nav so it never overlaps
+  // page content or a top-right link. Ordered from most- to least-specific across
+  // the public surfaces; the first present container wins.
+  var MOUNT_ANCHORS = [
+    '.header-cta',        // index.html desktop header
+    '.p-header-right',    // portal-v2 header (right cluster)
+    '.blog-nav',          // blog.html / article.html header nav
+    '.rv-header',         // reviews.html header
+    '.lg-header',         // privacy.html / terms.html header
+    'header',             // any other page header
+    'footer',             // last container fallback (e.g. login-v2 has no header)
+  ];
+
   function mountSwitch() {
     injectCss();
-    // Desktop header CTA cluster.
-    var cta = document.querySelector('.header-cta');
-    if (cta && !cta.querySelector('.hm-pub-lang')) cta.appendChild(switchEl());
-    // Mobile nav list.
+    var mounted = false;
+    for (var i = 0; i < MOUNT_ANCHORS.length; i++) {
+      var host = document.querySelector(MOUNT_ANCHORS[i]);
+      if (host && !host.querySelector('.hm-pub-lang')) { host.appendChild(switchEl()); mounted = true; break; }
+    }
+    // Mobile nav list (index) — independent secondary mount.
     var mnav = document.getElementById('mobileNav');
     if (mnav && !mnav.querySelector('.hm-pub-lang')) {
-      var li = document.createElement('li'); li.appendChild(switchEl()); mnav.appendChild(li);
+      var li = document.createElement('li'); li.appendChild(switchEl()); mnav.appendChild(li); mounted = true;
     }
-    // Fallback: if neither anchor exists, pin a small floating control.
-    if (!document.querySelector('.hm-pub-lang')) {
+    // True last resort (no header/footer at all): pin BOTTOM-LEFT so it can never
+    // overlap a top-right back/nav link.
+    if (!mounted && !document.querySelector('.hm-pub-lang')) {
       var f = switchEl();
-      f.style.cssText = 'position:fixed;top:10px;right:10px;z-index:99999;background:#fff';
+      f.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:99999;background:#fff';
       document.body.appendChild(f);
     }
   }
