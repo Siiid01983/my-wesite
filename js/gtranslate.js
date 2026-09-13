@@ -82,9 +82,13 @@
     'footer',               // any other public page
   ];
 
-  /* Customer-data display nodes: keep them verbatim even while translating. Logic
-     never reads these, so this is presentation hygiene, not a correctness fix. */
-  var NO_TX = '.ba-val, .ba-ref-num, .ba-review-table, .pchat-bubble, .hmcc-b,' +
+  /* Nodes Google must leave verbatim while translating:
+       • the brand wordmark — Google rewrote "Hello Moving" to "Hello", and a
+         brand name must never be translated;
+       • customer-data display nodes. Logic never reads these, so that part is
+         presentation hygiene rather than a correctness fix. */
+  var NO_TX = '.brand-name, .brand-sub, .lg-brand, .ba-hdr-logo, .rv-brand,' +
+              ' .ba-val, .ba-ref-num, .ba-review-table, .pchat-bubble, .hmcc-b,' +
               ' .pv2-bubble, .pv2-msg-list, .pv2-ref, [data-noi18n]';
 
   function markNoTranslate(root) {
@@ -99,12 +103,17 @@
   function injectCss() {
     if (document.getElementById('hm-gt-css')) return;
     var css =
-      /* Our control — compact, inherits the surrounding footer type. */
+      /* Our control — compact, and styled to match the Estimate button: same brand
+         gold gradient, same dark ink, same font stack (inherited) and weight 600.
+         Kept a step smaller (12px vs 13px) so it stays unobtrusive in the footer.
+         Layout/spacing are unchanged; the Estimate button itself is not touched. */
       '.hm-gt{display:flex;justify-content:center;align-items:center;gap:6px;flex:0 0 100%;width:100%;margin:10px 0 0;white-space:nowrap}' +
-      '.hm-gt-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid currentColor;' +
-        'background:transparent;color:inherit;font:inherit;font-size:12px;line-height:1;' +
-        'padding:6px 11px;border-radius:999px;cursor:pointer;opacity:.75;white-space:nowrap}' +
-      '.hm-gt-btn:hover{opacity:1}' +
+      '.hm-gt button.hm-gt-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid transparent;' +
+        /* !important: the footer's own colour rule for this area is !important. */
+        'background:linear-gradient(180deg,#FFB23E,#F5A623);color:#0C0E0B !important;font-family:inherit;' +
+        'font-size:12px;font-weight:600;letter-spacing:.04em;line-height:1;' +
+        'padding:6px 11px;border-radius:999px;cursor:pointer;white-space:nowrap}' +
+      '.hm-gt button.hm-gt-btn:hover{filter:brightness(1.05)}' +
       '.hm-gt-widget{display:none}' +
       '.hm-gt.is-on .hm-gt-btn{display:none}' +
       '.hm-gt.is-on .hm-gt-widget{display:inline-flex;align-items:center}' +
@@ -118,16 +127,37 @@
          footer instead of Google's default white chip. */
       '.hm-gt-widget .goog-te-gadget{font-family:inherit !important;font-size:12px !important;' +
         'color:inherit !important;line-height:1 !important}' +
-      '.hm-gt-widget .goog-te-gadget-simple{background:transparent !important;' +
-        'border:1px solid currentColor !important;border-radius:999px !important;' +
-        'padding:6px 11px !important;font-size:12px !important;line-height:1 !important;white-space:nowrap !important;' +
-        'color:inherit !important;opacity:.75;display:inline-flex;align-items:center;gap:4px}' +
-      '.hm-gt-widget .goog-te-gadget-simple:hover{opacity:1}' +
-      '.hm-gt-widget .goog-te-gadget-simple *{color:inherit !important;font-size:12px !important;white-space:nowrap !important}' +
+      '.hm-gt-widget .goog-te-gadget-simple{background:linear-gradient(180deg,#FFB23E,#F5A623) !important;' +
+        'border:1px solid transparent !important;border-radius:999px !important;' +
+        'padding:6px 11px !important;font-size:12px !important;font-weight:600 !important;' +
+        'letter-spacing:.04em !important;line-height:1 !important;white-space:nowrap !important;' +
+        /* Google's label wraps onto two lines (「英語」 then ▼). The wrapper box is
+           already centred in the circle, but the lines default to text-align:start,
+           which leaves the ▼ hanging to the left. text-align inherits, so centring
+           it here centres both lines — no override of Google's own rules needed. */
+        'color:#0C0E0B !important;display:inline-flex;align-items:center;' +
+        'justify-content:center;text-align:center !important;gap:4px}' +
+      '.hm-gt-widget .goog-te-gadget-simple:hover{filter:brightness(1.05)}' +
+      '.hm-gt-widget .goog-te-gadget-simple *{color:#0C0E0B !important;font-size:12px !important;' +
+        'font-weight:600 !important;white-space:nowrap !important}' +
       /* Google's spacer image renders as a stray gap on a dark background. */
       '.hm-gt-widget img.goog-te-gadget-icon{display:none !important}' +
       /* Google renders <font> wrappers around translated text; keep them inline. */
-      'font{background:transparent !important;box-shadow:none !important}';
+      'font{background:transparent !important;box-shadow:none !important}' +
+      /* TRANSLATED VIEW ONLY (html.translated-ltr / -rtl, which Google sets when a
+         translation is active). Japanese renders without these classes, so the
+         Japanese layout is bit-for-bit untouched.
+         The sticky CTA labels are `white-space:nowrap` in equal thirds, which fits
+         the short Japanese wording but lets longer translated labels (e.g. "Get a
+         free quote now" = 139px in a 114px button) spill past the button edge and
+         clip. Allow those labels to wrap instead. */
+      'html.translated-ltr .sticky-btn span,html.translated-rtl .sticky-btn span{' +
+        'white-space:normal !important;line-height:1.15;text-align:center;overflow-wrap:anywhere}' +
+      'html.translated-ltr .sticky-btn,html.translated-rtl .sticky-btn{' +
+        'text-align:center;padding-left:4px !important;padding-right:4px !important}' +
+      '@media (max-width:400px){' +
+      ' html.translated-ltr .sticky-btn,html.translated-rtl .sticky-btn{font-size:11px !important}' +
+      '}';
     var s = document.createElement('style'); s.id = 'hm-gt-css'; s.textContent = css;
     (document.head || document.documentElement).appendChild(s);
   }

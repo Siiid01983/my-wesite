@@ -157,6 +157,37 @@ test('customer-data nodes are marked non-translatable', () => {
   assert.ok(/setAttribute\('translate',\s*'no'\)/.test(GT), 'applies translate="no"');
 });
 
+/* ── Translated-view layout fixes (found on production mobile) ─────────── */
+test('brand wordmark is never translated', () => {
+  // Google rewrote "Hello Moving" to "Hello"; a brand name must stay verbatim.
+  ['.brand-name', '.brand-sub', '.lg-brand']
+    .forEach((sel) => assert.ok(GT.includes(sel), 'NO_TX must cover ' + sel));
+});
+
+test('sticky CTA labels may wrap once translated (no clipping)', () => {
+  // Japanese fits on one line; longer translated labels overflowed the button.
+  assert.ok(/translated-ltr \.sticky-btn span/.test(GT_CODE), 'translated sticky rule present');
+  assert.ok(/white-space:normal !important/.test(GT_CODE), 'labels may wrap when translated');
+});
+
+test('translated-view CSS never affects the Japanese render', () => {
+  // Reconstruct the stylesheet injectCss() actually builds, then check that every
+  // rule targeting an existing SITE class is gated on Google's html.translated-*
+  // class (absent on the untranslated Japanese page). Rules for our own .hm-gt-*
+  // elements and Google's .goog-* chrome are fine ungated.
+  const body = /function injectCss\(\)[\s\S]*?\n  }/.exec(GT_CODE);
+  assert.ok(body, 'injectCss found');
+  const css = (body[0].match(/'([^']*)'/g) || []).map((s) => s.slice(1, -1)).join('');
+  assert.ok(css.includes('.sticky-btn'), 'stylesheet includes the sticky rule');
+
+  const SITE_CLASSES = /\.sticky-btn|\.sticky-cta|\.brand-name|\.brand-sub|\.v2hero|\.header-cta|\.hm-ft__/;
+  css.split('}')
+    .map((chunk) => chunk.split('{')[0])            // selector part of each rule
+    .filter((sel) => sel && SITE_CLASSES.test(sel))
+    .forEach((sel) => assert.ok(/html\.translated-(ltr|rtl)/.test(sel),
+      'site-class rule must be gated on the translated state: ' + sel.trim()));
+});
+
 test('protected Japanese semantic values are untouched in source', () => {
   const svc = read('bookingService.js');
   ['新規', '確認中', '確定', '完了', 'キャンセル']
