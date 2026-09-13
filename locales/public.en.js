@@ -142,7 +142,17 @@
     'ログイン': 'Log in',
 
     /* ── Customer portal (portal-v2) — display chrome; booking DATA stays JA ─ */
+    // Sidebar nav labels. These are pure navigation chrome — NOT status enums,
+    // service names or routing keys — so they are safe to translate at the display
+    // layer. tests/public-i18n.test.js parses the portal sidebar markup and fails
+    // if any label here goes missing again.
     'マイページ': 'My Page',
+    'ダッシュボード': 'Dashboard',
+    'チャット': 'Chat',
+    '写真': 'Photos',
+    '口コミ投稿': 'Write a review',
+    // Portal header control that sits beside the sidebar (also guarded by a test).
+    'ログアウト': 'Log out',
     '連絡先の更新（Update Contact）': 'Update Contact',
     'メールアドレスはログインに使用するため変更できません。':
       'Your email is used for login and cannot be changed.',
