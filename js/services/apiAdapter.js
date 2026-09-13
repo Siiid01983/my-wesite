@@ -717,7 +717,10 @@
         { id:'FAQ-3', question:'英語での対応は可能ですか?',          answer:'はい、日本語・英語の両方に対応しております。Yes, our team can assist you in English. ご遠慮なくご相談ください。' },
         { id:'FAQ-4', question:'お支払い方法を教えてください',        answer:'現金、銀行振込、主要クレジットカードに対応しております。法人のお客様には、請求書でのお支払いも承っております。' },
         { id:'FAQ-5', question:'家具の組立・分解だけのご依頼も可能ですか?', answer:'はい、家具の組立・分解のみのご依頼も承っております。お見積りの際にご相談くださいませ。' },
-        { id:'FAQ-6', question:'キャンセル料はかかりますか?',         answer:'引越し日の3日前までは無料でキャンセルいただけます。それ以降は、国土交通省が定める標準引越運送約款に基づきキャンセル料を頂戴いたします。' },
+        // Keep byte-identical to the static FAQ + FAQPage JSON-LD in index.html;
+        // /cancellation-policy.html is the authoritative source. Plain text only —
+        // _applyFaqItems escapes HTML, so a link here would render as literal text.
+        { id:'FAQ-6', question:'キャンセル料はかかりますか?',         answer:'キャンセル・日程変更のご連絡が作業日の3日前までであれば無料です。作業日の2日前は予約金額の20%、前日は30%、当日は50%のキャンセル料を申し受けます。日程の変更もキャンセル料の対象となります。詳しくは「キャンセルポリシー」をご確認ください。' },
         { id:'FAQ-7', question:'万が一、お荷物が破損した場合はどうなりますか?', answer:'当社は損害補償保険に加入しております。万が一作業中の事故が発生した場合は、速やかに状況をご確認のうえ、誠実にご対応させていただきます。' },
         { id:'FAQ-8', question:'梱包資材は用意してもらえますか?',     answer:'はい、ダンボール・ガムテープ・緩衝材などをご用意しております。プランにより無料でご提供できる場合もございますので、お見積り時にご相談ください。' },
       ];
