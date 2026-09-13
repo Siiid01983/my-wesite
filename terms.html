@@ -172,10 +172,8 @@
     </nav>
     <div class="copy">© 2026 Hello Moving. All Rights Reserved.</div>
   </footer>
-<!-- Public English layer (ADDITIVE): shared JA→EN overlay engine + dictionary. The
-     legal body intentionally stays Japanese (falls back); only shared chrome is
-     translated. ?lang=en / hm_pub_lang select English. -->
-<script src="locales/public.en.js" defer></script>
-<script src="js/i18n/publicI18n.js" defer></script>
+<!-- Opt-in Google Translate control (small, footer-mounted). Japanese is always
+     the source page; nothing loads from Google until the visitor presses it. -->
+<script src="js/gtranslate.js" defer></script>
 </body>
 </html>

@@ -75,10 +75,11 @@
   @media (max-width:480px){
     table.fee th, table.fee td{ padding:9px 10px; font-size:13.5px; }
   }
-  /* English mode only: the eyebrow already reads "Cancellation Policy" and the H1
-     is translated to the same words, so hide the eyebrow to avoid a duplicate
-     heading. Scoped to this page's own stylesheet, and lang="en" is set only by
-     the public i18n engine in English mode — the Japanese render is untouched. */
+  /* Only when the page is being translated INTO English: the eyebrow already
+     reads "Cancellation Policy" (Google leaves English text alone) and the H1
+     「キャンセルポリシー」 also becomes "Cancellation Policy", so hide the eyebrow
+     to avoid a duplicate heading. Google Translate sets <html lang="en">; the
+     Japanese source page is lang="ja", so this never affects it. */
   html[lang="en"] .lead{ display:none; }
 </style>
 </head>
@@ -173,10 +174,8 @@
     </nav>
     <div class="copy">© 2026 Hello Moving. All Rights Reserved.</div>
   </footer>
-<!-- Public English layer (ADDITIVE): shared JA→EN overlay engine + dictionary.
-     Japanese is the authoritative version and the fallback; ?lang=en /
-     hm_pub_lang select the English reference translation. -->
-<script src="locales/public.en.js" defer></script>
-<script src="js/i18n/publicI18n.js" defer></script>
+<!-- Opt-in Google Translate control (small, footer-mounted). Japanese is always
+     the source page; nothing loads from Google until the visitor presses it. -->
+<script src="js/gtranslate.js" defer></script>
 </body>
 </html>

@@ -87,9 +87,8 @@
 
 <script src="js/core/bootstrap.js" defer></script>
 <script src="js/blog/blogPublic.js" defer></script>
-<!-- Public English layer (ADDITIVE): shared JA→EN overlay engine + dictionary.
-     Japanese is source of truth & fallback; ?lang=en / hm_pub_lang select English. -->
-<script src="locales/public.en.js" defer></script>
-<script src="js/i18n/publicI18n.js" defer></script>
+<!-- Opt-in Google Translate control (small, footer-mounted). Japanese is always
+     the source page; nothing loads from Google until the visitor presses it. -->
+<script src="js/gtranslate.js" defer></script>
 </body>
 </html>
