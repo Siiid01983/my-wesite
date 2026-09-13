@@ -238,6 +238,46 @@ test('portal header logout label has an English translation', () => {
   assert.notEqual(EN[ja], ja, 'logout label not translated: ' + ja);
 });
 
+/* ── cancellation policy: full English coverage ─────────────────────────
+   Parsed from the real page, so if the Japanese policy is edited later and the
+   translation is not updated, this fails instead of silently falling back. */
+test('cancellation policy: every Japanese text node has an English translation', () => {
+  const html = read('cancellation-policy.html');
+  const body = html.slice(html.indexOf('<body>'));
+  const nodes = [...new Set(
+    [...body.matchAll(/>([^<>]*[぀-ヿ一-龯][^<>]*)</g)]
+      .map((m) => m[1].trim()).filter(Boolean)
+  )];
+  assert.ok(nodes.length >= 40, 'found policy text nodes, got ' + nodes.length);
+  const missing = nodes.filter((t) => !EN[t] || EN[t] === t);
+  assert.deepEqual(missing, [], 'untranslated policy strings: ' + missing.join(' | '));
+});
+
+test('cancellation policy page loads the shared i18n engine', () => {
+  const html = read('cancellation-policy.html');
+  assert.ok(/locales\/public\.en\.js/.test(html), 'loads dictionary');
+  assert.ok(/js\/i18n\/publicI18n\.js/.test(html), 'loads engine');
+  // English-only eyebrow rule must stay scoped so Japanese is unaffected.
+  assert.ok(/html\[lang="en"\] \.lead\{ display:none; \}/.test(html),
+    'duplicate-eyebrow rule present and scoped to lang="en"');
+});
+
+test('cancellation policy: fee schedule translated faithfully (no altered figures)', () => {
+  [['作業日の3日前まで', '3 days'], ['無料', 'Free'], ['予約金額の20%', '20%'],
+    ['予約金額の30%', '30%'], ['予約金額の50%', '50%'], ['作業日当日', 'On the service date'],
+  ].forEach(([ja, must]) => {
+    assert.ok(EN[ja], 'missing EN for ' + ja);
+    assert.ok(EN[ja].includes(must), `EN for ${ja} must contain "${must}", got: ${EN[ja]}`);
+  });
+});
+
+test('cancellation policy: English carries the reference-translation notice', () => {
+  const intro = Object.entries(EN).find(([ja]) => ja.startsWith('Hello Moving（ハロームービング。以下「当社」'));
+  assert.ok(intro, 'policy intro entry present');
+  assert.ok(/reference translation/i.test(intro[1]) && /Japanese version prevails/i.test(intro[1]),
+    'intro must state the Japanese version prevails');
+});
+
 /* ── new page strings translate; content/data stays Japanese ───────────── */
 test('dictionary: covers the newly added page chrome', () => {
   ['ホーム', 'よくある質問', 'お客様の口コミ', '口コミをもっと見る',

@@ -75,6 +75,11 @@
   @media (max-width:480px){
     table.fee th, table.fee td{ padding:9px 10px; font-size:13.5px; }
   }
+  /* English mode only: the eyebrow already reads "Cancellation Policy" and the H1
+     is translated to the same words, so hide the eyebrow to avoid a duplicate
+     heading. Scoped to this page's own stylesheet, and lang="en" is set only by
+     the public i18n engine in English mode — the Japanese render is untouched. */
+  html[lang="en"] .lead{ display:none; }
 </style>
 </head>
 <body>
@@ -168,5 +173,10 @@
     </nav>
     <div class="copy">© 2026 Hello Moving. All Rights Reserved.</div>
   </footer>
+<!-- Public English layer (ADDITIVE): shared JA→EN overlay engine + dictionary.
+     Japanese is the authoritative version and the fallback; ?lang=en /
+     hm_pub_lang select the English reference translation. -->
+<script src="locales/public.en.js" defer></script>
+<script src="js/i18n/publicI18n.js" defer></script>
 </body>
 </html>
