@@ -82,6 +82,8 @@ const PRUNE = [
   'hm-api/line-push.php',       // retired — manual LINE-push admin tool removed
   'js/modules/notifications/line.js',   // retired — manual LINE-push admin UI removed
   'js/contact-form.js',         // retired — legacy email contact form removed (chat-only inquiry flow)
+  'locales/public.en.js',       // retired — custom English overlay replaced by the opt-in Google Translate control
+  'js/i18n/publicI18n.js',      // retired — custom English engine (browser-language auto-select) removed
 ];
 
 /*
