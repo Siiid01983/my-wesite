@@ -185,6 +185,49 @@ test('every portal sidebar label has an English translation', () => {
   });
 });
 
+// Portal panel chrome rendered by js/portal/portalV2.js (profile card, booking
+// history + pager, message composer, and their loading/empty/error states).
+// Values inside these panels are customer data and are never translated.
+test('portal panel labels have English translations', () => {
+  ['お客様プロフィール', 'メール', 'ご利用回数', '初回ご利用', '最終ご利用',
+    'ご利用履歴', '受付日', '前へ', '次へ', 'まだご利用履歴はありません',
+    'まだメッセージはありません', '送信', 'メッセージを入力…',
+    '読み込み中…', 'プロフィール情報を取得できません',
+    'ご利用履歴を読み込めませんでした。', 'メッセージを読み込めませんでした。',
+  ].forEach((ja) => {
+    assert.ok(EN[ja], 'portal label missing from dictionary: ' + ja);
+    assert.notEqual(EN[ja], ja, 'portal label not translated: ' + ja);
+  });
+});
+
+// Placeholders live on <input>/<textarea>. The attribute pass must NOT skip those
+// tags (a placeholder is chrome, not user content) — regression guard for a bug
+// where no placeholder was ever translated.
+test('attribute pass does not skip form controls (placeholders translate)', () => {
+  const src = read(path.join('js', 'i18n', 'publicI18n.js'));
+  assert.ok(/SKIP_TAGS_ATTR/.test(src), 'separate attribute skip-list exists');
+  const m = /var SKIP_TAGS_ATTR = \{([^}]*)\}/.exec(src);
+  assert.ok(m, 'SKIP_TAGS_ATTR defined');
+  assert.ok(!/TEXTAREA|INPUT/.test(m[1]), 'attribute skip-list must not contain INPUT/TEXTAREA');
+  // text-node pass must still protect user-entered content
+  const t = /var SKIP_TAGS = \{([^}]*)\}/.exec(src);
+  assert.ok(/TEXTAREA/.test(t[1]) && /INPUT/.test(t[1]), 'text pass still skips form controls');
+});
+
+test('booking/portal placeholders have English translations', () => {
+  ['例：山田 太郎', '例：taro@example.com', '例：090-1234-5678',
+    'ご不明な点・ご要望などをご記入ください。', 'メッセージを入力…',
+  ].forEach((ja) => assert.ok(EN[ja] && EN[ja] !== ja, 'placeholder missing EN: ' + ja));
+});
+
+// The booking-status timeline shares wording with the status enums (完了 etc.).
+// Those must never enter the dictionary, so the timeline intentionally stays
+// Japanese rather than rendering half-translated.
+test('booking timeline / status wording is never translated', () => {
+  ['完了', '確定', '確認中', '新規', 'キャンセル']
+    .forEach((k) => assert.ok(!(k in EN), 'status wording must stay untranslated: ' + k));
+});
+
 // The logout control sits in the portal header next to the sidebar; read it from
 // the markup too so it cannot silently revert to Japanese.
 test('portal header logout label has an English translation', () => {
