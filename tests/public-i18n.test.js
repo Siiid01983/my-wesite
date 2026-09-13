@@ -155,6 +155,46 @@ test('dictionary provides the English hero H1 and CMS sub-line', () => {
     'CMS hero sub has an English display-layer value');
 });
 
+/* ── portal sidebar: every nav label must have an English entry ─────────
+   Derived from the real portal-v2.html markup (not a hard-coded copy), so adding
+   a new sidebar item without a translation fails this test. */
+function portalSidebarLabels() {
+  const html = read('portal-v2.html');
+  const aside = /<aside class="p-sidebar"[\s\S]*?<\/aside>/.exec(html);
+  assert.ok(aside, 'portal-v2.html sidebar block found');
+  const labels = [];
+  const re = /<span>([^<]+)<\/span>|class="p-nav-label">([^<]+)</g;
+  let m;
+  while ((m = re.exec(aside[0]))) {
+    const s = (m[1] || m[2] || '').trim();
+    // only Japanese-bearing labels need a dictionary entry
+    if (s && /[぀-ヿ一-龯]/.test(s)) labels.push(s);
+  }
+  return labels;
+}
+
+test('portal sidebar exposes labels to check', () => {
+  const labels = portalSidebarLabels();
+  assert.ok(labels.length >= 6, 'found sidebar labels, got: ' + labels.join(', '));
+});
+
+test('every portal sidebar label has an English translation', () => {
+  portalSidebarLabels().forEach((ja) => {
+    assert.ok(EN[ja], 'portal sidebar label missing from dictionary: ' + ja);
+    assert.notEqual(EN[ja], ja, 'portal sidebar label not translated: ' + ja);
+  });
+});
+
+// The logout control sits in the portal header next to the sidebar; read it from
+// the markup too so it cannot silently revert to Japanese.
+test('portal header logout label has an English translation', () => {
+  const m = /class="p-logout"[^>]*>([^<]+)</.exec(read('portal-v2.html'));
+  assert.ok(m, 'portal logout button found in markup');
+  const ja = m[1].trim();
+  assert.ok(EN[ja], 'logout label missing from dictionary: ' + ja);
+  assert.notEqual(EN[ja], ja, 'logout label not translated: ' + ja);
+});
+
 /* ── new page strings translate; content/data stays Japanese ───────────── */
 test('dictionary: covers the newly added page chrome', () => {
   ['ホーム', 'よくある質問', 'お客様の口コミ', '口コミをもっと見る',
