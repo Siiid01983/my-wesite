@@ -123,12 +123,18 @@
   var SKIP_SEL = '.ba-val, .ba-review-table, .pchat-bubble, .hmcc-b, .pchat-name,' +
     ' .hmcc-name, .ba-ref-num, .pv2-bubble, .pv2-msg-list, [data-noi18n],' +
     ' [translate="no"], script, style, noscript';
+  // TEXT nodes: form controls are skipped so user-entered content is never touched.
   var SKIP_TAGS = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, TEXTAREA: 1, INPUT: 1, CODE: 1, PRE: 1 };
+  // ATTRIBUTES: a placeholder/aria-label ON an input or textarea is UI chrome, not
+  // user content, so those tags must NOT be skipped here — otherwise no placeholder
+  // is ever translated. Customer-data regions and translate="no" still apply.
+  var SKIP_TAGS_ATTR = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1 };
   var ATTRS = ['placeholder', 'aria-label', 'title'];
 
-  function inSkip(el) {
+  function inSkip(el, tags) {
+    tags = tags || SKIP_TAGS;
     for (var n = el; n && n.nodeType === 1; n = n.parentNode) {
-      if (SKIP_TAGS[n.tagName]) return true;
+      if (tags[n.tagName]) return true;
       if (n.matches && n.matches(SKIP_SEL)) return true;
       var tr = n.getAttribute && n.getAttribute('translate');
       if (tr === 'no') return true;
@@ -162,7 +168,7 @@
     var host = (root.querySelectorAll ? root : document);
     var withAttrs = host.querySelectorAll('[placeholder],[aria-label],[title]');
     Array.prototype.forEach.call(withAttrs, function (el) {
-      if (inSkip(el)) return;
+      if (inSkip(el, SKIP_TAGS_ATTR)) return;
       ATTRS.forEach(function (a) {
         var v = el.getAttribute(a); if (!v) return;
         var en = D[v.trim()]; if (en && en !== v.trim()) el.setAttribute(a, en);

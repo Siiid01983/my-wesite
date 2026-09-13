@@ -102,6 +102,13 @@
     '下へスクロール': 'Scroll down',
     'ご不明な点・ご要望などをご記入ください。':
       'Please tell us any questions or requests.',
+    // Booking/estimate form example placeholders (attributes only — the field
+    // values, names and API payloads are untouched).
+    '例：山田 太郎': 'e.g. Taro Yamada',
+    '例：taro@example.com': 'e.g. taro@example.com',
+    '例：090-1234-5678': 'e.g. 090-1234-5678',
+    '処分したい家具・家電など（例：古いソファ1点、冷蔵庫1点）':
+      'Furniture/appliances to dispose of (e.g. 1 old sofa, 1 fridge)',
 
     /* ── Shared footer / secondary nav (blog · article · reviews · legal) ─── */
     'ホーム': 'Home',
@@ -153,6 +160,29 @@
     '口コミ投稿': 'Write a review',
     // Portal header control that sits beside the sidebar (also guarded by a test).
     'ログアウト': 'Log out',
+    // Profile card (portalV2 renderProfile) — labels only; the values are customer
+    // data and are never translated.
+    'お客様プロフィール': 'Customer profile',
+    'メール': 'Email',
+    'ご利用回数': 'Bookings',
+    '初回ご利用': 'First booking',
+    '最終ご利用': 'Latest booking',
+    // Booking history section + table header + pager.
+    'ご利用履歴': 'Booking history',
+    '受付日': 'Received',
+    '前へ': 'Previous',
+    '次へ': 'Next',
+    'まだご利用履歴はありません': 'No bookings yet',
+    // Message composer + empty state. NOTE: message bubbles themselves are skipped
+    // by the engine (customer content) and always stay as written.
+    'まだメッセージはありません': 'No messages yet',
+    '送信': 'Send',
+    'メッセージを入力…': 'Type a message…',
+    // Shared loading / error states for the three portal panels.
+    '読み込み中…': 'Loading…',
+    'プロフィール情報を取得できません': 'Could not load your profile',
+    'ご利用履歴を読み込めませんでした。': 'Could not load your booking history.',
+    'メッセージを読み込めませんでした。': 'Could not load messages.',
     '連絡先の更新（Update Contact）': 'Update Contact',
     'メールアドレスはログインに使用するため変更できません。':
       'Your email is used for login and cannot be changed.',
