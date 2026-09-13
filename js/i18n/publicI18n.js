@@ -175,6 +175,7 @@
     _applying = true;
     try {
       applyEN(document.body);
+      applyHeroTitle();                         // translate="no" hero H1 (EN only)
       // document.title (only if we have an English entry)
       var D = dict(), tt = document.title && D[document.title.trim()];
       if (tt) document.title = tt;
@@ -203,69 +204,57 @@
     _observer.observe(document.body, { childList: true, subtree: true });
   }
 
-  /* ── Language switch (日本語 | English) — always available ─────────────── */
+  /* ── English presentation layer ─────────────────────────────────────────────
+     There is NO visible language switch: language is selected invisibly by
+     ?lang=en, the stored hm_pub_lang preference, or the browser language. (An
+     earlier in-header switch was removed — it added a 4th item to .header-cta and
+     broke the mobile header composition in BOTH languages.) */
 
-  function injectCss() {
-    if (document.getElementById('hm-pub-lang-css')) return;
-    var css =
-      '.hm-pub-lang{display:inline-flex;align-items:center;border:1px solid var(--line,#dfe3d8);' +
-        'border-radius:999px;overflow:hidden;font-size:12px;font-weight:700;line-height:1;' +
-        'vertical-align:middle;margin-left:10px;flex:none}' +
-      '.hm-pub-lang a{padding:5px 10px;text-decoration:none;color:inherit;opacity:.72;white-space:nowrap}' +
-      '.hm-pub-lang a.on{background:#9AB57A;color:#20301a;opacity:1}';
-    var s = document.createElement('style'); s.id = 'hm-pub-lang-css'; s.textContent = css;
+  /* English-only responsive CSS. Every rule is scoped to html[lang="en"], which
+     this engine sets ONLY in English mode, so the Japanese render is bit-for-bit
+     untouched. Injected after the site stylesheets so it wins on source order. */
+  function injectEnCss() {
+    if (document.getElementById('hm-pub-en-css')) return;
+    var css = [
+      /* Header — English labels are longer than the Japanese originals. Keep the
+         original composition (logo + primary CTA + burger); only tighten the CTA
+         so the wordmark is never clipped. */
+      '@media (max-width:1024px){',
+      ' html[lang="en"] .header-cta .btn{padding:9px 12px;font-size:12px;letter-spacing:0;white-space:nowrap}',
+      '}',
+      '@media (max-width:400px){',
+      ' html[lang="en"] .header-cta .btn{padding:8px 10px;font-size:11.5px}',
+      '}',
+      /* Sticky bottom CTA — Japanese labels fit on one line; English ones must be
+         allowed to wrap instead of clipping. Equal thirds + height are preserved. */
+      'html[lang="en"] .sticky-btn{white-space:normal !important;line-height:1.15;text-align:center;' +
+        'word-break:normal;overflow-wrap:anywhere}',
+      'html[lang="en"] .sticky-btn>span{display:block;text-align:center;min-width:0}',
+      '@media (max-width:400px){',
+      ' html[lang="en"] .sticky-btn{font-size:11px !important;padding:10px 4px !important}',
+      '}',
+      /* Hero primary CTA — keep the design, just stop the longer English label
+         from overflowing the pill on small screens. */
+      '@media (max-width:420px){',
+      ' html[lang="en"] .v2hero__cta .v2btn{font-size:15px;padding-left:18px;padding-right:18px}',
+      '}',
+    ].join('');
+    var s = document.createElement('style'); s.id = 'hm-pub-en-css'; s.textContent = css;
     (document.head || document.documentElement).appendChild(s);
   }
 
-  // One switch control. JA and EN are real query-based links (shareable), and a
-  // click also persists the choice so it survives the navigation.
-  function switchEl() {
-    var wrap = document.createElement('div');
-    wrap.className = 'hm-pub-lang';
-    wrap.setAttribute('role', 'group');
-    wrap.setAttribute('aria-label', 'Language / 言語');
-    var ja = document.createElement('a'), en = document.createElement('a');
-    ja.textContent = '日本語'; en.textContent = 'English';
-    ja.href = switchHref(location, 'ja'); en.href = switchHref(location, 'en');
-    if (_lang === 'ja') ja.className = 'on'; else en.className = 'on';
-    ja.addEventListener('click', function () { writeStored('ja'); });
-    en.addEventListener('click', function () { writeStored('en'); });
-    wrap.appendChild(ja); wrap.appendChild(en);
-    return wrap;
-  }
-
-  // Prefer mounting the switch INSIDE an existing header/nav so it never overlaps
-  // page content or a top-right link. Ordered from most- to least-specific across
-  // the public surfaces; the first present container wins.
-  var MOUNT_ANCHORS = [
-    '.header-cta',        // index.html desktop header
-    '.p-header-right',    // portal-v2 header (right cluster)
-    '.blog-nav',          // blog.html / article.html header nav
-    '.rv-header',         // reviews.html header
-    '.lg-header',         // privacy.html / terms.html header
-    'header',             // any other page header
-    'footer',             // last container fallback (e.g. login-v2 has no header)
-  ];
-
-  function mountSwitch() {
-    injectCss();
-    var mounted = false;
-    for (var i = 0; i < MOUNT_ANCHORS.length; i++) {
-      var host = document.querySelector(MOUNT_ANCHORS[i]);
-      if (host && !host.querySelector('.hm-pub-lang')) { host.appendChild(switchEl()); mounted = true; break; }
-    }
-    // Mobile nav list (index) — independent secondary mount.
-    var mnav = document.getElementById('mobileNav');
-    if (mnav && !mnav.querySelector('.hm-pub-lang')) {
-      var li = document.createElement('li'); li.appendChild(switchEl()); mnav.appendChild(li); mounted = true;
-    }
-    // True last resort (no header/footer at all): pin BOTTOM-LEFT so it can never
-    // overlap a top-right back/nav link.
-    if (!mounted && !document.querySelector('.hm-pub-lang')) {
-      var f = switchEl();
-      f.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:99999;background:#fff';
-      document.body.appendChild(f);
-    }
+  /* The hero H1 carries translate="no" (it is the brand statement), so the generic
+     overlay deliberately skips it. In English we swap that ONE element from the
+     dictionary so the hero does not read half-English/half-Japanese. Data-driven:
+     whatever Japanese is currently rendered (static or CMS) is looked up, and a
+     missing entry leaves the Japanese untouched. The Japanese SOURCE is unchanged;
+     this is display-layer only and never runs in Japanese mode. */
+  function applyHeroTitle() {
+    if (_lang !== 'en') return;
+    var el = document.getElementById('heroTitleJa'); if (!el) return;
+    var cur = (el.textContent || '').trim(); if (!cur) return;
+    var en = dict()[cur];
+    if (en && en !== cur) el.textContent = en;
   }
 
   /* ── Public API ────────────────────────────────────────────────────────── */
@@ -285,8 +274,11 @@
   window.pt = PubI18n.t;
 
   function boot() {
-    mountSwitch();
-    if (_lang === 'en') { applyAll(); startObserver(); }
+    if (_lang !== 'en') return;                 // Japanese: engine does nothing at all
+    try { document.documentElement.lang = 'en'; } catch (_) {}  // before CSS, avoids a flash
+    injectEnCss();
+    applyAll();
+    startObserver();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
