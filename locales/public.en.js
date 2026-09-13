@@ -33,10 +33,19 @@
 
     /* ── Hero ─────────────────────────────────────────────────────────────── */
     '東京 14年の実績 — 国土交通省 認可': 'Tokyo · 14 years · Ministry-licensed',
+    // Hero H1. The element carries translate="no" in the Japanese source (brand
+    // statement) and is swapped ONLY in English mode by applyHeroTitle(), so the
+    // hero never renders half-English. The Japanese source stays untouched.
+    '即日対応、スマホで完結。': 'Same-day service, all from your phone.',
     '引越し見積もりから予約まで、スマホ一つでスムーズに。':
       'From estimate to booking — all smoothly from your phone.',
+    // CMS-saved hero sub-line (hm_hero) as it renders in production. Display-layer
+    // only — the stored Japanese CMS value is never modified.
+    '無料見積り対応': 'Free estimates available',
     '無料見積もり依頼': 'Request a Free Estimate',
-    '今すぐ無料見積り': 'Get a Free Estimate Now',
+    // Sticky bar + footer CTA. Kept short so all three sticky labels fit their
+    // equal thirds on a 360px screen without clipping.
+    '今すぐ無料見積り': 'Free Estimate',
     '作業事例を見る': 'See our work',
     '引越し実績': 'moves completed',
     'の経験': 'years of experience',

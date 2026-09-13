@@ -126,6 +126,35 @@ test('no second localization system introduced on public pages', () => {
   });
 });
 
+/* ── no visible language switch (invisible selection only) ─────────────── */
+test('engine renders NO visible language switch', () => {
+  const src = read(path.join('js', 'i18n', 'publicI18n.js'));
+  assert.ok(!/hm-pub-lang/.test(src), 'switch element/class must not be reintroduced');
+  assert.ok(!/mountSwitch|switchEl\s*\(/.test(src), 'switch mounting must not be reintroduced');
+  // …but invisible selection must still work.
+  assert.ok(/hm_pub_lang/.test(src), 'hm_pub_lang preference key retained');
+  assert.ok(/queryLang|lang=/.test(src), '?lang= handling retained');
+  assert.ok(/navigatorLanguages|navigator\.languages/.test(src), 'browser detection retained');
+});
+
+/* ── English-only CSS must never leak into the Japanese render ─────────── */
+test('injected responsive CSS is scoped to html[lang="en"] only', () => {
+  const src = read(path.join('js', 'i18n', 'publicI18n.js'));
+  const m = /function injectEnCss\(\)[\s\S]*?\n  }/.exec(src);
+  assert.ok(m, 'injectEnCss present');
+  // Every selector line that styles a site class must carry the html[lang="en"] scope.
+  m[0].split('\n')
+    .filter((l) => /\.(header-cta|sticky-btn|v2btn|v2hero)/.test(l))
+    .forEach((l) => assert.ok(/html\[lang="en"\]/.test(l), 'unscoped EN rule: ' + l.trim()));
+});
+
+/* ── hero: English hero copy exists so the hero is never half-translated ── */
+test('dictionary provides the English hero H1 and CMS sub-line', () => {
+  assert.equal(EN['即日対応、スマホで完結。'], 'Same-day service, all from your phone.');
+  assert.ok(EN['無料見積り対応'] && EN['無料見積り対応'] !== '無料見積り対応',
+    'CMS hero sub has an English display-layer value');
+});
+
 /* ── new page strings translate; content/data stays Japanese ───────────── */
 test('dictionary: covers the newly added page chrome', () => {
   ['ホーム', 'よくある質問', 'お客様の口コミ', '口コミをもっと見る',
