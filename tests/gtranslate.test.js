@@ -138,15 +138,19 @@ test('the control is a single compact circular button beside the Estimate CTA', 
   assert.ok(/@media \(max-width:400px\)[\s\S]*?hm-gt-btn/.test(GT), 'mobile size guard present');
 });
 
-test('the Estimate CTA itself is untouched (still present, still opens the booking app)', () => {
+test('the header Estimate button is removed, but Estimate functionality is retained', () => {
   const idx = read('index.html');
-  assert.ok(/id="headerCtaBtnEl"[^>]*>無料見積り<\/a>/.test(idx) ||
-    /<a[^>]*id="headerCtaBtnEl"[^>]*>[\s\S]*?無料見積り[\s\S]*?<\/a>/.test(idx),
-    'header Estimate button is unchanged');
-  assert.ok(/onclick="openBookingApp\(\);return false;" class="btn btn-primary hcta" id="headerCtaBtnEl"/.test(idx),
-    'Estimate button still routes to openBookingApp()');
-  // gtranslate.js must not reference or restyle the Estimate button.
-  assert.ok(!/headerCtaBtnEl|btn-primary|hcta/.test(GT), 'gtranslate.js does not touch the Estimate button');
+  // The single header Estimate button (immediately left of the 文A control) is gone.
+  assert.ok(!/id="headerCtaBtnEl"/.test(idx), 'header Estimate button (#headerCtaBtnEl) is removed');
+  // The header CTA container remains — it is the Google Translate control's mount slot.
+  assert.ok(/class="header-cta"/.test(idx), '.header-cta container is preserved (translate mount slot)');
+  // Estimate FUNCTIONALITY is untouched: the booking overlay is still opened by
+  // other CTAs across the page (hero, booking band, final CTA, header nav link).
+  const openers = (idx.match(/openBookingApp\(/g) || []).length;
+  assert.ok(openers >= 3, 'multiple openBookingApp() CTAs remain (Estimate functionality intact)');
+  assert.ok(/class="booking-cta-btn" onclick="openBookingApp\(\)"/.test(idx), 'booking-band Estimate CTA remains');
+  // gtranslate.js must not reference or restyle any header CTA button.
+  assert.ok(!/headerCtaBtnEl|btn-primary|hcta/.test(GT), 'gtranslate.js does not touch header CTA buttons');
 });
 
 test('only the approved target languages are exposed, in the approved order', () => {
