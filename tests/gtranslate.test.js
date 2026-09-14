@@ -5,7 +5,8 @@
    Replaces tests/public-i18n.test.js. Guards the direction change:
      • Japanese is ALWAYS the source page — no browser-language auto-selection,
        no stored language preference, no custom 日本語|English switch.
-     • A small, opt-in Google Translate control exists and is footer-mounted.
+     • A small, opt-in Google Translate control exists and is header-mounted (in
+       the same slot as the Estimate CTA), exposing only the approved languages.
      • The retired custom English system is gone and unreferenced.
      • Business-critical values are never sourced from translated DOM text.
    ════════════════════════════════════════════════════════════════════════════ */
@@ -113,12 +114,52 @@ test('control is opt-in: Google is only fetched on click', () => {
   assert.ok(/pageLanguage:\s*'ja'/.test(GT), 'source page language is Japanese');
 });
 
-test('control is footer-mounted and never in the header', () => {
+test('control is header-mounted (Estimate CTA slot) and never in a footer', () => {
   const m = /var MOUNTS = \[([\s\S]*?)\]/.exec(GT);
   assert.ok(m, 'MOUNTS list present');
-  assert.ok(!/header|\.header-cta|#mobileNav/i.test(m[1]),
-    'must not mount in the header (that clipped the wordmark previously)');
-  assert.ok(/footer/i.test(m[1]), 'mounts in a footer');
+  // Primary mount is the header's Estimate CTA slot on index.html.
+  assert.ok(/\.header-cta/.test(m[1]), 'mounts in the header CTA slot (.header-cta)');
+  // The control must no longer be injected into any footer.
+  assert.ok(!/footer|hm-ft__|pagefoot/i.test(m[1]),
+    'must not mount in a footer any more');
+});
+
+test('the control is a single compact circular button beside the Estimate CTA', () => {
+  // A fixed-size round button (not a wide pill) so it fits the mobile header.
+  assert.ok(/width:38px;height:38px/.test(GT), 'trigger is a fixed 38px square → circle');
+  assert.ok(/border-radius:999px/.test(GT), 'circular shape is preserved');
+  // Estimate button identity: gold gradient + dark ink + inherited font + weight 600.
+  assert.ok(/linear-gradient\(180deg,#FFB23E,#F5A623\)/.test(GT), 'brand gold gradient');
+  assert.ok(/color:#0C0E0B/.test(GT), 'dark ink color');
+  assert.ok(/font-family:inherit/.test(GT) && /font-weight:600/.test(GT), 'inherited font, weight 600');
+  // Label centered inside the control.
+  assert.ok(/justify-content:center/.test(GT) && /text-align:center/.test(GT), 'label centered');
+  // Shrinks on the tightest phones so the header never overflows.
+  assert.ok(/@media \(max-width:400px\)[\s\S]*?hm-gt-btn/.test(GT), 'mobile size guard present');
+});
+
+test('the Estimate CTA itself is untouched (still present, still opens the booking app)', () => {
+  const idx = read('index.html');
+  assert.ok(/id="headerCtaBtnEl"[^>]*>無料見積り<\/a>/.test(idx) ||
+    /<a[^>]*id="headerCtaBtnEl"[^>]*>[\s\S]*?無料見積り[\s\S]*?<\/a>/.test(idx),
+    'header Estimate button is unchanged');
+  assert.ok(/onclick="openBookingApp\(\);return false;" class="btn btn-primary hcta" id="headerCtaBtnEl"/.test(idx),
+    'Estimate button still routes to openBookingApp()');
+  // gtranslate.js must not reference or restyle the Estimate button.
+  assert.ok(!/headerCtaBtnEl|btn-primary|hcta/.test(GT), 'gtranslate.js does not touch the Estimate button');
+});
+
+test('only the approved target languages are exposed, in the approved order', () => {
+  const m = /includedLanguages:\s*'([^']+)'/.exec(GT);
+  assert.ok(m, 'includedLanguages is configured');
+  const codes = m[1].split(',');
+  // 'ja' (source) is first so the visitor can revert to the Japanese original.
+  assert.strictEqual(codes[0], 'ja', 'Japanese (source) is listed first');
+  const targets = codes.slice(1);
+  const APPROVED = ['en', 'zh-CN', 'zh-TW', 'ko', 'vi', 'ne', 'tl', 'pt', 'id', 'es', 'fr', 'ar', 'hi'];
+  assert.deepStrictEqual(targets, APPROVED,
+    'exactly the 13 approved target languages, in the approved order — no more, no fewer');
+  assert.ok(/pageLanguage:\s*'ja'/.test(GT), 'source/default page language is Japanese');
 });
 
 test('Google chrome that would shift layout is suppressed', () => {
@@ -160,7 +201,9 @@ test('customer-data nodes are marked non-translatable', () => {
 /* ── Translated-view layout fixes (found on production mobile) ─────────── */
 test('brand wordmark is never translated', () => {
   // Google rewrote "Hello Moving" to "Hello"; a brand name must stay verbatim.
-  ['.brand-name', '.brand-sub', '.lg-brand']
+  // Covers the marketing/legal/reviews wordmarks and — since the control now mounts
+  // in the portal/login headers too — the portal brand wordmarks.
+  ['.brand-name', '.brand-sub', '.lg-brand', '.rv-brand', '.p-brand-name', '.lv2-brand-name']
     .forEach((sel) => assert.ok(GT.includes(sel), 'NO_TX must cover ' + sel));
 });
 
