@@ -201,7 +201,9 @@ test('customer-data nodes are marked non-translatable', () => {
 /* ── Translated-view layout fixes (found on production mobile) ─────────── */
 test('brand wordmark is never translated', () => {
   // Google rewrote "Hello Moving" to "Hello"; a brand name must stay verbatim.
-  ['.brand-name', '.brand-sub', '.lg-brand']
+  // Covers the marketing/legal/reviews wordmarks and — since the control now mounts
+  // in the portal/login headers too — the portal brand wordmarks.
+  ['.brand-name', '.brand-sub', '.lg-brand', '.rv-brand', '.p-brand-name', '.lv2-brand-name']
     .forEach((sel) => assert.ok(GT.includes(sel), 'NO_TX must cover ' + sel));
 });
 

@@ -91,6 +91,7 @@
        • customer-data display nodes. Logic never reads these, so that part is
          presentation hygiene rather than a correctness fix. */
   var NO_TX = '.brand-name, .brand-sub, .lg-brand, .ba-hdr-logo, .rv-brand,' +
+              ' .p-brand-name, .lv2-brand-name,' +
               ' .ba-val, .ba-ref-num, .ba-review-table, .pchat-bubble, .hmcc-b,' +
               ' .pv2-bubble, .pv2-msg-list, .pv2-ref, [data-noi18n]';
 
