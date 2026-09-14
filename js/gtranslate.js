@@ -71,15 +71,18 @@
     try { localStorage.removeItem('hm_pub_lang'); } catch (_) {}
   }
 
-  /* Footer-only mount points. Deliberately NEVER the header: an earlier in-header
-     language control added a 4th item to .header-cta and clipped the wordmark on
-     mobile. The footer cannot overlap the logo, hero, CTAs or the sticky bar. */
+  /* HEADER mount points, one per public page type (first match wins). The control
+     lives in the same header slot as the Estimate CTA so it visually belongs to the
+     Hello Moving header. It is a single, compact circular button that shares the
+     Estimate button's gold identity — it does NOT add a wide item, so it fits beside
+     the Estimate button on mobile (≥360px) without clipping the wordmark. */
   var MOUNTS = [
-    '.hm-ft__bottom-inner', // index.html footer bottom row
-    '.lg-footer',           // privacy / terms / cancellation-policy
-    '.blog-footer__inner',  // blog / article
-    '.lv2-pagefoot',        // login-v2
-    'footer',               // any other public page
+    '.header-cta',      // index.html — the Estimate CTA slot (primary target)
+    '.blog-nav',        // blog.html / article.html header nav
+    '.lg-header',       // privacy / terms / cancellation-policy header
+    '.rv-header',       // reviews.html header
+    '.p-header-right',  // portal-v2.html header
+    '.lv2-card',        // login-v2.html — centered auth card (no header bar)
   ];
 
   /* Nodes Google must leave verbatim while translating:
@@ -103,17 +106,24 @@
   function injectCss() {
     if (document.getElementById('hm-gt-css')) return;
     var css =
-      /* Our control — compact, and styled to match the Estimate button: same brand
-         gold gradient, same dark ink, same font stack (inherited) and weight 600.
-         Kept a step smaller (12px vs 13px) so it stays unobtrusive in the footer.
-         Layout/spacing are unchanged; the Estimate button itself is not touched. */
-      '.hm-gt{display:flex;justify-content:center;align-items:center;gap:6px;flex:0 0 100%;width:100%;margin:10px 0 0;white-space:nowrap}' +
-      '.hm-gt button.hm-gt-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid transparent;' +
-        /* !important: the footer's own colour rule for this area is !important. */
+      /* Our control — a compact, circular header button styled to match the Estimate
+         button: same brand gold gradient, same dark ink (#0C0E0B), same font stack
+         (inherited) and weight 600. It lives inline in the header's flex row and
+         picks up that row's gap for spacing, so no header layout is redesigned and
+         the Estimate button itself is untouched. A fixed 38px circle keeps it small
+         enough to sit beside the Estimate button on a 360px header without overflow.
+         The circular shape is intentional — we do NOT force Google's later widget
+         into a pill. */
+      '.hm-gt{display:inline-flex;align-items:center;vertical-align:middle;line-height:1;white-space:nowrap}' +
+      '.hm-gt button.hm-gt-btn{display:inline-flex;align-items:center;justify-content:center;' +
+        'width:38px;height:38px;padding:0;border:1px solid transparent;' +
         'background:linear-gradient(180deg,#FFB23E,#F5A623);color:#0C0E0B !important;font-family:inherit;' +
-        'font-size:12px;font-weight:600;letter-spacing:.04em;line-height:1;' +
-        'padding:6px 11px;border-radius:999px;cursor:pointer;white-space:nowrap}' +
+        'font-size:13px;font-weight:600;letter-spacing:.02em;line-height:1;text-align:center;' +
+        'border-radius:999px;cursor:pointer;white-space:nowrap;flex:0 0 auto}' +
       '.hm-gt button.hm-gt-btn:hover{filter:brightness(1.05)}' +
+      /* Keep it small on the tightest phones so brand + Estimate + control + menu
+         never overflow the header row. */
+      '@media (max-width:400px){.hm-gt button.hm-gt-btn{width:34px;height:34px;font-size:12px}}' +
       '.hm-gt-widget{display:none}' +
       '.hm-gt.is-on .hm-gt-btn{display:none}' +
       '.hm-gt.is-on .hm-gt-widget{display:inline-flex;align-items:center}' +
@@ -124,7 +134,7 @@
       '.skiptranslate>iframe{display:none !important;height:0 !important}' +
       /* Google's InlineLayout.SIMPLE renders .goog-te-gadget-simple (an anchor,
          not a <select>). Restyle that one element to match the surrounding
-         footer instead of Google's default white chip. */
+         header instead of Google's default white chip. */
       '.hm-gt-widget .goog-te-gadget{font-family:inherit !important;font-size:12px !important;' +
         'color:inherit !important;line-height:1 !important}' +
       '.hm-gt-widget .goog-te-gadget-simple{background:linear-gradient(180deg,#FFB23E,#F5A623) !important;' +
@@ -169,6 +179,12 @@
         pageLanguage: 'ja',
         autoDisplay: false,               // never translate without an explicit choice
         layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+        /* Expose ONLY these languages. 'ja' (the source) is listed first so the
+           visitor can always revert to the Japanese original; the remaining 13 are
+           the approved target languages, in the approved order. No other Google
+           language is offered. Google renders the final dropdown order itself — we
+           do not fight its DOM to reorder it. */
+        includedLanguages: 'ja,en,zh-CN,zh-TW,ko,vi,ne,tl,pt,id,es,fr,ar,hi',
       }, 'hm-gt-widget');
       var wrap = document.querySelector('.hm-gt');
       if (wrap) wrap.classList.add('is-on');
@@ -198,8 +214,12 @@
     var wrap = document.createElement('span');
     wrap.className = 'hm-gt';
     // Google's widget must live in an element with this id.
+    // Trigger glyph: the "文A" translate mark (dark ink on the gold button, matching
+    // the Estimate CTA). A colour emoji was avoided — it ignores `color` and would
+    // render its own blue globe instead of the brand ink.
     wrap.innerHTML = '<button type="button" class="hm-gt-btn" ' +
-        'aria-label="Translate this page / このページを翻訳">🌐 Translate</button>' +
+        'title="Translate this page / このページを翻訳" ' +
+        'aria-label="Translate this page / このページを翻訳">文A</button>' +
       '<span class="hm-gt-widget" id="hm-gt-widget"></span>';
     wrap.querySelector('.hm-gt-btn').addEventListener('click', load);
     host.appendChild(wrap);
