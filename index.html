@@ -784,14 +784,18 @@ section#home-hero .v2hero__cta .v2btn--primary { box-shadow: 0 10px 26px rgba(44
   font-weight: 800;
   line-height: 1.55;
   letter-spacing: -.01em;
-  color: var(--ink);
+  /* Concrete dark ink (NOT var(--ink)): this is a light band inside the site's
+     permanent dark theme (html.v2-dark), where --ink resolves to near-white and
+     would vanish on the white background. Pinning keeps it readable in every
+     language/translated state. */
+  color: #2C3626;
   margin: 0;
 }
 .hm-how-lead .hm-accent { color: #1D9E75; }
 .hm-how-sub {
   font-size: clamp(14px, 3.2vw, 17px);
   font-weight: 600;
-  color: var(--gray-2);
+  color: #5b6552;
   margin: 12px 0 0;
 }
 .hm-flow {
@@ -810,10 +814,12 @@ section#home-hero .v2hero__cta .v2btn--primary { box-shadow: 0 10px 26px rgba(44
   padding: 8px 15px;
   border-radius: 999px;
   background: #f8f9fa;
-  border: 1px solid #e5e7eb;
+  /* Sage border (brand palette) reads clearly on white; concrete dark ink for
+     text — see .hm-how-lead note (dark-theme --ink would be near-white here). */
+  border: 1px solid rgba(154, 181, 122, .5);
   font-size: 13px;
   font-weight: 700;
-  color: var(--ink);
+  color: #2C3626;
   white-space: nowrap;
 }
 .hm-flow-arrow {
@@ -825,6 +831,19 @@ section#home-hero .v2hero__cta .v2btn--primary { box-shadow: 0 10px 26px rgba(44
   font-weight: 700;
   line-height: 1;
 }
+/* .hm-how is a LIGHT band inside the site's permanent dark theme (body.v2 /
+   html.v2-dark). v2.css applies global `.v2 main h2/h3/p/li { color: var(--text-1) }`
+   (near-white, for the dark sections) which out-specifies the plain .hm-how-*
+   rules above and would render this band's copy near-white on white. Re-scope the
+   band's own dark ink under .hm-how so it wins (2 classes > 1 class + 2 elements),
+   keeping the text readable on white in every language / translated state.
+   Colors only — layout/typography stay in the base rules (so the 380px padding
+   step-down is unaffected). */
+.hm-how .hm-how-lead   { color: #2C3626; }
+.hm-how .hm-how-sub    { color: #5b6552; }
+.hm-how .hm-flow-step  { color: #2C3626; }
+.hm-how .hm-flow-arrow { color: #9AB57A; }
+
 @media (max-width: 380px) {
   .hm-flow-step { padding: 7px 12px; font-size: 12px; }
 }
