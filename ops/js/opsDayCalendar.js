@@ -122,22 +122,29 @@ window.OpsDayCalendar = (function () {
     var d = parse(state.date);
     var title = d.getFullYear() + '年' + MN[d.getMonth()] + d.getDate() + '日（' + DOW[d.getDay()] + '）';
 
+    var closed = !!state.closed;
     root.innerHTML =
       '<div class="od-bar">' +
         '<button class="od-nav" id="odPrev" type="button" aria-label="前の日">&#8249;</button>' +
         '<button class="od-today" id="odToday" type="button">今日</button>' +
         '<button class="od-nav" id="odNext" type="button" aria-label="次の日">&#8250;</button>' +
         '<h2 class="od-title" id="odTitle">' + _esc(title) + '</h2>' +
-        '<button class="od-add" id="odAdd" type="button">＋ 予定を追加</button>' +
+        '<button class="od-close' + (closed ? ' on' : '') + '" id="odClose" type="button" aria-pressed="' + (closed ? 'true' : 'false') + '">' +
+          (closed ? '終日休業を解除' : '終日休業') + '</button>' +
+        '<button class="od-add" id="odAdd" type="button"' + (closed ? ' disabled' : '') + '>＋ 予定を追加</button>' +
       '</div>' +
-      (state.closed ? '<div class="od-closed" role="status">休業：' + _esc(state.closed.reason || '') + '</div>' : '') +
+      (closed ? '<div class="od-closed" role="status">この日は終日休業です' +
+                (state.closed.reason && state.closed.reason !== '終日休業' ? '（' + _esc(state.closed.reason) + '）' : '') + '</div>' : '') +
       '<div class="od-scroll" id="odScroll">' + _gridHtml() + '</div>' +
-      '<p class="od-hint">空いている時間を' + (isTouch() ? '長押ししてから下へドラッグ' : 'ドラッグ') + 'すると予定を作成できます。';
+      '<p class="od-hint">' + (closed ? '休業中です。「終日休業を解除」で通常に戻せます。'
+        : ('空いている時間を' + (isTouch() ? '長押ししてから下へドラッグ' : 'ドラッグ') + 'すると予定を作成できます。')) + '</p>';
 
     root.querySelector('#odPrev').onclick  = function () { state.date = addDays(state.date, -1); load(); };
     root.querySelector('#odNext').onclick  = function () { state.date = addDays(state.date, 1); load(); };
     root.querySelector('#odToday').onclick = function () { state.date = todayStr(); load(); };
-    root.querySelector('#odAdd').onclick   = function () { openEditor(null, defaultRange()); };
+    root.querySelector('#odClose').onclick = function () { closed ? _reopenDay() : _closeDay(); };
+    var addBtn = root.querySelector('#odAdd');
+    addBtn.onclick = function () { if (!state.closed) openEditor(null, defaultRange()); };
 
     var scroll = root.querySelector('#odScroll');
     _bindInteractions(scroll);
@@ -158,10 +165,13 @@ window.OpsDayCalendar = (function () {
     var bks   = state.bookings.map(_bkHtml).join('');
     var blks  = state.blocks.map(_blkHtml).join('');
     var now   = (state.date === todayStr()) ? _nowLine() : '';
+    // Closed day: hatch the whole 24h, keep bookings visible, no bookable-window tint.
+    var closed = !!state.closed;
+    var closedOv = closed ? '<div class="od-closed-ov" aria-hidden="true"><span>終日休業</span></div>' : '';
     return '<div class="od-grid" style="height:' + h + 'px">' +
              '<div class="od-axis" style="height:' + h + 'px">' + axis + '</div>' +
-             '<div class="od-canvas" id="odCanvas" style="height:' + h + 'px">' +
-               lines + wins + blks + bks + now +
+             '<div class="od-canvas' + (closed ? ' od-closed-canvas' : '') + '" id="odCanvas" style="height:' + h + 'px">' +
+               lines + (closed ? '' : wins) + blks + bks + now + closedOv +
              '</div>' +
            '</div>';
   }
@@ -218,6 +228,7 @@ window.OpsDayCalendar = (function () {
 
     canvas.addEventListener('pointerdown', function (e) {
       if (e.button != null && e.button !== 0) return;             // primary button only
+      if (state.closed) return;                                   // day closed → no new Ops scheduling
       if (e.target.closest('.od-ev')) return;                     // existing entry handles itself
       if (e.pointerType === 'mouse') { _beginSelect(e, canvas, scroll); return; }
       // Touch / pen: require a brief stationary hold so a normal swipe still scrolls
@@ -500,6 +511,42 @@ window.OpsDayCalendar = (function () {
         return false;
       })
       .catch(function () { _toast('通信エラー：変更できませんでした'); return false; });
+  }
+
+  /* ── full-day close / reopen (reuses the existing close-day.php path) ──
+     A whole-day closure is an availability STATE (closed_days table), NOT a booking.
+     It removes the day's bookable availability but NEVER touches, deletes, or converts
+     the real customer bookings — they stay in the bookings table and stay visible.
+     Reason is fixed ('終日休業', internal-only) to keep this a one-tap control. */
+  function _closeDay() {
+    if (state.closed) return;
+    var n = state.bookings.length;
+    var msg = n > 0
+      ? ('この日には確定済みのお客様のご予約が ' + n + ' 件あります。\n\n終日休業にしても予約は削除・変更されず、そのまま表示されます。\n終日休業にしますか？')
+      : ('この日を終日休業（00:00〜24:00）にしますか？');
+    if (!window.confirm(msg)) return;
+    fetch(_base() + '/close-day.php', { method: 'POST', headers: _headers(true),
+        body: JSON.stringify({ action: 'close', date: state.date, reason: '終日休業' }) })
+      .then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }, function () { return { status: r.status, j: null }; }); })
+      .then(function (res) {
+        var j = res.j || {};
+        if (j.ok) { _toast('終日休業にしました'); _broadcast(); load(); }
+        else { _toast('休業設定に失敗しました: ' + _esc(j.error || ('HTTP ' + res.status))); }
+      })
+      .catch(function () { _toast('通信エラー：休業設定を保存できませんでした'); });
+  }
+  function _reopenDay() {
+    if (!state.closed) return;
+    if (!window.confirm('この日の終日休業を解除しますか？')) return;
+    fetch(_base() + '/close-day.php', { method: 'POST', headers: _headers(true),
+        body: JSON.stringify({ action: 'reopen', date: state.date }) })
+      .then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }, function () { return { status: r.status, j: null }; }); })
+      .then(function (res) {
+        var j = res.j || {};
+        if (j.ok) { _toast('終日休業を解除しました'); _broadcast(); load(); }
+        else { _toast('解除に失敗しました: ' + _esc(j.error || ('HTTP ' + res.status))); }
+      })
+      .catch(function () { _toast('通信エラー：解除できませんでした'); });
   }
 
   /* ── live sync (same channel the shared timeline uses) ── */
