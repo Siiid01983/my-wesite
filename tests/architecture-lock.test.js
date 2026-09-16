@@ -284,18 +284,24 @@ describe('Band UI removal (slotCalendar/slotCapacity retired)', () => {
     assert.ok(!/SlotCalendar\.onShow/.test(navJs), 'navigation must not reference the deleted SlotCalendar');
   });
 
-  it('Admin + Ops share ONE calendar component (no duplicate implementations)', () => {
-    // The bespoke Ops calendar is deleted; Ops loads the SAME timeline modules and
-    // mounts them via the shared configure() hook.
+  it('Ops uses the simplified DAILY calendar; Admin keeps the shared timeline', () => {
+    // Ops was intentionally simplified to a daily-only drag-to-select calendar
+    // (ops/js/opsDayCalendar.js). It REUSES the shared TimelineGestures pointer
+    // engine (no duplicated gesture code) but NOT the full timelineCalendar.js
+    // (that would drag week/month/zoom/mode UI back into Ops). Admin still owns
+    // the shared timeline. The legacy bespoke Ops calendars stay deleted.
     assert.equal(fs.existsSync(path.join(ROOT, 'ops/js/calendar.js')), false, 'the duplicate ops/js/calendar.js must be deleted');
     assert.equal(fs.existsSync(path.join(ROOT, 'ops/js/closedDayCalendar.js')), false, 'the band-only closedDayCalendar.js must be deleted');
     const opsHtml = read('ops/calendar.html');
-    assert.ok(/js\/modules\/calendar\/timelineCalendar\.js/.test(opsHtml) && /js\/opsCalendar\.js/.test(opsHtml),
-      'ops/calendar.html must load the shared timeline component + the Ops shim');
-    assert.ok(/TimelineCalendar\.configure\s*\(/.test(read('ops/js/opsCalendar.js')),
-      'opsCalendar.js must mount the shared component via configure()');
+    assert.ok(/js\/opsDayCalendar\.js/.test(opsHtml), 'ops/calendar.html must load the simplified daily calendar (opsDayCalendar.js)');
+    assert.ok(/js\/modules\/calendar\/timelineGestures\.js/.test(opsHtml), 'ops/calendar.html must reuse the shared TimelineGestures engine (no duplicate gesture code)');
+    assert.ok(!/js\/modules\/calendar\/timelineCalendar\.js/.test(opsHtml), 'ops/calendar.html must NOT load the full shared timeline (Ops is the simplified daily calendar)');
+    const dayCal = read('ops/js/opsDayCalendar.js');
+    assert.ok(/TimelineGestures\.pointerDrag\s*\(/.test(dayCal), 'opsDayCalendar.js must drive drag-to-select via the shared TimelineGestures.pointerDrag');
+    assert.ok(/block-interval\.php/.test(dayCal), 'opsDayCalendar.js must persist entries via the existing block-interval.php (no schema/API change)');
+    // Admin still owns the shared timeline component.
     assert.ok(/function configure\s*\(/.test(read('js/modules/calendar/timelineCalendar.js')),
-      'timelineCalendar.js must expose configure() so one component serves Admin + Ops');
+      'timelineCalendar.js must still expose configure() for the Admin timeline');
   });
 
   it('customer overlay renders NO band time picker (timeline-only + contact fallback)', () => {
