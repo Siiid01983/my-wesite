@@ -1,0 +1,163 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   opsDayCalendar.css — simplified Ops DAILY calendar (drag-to-select duration)
+
+   Single-day 24-hour timeline. Brand palette (green #2C3626 / sage #9AB57A /
+   off-white #F9F9F6), mobile-first, touch-friendly. Namespaced .od-* so it never
+   collides with the shared timeline (#hmTl) or the legacy .cal-* styles.
+   ════════════════════════════════════════════════════════════════════════════ */
+.od-cal {
+  --od-green: #2C3626;
+  --od-sage: #9AB57A;
+  --od-bg: #ffffff;
+  --od-line: #ececea;
+  --od-ink: #1f241b;
+  --od-mut: #8a8f86;
+  --od-accent: #5E9A46;
+  --od-hour: 52px;
+  font-family: "DM Sans", "Noto Sans JP", system-ui, -apple-system, sans-serif;
+  color: var(--od-ink);
+  box-sizing: border-box;
+}
+.od-cal *, .od-ov * { box-sizing: border-box; }
+
+/* ── Top bar ─────────────────────────────────────────────────────────────── */
+.od-bar { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; flex-wrap: wrap; }
+.od-nav {
+  appearance: none; border: 1px solid var(--od-line); background: var(--od-bg);
+  color: var(--od-green); width: 38px; height: 38px; border-radius: 10px;
+  font-size: 20px; line-height: 1; cursor: pointer; display: inline-flex;
+  align-items: center; justify-content: center; flex: 0 0 auto;
+}
+.od-nav:hover { background: rgba(154, 181, 122, .12); }
+.od-today {
+  appearance: none; border: 1px solid var(--od-sage); background: var(--od-bg);
+  color: var(--od-green); padding: 0 12px; height: 38px; border-radius: 10px;
+  font: inherit; font-size: .84rem; font-weight: 600; cursor: pointer; flex: 0 0 auto;
+}
+.od-title { flex: 1 1 auto; text-align: center; font-size: 1.02rem; font-weight: 700; color: var(--od-ink); margin: 0; min-width: 120px; }
+.od-add {
+  appearance: none; border: 0; background: var(--od-green); color: #fff;
+  padding: 0 14px; height: 38px; border-radius: 10px; font: inherit; font-size: .84rem;
+  font-weight: 600; cursor: pointer; flex: 0 0 auto;
+}
+.od-add:hover { background: #384432; }
+
+.od-closed {
+  background: rgba(217, 83, 79, .1); color: #b23b37; border: 1px solid rgba(217, 83, 79, .3);
+  border-radius: 10px; padding: 8px 12px; font-size: .82rem; font-weight: 700; margin: 0 0 10px;
+}
+
+/* ── Scrollable 24-hour grid ─────────────────────────────────────────────── */
+.od-scroll {
+  position: relative; overflow-y: auto; overflow-x: hidden;
+  max-height: min(66vh, 640px);
+  border: 1px solid var(--od-line); border-radius: 14px; background: var(--od-bg);
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;   /* allow vertical scroll; JS takes over only for an active selection */
+}
+.od-grid { position: relative; display: grid; grid-template-columns: 54px 1fr; }
+.od-axis { position: relative; }
+.od-hr {
+  position: absolute; right: 8px; font-size: 11px; color: var(--od-mut);
+  transform: translateY(-7px); text-align: right;
+}
+.od-canvas {
+  position: relative; border-left: 1px solid var(--od-line);
+  touch-action: none;   /* the canvas itself never native-scrolls (its parent does) */
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+.od-hrline { position: absolute; left: 0; right: 0; border-top: 1px solid var(--od-line); pointer-events: none; }
+
+/* Bookable window — faint background band only, no text (empty stays blank). */
+.od-win { position: absolute; left: 0; right: 0; background: rgba(154, 181, 122, .10); pointer-events: none; }
+
+/* Entries (bookings + operator blocks) */
+.od-ev {
+  position: absolute; left: 6px; right: 6px; border-radius: 9px; padding: 4px 8px;
+  overflow: hidden; cursor: pointer; box-shadow: 0 1px 3px rgba(31, 36, 27, .12);
+  -webkit-tap-highlight-color: transparent;
+}
+.od-ev:focus-visible { outline: 2px solid var(--od-green); outline-offset: 1px; }
+.od-ev .od-ev-t { display: block; font-size: .68rem; font-weight: 700; opacity: .9; }
+.od-ev .od-ev-n { display: block; font-size: .8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Operator-created titled entry (a manual block) — sage/green, editable. */
+.od-blk { background: #E6F0DB; border-left: 4px solid var(--od-accent); color: var(--od-green); }
+.od-blk .od-ev-t { color: var(--od-accent); }
+
+/* Customer booking — read-only, blue. */
+.od-bk { background: #DCE9F6; border-left: 4px solid #3B82C4; color: #1f3a55; }
+.od-bk .od-ev-t { color: #2f6ca5; }
+.od-bk.pending { background: #FBF3D3; border-left-color: #E6B800; color: #6b5500; }
+.od-bk.pending .od-ev-t { color: #b08a00; }
+
+/* Live "now" line (today only) */
+.od-now { position: absolute; left: 0; right: 0; height: 0; border-top: 2px solid #ea4335; z-index: 4; pointer-events: none; }
+.od-now::before { content: ""; position: absolute; left: -3px; top: -4px; width: 8px; height: 8px; border-radius: 50%; background: #ea4335; }
+
+/* Drag selection ghost */
+.od-ghost {
+  position: absolute; left: 6px; right: 6px; z-index: 6; pointer-events: none;
+  background: rgba(94, 154, 70, .22); border: 2px dashed var(--od-accent); border-radius: 9px;
+  color: var(--od-green); font-size: .78rem; font-weight: 700; padding: 4px 8px;
+  display: flex; align-items: flex-start; justify-content: flex-start;
+}
+
+.od-hint { font-size: .74rem; color: var(--od-mut); text-align: center; margin: 8px 2px 2px; }
+
+/* ── Minimal editor ──────────────────────────────────────────────────────── */
+.od-ov {
+  position: fixed; inset: 0; z-index: 100000; background: rgba(15, 23, 20, .5);
+  display: flex; align-items: flex-end; justify-content: center; padding: 0;
+}
+.od-modal {
+  background: #fff; color: var(--od-ink); width: 100%; max-width: 460px;
+  border-radius: 18px 18px 0 0; padding: 20px 18px calc(18px + env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, .28);
+  font-family: "DM Sans", "Noto Sans JP", system-ui, -apple-system, sans-serif;
+  animation: od-sheet-up .22s ease;
+}
+@keyframes od-sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.od-modal h3 { margin: 0 0 14px; font-size: 1.05rem; font-weight: 700; color: var(--od-green); }
+.od-bk-name { margin: -6px 0 14px; font-size: 1rem; font-weight: 700; color: #1f3a55; }
+.od-note { margin: -4px 0 12px; font-size: .76rem; color: var(--od-mut); }
+.od-field { display: block; margin: 0 0 14px; }
+.od-field > span { display: block; font-size: .76rem; font-weight: 600; color: var(--od-mut); margin: 0 0 6px; }
+.od-field input[type="text"] {
+  width: 100%; border: 1px solid var(--od-line); border-radius: 12px; padding: 12px 14px;
+  font: inherit; font-size: 1rem; color: var(--od-ink); -webkit-appearance: none;
+}
+.od-field input[type="text"]:focus { outline: none; border-color: var(--od-sage); box-shadow: 0 0 0 3px rgba(154, 181, 122, .25); }
+.od-range { display: flex; align-items: center; gap: 10px; }
+.od-range select {
+  flex: 1; border: 1px solid var(--od-line); border-radius: 12px; padding: 11px 12px;
+  font: inherit; font-size: 1rem; background: #fff; color: var(--od-ink);
+}
+.od-range select:focus { outline: none; border-color: var(--od-sage); box-shadow: 0 0 0 3px rgba(154, 181, 122, .25); }
+.od-tilde { font-size: 1rem; color: var(--od-mut); flex: 0 0 auto; }
+.od-err { color: #c0392b; font-size: .8rem; margin: -6px 0 12px; }
+
+.od-modal-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 6px; }
+.od-modal-actions > div { display: flex; gap: 10px; }
+.od-btn {
+  appearance: none; border: 1px solid var(--od-line); background: #fff; color: var(--od-ink);
+  border-radius: 12px; padding: 11px 18px; font: inherit; font-size: .92rem; font-weight: 600; cursor: pointer;
+}
+.od-btn.od-save { background: var(--od-green); border-color: var(--od-green); color: #fff; }
+.od-btn.od-save:hover { background: #384432; }
+.od-btn.od-save:disabled { opacity: .55; cursor: not-allowed; }
+.od-btn.od-del { border-color: rgba(217, 83, 79, .5); color: #c0392b; }
+.od-btn.od-del:hover { background: rgba(217, 83, 79, .08); }
+
+/* Desktop: center the editor as a card instead of a bottom sheet. */
+@media (min-width: 640px) {
+  .od-ov { align-items: center; padding: 16px; }
+  .od-modal { border-radius: 18px; animation: od-fade-in .18s ease; }
+  @keyframes od-fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+}
+
+/* Respect reduced-motion. */
+@media (prefers-reduced-motion: reduce) {
+  .od-modal { animation: none; }
+  .od-nav, .od-add, .od-today, .od-btn { transition: none; }
+}

@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/ops.css" />
-  <link rel="stylesheet" href="css/calendar.css" />
+  <link rel="stylesheet" href="css/opsDayCalendar.css" />
   <link rel="icon" href="/assets/brand/hm-favicon.svg" type="image/svg+xml">
 </head>
 <body>
@@ -26,9 +26,10 @@
   <script src="../js/lib/imageCompress.js"></script>
   <script src="../js/lib/mapsLinks.js"></script>
   <script src="js/ops-core.js"></script>
-  <!-- Unified scheduling: Ops uses the SAME timeline component as Admin. -->
+  <!-- Simplified Ops DAILY calendar: single 24-hour day, drag-to-select duration.
+       Reuses the shared TimelineGestures pointer engine (mouse + touch). This is an
+       Ops-only screen; Admin keeps the full shared timeline (timelineCalendar.js). -->
   <script src="../js/modules/calendar/timelineGestures.js"></script>
-  <script src="../js/modules/calendar/timelineCalendar.js"></script>
-  <script src="js/opsCalendar.js"></script>
+  <script src="js/opsDayCalendar.js"></script>
 </body>
 </html>
