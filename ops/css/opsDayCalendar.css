@@ -5,7 +5,9 @@
    off-white #F9F9F6), mobile-first, touch-friendly. Namespaced .od-* so it never
    collides with the shared timeline (#hmTl) or the legacy .cal-* styles.
    ════════════════════════════════════════════════════════════════════════════ */
-.od-cal {
+/* Brand tokens — declared on the calendar AND on the body-level overlays (editor /
+   date picker are appended to <body>, outside .od-cal, so they need the tokens too). */
+.od-cal, .od-ov, .od-pick-ov {
   --od-green: #2C3626;
   --od-sage: #9AB57A;
   --od-bg: #ffffff;
@@ -14,11 +16,13 @@
   --od-mut: #8a8f86;
   --od-accent: #5E9A46;
   --od-hour: 52px;
+}
+.od-cal {
   font-family: "DM Sans", "Noto Sans JP", system-ui, -apple-system, sans-serif;
   color: var(--od-ink);
   box-sizing: border-box;
 }
-.od-cal *, .od-ov * { box-sizing: border-box; }
+.od-cal *, .od-ov *, .od-pick-ov * { box-sizing: border-box; }
 
 /* ── Top bar ─────────────────────────────────────────────────────────────── */
 .od-bar { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; flex-wrap: wrap; }
@@ -34,7 +38,58 @@
   color: var(--od-green); padding: 0 12px; height: 38px; border-radius: 10px;
   font: inherit; font-size: .84rem; font-weight: 600; cursor: pointer; flex: 0 0 auto;
 }
-.od-title { flex: 1 1 auto; text-align: center; font-size: 1.02rem; font-weight: 700; color: var(--od-ink); margin: 0; min-width: 120px; }
+.od-title {
+  flex: 1 1 auto; text-align: center; font-size: 1.02rem; font-weight: 700; color: var(--od-ink);
+  margin: 0; min-width: 120px;
+  appearance: none; border: 0; background: transparent; font-family: inherit; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px; border-radius: 10px; padding: 4px 6px;
+}
+.od-title:hover { background: rgba(154, 181, 122, .12); }
+.od-title:focus-visible { outline: 2px solid var(--od-green); outline-offset: 1px; }
+.od-caret { font-size: .7em; color: var(--od-mut); }
+
+/* ── Quick date picker (month grid) ─────────────────────────────────────── */
+.od-pick-ov {
+  position: fixed; inset: 0; z-index: 100001; background: rgba(15, 23, 20, .4);
+  display: flex; align-items: flex-start; justify-content: center; padding: 56px 16px 16px;
+}
+.od-pick {
+  background: #fff; color: var(--od-ink); width: 320px; max-width: 92vw;
+  border-radius: 16px; padding: 12px; box-shadow: 0 12px 40px rgba(0, 0, 0, .28);
+  font-family: "DM Sans", "Noto Sans JP", system-ui, -apple-system, sans-serif;
+  animation: od-pick-in .16s ease;
+}
+@keyframes od-pick-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+.od-pick-head { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; }
+.od-pick-title { flex: 1 1 auto; text-align: center; font-size: .98rem; font-weight: 700; color: var(--od-green); }
+.od-pick-nav {
+  appearance: none; border: 1px solid var(--od-line); background: #fff; color: var(--od-green);
+  width: 36px; height: 36px; border-radius: 9px; font-size: 18px; line-height: 1; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+}
+.od-pick-nav:hover { background: rgba(154, 181, 122, .12); }
+.od-pick-close {
+  appearance: none; border: 0; background: transparent; color: var(--od-mut);
+  width: 34px; height: 36px; border-radius: 9px; font-size: 22px; line-height: 1; cursor: pointer; flex: 0 0 auto;
+}
+.od-pick-close:hover { background: rgba(0, 0, 0, .06); color: var(--od-ink); }
+.od-pick-dow { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin: 0 0 4px; }
+.od-pick-dow span { text-align: center; font-size: .68rem; font-weight: 700; color: var(--od-mut); padding: 2px 0; }
+.od-pick-dow .sun { color: #d93025; } .od-pick-dow .sat { color: #3B82C4; }
+.od-pick-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.od-pick-day {
+  appearance: none; border: 0; background: transparent; color: var(--od-ink);
+  min-height: 40px; border-radius: 9px; font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.od-pick-day:hover { background: rgba(154, 181, 122, .18); }
+.od-pick-day:focus-visible { outline: 2px solid var(--od-green); outline-offset: -2px; }
+.od-pick-day.dim { color: var(--od-mut); opacity: .5; }
+.od-pick-day.today { box-shadow: inset 0 0 0 1.5px var(--od-sage); }
+.od-pick-day.sel { background: var(--od-green); color: #fff; }
+.od-pick-day.sel:hover { background: #384432; }
+
+@media (prefers-reduced-motion: reduce) { .od-pick { animation: none; } }
 .od-add {
   appearance: none; border: 0; background: var(--od-green); color: #fff;
   padding: 0 14px; height: 38px; border-radius: 10px; font: inherit; font-size: .84rem;

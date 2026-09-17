@@ -128,7 +128,8 @@ window.OpsDayCalendar = (function () {
         '<button class="od-nav" id="odPrev" type="button" aria-label="前の日">&#8249;</button>' +
         '<button class="od-today" id="odToday" type="button">今日</button>' +
         '<button class="od-nav" id="odNext" type="button" aria-label="次の日">&#8250;</button>' +
-        '<h2 class="od-title" id="odTitle">' + _esc(title) + '</h2>' +
+        '<button class="od-title" id="odTitle" type="button" aria-haspopup="dialog" aria-expanded="false" ' +
+          'title="日付を選択">' + _esc(title) + '<span class="od-caret" aria-hidden="true">▾</span></button>' +
         '<button class="od-close' + (closed ? ' on' : '') + '" id="odClose" type="button" aria-pressed="' + (closed ? 'true' : 'false') + '">' +
           (closed ? '終日休業を解除' : '終日休業') + '</button>' +
         '<button class="od-add" id="odAdd" type="button"' + (closed ? ' disabled' : '') + '>＋ 予定を追加</button>' +
@@ -142,6 +143,7 @@ window.OpsDayCalendar = (function () {
     root.querySelector('#odPrev').onclick  = function () { state.date = addDays(state.date, -1); load(); };
     root.querySelector('#odNext').onclick  = function () { state.date = addDays(state.date, 1); load(); };
     root.querySelector('#odToday').onclick = function () { state.date = todayStr(); load(); };
+    root.querySelector('#odTitle').onclick = function () { _openPicker(); };
     root.querySelector('#odClose').onclick = function () { closed ? _reopenDay() : _closeDay(); };
     var addBtn = root.querySelector('#odAdd');
     addBtn.onclick = function () { if (!state.closed) openEditor(null, defaultRange()); };
@@ -549,13 +551,89 @@ window.OpsDayCalendar = (function () {
       .catch(function () { _toast('通信エラー：解除できませんでした'); });
   }
 
+  /* ── quick date picker (month grid) — a DATE-SELECTION tool only ──
+     Tapping the centered date opens a small month calendar to jump to any day.
+     It never renders the 24h schedule and does not add week/month scheduling views;
+     picking a day just sets state.date + load() (which shows that day's normal state,
+     including a full-day closure). Frontend-only; no backend/endpoint change. */
+  var _pickerOv = null, _pickerMonth = null;
+
+  function _pickerKey(e) {
+    if (e.key === 'Escape') { e.preventDefault(); _closePicker(); }
+  }
+  function _closePicker() {
+    if (!_pickerOv) return;
+    _pickerOv.remove(); _pickerOv = null;
+    document.removeEventListener('keydown', _pickerKey, true);
+    var t = document.getElementById('odTitle');
+    if (t) { t.setAttribute('aria-expanded', 'false'); try { t.focus(); } catch (_) {} }
+  }
+  function _openPicker() {
+    _closePicker();
+    _pickerMonth = parse(state.date); _pickerMonth.setDate(1);
+    var ov = document.createElement('div');
+    ov.className = 'od-pick-ov';
+    ov.innerHTML = '<div class="od-pick" role="dialog" aria-modal="true" aria-label="日付を選択">' + _pickerInner() + '</div>';
+    document.body.appendChild(ov);
+    _pickerOv = ov;
+    var t = document.getElementById('odTitle'); if (t) t.setAttribute('aria-expanded', 'true');
+    document.addEventListener('keydown', _pickerKey, true);
+    ov.addEventListener('pointerdown', function (e) { if (e.target === ov) _closePicker(); });
+    _bindPicker();
+    setTimeout(function () {
+      var f = ov.querySelector('.od-pick-day.sel') || ov.querySelector('#odPickClose');
+      if (f) try { f.focus(); } catch (_) {}
+    }, 20);
+  }
+  function _pickerInner() {
+    var y = _pickerMonth.getFullYear(), m = _pickerMonth.getMonth();
+    var head = '<div class="od-pick-head">' +
+        '<button class="od-pick-nav" id="odPickPrev" type="button" aria-label="前の月">&#8249;</button>' +
+        '<span class="od-pick-title" aria-live="polite">' + y + '年' + MN[m] + '</span>' +
+        '<button class="od-pick-nav" id="odPickNext" type="button" aria-label="次の月">&#8250;</button>' +
+        '<button class="od-pick-close" id="odPickClose" type="button" aria-label="閉じる">&times;</button>' +
+      '</div>';
+    var dow = '<div class="od-pick-dow">' + DOW.map(function (d, i) {
+      return '<span class="' + (i === 0 ? 'sun' : i === 6 ? 'sat' : '') + '">' + d + '</span>';
+    }).join('') + '</div>';
+    var first = new Date(y, m, 1);
+    var start = new Date(first); start.setDate(1 - first.getDay());
+    var today = todayStr(), sel = state.date, cells = '';
+    for (var i = 0; i < 42; i++) {
+      var d = new Date(start); d.setDate(start.getDate() + i);
+      var ds = ymd(d), inMonth = d.getMonth() === m;
+      var cls = 'od-pick-day' + (inMonth ? '' : ' dim') + (ds === sel ? ' sel' : '') + (ds === today ? ' today' : '');
+      cells += '<button class="' + cls + '" type="button" data-date="' + ds + '"' +
+               (ds === sel ? ' aria-current="date"' : '') + '>' + d.getDate() + '</button>';
+    }
+    return head + dow + '<div class="od-pick-grid">' + cells + '</div>';
+  }
+  function _bindPicker() {
+    var ov = _pickerOv; if (!ov) return;
+    ov.querySelector('#odPickClose').onclick = _closePicker;
+    ov.querySelector('#odPickPrev').onclick = function () { _pickerMonth.setMonth(_pickerMonth.getMonth() - 1); _refreshPicker(); };
+    ov.querySelector('#odPickNext').onclick = function () { _pickerMonth.setMonth(_pickerMonth.getMonth() + 1); _refreshPicker(); };
+    ov.querySelectorAll('.od-pick-day').forEach(function (b) {
+      b.onclick = function () {
+        var ds = b.getAttribute('data-date');
+        _closePicker();
+        state.date = ds; load();   // switch the day view; load() renders that day's normal state (incl. closure)
+      };
+    });
+  }
+  function _refreshPicker() {
+    if (!_pickerOv) return;
+    _pickerOv.querySelector('.od-pick').innerHTML = _pickerInner();
+    _bindPicker();
+  }
+
   /* ── live sync (same channel the shared timeline uses) ── */
   var _chan = null;
   function _initSync() {
     try {
       _chan = ('BroadcastChannel' in window) ? new BroadcastChannel('hm_timeline_sync') : null;
       if (_chan) _chan.onmessage = function (e) {
-        if (e && e.data && e.data.type === 'timeline_changed' && document.getElementById('odCal') && !_openOv) load();
+        if (e && e.data && e.data.type === 'timeline_changed' && document.getElementById('odCal') && !_openOv && !_pickerOv) load();
       };
     } catch (_) { _chan = null; }
   }
@@ -568,7 +646,7 @@ window.OpsDayCalendar = (function () {
     _initSync();
     return load();
   }
-  function reload() { if (document.getElementById('odCal') && !_openOv) return load(); }
+  function reload() { if (document.getElementById('odCal') && !_openOv && !_pickerOv) return load(); }
 
   // Test seam (pure helpers + fixtures).
   var _debug = {
