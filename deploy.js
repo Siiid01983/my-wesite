@@ -84,6 +84,7 @@ const PRUNE = [
   'js/contact-form.js',         // retired — legacy email contact form removed (chat-only inquiry flow)
   'locales/public.en.js',       // retired — custom English overlay replaced by the opt-in Google Translate control
   'js/i18n/publicI18n.js',      // retired — custom English engine (browser-language auto-select) removed
+  'css/footer-qr.css',          // removed — footer QR code taken out of the site
 ];
 
 /*
