@@ -138,10 +138,21 @@
     }).join('');
     if (!c.messages.length) body = '<div class="ops-empty" style="padding:60px 20px">' + UI.icon('chat') + '<h3>' + t('chat.empty') + '</h3><p>' + t('chat.startFirst') + '</p></div>';
 
+    // OPTIONAL secondary SMS — only for a real BOOKING room (has a booking, a ref,
+    // and a stored phone). Contact-chat threads are already locked (canSend=false).
+    var bkRoom = c.bookingId ? state.bookings[c.bookingId] : null;
+    var smsOk  = !!(bkRoom && bkRoom.phone && c.ref);
+    var smsRow = smsOk
+      ? '<div class="ops-sms-row ops-sms-chat">' + Ops.Sms.checkboxHtml('ops-sms-staff', true) +
+          '<span class="ops-sms-cap">送信後に新着メッセージSMSを送信</span></div>'
+      : '';
+
     var composer = c.canSend
-      ? '<div class="ops-composer">' +
-          '<textarea id="ops-msg-input" rows="1" placeholder="' + t('chat.composerPh') + '"></textarea>' +
-          '<button id="ops-msg-send" aria-label="送信">' + UI.icon('send') + '</button>' +
+      ? '<div class="ops-composer-wrap">' + smsRow +
+          '<div class="ops-composer">' +
+            '<textarea id="ops-msg-input" rows="1" placeholder="' + t('chat.composerPh') + '"></textarea>' +
+            '<button id="ops-msg-send" aria-label="送信">' + UI.icon('send') + '</button>' +
+          '</div>' +
         '</div>'
       : '<div class="ops-chat-locked">' + t('chat.locked') + '</div>';
 
@@ -209,8 +220,11 @@
     var scroll = document.getElementById('ops-chat-scroll');
     var atBottom = scroll ? (scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 80) : true;
     var val = (document.getElementById('ops-msg-input') || {}).value || '';
+    var smsChk = Ops.Sms.isChecked('ops-sms-staff');   // preserve opt-in across the poll re-render
     state.screen.innerHTML = threadHtml(c);
     state.screen.querySelector('#ops-chat-back').addEventListener('click', closeThread);
+    var smsBox = state.screen.querySelector('#ops-sms-staff');
+    if (smsBox && smsChk) smsBox.checked = true;
     var input = state.screen.querySelector('#ops-msg-input');
     var send = state.screen.querySelector('#ops-msg-send');
     if (input && send) {
@@ -226,6 +240,8 @@
     var btn = document.getElementById('ops-msg-send');
     var text = (input && input.value || '').trim();
     if (!text || !c.bookingId) return;
+    // Capture the OPTIONAL SMS opt-in before the send re-renders the thread.
+    var wantSms = Ops.Sms.isChecked('ops-sms-staff') && !!c.ref;
     btn.disabled = true;
     Api.sendChat(c.bookingId, text, c.ref, c.email).then(function (res) {
       btn.disabled = false;
@@ -236,6 +252,9 @@
       c.messages.push({ id: res.row.id, out: true, name: 'Hello Moving', text: text, deleted: false, channel: 'chat', ts: now, read: true });
       c.lastText = text; c.lastTs = now;
       rerenderOpen();
+      // Chat message is sent — NOW attempt the optional attention SMS (non-blocking;
+      // an SMS failure never affects the already-sent chat message).
+      if (wantSms) Ops.Sms.send(c.bookingId, 'staff_message');
     });
   }
 

@@ -409,6 +409,16 @@ main.ops-main {
 .ops-switch input:checked + .ops-switch-track { background: var(--hm-sage); }
 .ops-switch input:checked + .ops-switch-track::before { transform: translateX(19px); }
 
+/* ── Optional SMS opt-in (booking confirm / reschedule / chat) ─────────────── */
+.ops-sms-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.ops-sms-opt { display: inline-flex; align-items: center; gap: 8px; font-size: .86rem; font-weight: 600; color: var(--hm-ink); cursor: pointer; user-select: none; }
+.ops-sms-opt input { width: 17px; height: 17px; accent-color: var(--hm-sage); cursor: pointer; }
+.ops-sms-opt input:disabled { cursor: not-allowed; }
+.ops-sms-hint { font-size: .72rem; color: var(--st-cancel); font-weight: 600; }
+.ops-sms-cap { display: block; width: 100%; font-size: .72rem; color: var(--hm-muted); margin-top: 2px; }
+.ops-sms-chat { padding: 6px 10px 0; }
+.ops-sms-row.od-sms { margin: 4px 0 2px; }
+
 /* ── Utility ────────────────────────────────────────────────────────────── */
 .ops-muted { color: var(--hm-muted); }
 .ops-hide { display: none !important; }

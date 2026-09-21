@@ -464,6 +464,11 @@ window.OpsDayCalendar = (function () {
             '<select id="odBkEnd" aria-label="終了時刻">' + _hourOptions(pE, 60, 1440) + '</select>' +
           '</div></div>' +
         '<p class="od-note">お客様の既存予約の日時を変更します。</p>' +
+        // OPTIONAL secondary SMS — sent only if checked AND the reschedule succeeds.
+        // Existing reschedule + its customer email are unaffected; SMS never blocks.
+        '<div class="ops-sms-row od-sms">' +
+          ((window.Ops && Ops.Sms) ? Ops.Sms.checkboxHtml('odBkSms', true) : '') +
+        '</div>' +
         '<p class="od-err" id="odBkErr" role="alert" hidden></p>' +
         '<div class="od-modal-actions"><span></span><div>' +
           '<button type="button" class="od-btn od-cancel" id="odBkCancel">キャンセル</button>' +
@@ -489,10 +494,17 @@ window.OpsDayCalendar = (function () {
       var aMin = +sEl.value, bMin = +eEl.value;
       if (bMin <= aMin) { errEl.hidden = false; errEl.textContent = '終了時刻は開始時刻より後にしてください。'; return; }
       if (!dirty) { _closeEditor(); return; }   // unchanged → no API call (no spurious change email)
+      // Capture the OPTIONAL SMS opt-in before the modal closes on success.
+      var wantSms = !!(window.Ops && Ops.Sms && Ops.Sms.isChecked('odBkSms'));
       saveEl.disabled = true; saveEl.textContent = '保存中…';
       _rescheduleBooking(id, nd, aMin, bMin).then(function (ok) {
         saveEl.disabled = false; saveEl.textContent = '保存';
-        if (ok) _closeEditor();
+        if (ok) {
+          // Reschedule (+ its existing customer email) succeeded — NOW attempt the
+          // optional SMS (non-blocking; failure never undoes the reschedule).
+          if (wantSms) Ops.Sms.send(id, 'reschedule');
+          _closeEditor();
+        }
       });
     };
   }

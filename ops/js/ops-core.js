@@ -514,6 +514,30 @@
         .catch(function (e) { return { data: null, error: { message: (e && e.message) || 'network', isNetwork: true } }; });
     },
 
+    /* OPTIONAL secondary SMS attention notification (send-sms.php). SMS is never
+       primary: this is called SEPARATELY, AFTER the primary op (confirm / reschedule
+       / chat) already succeeded, so its failure can never roll anything back. The
+       browser sends ONLY booking id + intent; the server derives name / phone /
+       reference / chat URL from the trusted booking row. Never rejects the promise —
+       resolves { ok, sent, code, ref } so callers can show a non-blocking status.
+       intent ∈ 'booking_confirmed' | 'reschedule' | 'staff_message'. */
+    sendSms: function (dbId, intent) {
+      return fetch(cfg.base + '/send-sms.php', {
+        method: 'POST', headers: headers(true),
+        body: JSON.stringify({ booking_id: dbId, intent: intent }),
+      })
+        .then(function (r) {
+          return r.text().then(function (txt) {
+            var j = null; try { j = JSON.parse(txt); } catch (_) {}
+            var d = (j && j.data) || {};
+            if (j && j.ok) return { ok: true, sent: !!d.sent, code: String(d.code || (d.sent ? 'sent' : 'failed')), ref: d.ref || '', dryRun: !!d.dry_run };
+            var code = (j && j.error && (j.error.code || j.error.message)) || ('HTTP ' + r.status);
+            return { ok: false, sent: false, code: String(code), status: r.status };
+          });
+        })
+        .catch(function (e) { return { ok: false, sent: false, code: (e && e.message) || 'network', isNetwork: true }; });
+    },
+
     /* Inbox / chat threads ------------------------------------------------- */
     listInbox: function () {
       return Api.rest({ table: 'inbox_messages', action: 'select', columns: '*', order: [{ col: 'created_at', ascending: false }], limit: 400 })
@@ -986,6 +1010,43 @@
     btn.addEventListener('click', submit);
     ov.querySelector('#ops-li-pass').addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
   }
+
+  /* ── Optional SMS attention notification — shared UI helper ────────────────
+     SMS is SECONDARY (email + chat stay primary). These helpers render the
+     opt-in checkbox and fire the send ONLY AFTER the primary op succeeded, so
+     an SMS failure can never block confirm / reschedule / chat. Never throws. */
+  Ops.Sms = {
+    INTENTS: { booking_confirmed: 1, reschedule: 1, staff_message: 1 },
+    // Opt-in checkbox markup — UNCHECKED by default (staff must choose). When the
+    // booking has no phone it renders disabled with a hint (no send is attempted).
+    checkboxHtml: function (id, hasPhone) {
+      var dis  = hasPhone ? '' : ' disabled';
+      var hint = hasPhone ? '' : ' <span class="ops-sms-hint">電話番号が未登録のため送信できません</span>';
+      return '<label class="ops-sms-opt"><input type="checkbox" id="' + util.esc(id) + '"' + dis +
+             '> SMS通知を送信</label>' + hint;
+    },
+    isChecked: function (id) {
+      var el = document.getElementById(id);
+      return !!(el && el.checked && !el.disabled);
+    },
+    // Fire the SMS and toast the (non-blocking) outcome. Resolves the result for
+    // callers/tests; never rejects. Call this AFTER the primary op resolves.
+    send: function (dbId, intent) {
+      if (!Ops.Sms.INTENTS[intent] || !dbId) return Promise.resolve({ ok: false, sent: false, code: 'skip' });
+      return Ops.Api.sendSms(dbId, intent).then(function (r) {
+        if (r.sent)                        UI.toast(r.dryRun ? 'SMS通知を記録しました（ドライラン）' : 'SMS通知を送信しました');
+        else if (r.code === 'no_phone')    UI.toast('SMS未送信：電話番号が未登録です');
+        else if (r.code === 'duplicate')   UI.toast('SMSは既に送信済みです');
+        else                               UI.toast('SMS送信に失敗しました（予約は正常です）');
+        return r;
+      });
+    },
+    // Send only if the named checkbox is checked; otherwise a resolved no-op.
+    maybe: function (checkboxId, dbId, intent) {
+      if (!Ops.Sms.isChecked(checkboxId)) return Promise.resolve({ ok: false, sent: false, code: 'unchecked' });
+      return Ops.Sms.send(dbId, intent);
+    },
+  };
 
   /* ── Boot: guard auth, then run the page initializer ───────────────────── */
   Ops.ready = function (init) {
