@@ -87,6 +87,10 @@ t('compose is staff-only (X-ADMIN-TOKEN)',           strpos($cm, "hm_request_hea
 t('compose accepts admin OR manager',                strpos($cm, "'admin'") !== false && strpos($cm, "'manager'") !== false);
 t('compose rejects unauthorized (403 forbidden)',    strpos($cm, "'forbidden'") !== false && strpos($cm, '403') !== false);
 t('compose is rate-limited',                         strpos($cm, "hm_rate_limit('sms_compose'") !== false);
+t('compose is gated by sms_compose_enabled (default off)', strpos($cm, "sms_compose_enabled'] ?? false") !== false && strpos($cm, "'sms_disabled'") !== false);
+t('flag checked AFTER staff auth (not disclosed to anon)', strpos($cm, 'sms_compose_enabled') > strpos($cm, "hm_request_header('X-ADMIN-TOKEN')"));
+$cfgex = file_get_contents(__DIR__ . '/../hm-api/_config.example.php');
+t('sms_compose_enabled documented in _config.example.php (default false)', strpos($cfgex, "'sms_compose_enabled' => false") !== false);
 t('compose derives phone from the bookings row',     strpos($cm, 'customer_phone') !== false && strpos($cm, 'FROM bookings') !== false);
 t('compose never accepts a phone from the request',  strpos($cm, "\$p['phone']") === false && strpos($cm, "\$p['customer_phone']") === false);
 t('compose refuses Ops blocks (admin_blocked)',      strpos($cm, 'admin_blocked') !== false && strpos($cm, 'not_eligible') !== false);

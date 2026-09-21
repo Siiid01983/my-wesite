@@ -1083,7 +1083,10 @@
       if (!Ops.Sms.INTENTS[intent] || !dbId) return Promise.resolve({ ok: false, code: 'skip' });
       UI.toast('SMSを作成中…');
       return Ops.Api.composeSms(dbId, intent).then(function (r) {
-        if (!r.ok) { UI.toast('SMSを作成できませんでした：' + (r.code || '')); return r; }
+        if (!r.ok) {
+          UI.toast(r.code === 'sms_disabled' ? 'SMS機能は現在無効です' : ('SMSを作成できませんでした：' + (r.code || '')));
+          return r;
+        }
         if (Ops.Sms.isMobile() && r.hasPhone) {
           // Open the native composer prefilled — staff still presses Send manually.
           window.location.href = Ops.Sms.smsUri(r.phone, r.body);

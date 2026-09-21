@@ -51,6 +51,13 @@ if ($actor === '') {
   hm_json(['ok' => false, 'data' => null, 'error' => ['message' => 'forbidden', 'code' => 'forbidden']], 403);
 }
 
+// ── Feature flag: dormant unless explicitly enabled in _config.php ────────────
+//  Default OFF (master switch). Checked AFTER staff auth so the flag state is
+//  never disclosed to unauthenticated callers.
+if (!(bool)(hm_config()['sms_compose_enabled'] ?? false)) {
+  hm_json(['ok' => false, 'data' => null, 'error' => ['message' => 'sms compose disabled', 'code' => 'sms_disabled']], 503);
+}
+
 // ── Input ────────────────────────────────────────────────────────────────────
 $p         = hm_body();
 $bookingId = trim((string)($p['booking_id'] ?? ''));

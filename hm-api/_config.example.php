@@ -300,4 +300,13 @@ return [
   'telegram_enabled'   => false,
   'telegram_bot_token' => '',
   'telegram_chat_id'   => '',
+
+  // ── Manual SMS (Ops convenience) ───────────────────────────────────────────
+  //  Optional. The server NEVER sends SMS — it only BUILDS the message text +
+  //  resolves the customer phone (sms-compose.php) so staff can send it by hand
+  //  from their own phone. No provider, no credentials, no delivery log.
+  //    sms_compose_enabled : master switch for the compose endpoint + Ops buttons.
+  //                          Leave false to keep the feature dormant; flip to true
+  //                          (one line, no redeploy) once you've reviewed it.
+  'sms_compose_enabled' => false,
 ];
