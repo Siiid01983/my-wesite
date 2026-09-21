@@ -1017,7 +1017,7 @@
      native SMS composer (mobile) or shows a COPY fallback (desktop). It NEVER
      claims the SMS was sent — opening the composer is not sending. */
   Ops.Sms = {
-    INTENTS: { booking_confirmed: 1, reschedule: 1, staff_message: 1 },
+    INTENTS: { estimate: 1, booking_confirmed: 1, reschedule: 1, staff_message: 1 },
 
     // A booking is manually addressable. Renders the action button.
     buttonHtml: function (dbId, intent, label) {

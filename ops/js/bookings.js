@@ -157,10 +157,14 @@
 
       // OPTIONAL manual SMS — real customer bookings only. Opens the staff phone's
       // SMS app (mobile) or a copy sheet (desktop); the server never sends SMS.
+      // Context-specific: a pending/checking booking is still a quote → estimate
+      // wording; a confirmed/completed one → booking-confirmation wording.
       ((b.ref && b.statusRaw !== 'admin_blocked')
         ? '<div class="ops-sms-row" style="margin:14px 2px 2px">' +
-            Ops.Sms.buttonHtml(b.dbId, 'booking_confirmed', 'SMSを送る') +
-            '<div class="ops-sms-cap">予約確認SMSを手動送信します（サーバーからは送信されません）</div>' +
+            Ops.Sms.buttonHtml(b.dbId,
+              (b.statusRaw === 'pending' || b.statusRaw === 'checking') ? 'estimate' : 'booking_confirmed',
+              'SMSを送る') +
+            '<div class="ops-sms-cap">SMSを手動送信します（サーバーからは送信されません）</div>' +
           '</div>'
         : '');
 

@@ -32,26 +32,43 @@ t('chatUrl points at login.html with the booking ref', strpos($LINK, '/login.htm
 t('chatUrl opens the chat view',                        strpos($LINK, 'view=chat') !== false);
 t('chatUrl does NOT contain an email address (no @)',   strpos($LINK, '@') === false);
 t('chatUrl does NOT contain the customer name',         strpos($LINK, $NAME) === false);
+t('chat link still carries the ref (identifies the conversation)', strpos($LINK, $REF) !== false);
 
-// ── 2. Rendered body: Company + Name + Ref + Link, per intent ─────────────────
+// ── 2. Rendered body: Company + Name + reason + prompt + Link, per intent ─────
+$bodyEstim   = SmsService::render('estimate',          $NAME, $REF, $LINK);
 $bodyConfirm = SmsService::render('booking_confirmed', $NAME, $REF, $LINK);
 $bodyResched = SmsService::render('reschedule',        $NAME, $REF, $LINK);
 $bodyStaff   = SmsService::render('staff_message',     $NAME, $REF, $LINK);
 
-t('body starts with the company name "Hello Moving"', strpos($bodyConfirm, 'Hello Moving') === 0);
-t('body includes the customer name + honorific',      strpos($bodyConfirm, $NAME . ' 様') !== false);
-t('body includes the booking reference',              strpos($bodyConfirm, '予約番号: ' . $REF) !== false);
-t('body includes the exact chat link',                strpos($bodyConfirm, $LINK) !== false);
-t('body includes the chat prompt line',               strpos($bodyConfirm, 'チャットをご確認ください。') !== false);
-t('confirm reason line',    strpos($bodyConfirm, 'ご予約ありがとうございます。') !== false);
-t('reschedule reason line', strpos($bodyResched, 'ご予約日時が変更されました。') !== false);
-t('staff-message reason line', strpos($bodyStaff, '新しいメッセージがあります。') !== false);
-t('body never leaks the email',   strpos($bodyConfirm, '@') === false);
-t('all four required elements present', strpos($bodyConfirm, 'Hello Moving') !== false && strpos($bodyConfirm, $NAME) !== false && strpos($bodyConfirm, $REF) !== false && strpos($bodyConfirm, $LINK) !== false);
-t('blank name → お客様 fallback (never invents a name)', strpos(SmsService::render('booking_confirmed', '', $REF, $LINK), 'お客様 様') !== false);
+t('company name is exactly "ハローMoving"',          SmsService::COMPANY === 'ハローMoving');
+t('body starts with "ハローMoving"',                 strpos($bodyEstim, 'ハローMoving') === 0);
+t('body no longer uses "Hello Moving"',              strpos($bodyEstim, 'Hello Moving') === false);
+t('body includes the customer name + honorific',     strpos($bodyEstim, $NAME . ' 様') !== false);
+t('body includes the chat prompt line',              strpos($bodyEstim, 'チャットをご確認ください。') !== false);
+t('body ends with the exact chat link',              strpos($bodyEstim, $LINK) !== false);
+
+// The reference / reservation wording must NOT appear in the BODY (only in the link).
+foreach (['estimate' => $bodyEstim, 'booking' => $bodyConfirm, 'reschedule' => $bodyResched, 'staff' => $bodyStaff] as $k => $bd) {
+  t("[$k] body does NOT show 予約番号",  strpos($bd, '予約番号') === false);
+}
+// The ref string appears ONLY inside the link line, never as a standalone body line.
+$estimNoLink = trim(str_replace($LINK, '', $bodyEstim));
+t('ref does NOT appear in the body outside the link', strpos($estimNoLink, $REF) === false);
+
+// Context-specific reason lines.
+t('ESTIMATE reason line',      strpos($bodyEstim,   'お見積もりをご案内しました。') !== false);
+t('estimate omits booking wording', strpos($bodyEstim, 'ご予約') === false && strpos($bodyEstim, '予約日時') === false);
+t('BOOKING reason line',       strpos($bodyConfirm, 'ご予約ありがとうございます。') !== false);
+t('RESCHEDULE reason line',    strpos($bodyResched, 'ご予約日時が変更されました。') !== false);
+t('STAFF-MESSAGE reason line', strpos($bodyStaff,   '新しいメッセージがあります。') !== false);
+t('body never leaks the email',   strpos($bodyEstim, '@') === false);
+t('all required elements present (company + name + reason + chat link)',
+  strpos($bodyEstim, 'ハローMoving') !== false && strpos($bodyEstim, $NAME) !== false &&
+  strpos($bodyEstim, 'お見積もりをご案内しました。') !== false && strpos($bodyEstim, $LINK) !== false);
+t('blank name → お客様 fallback (never invents a name)', strpos(SmsService::render('estimate', '', $REF, $LINK), 'お客様 様') !== false);
 
 // ── 3. Intent allow-list ─────────────────────────────────────────────────────
-t('valid intents accepted', SmsService::isValidIntent('booking_confirmed') && SmsService::isValidIntent('reschedule') && SmsService::isValidIntent('staff_message'));
+t('valid intents accepted', SmsService::isValidIntent('estimate') && SmsService::isValidIntent('booking_confirmed') && SmsService::isValidIntent('reschedule') && SmsService::isValidIntent('staff_message'));
 t('unknown intent rejected', !SmsService::isValidIntent('marketing') && !SmsService::isValidIntent(''));
 
 // ── 4. Phone normalization (server-side) + missing phone ──────────────────────
@@ -120,9 +137,12 @@ t('Ops.Sms block was located', $smsBlock !== '');
 t('Ops.Sms NEVER prints 送信しました / 送信済み',       strpos($smsBlock, '送信しました') === false && strpos($smsBlock, '送信済み') === false);
 t('Ops.Sms mobile detection present',                strpos($core, 'isMobile') !== false);
 
+t('client intent allow-list includes estimate', strpos($core, 'estimate: 1') !== false);
+
 $bk = file_get_contents(__DIR__ . '/../ops/js/bookings.js');
 t('bookings SMS button shown only for real bookings (ref + not admin_blocked)', strpos($bk, "b.ref && b.statusRaw !== 'admin_blocked'") !== false);
-t('bookings uses the manual SMS button (buttonHtml booking_confirmed)', strpos($bk, "buttonHtml(b.dbId, 'booking_confirmed'") !== false);
+t('bookings SMS intent is context-specific (estimate vs booking_confirmed by status)',
+  strpos($bk, "'pending' || b.statusRaw === 'checking'") !== false && strpos($bk, "'estimate'") !== false && strpos($bk, "'booking_confirmed'") !== false);
 t('bookings no longer auto-sends after confirm', strpos($bk, 'Ops.Sms.send(') === false && strpos($bk, 'wantSms') === false);
 
 $ch = file_get_contents(__DIR__ . '/../ops/js/chat.js');
