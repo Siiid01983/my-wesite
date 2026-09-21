@@ -138,10 +138,21 @@
     }).join('');
     if (!c.messages.length) body = '<div class="ops-empty" style="padding:60px 20px">' + UI.icon('chat') + '<h3>' + t('chat.empty') + '</h3><p>' + t('chat.startFirst') + '</p></div>';
 
+    // OPTIONAL manual SMS — only for a real BOOKING room (has a booking + a ref).
+    // Contact-chat threads are already locked (canSend=false). Opens the staff
+    // phone's SMS app / a copy sheet; the server never sends SMS.
+    var smsOk  = !!(c.bookingId && c.ref);
+    var smsRow = smsOk
+      ? '<div class="ops-sms-row ops-sms-chat">' + Ops.Sms.buttonHtml(c.bookingId, 'staff_message', 'SMSで通知') +
+          '<span class="ops-sms-cap">新着メッセージSMSを手動送信（サーバーからは送信されません）</span></div>'
+      : '';
+
     var composer = c.canSend
-      ? '<div class="ops-composer">' +
-          '<textarea id="ops-msg-input" rows="1" placeholder="' + t('chat.composerPh') + '"></textarea>' +
-          '<button id="ops-msg-send" aria-label="送信">' + UI.icon('send') + '</button>' +
+      ? '<div class="ops-composer-wrap">' + smsRow +
+          '<div class="ops-composer">' +
+            '<textarea id="ops-msg-input" rows="1" placeholder="' + t('chat.composerPh') + '"></textarea>' +
+            '<button id="ops-msg-send" aria-label="送信">' + UI.icon('send') + '</button>' +
+          '</div>' +
         '</div>'
       : '<div class="ops-chat-locked">' + t('chat.locked') + '</div>';
 
@@ -186,6 +197,7 @@
       input.addEventListener('input', function () { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 96) + 'px'; });
       send.addEventListener('click', function () { doSend(c); });
     }
+    Ops.Sms.bind(scr);
     scrollBottom();
     markRead(c);
   }
@@ -211,6 +223,7 @@
     var val = (document.getElementById('ops-msg-input') || {}).value || '';
     state.screen.innerHTML = threadHtml(c);
     state.screen.querySelector('#ops-chat-back').addEventListener('click', closeThread);
+    Ops.Sms.bind(state.screen);
     var input = state.screen.querySelector('#ops-msg-input');
     var send = state.screen.querySelector('#ops-msg-send');
     if (input && send) {

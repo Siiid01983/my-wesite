@@ -153,12 +153,22 @@
       '</div>' +
 
       '<div class="ops-section-title" style="margin:16px 2px 8px">' + t('bookings.statusChange') + '</div>' +
-      '<div class="bk-trans">' + trans + '</div>';
+      '<div class="bk-trans">' + trans + '</div>' +
+
+      // OPTIONAL manual SMS — real customer bookings only. Opens the staff phone's
+      // SMS app (mobile) or a copy sheet (desktop); the server never sends SMS.
+      ((b.ref && b.statusRaw !== 'admin_blocked')
+        ? '<div class="ops-sms-row" style="margin:14px 2px 2px">' +
+            Ops.Sms.buttonHtml(b.dbId, 'booking_confirmed', 'SMSを送る') +
+            '<div class="ops-sms-cap">予約確認SMSを手動送信します（サーバーからは送信されません）</div>' +
+          '</div>'
+        : '');
 
     sheet.open(html);
     sheet.el.querySelectorAll('.bk-trans [data-st]').forEach(function (btn) {
       btn.addEventListener('click', function () { changeStatus(b, btn.getAttribute('data-st')); });
     });
+    Ops.Sms.bind(sheet.el);
   }
 
   function changeStatus(b, newStatus) {

@@ -409,6 +409,22 @@ main.ops-main {
 .ops-switch input:checked + .ops-switch-track { background: var(--hm-sage); }
 .ops-switch input:checked + .ops-switch-track::before { transform: translateX(19px); }
 
+/* ── Optional MANUAL SMS (booking / reschedule / chat) ─────────────────────── */
+.ops-sms-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.ops-sms-btn { flex: none; font-size: .86rem; }
+.ops-sms-cap { display: block; width: 100%; font-size: .72rem; color: var(--hm-muted); margin-top: 4px; }
+.ops-sms-chat { padding: 6px 10px 0; }
+.ops-sms-row.od-sms { margin: 6px 0 2px; }
+/* Desktop / no-app copy fallback (inside UI.sheet) */
+.ops-sms-fb-h { margin: 2px 0 6px; font-size: 1.05rem; }
+.ops-sms-fb-note { font-size: .78rem; color: var(--hm-muted); margin: 0 0 14px; line-height: 1.5; }
+.ops-sms-fb-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.ops-sms-fb-row.col { flex-direction: column; align-items: stretch; }
+.ops-sms-fb-lbl { font-size: .74rem; font-weight: 700; color: var(--hm-muted); }
+.ops-sms-fb-val { flex: 1; min-width: 0; font-size: .95rem; font-weight: 600; color: var(--hm-ink); background: var(--hm-bg); padding: 8px 10px; border-radius: 8px; word-break: break-all; }
+.ops-sms-fb-nophone { font-size: .8rem; color: var(--st-check); }
+.ops-sms-fb-body { width: 100%; border: 1px solid var(--hm-line); border-radius: 10px; padding: 10px 12px; font: inherit; font-size: .88rem; line-height: 1.55; color: var(--hm-ink); background: #fff; resize: vertical; }
+
 /* ── Utility ────────────────────────────────────────────────────────────── */
 .ops-muted { color: var(--hm-muted); }
 .ops-hide { display: none !important; }

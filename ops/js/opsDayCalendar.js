@@ -464,6 +464,11 @@ window.OpsDayCalendar = (function () {
             '<select id="odBkEnd" aria-label="終了時刻">' + _hourOptions(pE, 60, 1440) + '</select>' +
           '</div></div>' +
         '<p class="od-note">お客様の既存予約の日時を変更します。</p>' +
+        // OPTIONAL manual SMS — opens the staff phone's SMS app / a copy sheet.
+        // The server never sends SMS; this is independent of the reschedule + email.
+        '<div class="ops-sms-row od-sms">' +
+          ((window.Ops && Ops.Sms) ? Ops.Sms.buttonHtml(id, 'reschedule', 'SMSを送る') : '') +
+        '</div>' +
         '<p class="od-err" id="odBkErr" role="alert" hidden></p>' +
         '<div class="od-modal-actions"><span></span><div>' +
           '<button type="button" class="od-btn od-cancel" id="odBkCancel">キャンセル</button>' +
@@ -472,6 +477,7 @@ window.OpsDayCalendar = (function () {
       '</div>';
     document.body.appendChild(ov);
     _openOv = ov;
+    if (window.Ops && Ops.Sms) Ops.Sms.bind(ov);   // manual SMS button (independent of save)
     document.addEventListener('keydown', _escClose, true);
     ov.addEventListener('pointerdown', function (e) { if (e.target === ov) _closeEditor(); });
 
