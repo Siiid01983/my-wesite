@@ -155,25 +155,25 @@
       '<div class="ops-section-title" style="margin:16px 2px 8px">' + t('bookings.statusChange') + '</div>' +
       '<div class="bk-trans">' + trans + '</div>' +
 
-      // OPTIONAL secondary SMS — sent only if checked AND the booking is confirmed
-      // here. Email + chat are unaffected; an SMS failure never blocks the confirm.
-      '<div class="ops-sms-row" style="margin:12px 2px 2px">' +
-        Ops.Sms.checkboxHtml('bk-sms-confirm', !!b.phone) +
-        '<div class="ops-sms-cap">確定時に予約確認SMSを送信します</div>' +
-      '</div>';
+      // OPTIONAL manual SMS — real customer bookings only. Opens the staff phone's
+      // SMS app (mobile) or a copy sheet (desktop); the server never sends SMS.
+      ((b.ref && b.statusRaw !== 'admin_blocked')
+        ? '<div class="ops-sms-row" style="margin:14px 2px 2px">' +
+            Ops.Sms.buttonHtml(b.dbId, 'booking_confirmed', 'SMSを送る') +
+            '<div class="ops-sms-cap">予約確認SMSを手動送信します（サーバーからは送信されません）</div>' +
+          '</div>'
+        : '');
 
     sheet.open(html);
     sheet.el.querySelectorAll('.bk-trans [data-st]').forEach(function (btn) {
       btn.addEventListener('click', function () { changeStatus(b, btn.getAttribute('data-st')); });
     });
+    Ops.Sms.bind(sheet.el);
   }
 
   function changeStatus(b, newStatus) {
     if (b.status === newStatus) return;
     if (newStatus === 'キャンセル' && !confirm(t('bookings.cancelConfirm', { name: b.name }))) return;
-    // Capture the OPTIONAL SMS opt-in BEFORE the optimistic re-render wipes the DOM.
-    // Only meaningful when this transition confirms the booking.
-    var wantSms = (Ops.toDbStatus(newStatus) === 'confirmed') && Ops.Sms.isChecked('bk-sms-confirm');
     var prev = b.status, prevRaw = b.statusRaw;
     b.status = newStatus; b.statusRaw = Ops.toDbStatus(newStatus);   // optimistic
     renderList(); openDetail(b.dbId); UI.toast(t('common.updating'));
@@ -187,8 +187,6 @@
         UI.toast(msg);
       } else {
         UI.toast(t('bookings.updated', { name: b.name, s: t('status.' + Ops.toDbStatus(newStatus)) }));
-        // Primary op succeeded — NOW attempt the optional SMS (non-blocking).
-        if (wantSms) Ops.Sms.send(b.dbId, 'booking_confirmed');
       }
     });
   }

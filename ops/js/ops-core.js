@@ -514,15 +514,14 @@
         .catch(function (e) { return { data: null, error: { message: (e && e.message) || 'network', isNetwork: true } }; });
     },
 
-    /* OPTIONAL secondary SMS attention notification (send-sms.php). SMS is never
-       primary: this is called SEPARATELY, AFTER the primary op (confirm / reschedule
-       / chat) already succeeded, so its failure can never roll anything back. The
-       browser sends ONLY booking id + intent; the server derives name / phone /
-       reference / chat URL from the trusted booking row. Never rejects the promise —
-       resolves { ok, sent, code, ref } so callers can show a non-blocking status.
-       intent ∈ 'booking_confirmed' | 'reschedule' | 'staff_message'. */
-    sendSms: function (dbId, intent) {
-      return fetch(cfg.base + '/send-sms.php', {
+    /* OPTIONAL manual SMS — build the message text + resolve the customer's phone
+       from TRUSTED server records (sms-compose.php). This NEVER sends: the server
+       has no SMS provider. The browser sends ONLY booking id + intent; the server
+       returns { phone, has_phone, body, ref, segments } for staff to send by hand.
+       Never rejects — resolves { ok, ... } so the caller can open the SMS composer
+       or a copy fallback. intent ∈ 'booking_confirmed'|'reschedule'|'staff_message'. */
+    composeSms: function (dbId, intent) {
+      return fetch(cfg.base + '/sms-compose.php', {
         method: 'POST', headers: headers(true),
         body: JSON.stringify({ booking_id: dbId, intent: intent }),
       })
@@ -530,12 +529,12 @@
           return r.text().then(function (txt) {
             var j = null; try { j = JSON.parse(txt); } catch (_) {}
             var d = (j && j.data) || {};
-            if (j && j.ok) return { ok: true, sent: !!d.sent, code: String(d.code || (d.sent ? 'sent' : 'failed')), ref: d.ref || '', dryRun: !!d.dry_run };
+            if (j && j.ok) return { ok: true, phone: d.phone || '', hasPhone: !!d.has_phone, body: d.body || '', ref: d.ref || '', segments: d.segments || 1 };
             var code = (j && j.error && (j.error.code || j.error.message)) || ('HTTP ' + r.status);
-            return { ok: false, sent: false, code: String(code), status: r.status };
+            return { ok: false, code: String(code), status: r.status };
           });
         })
-        .catch(function (e) { return { ok: false, sent: false, code: (e && e.message) || 'network', isNetwork: true }; });
+        .catch(function (e) { return { ok: false, code: (e && e.message) || 'network', isNetwork: true }; });
     },
 
     /* Inbox / chat threads ------------------------------------------------- */
@@ -1011,40 +1010,99 @@
     ov.querySelector('#ops-li-pass').addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
   }
 
-  /* ── Optional SMS attention notification — shared UI helper ────────────────
-     SMS is SECONDARY (email + chat stay primary). These helpers render the
-     opt-in checkbox and fire the send ONLY AFTER the primary op succeeded, so
-     an SMS failure can never block confirm / reschedule / chat. Never throws. */
+  /* ── Optional MANUAL SMS — shared UI helper ────────────────────────────────
+     SMS is an experimental convenience; email + chat stay primary. The website
+     NEVER sends SMS. This helper asks the server to BUILD the message text +
+     resolve the customer phone (sms-compose.php), then either opens the device's
+     native SMS composer (mobile) or shows a COPY fallback (desktop). It NEVER
+     claims the SMS was sent — opening the composer is not sending. */
   Ops.Sms = {
     INTENTS: { booking_confirmed: 1, reschedule: 1, staff_message: 1 },
-    // Opt-in checkbox markup — UNCHECKED by default (staff must choose). When the
-    // booking has no phone it renders disabled with a hint (no send is attempted).
-    checkboxHtml: function (id, hasPhone) {
-      var dis  = hasPhone ? '' : ' disabled';
-      var hint = hasPhone ? '' : ' <span class="ops-sms-hint">電話番号が未登録のため送信できません</span>';
-      return '<label class="ops-sms-opt"><input type="checkbox" id="' + util.esc(id) + '"' + dis +
-             '> SMS通知を送信</label>' + hint;
+
+    // A booking is manually addressable. Renders the action button.
+    buttonHtml: function (dbId, intent, label) {
+      return '<button type="button" class="ops-btn ghost ops-sms-btn" data-sms-id="' + util.esc(dbId) +
+             '" data-sms-intent="' + util.esc(intent) + '">📱 ' + util.esc(label || 'SMSを送る') + '</button>';
     },
-    isChecked: function (id) {
-      var el = document.getElementById(id);
-      return !!(el && el.checked && !el.disabled);
+
+    // Coarse mobile detection — only phones/tablets reliably honour sms: to open a
+    // messaging app. Everything else gets the copy fallback (no false "opened SMS").
+    isMobile: function () {
+      return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
     },
-    // Fire the SMS and toast the (non-blocking) outcome. Resolves the result for
-    // callers/tests; never rejects. Call this AFTER the primary op resolves.
-    send: function (dbId, intent) {
-      if (!Ops.Sms.INTENTS[intent] || !dbId) return Promise.resolve({ ok: false, sent: false, code: 'skip' });
-      return Ops.Api.sendSms(dbId, intent).then(function (r) {
-        if (r.sent)                        UI.toast(r.dryRun ? 'SMS通知を記録しました（ドライラン）' : 'SMS通知を送信しました');
-        else if (r.code === 'no_phone')    UI.toast('SMS未送信：電話番号が未登録です');
-        else if (r.code === 'duplicate')   UI.toast('SMSは既に送信済みです');
-        else                               UI.toast('SMS送信に失敗しました（予約は正常です）');
+
+    // Build a cross-platform sms: URI. iOS historically wants &body=, Android ?body=.
+    smsUri: function (phone, body) {
+      var num = String(phone || '').replace(/[^\d+]/g, '');
+      var sep = /iPhone|iPad|iPod/i.test(navigator.userAgent || '') ? '&' : '?';
+      return 'sms:' + num + sep + 'body=' + encodeURIComponent(body || '');
+    },
+
+    // Copy helper (clipboard API + execCommand fallback). Resolves true/false.
+    copy: function (text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return false; });
+      }
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        var ok = document.execCommand('copy'); ta.remove();
+        return Promise.resolve(ok);
+      } catch (_) { return Promise.resolve(false); }
+    },
+
+    // Desktop / no-app fallback: a sheet showing the phone + message with copy
+    // buttons. Titled so it is NEVER mistaken for "sent".
+    _fallbackSheet: function (r) {
+      var sheet = UI.sheet();
+      var phoneRow = r.hasPhone
+        ? '<div class="ops-sms-fb-row"><span class="ops-sms-fb-lbl">電話番号</span>' +
+            '<code class="ops-sms-fb-val" id="ops-sms-fb-phone">' + util.esc(r.phone) + '</code>' +
+            '<button type="button" class="ops-btn ghost" id="ops-sms-fb-cphone">コピー</button></div>'
+        : '<div class="ops-sms-fb-row ops-sms-fb-nophone">電話番号が未登録です。メッセージのみコピーできます。</div>';
+      sheet.open(
+        '<h3 class="ops-sms-fb-h">📱 SMSを手動送信</h3>' +
+        '<p class="ops-sms-fb-note">下記を携帯電話のSMSアプリに貼り付けてご利用ください。' +
+          'この画面から自動送信は行われません（サーバーはSMSを送信しません）。</p>' +
+        phoneRow +
+        '<div class="ops-sms-fb-row col"><span class="ops-sms-fb-lbl">メッセージ' +
+          (r.segments > 1 ? '（' + r.segments + '通分）' : '') + '</span>' +
+          '<textarea class="ops-sms-fb-body" id="ops-sms-fb-body" rows="7" readonly>' + util.esc(r.body) + '</textarea>' +
+          '<button type="button" class="ops-btn" id="ops-sms-fb-cbody">メッセージをコピー</button></div>'
+      );
+      var cp = sheet.el.querySelector('#ops-sms-fb-cphone');
+      if (cp) cp.addEventListener('click', function () { Ops.Sms.copy(r.phone).then(function (ok) { UI.toast(ok ? '電話番号をコピーしました' : 'コピーできませんでした'); }); });
+      var cb = sheet.el.querySelector('#ops-sms-fb-cbody');
+      if (cb) cb.addEventListener('click', function () { Ops.Sms.copy(r.body).then(function (ok) { UI.toast(ok ? 'メッセージをコピーしました' : 'コピーできませんでした'); }); });
+    },
+
+    // Entry point: fetch the composed message, then open the SMS app (mobile) or
+    // the copy fallback (desktop / no phone). Never throws; never says "sent".
+    open: function (dbId, intent) {
+      if (!Ops.Sms.INTENTS[intent] || !dbId) return Promise.resolve({ ok: false, code: 'skip' });
+      UI.toast('SMSを作成中…');
+      return Ops.Api.composeSms(dbId, intent).then(function (r) {
+        if (!r.ok) { UI.toast('SMSを作成できませんでした：' + (r.code || '')); return r; }
+        if (Ops.Sms.isMobile() && r.hasPhone) {
+          // Open the native composer prefilled — staff still presses Send manually.
+          window.location.href = Ops.Sms.smsUri(r.phone, r.body);
+          UI.toast('SMSアプリを開きました（未送信）');
+        } else {
+          Ops.Sms._fallbackSheet(r);   // desktop, or mobile with no stored number
+        }
         return r;
       });
     },
-    // Send only if the named checkbox is checked; otherwise a resolved no-op.
-    maybe: function (checkboxId, dbId, intent) {
-      if (!Ops.Sms.isChecked(checkboxId)) return Promise.resolve({ ok: false, sent: false, code: 'unchecked' });
-      return Ops.Sms.send(dbId, intent);
+
+    // Bind every [data-sms-id] button inside a container to Ops.Sms.open().
+    bind: function (root) {
+      if (!root) return;
+      root.querySelectorAll('.ops-sms-btn[data-sms-id]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          Ops.Sms.open(btn.getAttribute('data-sms-id'), btn.getAttribute('data-sms-intent'));
+        });
+      });
     },
   };
 

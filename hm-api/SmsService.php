@@ -1,20 +1,12 @@
 <?php
 // ════════════════════════════════════════════════════════════════════════════
-//  SmsService.php — provider-agnostic OPTIONAL customer SMS (attention only)
+//  SmsService.php — OPTIONAL manual-SMS CONTENT BUILDER (no sending)
 //
-//  SMS is a SECONDARY attention notification. Email + Chat remain primary. This
-//  service NEVER contacts a provider on its own and NEVER throws — every path
-//  returns a plain result array so a caller can treat SMS as strictly best-effort
-//  and isolate its failure from the primary operation (booking / reschedule / chat).
-//
-//  Clean adapter boundary — the transport is chosen by config and can be swapped
-//  for any future provider WITHOUT touching callers:
-//     sms_transport = 'off'  (default) → no send; returns code 'sms_disabled'
-//     sms_transport = 'log'            → dry-run; logs a MASKED line, no network
-//     <future>                         → not implemented → code 'no_provider'
-//  Tests (and a future provider module) may inject a transport via setTransport().
-//  Provider credentials live ONLY in _config.php (server-side) — never surfaced
-//  to JavaScript, never logged.
+//  SMS is an EXPERIMENTAL, secondary convenience. Email + Chat remain primary.
+//  There is NO server-side SMS transport, NO provider, NO credentials, NO delivery
+//  log — the website never sends an SMS. This class only BUILDS the message text
+//  and normalizes the stored phone number, from TRUSTED server-side records; a
+//  staff member sends it manually from their own phone (native SMS composer).
 //
 //  Content contract — every SMS carries: Company + Customer name + Booking ref +
 //  the Direct Chat Link built by EmailService::chatUrl(). No address / price /
@@ -25,13 +17,6 @@ declare(strict_types=1);
 class SmsService {
 
   const COMPANY = 'Hello Moving';
-
-  // Optional dependency-injected transport (callable(string $phone, string $body): array).
-  // Used by tests and by a future real provider adapter. Null → config-selected.
-  private static $transportOverride = null;
-
-  /** @param callable|null $fn function(string $phone, string $body): array{ok:bool,...} */
-  public static function setTransport(?callable $fn): void { self::$transportOverride = $fn; }
 
   // ── Intent → short Japanese reason line (the ONLY per-intent difference) ─────
   public static function reasonLine(string $intent): string {
@@ -74,7 +59,8 @@ class SmsService {
 
   // ── Phone normalization (Japan-first) → E.164-ish, or '' when unusable ───────
   //  Server-side ONLY; the browser never supplies a number. Accepts common stored
-  //  formats (090-1234-5678, +81 90…, 0081…) and rejects anything too short.
+  //  formats (090-1234-5678, +81 90…, 0081…) and rejects anything too short. The
+  //  normalized value is what the sms: URI recipient is prefilled with.
   public static function normalizePhone(string $raw): string {
     $raw = trim($raw);
     if ($raw === '') return '';
@@ -83,8 +69,7 @@ class SmsService {
     if ($digits === '') return '';
 
     if ($plus) {
-      // Already international (assume caller stored a valid country code).
-      $e164 = '+' . $digits;
+      $e164 = '+' . $digits;                       // already international
     } elseif (strpos($digits, '0081') === 0) {
       $e164 = '+81' . substr($digits, 4);
     } elseif (strpos($digits, '81') === 0 && strlen($digits) >= 11) {
@@ -95,64 +80,23 @@ class SmsService {
       return '';                                   // ambiguous — refuse rather than guess a country
     }
 
-    $len = strlen(preg_replace('/\D/', '', $e164)); // digit count incl. country code
-    if ($len < 10 || $len > 15) return '';          // E.164 sanity bounds
+    $len = strlen(preg_replace('/\D/', '', $e164));
+    if ($len < 10 || $len > 15) return '';         // E.164 sanity bounds
     return $e164;
   }
 
-  // Mask a phone for logs — keep only the last 4 digits.
-  public static function maskPhone(string $phone): string {
-    $d = preg_replace('/\D/', '', $phone);
-    if ($d === '') return '****';
-    return str_repeat('*', max(0, strlen($d) - 4)) . substr($d, -4);
-  }
-
-  // UTF-8 character count — uses mbstring when available (it is on the cPanel
-  // production PHP), else a portable regex fallback so the helper never fatals.
+  // UTF-8 character count — mbstring when available (cPanel prod), else a portable
+  // fallback so the helper never fatals.
   private static function ulen(string $s): int {
     if (function_exists('mb_strlen')) return mb_strlen($s, 'UTF-8');
     return (int)preg_match_all('/./us', $s);
   }
 
-  // ── UCS-2 segment estimate (JP text is always UCS-2: 70 / 67-per-part) ───────
+  // UCS-2 segment estimate (JP text is UCS-2: 70 / 67-per-part). Advisory only —
+  // shown to staff so they know a long message is multi-part; nothing is sent.
   public static function segmentsUcs2(string $text): int {
     $len = self::ulen($text);
     if ($len <= 70) return 1;
     return (int)ceil($len / 67);
-  }
-
-  // ── Dispatch to the configured transport. NEVER throws. ──────────────────────
-  //  Returns: ['ok'=>bool, 'sent'=>bool, 'code'=>string, 'dry_run'?=>bool, 'error'?=>string]
-  public static function send(array $cfg, string $phone, string $body): array {
-    try {
-      if (self::$transportOverride !== null) {
-        $r = (self::$transportOverride)($phone, $body);
-        return is_array($r) ? $r : ['ok' => false, 'sent' => false, 'code' => 'bad_transport'];
-      }
-      $mode = strtolower(trim((string)($cfg['sms_transport'] ?? 'off')));
-      switch ($mode) {
-        case 'off':
-        case '':
-          return ['ok' => false, 'sent' => false, 'code' => 'sms_disabled'];
-        case 'log':
-          // Dry-run: proves the whole pipeline without a provider. Logs a MASKED
-          // line only — never the recipient number, never the body, never creds.
-          if (function_exists('hm_log_write')) {
-            hm_log_write('info.log', [
-              'type' => 'sms_dryrun',
-              'to'   => self::maskPhone($phone),
-              'seg'  => self::segmentsUcs2($body),
-              'len'  => self::ulen($body),
-            ]);
-          }
-          return ['ok' => true, 'sent' => true, 'dry_run' => true, 'code' => 'logged'];
-        default:
-          // A provider name is configured but no adapter is wired yet. Soft-fail
-          // so the primary operation is never affected.
-          return ['ok' => false, 'sent' => false, 'code' => 'no_provider'];
-      }
-    } catch (Throwable $e) {
-      return ['ok' => false, 'sent' => false, 'code' => 'exception', 'error' => $e->getMessage()];
-    }
   }
 }
