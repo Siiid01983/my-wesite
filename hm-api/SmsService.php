@@ -16,11 +16,12 @@ declare(strict_types=1);
 
 class SmsService {
 
-  const COMPANY = 'Hello Moving';
+  const COMPANY = 'ハローMoving';
 
   // ── Intent → short Japanese reason line (the ONLY per-intent difference) ─────
   public static function reasonLine(string $intent): string {
     switch ($intent) {
+      case 'estimate':          return 'お見積もりをご案内しました。';
       case 'booking_confirmed': return 'ご予約ありがとうございます。';
       case 'reschedule':        return 'ご予約日時が変更されました。';
       case 'staff_message':     return '新しいメッセージがあります。';
@@ -33,14 +34,16 @@ class SmsService {
   }
 
   // ── Render one SMS body from TRUSTED, server-resolved values ─────────────────
-  //  name / ref come from the bookings row; link from EmailService::chatUrl().
-  //  Layout (all three intents share it):
-  //     Hello Moving
+  //  name comes from the bookings row; link from EmailService::chatUrl(). The
+  //  booking reference is INTENTIONALLY NOT shown in the body — it lives only
+  //  inside the chat link ($link), which identifies the customer's conversation.
+  //  Layout (all intents share it):
+  //     ハローMoving
   //     {name} 様
   //     {reason}
-  //     予約番号: {ref}
   //     チャットをご確認ください。
   //     {link}
+  //  $ref is kept in the signature for callers but is deliberately unused here.
   public static function render(string $intent, string $name, string $ref, string $link): string {
     $reason = self::reasonLine($intent);
     $name   = trim($name) !== '' ? trim($name) : 'お客様';
@@ -48,7 +51,6 @@ class SmsService {
       self::COMPANY,
       $name . ' 様',
       $reason,
-      '予約番号: ' . $ref,
       'チャットをご確認ください。',
       $link,
     ];
