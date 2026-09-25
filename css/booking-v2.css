@@ -61,6 +61,7 @@
   border-color:#F5A623 !important; box-shadow:0 0 0 3px rgba(245,166,35,.18) !important; outline:none;
 }
 .ba-field-label, .ba-field-lbl { color:#A9B0A3 !important; }
+.ba-field-note { color:#808779 !important; }
 .ba-req { color:#f87171 !important; }
 .ba-err { color:#f87171 !important; }
 
