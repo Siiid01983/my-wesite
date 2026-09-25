@@ -2659,6 +2659,18 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 .ba-floor-input{flex:0 0 auto;max-width:140px}
 .ba-ev-check{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--ba-forest);white-space:nowrap;cursor:pointer}
 .ba-ev-check input{width:18px;height:18px;accent-color:var(--ba-forest)}
+/* Shared building-info component (現住所 / 引越し先) — identical layout for both.
+   Floor = compact native picker (opens the OS scroll wheel on mobile); elevator
+   = explicit あり/なし radios; building type = one main type + independent flags. */
+.ba-bldg-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:12px;align-items:start}
+.ba-bldg-col{min-width:0}
+.ba-floor-select{width:100%}
+.ba-radio-row{display:flex;flex-wrap:wrap;gap:8px}
+.ba-check-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.ba-radio-pill,.ba-check-pill{display:inline-flex;align-items:center;gap:6px;padding:9px 12px;border:1px solid var(--ba-border);border-radius:8px;background:#fff;color:var(--ba-forest);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;line-height:1;white-space:nowrap;transition:border-color .12s,background .12s}
+.ba-radio-pill input,.ba-check-pill input{width:16px;height:16px;accent-color:var(--ba-forest);margin:0;flex-shrink:0}
+.ba-radio-pill:has(input:checked),.ba-check-pill:has(input:checked){border-color:var(--ba-olive);background:var(--ba-active)}
+.ba-bldg-block{margin-top:4px}
 .ba-addr-input:focus{border-color:var(--ba-olive)}
 .ba-pref-hd{font-size:12px;font-weight:700;color:var(--ba-muted);padding:8px 0 6px;letter-spacing:.06em;text-transform:uppercase}
 .ba-region-hd{padding-top:8px;font-size:12px;font-weight:700;color:var(--ba-muted);letter-spacing:.06em;margin-bottom:4px}
@@ -2804,6 +2816,14 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
             <input class="ba-addr-input" id="ba-phone" type="tel" placeholder="例：090-1234-5678" autocomplete="tel" inputmode="tel">
           </div>
           <div class="ba-field">
+            <label class="ba-field-label">お支払い方法</label>
+            <div class="ba-radio-row" role="radiogroup" aria-label="お支払い方法">
+              <label class="ba-radio-pill"><input type="radio" name="ba-payment" value="現金">現金</label>
+              <label class="ba-radio-pill"><input type="radio" name="ba-payment" value="オンライン決済">オンライン決済</label>
+              <label class="ba-radio-pill"><input type="radio" name="ba-payment" value="PayPay">PayPay</label>
+            </div>
+          </div>
+          <div class="ba-field">
             <label class="ba-field-label" for="ba-disposal">不用品回収のご希望（任意）</label>
             <textarea class="ba-addr-input" id="ba-disposal" rows="2" placeholder="処分したい家具・家電など（例：古いソファ1点、冷蔵庫1点）"></textarea>
           </div>
@@ -2877,13 +2897,8 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
           <label class="ba-field-lbl" for="ba-input-from">市区町村・番地・建物名</label>
           <input class="ba-addr-input" id="ba-input-from" type="text" placeholder="例：渋谷区神南1-2-3 ○○マンション101">
         </div>
-        <div class="ba-field-row">
-          <label class="ba-field-lbl" for="ba-floor-from">階数・エレベーター</label>
-          <div class="ba-floor-row">
-            <input class="ba-addr-input ba-floor-input" id="ba-floor-from" type="text" inputmode="numeric" placeholder="階数（例：3）" maxlength="3">
-            <label class="ba-ev-check"><input type="checkbox" id="ba-ev-from"> エレベーター有</label>
-          </div>
-        </div>
+        <!-- Shared building-info component (rendered by _baMountBuildingInfo) -->
+        <div class="ba-bldg-host" id="ba-bldg-from"></div>
       </div>
       <div class="ba-drawer-footer"><button class="ba-drawer-cta" onclick="baConfirmAddr('from')">確定する</button></div>
     </div>
@@ -2909,13 +2924,8 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
           <label class="ba-field-lbl" for="ba-input-to">市区町村・番地・建物名</label>
           <input class="ba-addr-input" id="ba-input-to" type="text" placeholder="例：さいたま市大宮区...">
         </div>
-        <div class="ba-field-row">
-          <label class="ba-field-lbl" for="ba-floor-to">階数・エレベーター</label>
-          <div class="ba-floor-row">
-            <input class="ba-addr-input ba-floor-input" id="ba-floor-to" type="text" inputmode="numeric" placeholder="階数（例：3）" maxlength="3">
-            <label class="ba-ev-check"><input type="checkbox" id="ba-ev-to"> エレベーター有</label>
-          </div>
-        </div>
+        <!-- Shared building-info component (rendered by _baMountBuildingInfo) -->
+        <div class="ba-bldg-host" id="ba-bldg-to"></div>
       </div>
       <div class="ba-drawer-footer"><button class="ba-drawer-cta" onclick="baConfirmAddr('to')">確定する</button></div>
     </div>
@@ -3085,7 +3095,10 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
 
   // Single source of truth for the booking the overlay is assembling.
   function baBlankState() {
-    return { serviceId:'', service:'', fromAddr:'', toAddr:'', dateISO:'', startAt:'', fromFloor:'', toFloor:'', fromEv:'', toEv:'', disposal:'', workers:2, filters:'', name:'', email:'', phone:'', notes:'' };
+    return { serviceId:'', service:'', fromAddr:'', toAddr:'', dateISO:'', startAt:'',
+             fromFloor:'', toFloor:'', fromEv:'', toEv:'',
+             fromBtype:'', toBtype:'', fromTower:false, toTower:false, fromNew:false, toNew:false,
+             payment:'', disposal:'', workers:2, filters:'', name:'', email:'', phone:'', notes:'' };
   }
   // TIMELINE mode (availability.php `timeline`): the customer picks an EXACT start
   // time from the admin's available windows + a duration; the engine reserves
@@ -3431,17 +3444,72 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   }
   // Quick prefecture pick (kept for compatibility — now targets the select).
   window.baSetPref = function (dir, pref) { var s = document.getElementById('ba-pref-' + dir); if (s) s.value = pref; };
+  // ── Shared building-info component (現住所 / 引越し先) ───────────
+  // ONE markup generator, rendered into BOTH address drawers, so the two
+  // sections are structurally identical — only the `dir` ('from'/'to'), and
+  // therefore the stored values, differ. Floor is a compact native picker
+  // (1〜50階; opens the OS scroll wheel on mobile — no keyboard, no overflow);
+  // elevator is an explicit あり/なし radio group (never inferred from "unset");
+  // building type is one of マンション/アパート/メゾネット (mutually exclusive)
+  // plus independent タワーマンション / 新築 characteristics (multi-select).
+  function baBuildingInfoHTML(dir) {
+    var floors = '<option value="">階数を選択</option>';
+    for (var i = 1; i <= 50; i++) floors += '<option value="' + i + '">' + i + '階</option>';
+    var radio = function (name, val) {
+      return '<label class="ba-radio-pill"><input type="radio" name="ba-' + name + '-' + dir + '" value="' + val + '">' + val + '</label>';
+    };
+    return ''
+      + '<div class="ba-field-row">'
+      +   '<div class="ba-bldg-grid">'
+      +     '<div class="ba-bldg-col">'
+      +       '<label class="ba-field-lbl" for="ba-floor-' + dir + '">階数</label>'
+      +       '<select class="ba-addr-select ba-floor-select" id="ba-floor-' + dir + '" aria-label="階数">' + floors + '</select>'
+      +     '</div>'
+      +     '<div class="ba-bldg-col">'
+      +       '<span class="ba-field-lbl">エレベーター</span>'
+      +       '<div class="ba-radio-row" role="radiogroup" aria-label="エレベーター">' + radio('ev', 'あり') + radio('ev', 'なし') + '</div>'
+      +     '</div>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="ba-field-row ba-bldg-block">'
+      +   '<span class="ba-field-lbl">建物タイプ</span>'
+      +   '<div class="ba-radio-row" role="radiogroup" aria-label="建物タイプ">' + radio('btype', 'マンション') + radio('btype', 'アパート') + radio('btype', 'メゾネット') + '</div>'
+      +   '<div class="ba-check-row">'
+      +     '<label class="ba-check-pill"><input type="checkbox" id="ba-tower-' + dir + '">タワーマンション</label>'
+      +     '<label class="ba-check-pill"><input type="checkbox" id="ba-new-' + dir + '">新築</label>'
+      +   '</div>'
+      + '</div>';
+  }
+  function _baMountBuildingInfo() {
+    ['from', 'to'].forEach(function (dir) {
+      var host = document.getElementById('ba-bldg-' + dir);
+      if (host && !host.innerHTML) host.innerHTML = baBuildingInfoHTML(dir);
+    });
+  }
+  // Human-readable building-type summary for a direction (main type + flags).
+  function _baBldgSummary(dir) {
+    var parts = [];
+    if (baState[dir + 'Btype']) parts.push(baState[dir + 'Btype']);
+    if (baState[dir + 'Tower']) parts.push('タワーマンション');
+    if (baState[dir + 'New'])   parts.push('新築');
+    return parts.join('・');
+  }
   window.baConfirmAddr = function (dir) {
     var pref = (document.getElementById('ba-pref-' + dir) || {}).value || '';
     var rest = document.getElementById('ba-input-' + dir).value.trim();
     if (!rest) return;                                                  // require the detailed address
     var v = (pref && rest.indexOf(pref) !== 0) ? (pref + rest) : rest;  // combine, avoid double prefecture
     var floor = ((document.getElementById('ba-floor-' + dir) || {}).value || '').trim();
-    var ev = (document.getElementById('ba-ev-' + dir) || {}).checked ? 'あり' : 'なし';
+    var evEl  = document.querySelector('input[name="ba-ev-' + dir + '"]:checked');
+    var ev    = evEl ? evEl.value : '';                                 // '' = not specified (never inferred as なし)
+    var btEl  = document.querySelector('input[name="ba-btype-' + dir + '"]:checked');
+    var btype = btEl ? btEl.value : '';
+    var tower = !!(document.getElementById('ba-tower-' + dir) || {}).checked;
+    var newb  = !!(document.getElementById('ba-new-' + dir) || {}).checked;
     var el = document.getElementById('ba-val-' + dir);
     el.textContent = v + (floor ? '（' + floor + '階）' : ''); el.classList.add('filled');
-    if (dir === 'from') { baState.fromAddr = v; baState.fromFloor = floor; baState.fromEv = ev; }
-    else if (dir === 'to') { baState.toAddr = v; baState.toFloor = floor; baState.toEv = ev; }
+    if (dir === 'from') { baState.fromAddr = v; baState.fromFloor = floor; baState.fromEv = ev; baState.fromBtype = btype; baState.fromTower = tower; baState.fromNew = newb; }
+    else if (dir === 'to') { baState.toAddr = v; baState.toFloor = floor; baState.toEv = ev; baState.toBtype = btype; baState.toTower = tower; baState.toNew = newb; }
     baCloseDrawer(dir);
   };
 
@@ -3608,13 +3676,22 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     if (!t) return;
     var items = _baItemsSummary();
     if (items === '荷物を選択') items = 'なし';
-    var fromCell = (baState.fromAddr || '—') + (baState.fromFloor ? '（' + baState.fromFloor + '階・EV' + (baState.fromEv || '-') + '）' : '');
+    // Location cell: address + a compact parenthetical of floor / elevator /
+    // building type (each omitted when unset) — same for both addresses.
+    var locDetail = function (dir) {
+      var bits = [];
+      if (baState[dir + 'Floor']) bits.push(baState[dir + 'Floor'] + '階');
+      if (baState[dir + 'Ev'])    bits.push('EV' + baState[dir + 'Ev']);
+      var bldg = _baBldgSummary(dir);
+      if (bldg) bits.push(bldg);
+      return (baState[dir + 'Addr'] || '—') + (bits.length ? '（' + bits.join('・') + '）' : '');
+    };
     var rows = [ ['サービス', baState.service || '—'] ];
     if (baIsSingleLoc()) {
-      rows.push(['作業場所', fromCell]);
+      rows.push(['作業場所', locDetail('from')]);
     } else {
-      rows.push(['現住所', fromCell]);
-      rows.push(['引越し先', (baState.toAddr || '—') + (baState.toFloor ? '（' + baState.toFloor + '階・EV' + (baState.toEv || '-') + '）' : '')]);
+      rows.push(['現住所', locDetail('from')]);
+      rows.push(['引越し先', locDetail('to')]);
     }
     rows.push(['希望日',   _baFmtDate(baState.dateISO)]);
     var _st = baState.startAt ? baState.startAt.slice(11, 16) : '';
@@ -3623,6 +3700,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     rows.push(['荷物',     items]);
     if (baState.disposal) rows.push(['不用品回収', baState.disposal]);
     if (baState.filters) rows.push(['ご希望条件', baState.filters]);
+    if (baState.payment) rows.push(['お支払い方法', baState.payment]);
     rows.push(['お名前', baState.name || '—']);
     rows.push(['メールアドレス', baState.email || '—']);
     rows.push(['電話番号', baState.phone || '—']);
@@ -3644,6 +3722,8 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     }
     if (err) err.style.display = 'none';
     baState.name = name; baState.email = email; baState.phone = phone; baState.notes = notes;
+    var payEl = document.querySelector('input[name="ba-payment"]:checked');
+    baState.payment = payEl ? payEl.value : '';
     baState.disposal = (document.getElementById('ba-disposal').value || '').trim();
     _baBuildReview('ba-review-table');
     baShowScreen('review');
@@ -3670,12 +3750,17 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     var single = baIsSingleLoc();
     var items = _baItemsSummary();
     var noteParts = [];
+    var _bf = _baBldgSummary('from'), _bt = _baBldgSummary('to');
     if (single) {
       if (baState.fromFloor || baState.fromEv) noteParts.push('作業場所 階数/EV: ' + (baState.fromFloor || '-') + '階・EV' + (baState.fromEv || '-'));
+      if (_bf) noteParts.push('作業場所 建物: ' + _bf);
     } else {
       if (baState.fromFloor || baState.fromEv) noteParts.push('現住所 階数/EV: ' + (baState.fromFloor || '-') + '階・EV' + (baState.fromEv || '-'));
+      if (_bf) noteParts.push('現住所 建物: ' + _bf);
       if (baState.toFloor || baState.toEv) noteParts.push('引越し先 階数/EV: ' + (baState.toFloor || '-') + '階・EV' + (baState.toEv || '-'));
+      if (_bt) noteParts.push('引越し先 建物: ' + _bt);
     }
+    if (baState.payment) noteParts.push('お支払い方法: ' + baState.payment);
     if (baState.disposal) noteParts.push('不用品回収: ' + baState.disposal);
     if (items !== '荷物を選択') noteParts.push('荷物: ' + items);
     noteParts.push('作業員: ' + baState.workers + '名');
@@ -3752,7 +3837,13 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
     ['ba-input-from','ba-input-to','ba-input-date','ba-name','ba-email','ba-phone','ba-notes','ba-zip-from','ba-zip-to','ba-floor-from','ba-floor-to','ba-disposal'].forEach(function (id) {
       var e = document.getElementById(id); if (e) e.value = '';
     });
-    ['ba-ev-from','ba-ev-to'].forEach(function (id) { var c = document.getElementById(id); if (c) c.checked = false; });
+    // Reset the radio groups (elevator / building type / payment) and the
+    // independent building-flag checkboxes across both address sections.
+    ['ba-ev-from','ba-ev-to','ba-btype-from','ba-btype-to','ba-payment'].forEach(function (name) {
+      var list = document.querySelectorAll('input[name="' + name + '"]');
+      Array.prototype.forEach.call(list, function (r) { r.checked = false; });
+    });
+    ['ba-tower-from','ba-tower-to','ba-new-from','ba-new-to'].forEach(function (id) { var c = document.getElementById(id); if (c) c.checked = false; });
     ['ba-pref-from','ba-pref-to'].forEach(function (id) { var s = document.getElementById(id); if (s) s.value = ''; });
     ['ba-zip-status-from','ba-zip-status-to'].forEach(function (id) { var s = document.getElementById(id); if (s) { s.textContent = ''; s.className = 'ba-zip-status'; } });
     var ce = document.getElementById('ba-contact-err'); if (ce) ce.style.display = 'none';
@@ -3968,6 +4059,7 @@ textarea.ba-addr-input{resize:vertical;min-height:64px;font-family:inherit}
   _baBuildPrefSelect('ba-pref-from'); _baBuildPrefSelect('ba-pref-to');
   baWireZip('ba-zip-from', 'ba-pref-from', 'ba-input-from', 'ba-zip-status-from');
   baWireZip('ba-zip-to',   'ba-pref-to',   'ba-input-to',   'ba-zip-status-to');
+  _baMountBuildingInfo();   // render the shared 階数/エレベーター/建物タイプ component into both drawers
   // Escape closes an open drawer first, otherwise the whole overlay (restores scroll).
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;

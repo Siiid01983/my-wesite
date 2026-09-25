@@ -16,6 +16,7 @@
     "test:sms": "php tests/sms.test.php",
     "test:review":   "php tests/review-token.test.php",
     "test:booking-loc": "node tests/booking-service-location.verify.js",
+    "test:booking-bldg": "node tests/booking-building-payment.verify.js",
     "test:fixes":  "node --test tests/calendar-timestamp-fixes.verify.js",
     "test:timeline-cal":     "node tests/timeline-calendar.smoke.js",
     "test:timeline-cal-e2e": "node tests/timeline-calendar.e2e.js",

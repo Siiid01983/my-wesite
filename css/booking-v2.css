@@ -239,6 +239,14 @@
 .ba-filter-label { color:#EDEFE9 !important; }
 .ba-filter-label input { accent-color:#F5A623 !important; }
 
+/* ── Building-info component: 階数 picker / エレベーター / 建物タイプ / payment ──
+   Re-themes the shared building-info pills + floor <select> to the dark BA look
+   (same treatment as .hm-nav-btn / .bk-time-pill). Selected = amber accent. */
+.ba-floor-select { background:#1E221B !important; border:1px solid rgba(255,255,255,.12) !important; color:#EDEFE9 !important; }
+.ba-radio-pill, .ba-check-pill { background:rgba(30,34,27,.5) !important; border:1px solid rgba(255,255,255,.12) !important; color:#EDEFE9 !important; }
+.ba-radio-pill input, .ba-check-pill input { accent-color:#F5A623 !important; }
+.ba-radio-pill:has(input:checked), .ba-check-pill:has(input:checked) { border-color:#F5A623 !important; background:rgba(245,166,35,.12) !important; color:#F5A623 !important; }
+
 /* ── Review table ─────────────────────────────────────────────────────────── */
 .ba-review-table td { color:#EDEFE9 !important; border-bottom:1px solid rgba(255,255,255,.07) !important; }
 .ba-review-table td:first-child { color:#A9B0A3 !important; }
