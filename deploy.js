@@ -85,6 +85,7 @@ const PRUNE = [
   'locales/public.en.js',       // retired — custom English overlay replaced by the opt-in Google Translate control
   'js/i18n/publicI18n.js',      // retired — custom English engine (browser-language auto-select) removed
   'css/footer-qr.css',          // removed — footer QR code taken out of the site
+  'booking-app.html',           // removed — orphan standalone booking page; BA overlay is the sole booking entry
 ];
 
 /*
