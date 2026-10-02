@@ -89,6 +89,17 @@ function chk(label, cond) { if (cond) { pass++; console.log('  [ok] ' + label); 
     await page.waitForSelector(sel, { state: 'visible', timeout: 8000 });
     await page.click(sel, opts);
   };
+  // Like clickReady, but also waits for the control to be ENABLED — the dialog OK
+  // buttons (block / booking / close-day) start `disabled` and un-disable only after
+  // their fields validate via an async `input`→sync() handler. Gating the click on
+  // `visible` alone can fire into the brief disabled window, so Playwright then
+  // blocks on its 30s actionability timeout = the reported CI flake. Waiting for
+  // `:not([disabled])` is a deterministic readiness gate (el.disabled=false removes
+  // the attribute), no sleeps, assertions unchanged.
+  const clickEnabled = async (sel, opts) => {
+    await page.waitForSelector(sel + ':not([disabled])', { state: 'visible', timeout: 8000 });
+    await page.click(sel, opts);
+  };
   // Wait until a #tlMode / #tlSeg button carries `.on` (its render() finished + is active).
   const waitOn = (sel) => page.waitForSelector(sel + '.on', { timeout: 5000 });
   // Wait until a specific POST landed in the mock's __posts (replaces fixed post-click sleeps).
@@ -121,14 +132,18 @@ function chk(label, cond) { if (cond) { pass++; console.log('  [ok] ' + label); 
   // press-hold at ~13:00 (empty), drag +1h
   const box = await page.evaluate(() => { const c = document.querySelector('#hmTl .tl-canvas'); const r = c.getBoundingClientRect(); return { x: r.left + r.width * 0.5, top: r.top }; });
   const y1 = box.top + (780 - 420) * 0.8;   // 13:00
-  await page.mouse.move(box.x, y1); await page.mouse.down(); await page.waitForTimeout(300);
+  await page.mouse.move(box.x, y1); await page.mouse.down();
+  // Wait for press-hold to ENGAGE (onHold creates .tl-ghost) rather than a fixed
+  // 300ms sleep — the in-page hold timer (220ms) slips past a wall-clock sleep on a
+  // slow/loaded CI runner, so the drag below would otherwise cancel the hold.
+  await page.waitForSelector('#hmTl .tl-ghost', { timeout: 8000 });
   await page.mouse.move(box.x, y1 + 20); await page.mouse.move(box.x, y1 + 48); await page.mouse.up();
-  await page.waitForSelector('#tlCloseDlg', { timeout: 2000 });
+  await page.waitForSelector('#tlCloseDlg', { timeout: 8000 });
   chk('block dialog opened', (await page.$('#tlCloseDlg')) !== null);
   chk('memo field present', (await page.$('#tlRsnMemo')) !== null);
   await clickReady('#tlCloseDlg .tl-rsn[data-r="トラック整備"]');
   await page.fill('#tlRsnMemo', 'エンジン点検');
-  await clickReady('#tlCloseDlg .tl-dlg-ok');
+  await clickEnabled('#tlCloseDlg .tl-dlg-ok');
   await waitPost(() => window.__posts.some(p => p.__url === 'block-interval' && p.action === 'block'));
   const bp = await page.evaluate(() => window.__posts.find(p => p.__url === 'block-interval' && p.action === 'block'));
   chk('block POSTed to block-interval', !!bp);
@@ -141,14 +156,15 @@ function chk(label, cond) { if (cond) { pass++; console.log('  [ok] ' + label); 
   await page.evaluate(() => { window.__posts = []; });
   const box2 = await page.evaluate(() => { const c = document.querySelector('#hmTl .tl-canvas'); const r = c.getBoundingClientRect(); return { x: r.left + r.width * 0.5, top: r.top }; });
   const yb = box2.top + (1020 - 420) * 0.8;  // 17:00 (empty — clear of window/booking/block)
-  await page.mouse.move(box2.x, yb); await page.mouse.down(); await page.waitForTimeout(300);
+  await page.mouse.move(box2.x, yb); await page.mouse.down();
+  await page.waitForSelector('#hmTl .tl-ghost', { timeout: 8000 });   // press-hold engaged (see BLOCK note above)
   await page.mouse.move(box2.x, yb + 20); await page.mouse.move(box2.x, yb + 48); await page.mouse.up();
-  await page.waitForSelector('#tlBkName', { timeout: 2000 });
+  await page.waitForSelector('#tlBkName', { timeout: 8000 });
   chk('booking dialog opened', (await page.$('#tlBkName')) !== null);
   await page.fill('#tlBkName', '山田太郎');
   await page.fill('#tlBkEmail', 'yamada@example.com');
   await page.fill('#tlBkPhone', '09012345678');
-  await clickReady('#tlCloseDlg .tl-dlg-ok');
+  await clickEnabled('#tlCloseDlg .tl-dlg-ok');
   await waitPost(() => window.__posts.some(p => p.__url === 'create-booking'));
   const kp = await page.evaluate(() => window.__posts.find(p => p.__url === 'create-booking'));
   chk('booking POSTed to create-booking', !!kp);
@@ -160,7 +176,7 @@ function chk(label, cond) { if (cond) { pass++; console.log('  [ok] ' + label); 
   await clickReady('#hmTl #tlMode button[data-m="window"]'); await waitOn('#hmTl #tlMode button[data-m="window"]');
   await page.waitForSelector('#hmTl .tl-bk', { state: 'visible' });   // booking bar rendered before we right-click it
   await page.$eval('#hmTl .tl-bk', el => { const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: r.left + 5, clientY: r.top + 5 })); });
-  await page.waitForSelector('#tlCtxMenu', { timeout: 2000 });
+  await page.waitForSelector('#tlCtxMenu', { timeout: 8000 });
   chk('context menu opened for booking', (await page.$('#tlCtxMenu')) !== null);
   await clickReady('#tlCtxMenu .tl-ctx-item');
   await waitPost(() => window.__posts.some(p => p.__url === 'booking-status'));
@@ -171,7 +187,7 @@ function chk(label, cond) { if (cond) { pass++; console.log('  [ok] ' + label); 
   await page.evaluate(() => { window.__posts = []; });
   chk('block present before unblock', (await page.$$('#hmTl .tl-blk')).length === 1);
   await page.$eval('#hmTl .tl-blk', el => { const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: r.left + 5, clientY: r.top + 5 })); });
-  await page.waitForSelector('#tlCtxMenu', { timeout: 2000 });
+  await page.waitForSelector('#tlCtxMenu', { timeout: 8000 });
   await clickReady('#tlCtxMenu .tl-ctx-item');
   await page.waitForFunction(() => document.querySelectorAll('#hmTl .tl-blk').length === 0, { timeout: 3000 });
   const up = await page.evaluate(() => window.__posts.find(p => p.__url === 'block-interval' && p.action === 'unblock'));
@@ -183,9 +199,9 @@ function chk(label, cond) { if (cond) { pass++; console.log('  [ok] ' + label); 
   await page.evaluate(() => { window.__posts = []; });
   // CLOSE the day.
   await clickReady('#hmTl .tl-closebtn');
-  await page.waitForSelector('#tlCloseDlg', { timeout: 2000 });
+  await page.waitForSelector('#tlCloseDlg', { timeout: 8000 });
   await clickReady('#tlCloseDlg .tl-rsn'); // first preset reason
-  await clickReady('#tlCloseDlg .tl-dlg-ok');
+  await clickEnabled('#tlCloseDlg .tl-dlg-ok');
   await page.waitForFunction(() => !!document.querySelector('#hmTl .tl-closebtn[data-closed="1"]'), { timeout: 3000 });
   const cp = await page.evaluate(() => window.__posts.find(p => p.__url === 'close-day' && p.action === 'close'));
   chk('close-day POSTed with reason', !!cp && !!cp.reason && !!cp.date);
