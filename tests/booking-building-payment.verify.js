@@ -33,7 +33,11 @@ const BASE = 'http://localhost:5050/index.html';
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
   });
 
-  await page.goto(BASE, { waitUntil: 'networkidle', timeout: 20000 });
+  // 'load' + explicit global waits is deterministic; 'networkidle' flaked here
+  // because the public page keeps background requests in flight, so the goto
+  // sometimes resolved before the inline scripts finished registering globals.
+  await page.goto(BASE, { waitUntil: 'load', timeout: 20000 });
+  await page.waitForFunction(() => typeof window.openBookingApp === 'function', { timeout: 20000 });
 
   const results = [];
   const check = (name, ok, detail) => results.push({ name, ok: !!ok, detail: detail || '' });
@@ -130,10 +134,15 @@ const BASE = 'http://localhost:5050/index.html';
     /10階/.test(flow.review) && /EVなし/.test(flow.review) && /アパート/.test(flow.review), flow.review);
   check('review shows お支払い方法: PayPay', /お支払い方法/.test(flow.review) && /PayPay/.test(flow.review), flow.review);
 
-  // Submit → capture the create-booking.php payload.
+  // Submit → capture the create-booking.php payload. BookingService is loaded
+  // lazily by bootstrap.js (dynamic <script>, after env.js), and it is a top-level
+  // `const` (global lexical binding, NOT window.*). baSubmitBooking() aborts early
+  // if `typeof BookingService === 'undefined'`, so wait for the binding to appear
+  // (checked via eval, since window.BookingService is intentionally absent).
   await page.evaluate(() => { window.API_BASE = 'http://localhost:5050/hm-api'; window.API_KEY = 'test'; });
+  await page.waitForFunction(() => { try { return eval('typeof BookingService') === 'object'; } catch (_) { return false; } }, { timeout: 20000 });
   await page.evaluate(() => window.baSubmitBooking());
-  await page.waitForTimeout(400);
+  await page.waitForTimeout(600);
 
   const notes = (captured && captured.notes) || '';
   check('payload captured', !!captured, JSON.stringify(captured ? Object.keys(captured) : null));

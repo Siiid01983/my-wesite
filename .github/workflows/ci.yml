@@ -126,3 +126,6 @@ jobs:
 
       - name: Ops Phase 1 (inquiry/reply/attachments/quotes/notes/worker-gating, source-static)
         run: npm run test:ops-phase1
+
+      - name: Booking building-info + payment (per-address 階数/EV/建物 independence, 支払い, notes packing)
+        run: npm run test:booking-bldg
