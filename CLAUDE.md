@@ -43,7 +43,11 @@ Prefer adding new files over modifying core files.
 - DEPRECATED / REMOVED FROM PRODUCTION:
   - Hero `quoteForm` (multi-step hero form) — **removed entirely** (markup + CSS + JS). The hero
     no longer renders any form; the BA overlay is the sole booking entry.
-  - `booking-app.html` — deleted (was an orphan standalone booking page).
+  - `booking-app.html` — deleted from the repo AND pruned from the server (was an orphan
+    standalone booking page calling `BookingService.createBooking` directly). It lingered live
+    on cPanel until 2026-10-02 (FTP deploy is add-only), then was added to `deploy.js`'s `PRUNE`
+    list (PR #250, commit 9d81e2e) so the deploy deletes it and re-asserts removal every run.
+    Do NOT recreate a standalone booking page; the BA overlay is the sole booking entry.
   - `#quote` fully removed — the hero section id was renamed `quote`→`home-hero`; no `#quote` remains anywhere.
   - `bk*` inline multi-step form + `doSubmit()` in `index.html` — dead code (DOM removed),
     neutralized to a no-op; do NOT revive.
