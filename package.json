@@ -11,6 +11,7 @@
     "test:ops-comm": "node tests/ops-communication.test.js",
     "test:worker-auth": "node tests/worker-auth.test.js",
     "test:ops-phase1": "node tests/ops-phase1.test.js",
+    "test:ops-repeat": "node --test tests/ops-repeat-customer.test.js",
     "test:contact-chat": "node tests/contact-chat.e2e.js",
     "test:telegram": "php tests/telegram.test.php",
     "test:sms": "php tests/sms.test.php",
