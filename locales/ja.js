@@ -78,6 +78,7 @@ window.LOCALES.ja = {
   "bookings.service": "サービス", "bookings.workers": "作業員", "bookings.from": "出発", "bookings.to": "到着",
   "bookings.items": "荷物", "bookings.email": "メール", "bookings.phone": "電話", "bookings.notes": "備考",
   "bookings.receivedAt": "受付日時",
+  "bookings.repeat": "リピート", "bookings.prevWorkDate": "前回作業日：{d}", "bookings.prevWorkLabel": "前回作業日",
 
   /* customers (M3) */
   "customers.title": "顧客", "customers.searchPh": "名前・メール・電話で検索",

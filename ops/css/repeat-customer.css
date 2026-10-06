@@ -1,0 +1,25 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   repeat-customer.css — returning-customer (リピート) indicator for Ops bookings.
+   Additive. Uses the existing Ops brand tokens (ops.css :root) so it inherits the
+   app's look; first-time customers render exactly as before (no element emitted).
+   ════════════════════════════════════════════════════════════════════════════ */
+.bk-repeat-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  font-size: .66rem;
+  font-weight: 700;
+  line-height: 1.6;
+  letter-spacing: .02em;
+  color: var(--hm-green, #2C3626);
+  background: var(--hm-sage, #9AB57A);
+  border-radius: 999px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.bk-repeat-prev {
+  margin-top: 3px;
+  font-size: .74rem;
+  font-weight: 600;
+  color: var(--hm-green, #2C3626);
+}

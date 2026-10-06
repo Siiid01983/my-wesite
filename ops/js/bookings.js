@@ -35,13 +35,22 @@
     });
   }
 
+  // Returning-customer indicator (first-time customers emit nothing → UI unchanged).
+  function repeatBadge(b) { return b.isRepeat ? ' <span class="bk-repeat-badge">' + t('bookings.repeat') + '</span>' : ''; }
+  function repeatPrevLine(b) {
+    return (b.isRepeat && b.prevWorkDate)
+      ? '<div class="bk-repeat-prev">' + t('bookings.prevWorkDate', { d: Ops.Repeat.fmtWorkDate(b.prevWorkDate) }) + '</div>'
+      : '';
+  }
+
   function card(b) {
     return '<div class="ops-row tap bk-card" data-open="' + U.esc(b.dbId) + '">' +
       '<div class="ops-avatar">' + U.initials(b.name) + '</div>' +
       '<div class="ops-row-main">' +
         '<div class="bk-ref">' + U.esc(b.ref) + '</div>' +
         '<div class="bk-name">' + U.esc(b.name) + t('common.honorific') + '</div>' +
-        '<div class="bk-meta">' + U.fmtDate(b.date) + ' · ' + U.esc(b.service || t('common.booking')) + '</div>' +
+        '<div class="bk-meta">' + U.fmtDate(b.date) + ' · ' + U.esc(b.service || t('common.booking')) + repeatBadge(b) + '</div>' +
+        repeatPrevLine(b) +
       '</div>' +
       '<div class="ops-row-end">' + UI.statusBadge(b.status) + '</div>' +
     '</div>';
@@ -127,9 +136,10 @@
 
     var html =
       '<h2>' + U.esc(b.name) + t('common.honorific') + '</h2>' +
-      '<div class="ops-muted" style="margin:0 0 14px;font-size:.86rem">' + t('bookings.receiptNo') + ' ' + U.esc(b.ref) + ' · ' + UI.statusBadge(b.status) + '</div>' +
+      '<div class="ops-muted" style="margin:0 0 14px;font-size:.86rem">' + t('bookings.receiptNo') + ' ' + U.esc(b.ref) + ' · ' + UI.statusBadge(b.status) + repeatBadge(b) + '</div>' +
 
       '<div class="ops-card" style="margin:0 0 14px;padding:4px 14px">' +
+        ((b.isRepeat && b.prevWorkDate) ? kv(t('bookings.prevWorkLabel'), Ops.Repeat.fmtWorkDate(b.prevWorkDate)) : '') +
         kv(t('bookings.moveDate'), U.fmtDateFull(b.date)) +
         (b.time ? kv(t('bookings.timeSlot'), b.time) : '') +
         kv(t('bookings.service'), b.service) +
@@ -208,6 +218,9 @@
         return;
       }
       state.all = r.data || [];
+      // Mark returning customers (リピート + 前回作業日) across the full history
+      // before any rendering. Additive; first-time customers are left untouched.
+      if (Ops.Repeat) Ops.Repeat.annotate(state.all);
       state.shown = PAGE;
       Ops.Notify.syncBookings(state.all);
       UI.setBell(Ops.Notify.unreadCount());

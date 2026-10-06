@@ -79,6 +79,7 @@ window.LOCALES.en = {
   "bookings.service": "Service", "bookings.workers": "Crew", "bookings.from": "From", "bookings.to": "To",
   "bookings.items": "Items", "bookings.email": "Email", "bookings.phone": "Phone", "bookings.notes": "Notes",
   "bookings.receivedAt": "Received",
+  "bookings.repeat": "Repeat", "bookings.prevWorkDate": "Last job: {d}", "bookings.prevWorkLabel": "Last job",
 
   /* customers (M3) */
   "customers.title": "Customers", "customers.searchPh": "Search by name, email, phone",
